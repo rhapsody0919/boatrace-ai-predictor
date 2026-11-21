@@ -125,6 +125,32 @@ if HAVE_NM:
 else:
     skipped += 1
 
+print("比べられない（人が見る）は赤でなく警告")
+YV = M + "verify-flow.js"
+YML = "docs/flow.yml"
+Y_OLD = ('import fs from "fs";\nconst y = fs.readFileSync(new URL("../../docs/flow.yml", import.meta.url), "utf8");\nconst problems = [];\n'
+         'if (!y.includes("TOKEN")) problems.push("TOKEN が無い");\nif (!y.includes("steps:")) problems.push("steps が無い");\nif (problems.length) process.exit(1);\n')
+Y_NEW = Y_OLD.replace('const problems = [];\n', 'const problems = [];\nconst has = (w) => y.includes(w);\n').replace('!y.includes("TOKEN")', '!has("TOKEN")')
+Y_BASE = {**BASE, YV: Y_OLD, YML: "steps:\n  - env: TOKEN\n"}
+if HAVE_NM:
+    e, w = pr({YV: Y_NEW}, base_files=Y_BASE)
+    check("製品を import しない verify の書き換え（確かめの数は同じ）: 赤でなく警告", not e and any(x.startswith("VERIFY") and "【比べられない（人が見る）】" in x for x in w), (e, w))
+    e, w = pr({YV: Y_NEW.replace('if (!y.includes("steps:")) problems.push("steps が無い");\n', "")}, base_files=Y_BASE)
+    check("同じ verify の確かめを1つ消す: 赤（弱めの疑い）", any(x.startswith("VERIFY") and "【弱めの疑い】" in x for x in e), (e, w))
+    e, w = pr({YV: Y_NEW, V: EMPTY}, base_files=Y_BASE)
+    check("比べられないと弱めが混じる: 赤", any("【弱め】" in x for x in e) and not any("【比べられない" in x for x in e), (e, w))
+    d = repo(Y_BASE)
+    try:
+        write(d, {YV: Y_NEW})
+        g(d, "add", "-A")
+        g(d, "commit", "-q", "-m", "head")
+        code = rn.main(["--repo", str(d), "--base", "base"])
+        check("比べられないだけの PR: 終了コード 0", code == 0, code)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+else:
+    skipped += 4
+
 print("止める側")
 d = repo(BASE)
 try:

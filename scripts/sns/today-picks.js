@@ -18,20 +18,20 @@ import { deadlineIso } from "../../api/_lib/snsClaimCheck.js";
 
 const FEATURED_LINE = /^注目レース：/m;
 
-/** 下書きと races の行から、注目レースと一覧を作る（純粋関数） */
-export function todayPicksOf(date, draft, races = []) {
-  if (!draft)
-    return {
-      date,
-      draft_id: null,
-      status: null,
-      form: null,
-      content_type_id: null,
-      featured: null,
-      list: [],
-    };
+const emptyPicks = (date) => ({
+  date,
+  draft_id: null,
+  status: null,
+  form: null,
+  content_type_id: null,
+  featured: null,
+  list: [],
+});
+
+// races の行から、レース1件の {race_id, boat_number, deadline_at, cancelled} を作る関数
+const rowMaker = (races) => {
   const byId = new Map(races.map((r) => [r.race_id, r]));
-  const row = ({ race_id, boat_number }) => {
+  return ({ race_id, boat_number }) => {
     const race = byId.get(race_id);
     return {
       race_id,
@@ -40,39 +40,44 @@ export function todayPicksOf(date, draft, races = []) {
       cancelled: race ? race.cancellation_status != null : null,
     };
   };
+};
+
+// 注目レース: 型 b は course_win.featured、型 c は 🏆（無い日は null）、型 a は「注目レース：」の行があるとき picks の先頭
+function featuredOf({ courseWin, v3, featuredA, picks }, row) {
+  if (courseWin) return row(courseWin);
+  if (v3) return v3.featured ? row(v3.featured) : null;
+  return featuredA && picks.length ? row(picks[0]) : null;
+}
+
+const samePick = (p, q) =>
+  p.race_id === q?.race_id &&
+  (p.boat_number ?? null) === (q?.boat_number ?? null);
+
+// 一覧: 型 c は 🏆 を除く picks、型 a は注目レースの行があれば先頭を除く picks、型 b は picks の全部
+function listPicksOf({ v3, featuredA, picks }) {
+  if (v3) return picks.filter((p) => !samePick(p, v3.featured));
+  return featuredA ? picks.slice(1) : picks;
+}
+
+/** 下書きと races の行から、注目レースと一覧を作る（純粋関数） */
+export function todayPicksOf(date, draft, races = []) {
+  if (!draft) return emptyPicks(date);
+  const row = rowMaker(races);
   const sd = draft.source_data ?? {};
   const picks = sd.digest?.picks ?? [];
   const courseWin = sd.course_win?.featured;
   const v3 = sd.digest_v3 ?? null;
   const featuredA =
     !courseWin && !v3 && FEATURED_LINE.test(draft.caption_text ?? "");
-  const featured = courseWin
-    ? row(courseWin)
-    : v3
-      ? v3.featured
-        ? row(v3.featured)
-        : null
-      : featuredA && picks.length
-        ? row(picks[0])
-        : null;
-  const same = (p, q) =>
-    p.race_id === q?.race_id &&
-    (p.boat_number ?? null) === (q?.boat_number ?? null);
-  const list = (
-    v3
-      ? picks.filter((p) => !same(p, v3.featured))
-      : featuredA
-        ? picks.slice(1)
-        : picks
-  ).map(row);
+  const parts = { courseWin, v3, featuredA, picks };
   return {
     date,
     draft_id: draft.id,
     status: draft.status,
     form: courseWin ? "b" : v3 ? "c" : "a",
     content_type_id: sd.content_type?.id ?? null,
-    featured,
-    list,
+    featured: featuredOf(parts, row),
+    list: listPicksOf(parts).map(row),
   };
 }
 

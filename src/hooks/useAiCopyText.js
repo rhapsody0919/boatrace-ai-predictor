@@ -263,3 +263,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
       !isRaceCancelled(prediction),
   };
 }
+
+// 行の組み立ては verify-ai-copy-text.js が直に呼ぶ（画面からは useAiCopyText を通す）。
+// 別名にするのは、本文に `export { buildRows }` を足して組む旧い verify と名前が二重にならないため
+export { buildRows as buildAiCopyRows };

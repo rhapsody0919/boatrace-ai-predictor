@@ -59,6 +59,101 @@ export function parseArgs(argv) {
 }
 
 /**
+ * 1会場の races を読み、書くレース（races に無いレース番号）を決める。書かない会場は out.skipped に足して null
+ * @returns {Promise<Object|null>} 書く会場（scrapeVenue の戻り値の races を無いレースに絞った物）
+ */
+async function planVenue(opts, venue, deps, out, log) {
+  const { client } = deps;
+  const { data: existing, error } = await client
+    .from("races")
+    .select("race_id, race_number")
+    .eq("race_date", opts.date)
+    .eq("venue_code", venue);
+  if (error) throw new Error(`races の読み取りに失敗: ${error.message}`);
+  const existingNos = new Set((existing ?? []).map((r) => r.race_number));
+  if (existingNos.size >= RACES_PER_DAY) {
+    out.skipped.push({ venue, reason: "races が12レースそろっている" });
+    return null;
+  }
+  if (existingNos.size > 0 && !opts.partial) {
+    out.skipped.push({
+      venue,
+      reason: `races がすでにある（${existingNos.size}レース。無いレースだけを書くなら --partial）`,
+    });
+    return null;
+  }
+  const v = await deps.scrapeVenue(opts.date, venue, {
+    strict: true,
+    raceConcurrency: 4,
+  });
+  // scrapeVenue は1R〜12Rを必ず返す（beforeinfo を取らない。BOA-1145）ので、選手のいるレースを数える
+  const races = (v?.races ?? []).filter((r) => r.racers?.length > 0);
+  if (races.length !== RACES_PER_DAY) {
+    throw new Error(
+      `会場${venue}: 出走表が${races.length}レース（12のはず）。書かずに止めます`,
+    );
+  }
+  // 既存のレースは書き込みに渡さない（上書きしない）
+  const missing = races.filter((r) => !existingNos.has(r.raceNo));
+  const entries = missing.reduce((n, r) => n + (r.racers?.length ?? 0), 0);
+  out.races += missing.length;
+  out.entries += entries;
+  log(
+    `会場${venue}: ${missing.length}レース（${missing.map((r) => `${r.raceNo}R`).join(" ")}）・出走表 ${entries}艇（発走時刻 ${missing.map((r) => r.startTime ?? "-").join(" ")}）${existingNos.size > 0 ? `。既存 ${existingNos.size}レースは書かない` : ""}`,
+  );
+  return { ...v, races: missing };
+}
+
+/** 書いた会場日が12レースそろったか。違えば例外 */
+async function verifyDaysComplete(opts, client, scraped) {
+  for (const v of scraped) {
+    const { data: day, error: e4 } = await client
+      .from("races")
+      .select("race_id")
+      .eq("race_date", opts.date)
+      .eq("venue_code", v.placeCd);
+    if (e4) throw new Error(`races の読み取りに失敗: ${e4.message}`);
+    if ((day?.length ?? 0) !== RACES_PER_DAY)
+      throw new Error(
+        `会場${v.placeCd}: 書いた後の races が${day?.length ?? 0}レース（12のはず）`,
+      );
+  }
+}
+
+/** 書いた races（中止の確定）と predictions を読む */
+async function readWritten(client, raceIds) {
+  const { data: after, error: e2 } = await client
+    .from("races")
+    .select("race_id, cancellation_status")
+    .in("race_id", raceIds);
+  if (e2) throw new Error(`races の読み取りに失敗: ${e2.message}`);
+  const { data: preds, error: e3 } = await client
+    .from("predictions")
+    .select("race_id")
+    .in("race_id", raceIds);
+  if (e3) throw new Error(`predictions の読み取りに失敗: ${e3.message}`);
+  return { after, preds };
+}
+
+/** 書いた結果の確認: races の数・中止の確定・予想が0件・会場日が12レースそろったか。違えば例外 */
+async function verifyWritten(opts, client, scraped, raceIds, log) {
+  const { after, preds } = await readWritten(client, raceIds);
+  const confirmed = (after ?? []).filter((r) =>
+    isCancellationConfirmed(r.cancellation_status),
+  ).length;
+  log(
+    `[APPLY] races ${after?.length ?? 0}/${raceIds.length}・中止の確定 ${confirmed}・予想 ${preds?.length ?? 0}件（0のはず）`,
+  );
+  if ((after?.length ?? 0) !== raceIds.length)
+    throw new Error("races の行数が想定と違います");
+  if (opts.cancelled && confirmed !== raceIds.length)
+    throw new Error("中止の確定が全レースに立っていません");
+  if ((preds?.length ?? 0) !== 0)
+    throw new Error("予想が書かれています（過去の日付に予想を作らない約束）");
+  await verifyDaysComplete(opts, client, scraped);
+}
+
+/**
  * @param {{date: string, venues: number[], apply: boolean, cancelled: boolean, partial?: boolean}} opts
  * @param {{client: Object, scrapeVenue: Function, writeVenues: Function, log?: Function}} deps
  * @returns {Promise<{written: string[], skipped: Array<{venue: number, reason: string}>, races: number, entries: number}>}
@@ -69,44 +164,8 @@ export async function backfillMissingVenueDay(opts, deps) {
   const out = { written: [], skipped: [], races: 0, entries: 0 };
   const scraped = [];
   for (const venue of opts.venues) {
-    const { data: existing, error } = await client
-      .from("races")
-      .select("race_id, race_number")
-      .eq("race_date", opts.date)
-      .eq("venue_code", venue);
-    if (error) throw new Error(`races の読み取りに失敗: ${error.message}`);
-    const existingNos = new Set((existing ?? []).map((r) => r.race_number));
-    if (existingNos.size >= RACES_PER_DAY) {
-      out.skipped.push({ venue, reason: "races が12レースそろっている" });
-      continue;
-    }
-    if (existingNos.size > 0 && !opts.partial) {
-      out.skipped.push({
-        venue,
-        reason: `races がすでにある（${existingNos.size}レース。無いレースだけを書くなら --partial）`,
-      });
-      continue;
-    }
-    const v = await deps.scrapeVenue(opts.date, venue, {
-      strict: true,
-      raceConcurrency: 4,
-    });
-    // scrapeVenue は1R〜12Rを必ず返す（beforeinfo を取らない。BOA-1145）ので、選手のいるレースを数える
-    const races = (v?.races ?? []).filter((r) => r.racers?.length > 0);
-    if (races.length !== RACES_PER_DAY) {
-      throw new Error(
-        `会場${venue}: 出走表が${races.length}レース（12のはず）。書かずに止めます`,
-      );
-    }
-    // 既存のレースは書き込みに渡さない（上書きしない）
-    const missing = races.filter((r) => !existingNos.has(r.raceNo));
-    const entries = missing.reduce((n, r) => n + (r.racers?.length ?? 0), 0);
-    out.races += missing.length;
-    out.entries += entries;
-    log(
-      `会場${venue}: ${missing.length}レース（${missing.map((r) => `${r.raceNo}R`).join(" ")}）・出走表 ${entries}艇（発走時刻 ${missing.map((r) => r.startTime ?? "-").join(" ")}）${existingNos.size > 0 ? `。既存 ${existingNos.size}レースは書かない` : ""}`,
-    );
-    scraped.push({ ...v, races: missing });
+    const planned = await planVenue(opts, venue, deps, out, log);
+    if (planned) scraped.push(planned);
   }
   if (!opts.apply) {
     log(
@@ -128,41 +187,7 @@ export async function backfillMissingVenueDay(opts, deps) {
       .is("cancellation_status", null);
     if (error) throw new Error(`中止の確定の書き込みに失敗: ${error.message}`);
   }
-  // 書いた結果の確認: races の数・中止の確定・予想が0件・会場日が12レースそろったか
-  const { data: after, error: e2 } = await client
-    .from("races")
-    .select("race_id, cancellation_status")
-    .in("race_id", raceIds);
-  if (e2) throw new Error(`races の読み取りに失敗: ${e2.message}`);
-  const { data: preds, error: e3 } = await client
-    .from("predictions")
-    .select("race_id")
-    .in("race_id", raceIds);
-  if (e3) throw new Error(`predictions の読み取りに失敗: ${e3.message}`);
-  const confirmed = (after ?? []).filter((r) =>
-    isCancellationConfirmed(r.cancellation_status),
-  ).length;
-  log(
-    `[APPLY] races ${after?.length ?? 0}/${raceIds.length}・中止の確定 ${confirmed}・予想 ${preds?.length ?? 0}件（0のはず）`,
-  );
-  if ((after?.length ?? 0) !== raceIds.length)
-    throw new Error("races の行数が想定と違います");
-  if (opts.cancelled && confirmed !== raceIds.length)
-    throw new Error("中止の確定が全レースに立っていません");
-  if ((preds?.length ?? 0) !== 0)
-    throw new Error("予想が書かれています（過去の日付に予想を作らない約束）");
-  for (const v of scraped) {
-    const { data: day, error: e4 } = await client
-      .from("races")
-      .select("race_id")
-      .eq("race_date", opts.date)
-      .eq("venue_code", v.placeCd);
-    if (e4) throw new Error(`races の読み取りに失敗: ${e4.message}`);
-    if ((day?.length ?? 0) !== RACES_PER_DAY)
-      throw new Error(
-        `会場${v.placeCd}: 書いた後の races が${day?.length ?? 0}レース（12のはず）`,
-      );
-  }
+  await verifyWritten(opts, client, scraped, raceIds, log);
   out.written = raceIds;
   return out;
 }

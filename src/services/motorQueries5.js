@@ -2,7 +2,7 @@
 // 本体の字下げは元のまま。手で直すときは普通の関数として直してよい
 
 import { supabase } from "./supabaseClient";
-import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
+import { isPlaceHit, isShowHit } from "../pure/hitJudge.js";
 import { isUsableRaceResult } from "../utils/raceResultUsable.js";
 import { chunkArray, fetchAllByIn, withCache } from "./core.js";
 import {

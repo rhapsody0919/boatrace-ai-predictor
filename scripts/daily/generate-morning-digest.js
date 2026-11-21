@@ -35,310 +35,52 @@
  *   node scripts/daily/generate-morning-digest.js --dry-run          # 書き込まずに結果を出す
  */
 
-import {
-  supabase,
-  isSupabaseEnabled,
-  VENUE_NAMES,
-} from "../lib/supabaseClient.js";
+import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { isDirectRun } from "../lib/isDirectRun.js";
 import { isColumnMissingError, stripColumns } from "../lib/optionalColumns.js";
+import { normalizeRacerName } from "../../src/utils/digestMetrics.js";
 import {
-  EXTRACTION_THRESHOLDS,
-  MIN_RUNS,
-  MIN_RUNS_90D,
-  computeSkillDelta,
-  computePredicted,
-  computeFeaturedScore,
-  IN_FAVORABLE_METRICS,
-  NIGASHI_LIST_COURSE,
-  isSmallSampleByRuns,
-  wilsonLowerPercentFromCount,
-  normalizeRacerName,
-} from "../../src/utils/digestMetrics.js";
+  attachReturnReasons,
+  buildSections,
+  indexStats,
+  returnedCandidates,
+  returnedRows,
+} from "../lib/morningDigestParts.js";
 import {
-  buildCourseWinNotes,
-  courseWinRowsFromJson,
-} from "../../src/utils/todayCourseWin.js";
+  attachMotorRaceCounts,
+  buildDayRow,
+  buildReport,
+  incompleteResult,
+  logCompleteness,
+  logDryRun,
+  logMotorSummary,
+  logSectionSummary,
+  motorTargetsOf,
+  pickFeatured,
+  rankRows,
+  warnNoVolatility,
+} from "../lib/morningDigestSummary.js";
 
-/** PostgRESTの1ページあたりの行数 */
-const PAGE_SIZE = 1000;
-
-/** 逃げセクションの表示上限。実測で32.3件/日出るため常に効く */
-const NIGE_LIMIT = 25;
-/** 逃がしを保存するコース（＝当日の枠）。一覧に出すのは2（NIGASHI_LIST_COURSE）、3は折りたたみの中だけ（2026-10-15） */
-const NIGASHI_COURSES = [2, 3];
-
-/**
- * 帰郷判定の節境界ガード。1会場あたりこの件数を超えたら「節の切り替わり」とみなして
- * その会場を除外する。全期間295日の実測で、正常時の最大は4〜10件、節境界は39〜47件で、
- * 11〜20の帯が空。1会場あたりの延べ選手数は39〜52（中央値45）。
- */
-const RETURNED_VENUE_GUARD = 20;
-
-/** finish_mark が100%運用になった日。これより前は「昨日のフライング」が不完全 */
-const FLYING_DATA_COMPLETE_FROM = "2026-09-21";
+// 読み手（verify-digest-*.js 等）が今までどおりこのファイルから読めるように再 export
+export { buildSections, pickFeatured, attachMotorRaceCounts };
+import {
+  STATS_MAX_LAG_DAYS,
+  addDays,
+  fetchAll,
+  fetchRaces,
+  fetchEntries,
+  fetchMotorRaceCounts,
+  fetchRacerStats,
+  fetchBaseline,
+  fetchCourseWin,
+  fetchVolatility,
+} from "../lib/morningDigestFetch.js";
 
 /** 当日の会場数が前日のこの割合を下回ったら、出走表の投入が途中とみなして書かない */
 const VENUE_COUNT_MIN_RATIO = 0.7;
 
-/**
- * 選手集計（racer_course_technique_stats.window_end）に許容する遅れの日数。
- *
- * 2 なのは構造上の下限。前日ぶんの進入コースが埋まるのは Kファイル同期の当日 JST 07:00 で、
- * 夜間集計（JST 01:10）はそれより前に走るため、window_end は必ず「前々日」までになる。
- * 1 にすると永久に満たせない（2026-09-25 に本番で発生）。
- * 3 以上にすると「集計が止まっている」という本来検知したい異常を見逃す。
- *
- * 影響: 朝の時点の選手集計には前日のレースが入っていない。集計窓は約295日・
- * 1選手1コースあたり中央値26走なので、1日ぶん（最大1〜2走）の欠落は実質的に無視できる。
- */
-const STATS_MAX_LAG_DAYS = 2;
-
 function todayJST() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
-}
-
-function addDays(dateStr, days) {
-  const d = new Date(`${dateStr}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().split("T")[0];
-}
-
-/**
- * `.range()` によるページ分割取得。
- *
- * ⚠️ 呼び出し側は必ず `.order()` を付けること。ORDER BY の無い LIMIT/OFFSET は
- * 行順が保証されず、ページ間で同じ行が重複したり抜けたりしうる。
- * 1チャンク200レース × 6艇 = 1200行のように、2ページ以上になるクエリが実際にある。
- */
-async function fetchAll(buildQuery) {
-  const all = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(error.message);
-    if (!Array.isArray(data)) throw new Error("配列が返りませんでした");
-    all.push(...data);
-    if (data.length < PAGE_SIZE) break;
-  }
-  return all;
-}
-
-// ---------------------------------------------------------------------------
-// 取得
-// ---------------------------------------------------------------------------
-
-async function fetchRaces(date) {
-  return fetchAll((from, to) =>
-    supabase
-      .from("races")
-      .select("race_id, venue_code, race_number, start_time, race_grade")
-      .eq("race_date", date)
-      .order("race_id", { ascending: true })
-      .range(from, to),
-  );
-}
-
-/**
- * @param {string[]} raceIds
- * @param {{includeAbsent?: boolean}} [opts] 帰郷判定では欠場者も名簿に含める。
- *   欠場（is_absent）は帰郷の前段であることが多く、除外すると**帰郷した選手そのものを
- *   取りこぼす**（2026-09-24の実測: 黄金井力良（津、racer_id=4432）が 9/23 に
- *   is_absent=true で、除外すると帰郷が6名になり競合掲載の7名と合わなかった）。
- *   指標セクション（逃げ・まくり・逃がし）は「本日走る選手」が対象なので除外する。
- */
-async function fetchEntries(raceIds, { includeAbsent = false } = {}) {
-  const all = [];
-  for (let i = 0; i < raceIds.length; i += 200) {
-    const chunk = raceIds.slice(i, i + 200);
-    const rows = await fetchAll((from, to) =>
-      supabase
-        .from("race_entries")
-        .select(
-          "race_id, boat_number, racer_id, player_name, grade, motor_number, motor_2rate, is_absent",
-        )
-        .in("race_id", chunk)
-        .order("race_id", { ascending: true })
-        .order("boat_number", { ascending: true })
-        .range(from, to),
-    );
-    all.push(...rows);
-  }
-  return all.filter(
-    (e) => e.racer_id !== null && (includeAbsent || !e.is_absent),
-  );
-}
-
-/**
- * 会場公式のモーター出走数（venue_motor_stats.race_count）を、対象日以前で最新のスナップショットから引く（BOA-702）。
- * データ出走表の getVenueMotorStats(venueCode, motorNumber, asOfDate) と同じ条件。
- * 1件ずつ引くのは、会場によってスナップショットの日がモーターごとにずれうるため（会場単位で最新日を決めると、
- * その日に載っていないモーターを「分からない」にしてしまう）。対象は1日数十艇。
- *
- * 取得に失敗したモーターは Map に入れない（＝分からない。画面は従来どおり 0.0% を出す）。生成自体は止めない
- * （この列は表示の補助で、他の列の正しさには関わらないため）。失敗数は戻り値で返し、呼び出し側が記録する。
- *
- * @param {string} date 対象日（YYYY-MM-DD）
- * @param {Array<{venue_code: number, motor_number: number}>} targets
- * @returns {Promise<{counts: Map<string, number|null>, failed: number}>} キーは `${venue_code}|${motor_number}`。
- *   値が null は「スナップショットはあるが出走数の列が空（その会場のサイトに出走数が無い）」
- */
-export async function fetchMotorRaceCounts(date, targets) {
-  const keys = [
-    ...new Set(targets.map((t) => `${t.venue_code}|${t.motor_number}`)),
-  ];
-  const counts = new Map();
-  let failed = 0;
-  for (let i = 0; i < keys.length; i += 20) {
-    await Promise.all(
-      keys.slice(i, i + 20).map(async (key) => {
-        const [venueCode, motorNumber] = key.split("|").map(Number);
-        const { data, error } = await supabase
-          .from("venue_motor_stats")
-          .select("race_count")
-          .eq("venue_code", venueCode)
-          .eq("motor_number", motorNumber)
-          .lte("scraped_date", date)
-          .order("scraped_date", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (error) {
-          failed += 1;
-          console.warn(
-            `  ⚠️ venue_motor_stats の取得に失敗（会場${venueCode} モーター${motorNumber}）: ${error.message}`,
-          );
-          return;
-        }
-        if (data) counts.set(key, data.race_count ?? null);
-      }),
-    );
-  }
-  return { counts, failed };
-}
-
-/**
- * 各行に motor_race_count を付ける（純粋関数）。motor_2rate が NULL の行・モーター番号が分からない行・
- * スナップショットが無い行は NULL。全行に同じキーを持たせる（バルク INSERT で行ごとにキーの集合を変えない）。
- *
- * @param {Array<Object>} rows
- * @param {Array<{race_id: string, boat_number: number, motor_number: number|null}>} entries
- * @param {Map<string, number|null>} counts fetchMotorRaceCounts の counts
- */
-export function attachMotorRaceCounts(rows, entries, counts) {
-  const motorByBoat = new Map(
-    entries.map((e) => [`${e.race_id}|${e.boat_number}`, e.motor_number]),
-  );
-  return rows.map((r) => {
-    const motorNumber =
-      r.race_id && r.boat_number != null
-        ? motorByBoat.get(`${r.race_id}|${r.boat_number}`)
-        : null;
-    const count =
-      r.motor_2rate !== null && motorNumber != null
-        ? counts.get(`${r.venue_code}|${motorNumber}`)
-        : null;
-    return { ...r, motor_race_count: count ?? null };
-  });
-}
-
-async function fetchRacerStats(racerIds) {
-  const unique = [...new Set(racerIds)];
-  const all = [];
-  for (let i = 0; i < unique.length; i += 300) {
-    const chunk = unique.slice(i, i + 300);
-    const rows = await fetchAll((from, to) =>
-      supabase
-        .from("racer_course_technique_stats")
-        .select("*")
-        .in("racer_id", chunk)
-        .order("racer_id", { ascending: true })
-        .order("course", { ascending: true })
-        .range(from, to),
-    );
-    all.push(...rows);
-  }
-  return all;
-}
-
-async function fetchBaseline() {
-  return fetchAll((from, to) =>
-    supabase
-      .from("venue_course_technique_baseline")
-      .select("*")
-      .range(from, to),
-  );
-}
-
-/**
- * /today の X 投稿の型 b の材料（級別の全国のコース別1着率と今日の選手のコース別の1着数、RPC 183）。
- * 窓は前々日まで（STATS_MAX_LAG_DAYS と同じ理由）。関数がまだ無い（マイグレーション 183 の適用前）・読めないときは
- * 一覧の生成を止めず、notes.courseWin を unavailable にする（/today は型 a で送り、Slack の知らせに理由が出る）。
- * notes（匿名でも読める）には理由のコードだけを入れ、エラーの本文はログにだけ出す（system-architect の審査 P3）
- */
-export async function fetchCourseWin(
-  date,
-  races,
-  entries,
-  rpc = (args) => supabase.rpc("compute_today_course_win_stats", args),
-) {
-  const until = addDays(date, -STATS_MAX_LAG_DAYS);
-  const racerIds = [...new Set(entries.map((e) => e.racer_id))];
-  const unavailable = (reason, message) => {
-    console.error(
-      `  ⚠️ コース別1着率の材料を作れない（${reason}: ${message}）。/today の型 b は出さない`,
-    );
-    return { v: 1, status: "unavailable", reason };
-  };
-  const startedMs = Date.now();
-  const { data, error } = await rpc({
-    p_until: until,
-    p_racer_ids: racerIds,
-  });
-  if (error)
-    return error.code === "PGRST202"
-      ? unavailable("rpc_missing", "関数が無い。マイグレーション183が未適用")
-      : unavailable("rpc_error", error.message);
-  // 窓が全期間なので、時間はデータとともに伸びる。通信を含むこの値が6秒を超えたら窓の上限を入れて見直す（183 の注記）
-  console.log(`  コース別1着率の RPC: ${Date.now() - startedMs}ms`);
-  try {
-    return buildCourseWinNotes({
-      races,
-      entries,
-      rpcRows: courseWinRowsFromJson(data),
-      until,
-    });
-  } catch (buildError) {
-    // 材料の形が想定と違う（窓がそろわない等）。一覧の a の材料は壊さず、型 b だけを止める
-    return unavailable("build_error", buildError.message);
-  }
-}
-
-/**
- * イン崩れ指数。**0〜1で保存されているので ×100 して返す**（plan.md §2.2、レビュー指摘H-1）。
- * volatilityPercentileIsFallback（会場内サンプル不足のプレースホルダ）の行は除外する。
- * predictions が未生成でも落とさない（plan.md §3.2、レビュー指摘H-7）。
- */
-async function fetchVolatility(raceIds) {
-  const map = new Map();
-  for (let i = 0; i < raceIds.length; i += 200) {
-    const chunk = raceIds.slice(i, i + 200);
-    const rows = await fetchAll((from, to) =>
-      supabase
-        .from("predictions")
-        .select("race_id, feature_contributions")
-        .eq("model_id", "unified")
-        .in("race_id", chunk)
-        .order("race_id", { ascending: true })
-        .range(from, to),
-    );
-    for (const r of rows) {
-      const fc = r.feature_contributions;
-      const p = fc?.volatilityPercentile;
-      if (typeof p !== "number") continue;
-      if (fc?.volatilityPercentileIsFallback) continue;
-      map.set(r.race_id, Math.round(p * 100 * 100) / 100);
-    }
-  }
-  return map;
 }
 
 // ---------------------------------------------------------------------------
@@ -403,286 +145,6 @@ async function checkCompleteness(date, races, entries) {
 // ---------------------------------------------------------------------------
 // セクションの生成
 // ---------------------------------------------------------------------------
-
-function baselineKey(venueCode, grade, course) {
-  return `${venueCode}|${grade}|${course}`;
-}
-
-/** 本日の会場×グレード×コースのベースライン。母数不足なら ALL へフォールバック */
-function lookupBaseline(baselineMap, venueCode, grade, course, metric) {
-  const cell =
-    baselineMap.get(baselineKey(venueCode, grade ?? "ippan", course)) ??
-    baselineMap.get(baselineKey(venueCode, "ALL", course));
-  const fallback = baselineMap.get(baselineKey(venueCode, "ALL", course));
-  const chosen = cell && cell.runs >= 100 ? cell : fallback;
-  // ベースラインが引けない行は metric_venue_baseline / metric_predicted が NULL になり、
-  // morning_digest_rows の CHECK 制約 mdr_metric_fields_by_section で弾かれる。
-  // DBの制約名だけのエラーになると原因が分からないので、ここで会場・コースを添えて落とす
-  if (!chosen) {
-    throw new Error(
-      `会場${venueCode} ${course}コースのベースラインが見つかりません` +
-        `（race_grade='ALL' のフォールバック行も無い）。夜間バッチ` +
-        ` update-racer-course-technique-stats.js が走っているか確認してください`,
-    );
-  }
-  const v = chosen[`${metric}_rate`];
-  if (v === null || v === undefined) {
-    throw new Error(
-      `会場${venueCode} ${course}コースの ${metric}_rate が NULL です` +
-        `（race_grade=${chosen.race_grade}）`,
-    );
-  }
-  // どのセルを使ったかを返す。画面のラベルが「本日のグレード」なのか
-  // 「全グレード」なのかを、実際に使った値と一致させるため
-  // （実測で 110行中31行＝28.2% がALLへフォールバックしていた）
-  return { rate: Number(v), grade: chosen.race_grade };
-}
-
-function buildMetricRow({
-  section,
-  race,
-  entry,
-  stat,
-  course,
-  rate,
-  expected,
-  count,
-  venueBaseline,
-  baselineGrade = null,
-  volatility,
-  rate90d,
-  runs90d,
-}) {
-  const skillDelta = computeSkillDelta({ rate, expected });
-  const predicted =
-    venueBaseline === null
-      ? null
-      : computePredicted({ venueBaseline, skillDelta });
-  return {
-    section,
-    race_id: race.race_id,
-    venue_code: race.venue_code,
-    race_number: race.race_number,
-    start_time: race.start_time,
-    racer_id: entry.racer_id,
-    racer_name: normalizeRacerName(entry.player_name),
-    grade: entry.grade,
-    boat_number: entry.boat_number,
-    course,
-    metric_value: rate,
-    metric_expected: expected,
-    metric_skill_delta: skillDelta,
-    metric_venue_baseline: venueBaseline,
-    metric_predicted: predicted ? predicted.value : null,
-    sample_size: stat.runs,
-    is_small_sample: isSmallSampleByRuns(stat.runs),
-    metric_wilson_lower: wilsonLowerPercentFromCount(count, stat.runs),
-    rate_90d: runs90d >= MIN_RUNS_90D ? rate90d : null,
-    sample_size_90d: runs90d,
-    motor_2rate: entry.motor_2rate === null ? null : Number(entry.motor_2rate),
-    volatility_percentile: volatility ?? null,
-    detail: {
-      clampedPredicted: predicted ? predicted.clamped : false,
-      // 会場平均に使ったセル（'ippan'/'G1'/…/'ALL'）。画面のラベルに出す
-      baselineGrade,
-    },
-  };
-}
-
-export function buildSections({
-  races,
-  entries,
-  statMap,
-  baselineMap,
-  volatilityMap,
-}) {
-  const raceById = new Map(races.map((r) => [r.race_id, r]));
-  const nige = [];
-  const makuri = [];
-  const nigashi = [];
-
-  for (const entry of entries) {
-    const race = raceById.get(entry.race_id);
-    if (!race) continue;
-    const volatility = volatilityMap.get(race.race_id) ?? null;
-
-    // 当日わかるのは枠番だけ。指標は「その選手が枠番と同じコースに進入した場合」で引く
-    const stat = statMap.get(`${entry.racer_id}|${entry.boat_number}`);
-    if (!stat || stat.runs < MIN_RUNS) continue;
-    const course = entry.boat_number;
-
-    if (course === 1 && Number(stat.nige_rate) >= EXTRACTION_THRESHOLDS.nige) {
-      const baseline = lookupBaseline(
-        baselineMap,
-        race.venue_code,
-        race.race_grade,
-        1,
-        "nige",
-      );
-      nige.push(
-        buildMetricRow({
-          section: "nige",
-          race,
-          entry,
-          stat,
-          course,
-          rate: Number(stat.nige_rate),
-          expected: Number(stat.nige_expected),
-          count: stat.nige_count,
-          venueBaseline: baseline.rate,
-          baselineGrade: baseline.grade,
-          volatility,
-          rate90d:
-            stat.nige_rate_90d === null ? null : Number(stat.nige_rate_90d),
-          runs90d: stat.runs_90d,
-        }),
-      );
-    }
-
-    if (Number(stat.makuri_rate) >= EXTRACTION_THRESHOLDS.makuri) {
-      const baseline = lookupBaseline(
-        baselineMap,
-        race.venue_code,
-        race.race_grade,
-        course,
-        "makuri",
-      );
-      makuri.push(
-        buildMetricRow({
-          section: "makuri",
-          race,
-          entry,
-          stat,
-          course,
-          rate: Number(stat.makuri_rate),
-          expected: Number(stat.makuri_expected),
-          count: stat.makuri_count,
-          venueBaseline: baseline.rate,
-          baselineGrade: baseline.grade,
-          volatility,
-          rate90d:
-            stat.makuri_rate_90d === null ? null : Number(stat.makuri_rate_90d),
-          runs90d: stat.runs_90d,
-        }),
-      );
-    }
-
-    // 逃がしは当日の2号艇（過去の2コースの実績）を一覧に出し、3号艇は画面の折りたたみの中だけに出す。
-    // 4〜6号艇は保存しない（2026-10-15 オーナー承認。22pt の基準は変えない）
-    if (NIGASHI_COURSES.includes(course) && stat.nigashi_rate !== null) {
-      const delta = Number(stat.nigashi_rate) - Number(stat.nigashi_expected);
-      if (delta >= EXTRACTION_THRESHOLDS.nigashi) {
-        const baseline = lookupBaseline(
-          baselineMap,
-          race.venue_code,
-          race.race_grade,
-          course,
-          "nigashi",
-        );
-        nigashi.push(
-          buildMetricRow({
-            section: "nigashi",
-            race,
-            entry,
-            stat,
-            course,
-            rate: Number(stat.nigashi_rate),
-            expected: Number(stat.nigashi_expected),
-            count: stat.nigashi_count,
-            venueBaseline: baseline.rate,
-            baselineGrade: baseline.grade,
-            volatility,
-            rate90d:
-              stat.nigashi_rate_90d === null
-                ? null
-                : Number(stat.nigashi_rate_90d),
-            runs90d: stat.runs_90d,
-          }),
-        );
-      }
-    }
-  }
-
-  const bySkill = (a, b) =>
-    b.metric_skill_delta - a.metric_skill_delta ||
-    a.race_id.localeCompare(b.race_id);
-
-  const nigeSorted = nige.sort(bySkill);
-  return {
-    nige: nigeSorted.slice(0, NIGE_LIMIT),
-    // 注目レースの選定は「表示上限で切る前」の全候補から行う。
-    // featured のスコアは z × 方向一致度で、skill_delta の順位とは別物のため、
-    // 26位以降の行が勝つケースがありうる（逃げは実測で平均32.3件/日出るため
-    // 上限25件は常に効いており、切ってから選ぶと取りこぼす）
-    nigeAll: nigeSorted,
-    nigeTotal: nige.length,
-    makuri: makuri.sort(bySkill),
-    // 2号艇を先、3号艇を後に並べる（rank はこの順。読み手は course で分ける）
-    nigashi: [
-      ...nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE).sort(bySkill),
-      ...nigashi.filter((r) => r.course !== NIGASHI_LIST_COURSE).sort(bySkill),
-    ],
-  };
-}
-
-/**
- * 「今日の注目レース」。**地力(pt)のまま指標横断で比較しない**。
- * ベースレートが逃げ53%・まくり4%と桁違いなので、zスコアに標準化してから
- * イン崩れ指数との方向一致度を掛ける（plan.md §3.3、レビュー指摘C-1）。
- */
-export function pickFeatured(sections) {
-  const candidates = [
-    ...(sections.nigeAll ?? sections.nige),
-    ...sections.makuri,
-    // 逃がしは注目レースの候補にしない（抽出の当たりと1号艇の1着に差が無い。2026-11-04、digestMetrics.js NOT_FEATURED_METRICS）
-  ]
-    .filter((r) => r.volatility_percentile !== null)
-    .map((r) => ({
-      row: r,
-      score: computeFeaturedScore({
-        metric: r.section,
-        rate: r.metric_value,
-        expected: r.metric_expected,
-        n: r.sample_size,
-        volatilityPercentile: r.volatility_percentile,
-      }),
-    }))
-    .filter((c) => c.score !== null);
-
-  if (candidates.length === 0) return null;
-
-  candidates.sort(
-    (a, b) => b.score - a.score || a.row.race_id.localeCompare(b.row.race_id),
-  );
-  const best = candidates[0];
-
-  const metricLabel = {
-    nige: "逃げ切った割合",
-    makuri: "まくりで1着になった割合",
-  }[best.row.section];
-  const direction = IN_FAVORABLE_METRICS.has(best.row.section)
-    ? "イン有利"
-    : "イン不利（1号艇が崩れる）";
-  // 集計した事実だけで書く。推定値（metric_predicted）は文にも出さない
-  // （2026-09-24、UIと同じ改訂。予想を提示している体裁を避ける）
-  const reason =
-    `この選手が${best.row.course}コースに入ったとき${metricLabel}は、` +
-    `全国${best.row.sample_size}走で${best.row.metric_value}%。` +
-    `この会場の平均は${best.row.metric_venue_baseline}%です。` +
-    `AIが当日条件から算出したイン崩れ指数は${best.row.volatility_percentile}%で、` +
-    `過去の実績と当日条件がどちらも「${direction}」方向を向いています。`;
-
-  return {
-    ...best.row,
-    section: "featured",
-    detail: {
-      ...best.row.detail,
-      reason,
-      score: best.score,
-      from: best.row.section,
-    },
-  };
-}
 
 /** 前日（JST）のフライング */
 async function buildFlying(date, prevDate) {
@@ -779,72 +241,9 @@ async function buildReturned(date, prevDate, todayRaces) {
     todayRaces.map((r) => r.race_id),
     { includeAbsent: true },
   );
-  const prevRaceById = new Map(prevRaces.map((r) => [r.race_id, r]));
-
-  const venuesToday = new Set(todayRaces.map((r) => r.venue_code));
-  const todayRaceById = new Map(todayRaces.map((r) => [r.race_id, r]));
-  const todayByVenueRacer = new Set(
-    todayRoster
-      .map((e) => {
-        const race = todayRaceById.get(e.race_id);
-        return race ? `${race.venue_code}|${e.racer_id}` : null;
-      })
-      .filter(Boolean),
+  const { rows, suppressed } = returnedRows(
+    returnedCandidates({ prevRaces, prevEntries, todayRaces, todayRoster }),
   );
-
-  const candidatesByVenue = new Map();
-  const seen = new Set();
-  for (const e of prevEntries) {
-    const race = prevRaceById.get(e.race_id);
-    if (!race) continue;
-    if (!venuesToday.has(race.venue_code)) continue; // 翌日の開催が無い＝節の終わり
-    const key = `${race.venue_code}|${e.racer_id}`;
-    if (seen.has(key)) continue;
-    if (todayByVenueRacer.has(key)) continue;
-    seen.add(key);
-    if (!candidatesByVenue.has(race.venue_code)) {
-      candidatesByVenue.set(race.venue_code, []);
-    }
-    candidatesByVenue.get(race.venue_code).push({ race, entry: e });
-  }
-
-  // 節境界ガード: 1会場で閾値を超えたら、前節の最終日と新節の初日が連続した
-  // ケースとみなして除外する。黙って0件にせず記録に残す（spec FR-14）
-  const suppressed = [];
-  const rows = [];
-  for (const [venueCode, list] of candidatesByVenue) {
-    if (list.length > RETURNED_VENUE_GUARD) {
-      suppressed.push(venueCode);
-      continue;
-    }
-    for (const { race, entry } of list) {
-      rows.push({
-        section: "returned",
-        race_id: null,
-        venue_code: venueCode,
-        race_number: null,
-        start_time: null,
-        racer_id: entry.racer_id,
-        racer_name: normalizeRacerName(entry.player_name),
-        grade: entry.grade,
-        boat_number: null,
-        course: null,
-        metric_value: null,
-        metric_expected: null,
-        metric_skill_delta: null,
-        metric_venue_baseline: null,
-        metric_predicted: null,
-        sample_size: null,
-        is_small_sample: false,
-        metric_wilson_lower: null,
-        rate_90d: null,
-        sample_size_90d: null,
-        motor_2rate: null,
-        volatility_percentile: null,
-        detail: { lastRaceId: race.race_id },
-      });
-    }
-  }
 
   // 帰郷の「理由」は race_special_notes から。**結合キーは前日（D）**。
   // digest_date（D+1）で引くと1日ずれて理由が永久に出ない（レビュー指摘M-13）
@@ -855,16 +254,7 @@ async function buildReturned(date, prevDate, todayRaces) {
       .eq("race_date", prevDate)
       .eq("category", "absence");
     if (error) throw error;
-    const reasonByKey = new Map(
-      (notes || []).map((n) => [
-        `${n.venue_code}|${n.racer_id}`,
-        n.detail_text,
-      ]),
-    );
-    for (const r of rows) {
-      const reason = reasonByKey.get(`${r.venue_code}|${r.racer_id}`);
-      if (reason) r.detail = { ...r.detail, reason };
-    }
+    attachReturnReasons(rows, notes);
   }
 
   rows.sort((a, b) => a.venue_code - b.venue_code || a.racer_id - b.racer_id);
@@ -957,43 +347,16 @@ export async function runMorningDigest({
     races.length > 0 ? await fetchEntries(races.map((r) => r.race_id)) : [];
 
   const problems = await checkCompleteness(date, races, entries);
-  if (problems.length > 0) {
-    console.log("\n完全性チェックを満たさないため、書き込まずに終了します:");
-    for (const p of problems) console.log(`  - ${p}`);
-    console.log(
-      "\n（次回の実行で再試行されます。最終回でも満たせない場合はジョブを失敗させてください）",
-    );
-    return {
-      outcome: "ok",
-      incomplete: true,
-      rowsWritten: 0,
-      report: { targetDate: date, problems },
-    };
-  }
-  console.log(
-    `  完全性チェック: OK（${new Set(races.map((r) => r.venue_code)).size}会場 ${races.length}レース ${entries.length}艇）`,
-  );
+  if (problems.length > 0) return incompleteResult(date, problems);
+  logCompleteness(races, entries);
 
   const [statRows, baselineRows, volatilityMap] = await Promise.all([
     fetchRacerStats(entries.map((e) => e.racer_id)),
     fetchBaseline(),
     fetchVolatility(races.map((r) => r.race_id)),
   ]);
-  const statMap = new Map(
-    statRows.map((s) => [`${s.racer_id}|${s.course}`, s]),
-  );
-  const baselineMap = new Map(
-    baselineRows.map((b) => [
-      baselineKey(b.venue_code, b.race_grade, b.course),
-      b,
-    ]),
-  );
-  if (volatilityMap.size === 0) {
-    console.log(
-      "  ⚠️ イン崩れ指数が1件も取得できませんでした（predictions が未生成）。" +
-        "注目レースは生成せず、volatility_percentile は NULL で書きます",
-    );
-  }
+  const { statMap, baselineMap } = indexStats(statRows, baselineRows);
+  warnNoVolatility(volatilityMap);
 
   const sections = buildSections({
     races,
@@ -1007,139 +370,34 @@ export async function runMorningDigest({
   const flying = await buildFlying(date, prevDate);
   const returned = await buildReturned(date, prevDate, races);
 
-  const ordered = [
-    ...(featured ? [featured] : []),
-    ...sections.nige,
-    ...sections.makuri,
-    ...sections.nigashi,
-    ...flying,
-    ...returned.rows,
-  ];
-
-  // rank はセクション内の並び順（1始まり）
-  const rankBySection = new Map();
-  const ranked = ordered.map((r) => {
-    const next = (rankBySection.get(r.section) ?? 0) + 1;
-    rankBySection.set(r.section, next);
-    return { ...r, digest_date: date, rank: next };
+  // rank はセクション内の並び順（1始まり）。会場公式のモーター出走数（未使用の新モーターの判定、BOA-702）を付ける
+  const ranked = rankRows({ featured, sections, flying, returned }, date);
+  const motorRaceCounts = await fetchMotorRaceCounts(
+    date,
+    motorTargetsOf(ranked, entries),
+  );
+  const rows = attachMotorRaceCounts(ranked, entries, motorRaceCounts.counts);
+  const digest = {
+    date,
+    races,
+    statRows,
+    featured,
+    sections,
+    flying,
+    returned,
+  };
+  logMotorSummary(rows, motorRaceCounts);
+  logSectionSummary({ ...digest, rows });
+  const dayRow = buildDayRow({ ...digest, rows, volatilityMap, courseWin });
+  const { report, byGradeReport } = buildReport({
+    date,
+    dayRow,
+    rows,
+    courseWin,
   });
 
-  // 会場公式のモーター出走数（未使用の新モーターの判定、BOA-702）
-  const motorNumberOf = new Map(
-    entries.map((e) => [`${e.race_id}|${e.boat_number}`, e.motor_number]),
-  );
-  const motorTargets = ranked
-    .filter((r) => r.motor_2rate !== null && r.race_id)
-    .map((r) => ({
-      venue_code: r.venue_code,
-      motor_number: motorNumberOf.get(`${r.race_id}|${r.boat_number}`),
-    }))
-    .filter((t) => t.motor_number != null);
-  const motorRaceCounts = await fetchMotorRaceCounts(date, motorTargets);
-  const rows = attachMotorRaceCounts(ranked, entries, motorRaceCounts.counts);
-  const motorRows = rows.filter((r) => r.motor_2rate !== null);
-  const unusedMotorRows = motorRows.filter(
-    (r) => r.motor_2rate === 0 && r.motor_race_count === 0,
-  );
-  console.log(
-    `  モーター出走数: ${motorRows.filter((r) => r.motor_race_count !== null).length}/${motorRows.length} 行で判明、` +
-      `未使用の新モーター（2連率0・出走数0）${unusedMotorRows.length} 行` +
-      (unusedMotorRows.length > 0
-        ? `（${unusedMotorRows.map((r) => `${r.section}:${r.race_id}#${r.boat_number}`).join(", ")}）`
-        : ""),
-  );
-  if (motorRaceCounts.failed > 0) {
-    console.log(
-      `  ⚠️ モーター出走数の取得に ${motorRaceCounts.failed} 件失敗しました（該当行は motor_race_count を NULL で書きます）`,
-    );
-  }
-
-  console.log(
-    `\n注目 ${featured ? 1 : 0} / 逃げ ${sections.nige.length}（候補${sections.nigeTotal}）` +
-      ` / まくり ${sections.makuri.length}` +
-      ` / 逃がし（2号艇） ${sections.nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE).length}` +
-      `（3号艇 ${sections.nigashi.filter((r) => r.course !== NIGASHI_LIST_COURSE).length}）` +
-      ` / フライング ${flying.length} / 帰郷 ${returned.rows.length}` +
-      ` / 合計 ${rows.length} 行`,
-  );
-  if (featured) {
-    console.log(
-      `  注目: ${featured.race_id} ${featured.racer_name}（${featured.detail.from} score=${featured.detail.score}）`,
-    );
-  }
-  if (returned.suppressed.length > 0) {
-    console.log(
-      `  ⚠️ 節境界とみなして帰郷判定から除外した会場: ${returned.suppressed.join(", ")}`,
-    );
-  }
-
-  const clamped = rows.filter((r) => r.detail?.clampedPredicted).length;
-  const dayRow = {
-    digest_date: date,
-    venue_count: new Set(races.map((r) => r.venue_code)).size,
-    race_count: races.length,
-    window_start: statRows[0]?.window_start ?? null,
-    window_end: statRows[0]?.window_end ?? null,
-    window_days: statRows[0]?.window_days ?? null,
-    flying_data_complete: date >= FLYING_DATA_COMPLETE_FROM,
-    suppressed_venues: returned.suppressed,
-    notes: {
-      sectionCounts: {
-        featured: featured ? 1 : 0,
-        nige: sections.nige.length,
-        nigeCandidates: sections.nigeTotal,
-        makuri: sections.makuri.length,
-        // 一覧に出す2号艇の件数。3号艇（折りたたみの中）は別に数える
-        nigashi: sections.nigashi.filter(
-          (r) => r.course === NIGASHI_LIST_COURSE,
-        ).length,
-        nigashiCourse3: sections.nigashi.filter(
-          (r) => r.course !== NIGASHI_LIST_COURSE,
-        ).length,
-        flying: flying.length,
-        returned: returned.rows.length,
-      },
-      clampedPredictedRows: clamped,
-      volatilityAvailable: volatilityMap.size,
-      thresholds: EXTRACTION_THRESHOLDS,
-      // /today の X 投稿の型 b（コース別1着率）の候補の全数（src/utils/todayCourseWin.js）
-      courseWin,
-    },
-  };
-
-  const byGradeReport = {};
-  for (const r of rows) {
-    const k = r.detail?.baselineGrade;
-    if (k) byGradeReport[k] = (byGradeReport[k] ?? 0) + 1;
-  }
-  const report = {
-    targetDate: date,
-    venueCount: dayRow.venue_count,
-    raceCount: dayRow.race_count,
-    sectionCounts: dayRow.notes?.sectionCounts,
-    baselineGrades: byGradeReport,
-    courseWin:
-      courseWin.status === "ok"
-        ? { status: "ok", counts: courseWin.counts, window: courseWin.window }
-        : { status: courseWin.status, reason: courseWin.reason },
-  };
-
   if (dryRun) {
-    console.log("\n[dry-run] 書き込みません。先頭5行:");
-    for (const r of rows.slice(0, 5)) {
-      console.log(
-        `  ${r.section}#${r.rank} ${r.race_id ?? "-"} ${r.racer_name} ` +
-          `${r.metric_value ?? "-"}% 地力${r.metric_skill_delta ?? "-"}pt n=${r.sample_size ?? "-"}` +
-          ` 会場平均${r.metric_venue_baseline ?? "-"}%(${r.detail?.baselineGrade ?? "-"})`,
-      );
-    }
-    // 会場平均にどのセルを使ったかの内訳。画面のラベルがこれと一致している必要がある
-    console.log(
-      `  会場平均に使ったセル: ${Object.entries(byGradeReport)
-        .map(([k, v]) => `${k}=${v}`)
-        .join(" / ")}`,
-    );
-    console.log("\n完了しました（dry-run のため書き込んでいません）");
+    logDryRun(rows, byGradeReport);
     return {
       outcome: "ok",
       rowsWritten: 0,
@@ -1182,3 +440,5 @@ if (isDirectRun(import.meta.url)) {
     process.exit(1);
   });
 }
+
+export { fetchMotorRaceCounts, fetchCourseWin } from "../lib/morningDigestFetch.js";

@@ -68,16 +68,12 @@ async function fetchTargets(raceIds) {
   });
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) {
-    throw new Error("Supabaseが設定されていません");
-  }
+/** --race-ids を読んで検査する（誤りは文つきで throw） */
+function parseRaceIds() {
   const raceIds = (getArg("race-ids") ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const apply = process.argv.includes("--apply");
-
   if (raceIds.length === 0) {
     throw new Error("--race-ids=ID,ID,... を指定してください");
   }
@@ -85,8 +81,10 @@ async function main() {
   if (invalid.length > 0) {
     throw new Error(`race_idの形式が不正: ${invalid.join(", ")}`);
   }
+  return raceIds;
+}
 
-  const targets = await fetchTargets(raceIds);
+function printTargets(targets, apply) {
   console.log(
     `対象${targets.length}レース（${apply ? "書き込み" : "dry-run"}）`,
   );
@@ -100,15 +98,10 @@ async function main() {
       `  ${t.race_id} cancellation_status=${t.cancellation_status ?? "null"} 結果=${resultLabel}`,
     );
   }
+}
 
-  const needsResult = targets.filter((t) => !t.isComplete);
-  if (!apply) {
-    console.log(
-      `\ndry-run: 結果取得対象${needsResult.length}件。書き込むには --apply を付けて再実行`,
-    );
-    return;
-  }
-
+/** 結果取得対象を日付ごとにまとめる（scrapeAndSaveResults の引数の形） */
+function groupByDate(needsResult) {
   const byDate = new Map();
   for (const t of needsResult) {
     const date = extractDateFromRaceId(t.race_id);
@@ -119,18 +112,11 @@ async function main() {
       race_number: t.race_number,
     });
   }
-  for (const [date, races] of byDate) {
-    await scrapeAndSaveResults(races, date);
-  }
+  return byDate;
+}
 
-  const after = await fetchTargets(raceIds);
-  // 結果行があるレースは開催済みなので、中止・順延の暫定(tentative)・確定(confirmed)を解除する。
-  // 結果行が無いレースは触らない（結果の日次の catch-up と同じ処理。BOA-524）
-  const { cleared } = await clearCancellationsWithResults(supabase, raceIds);
-  if (cleared.length > 0) {
-    console.log(`\n中止・順延の状態を解除: ${cleared.length}件`);
-  }
-
+/** 取得後の確認の出力。結果を取得できなかったレースがあれば exit 1 */
+function reportAfter(after) {
   const incomplete = after.filter((t) => t.hasResultRow && !t.isComplete);
   if (incomplete.length > 0) {
     console.warn(
@@ -146,6 +132,39 @@ async function main() {
     process.exit(1);
   }
   console.log("\n完了");
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) {
+    throw new Error("Supabaseが設定されていません");
+  }
+  const apply = process.argv.includes("--apply");
+  const raceIds = parseRaceIds();
+
+  const targets = await fetchTargets(raceIds);
+  printTargets(targets, apply);
+
+  const needsResult = targets.filter((t) => !t.isComplete);
+  if (!apply) {
+    console.log(
+      `\ndry-run: 結果取得対象${needsResult.length}件。書き込むには --apply を付けて再実行`,
+    );
+    return;
+  }
+
+  for (const [date, races] of groupByDate(needsResult)) {
+    await scrapeAndSaveResults(races, date);
+  }
+
+  const after = await fetchTargets(raceIds);
+  // 結果行があるレースは開催済みなので、中止・順延の暫定(tentative)・確定(confirmed)を解除する。
+  // 結果行が無いレースは触らない（結果の日次の catch-up と同じ処理。BOA-524）
+  const { cleared } = await clearCancellationsWithResults(supabase, raceIds);
+  if (cleared.length > 0) {
+    console.log(`\n中止・順延の状態を解除: ${cleared.length}件`);
+  }
+
+  reportAfter(after);
 }
 
 main().catch((error) => {

@@ -16,8 +16,23 @@
  * ファイル。今の台帳で適用済みなのにそこに無いファイルがあれば古い（snapshotFreshness）。appliedThrough は表示用の最大の番号。
  */
 import { ledgerState } from "./dbReconcile.js";
+import {
+  addColumns,
+  addConstraints,
+  addIndexes,
+  addPolicies,
+  addTriggers,
+  applyGrants,
+  assembleSnapshot,
+  buildFunctions,
+  buildRelations,
+  cmp,
+  relationLookup,
+  sortLists,
+} from "./schemaSnapshotParts.js";
 
-export const SNAPSHOT_FORMAT = 2;
+// 元から export している名は、移した先から同じ名で出し直す
+export { SNAPSHOT_FORMAT } from "./schemaSnapshotParts.js";
 
 /** 写しの置き場所（リポジトリの根からの相対） */
 export const SNAPSHOT_FILE = "docs/reference/schema-snapshot.json";
@@ -35,47 +50,6 @@ export const SNAPSHOT_QUERIES = [
   "triggers",
   "grants",
 ];
-
-const RELKINDS = {
-  r: "table",
-  p: "partitioned_table",
-  v: "view",
-  m: "materialized_view",
-  f: "foreign_table",
-};
-const CONTYPES = {
-  p: "primary_key",
-  f: "foreign_key",
-  u: "unique",
-  c: "check",
-  x: "exclusion",
-  t: "constraint_trigger",
-};
-const POLCMDS = {
-  r: "SELECT",
-  a: "INSERT",
-  w: "UPDATE",
-  d: "DELETE",
-  "*": "ALL",
-};
-const PROKINDS = { f: "function", p: "procedure", a: "aggregate", w: "window" };
-const VOLATILITIES = { i: "immutable", s: "stable", v: "volatile" };
-const IDENTITIES = { "": null, a: "always", d: "by_default" };
-const GENERATED = { "": null, s: "stored", v: "virtual" };
-const TRIGGER_ENABLED = {
-  O: "origin",
-  D: "disabled",
-  R: "replica",
-  A: "always",
-};
-const DEFAULT_ACL_SCOPES = ["global", "public"];
-const DEFAULT_ACL_OBJECTS = {
-  r: "table",
-  S: "sequence",
-  f: "function",
-  T: "type",
-  n: "schema",
-};
 
 /** 関数の設定（proconfig）で写しに入れてよい名前。ほかの名前（app.* 等）は値が秘密になりうるので失敗にする */
 const ALLOWED_FUNCTION_SETTINGS = [
@@ -97,44 +71,6 @@ const SECRET_PATTERNS = [
   ["API の鍵（sk-）", /\bsk-[A-Za-z0-9_-]{20,}/],
   ["AWS のアクセスキー", /\bAKIA[0-9A-Z]{16}\b/],
 ];
-
-function decode(map, code, what) {
-  if (!Object.hasOwn(map, code)) {
-    throw new Error(
-      `schema-snapshot: 知らない ${what} の記号 ${JSON.stringify(code)}`,
-    );
-  }
-  return map[code];
-}
-
-/** 複数行の定義は行の配列にする（JSON の差分が1行ずつ読める）。読む側は join("\n") で戻す */
-function toLines(text) {
-  return text === null || text === undefined ? null : String(text).split("\n");
-}
-
-/** C の照合（バイトの順）と同じ並び。識別子は ASCII なので code unit の比較で一致する */
-const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
-const byKeys =
-  (...keys) =>
-  (a, b) => {
-    for (const k of keys) {
-      const d = cmp(String(a[k] ?? ""), String(b[k] ?? ""));
-      if (d !== 0) return d;
-    }
-    return 0;
-  };
-const byName = byKeys("name");
-const byGrantee = byKeys("grantee");
-
-const functionKey = (name, args) => `${name}(${args})`;
-
-function grantEntry(row) {
-  return {
-    grantee: row.grantee,
-    privileges: row.privileges,
-    grantable: row.grantable ?? [],
-  };
-}
 
 /**
  * @param {Record<string, { rows: Record<string, unknown>[], truncated: boolean, limit?: number }>} raw
@@ -248,206 +184,26 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
     );
   }
 
-  const relations = new Map();
-  for (const r of rows.relations) {
-    relations.set(r.name, {
-      name: r.name,
-      kind: decode(RELKINDS, r.relkind, "relkind"),
-      owner: r.owner,
-      rlsEnabled: r.rls_enabled,
-      rlsForced: r.rls_forced,
-      options: r.options ?? null,
-      comment: r.comment ?? null,
-      viewDefinition: toLines(r.view_definition),
-      columns: [],
-      constraints: [],
-      indexes: [],
-      policies: [],
-      triggers: [],
-      grants: [],
-    });
-  }
-  const relationOf = (name, what) => {
-    const rel = relations.get(name);
-    if (!rel) {
-      throw new Error(
-        `schema-snapshot: ${what} の表 ${name} が表・ビューの一覧に無い`,
-      );
-    }
-    return rel;
-  };
-
-  const columns = new Map();
-  for (const c of rows.columns) {
-    const col = {
-      name: c.name,
-      position: c.position,
-      type: c.type,
-      notNull: c.not_null,
-      default: c.default_expr ?? null,
-      identity: decode(IDENTITIES, c.identity ?? "", "attidentity"),
-      generated: decode(GENERATED, c.generated ?? "", "attgenerated"),
-      comment: c.comment ?? null,
-      grants: [],
-    };
-    relationOf(c.table_name, "列").columns.push(col);
-    columns.set(`${c.table_name}.${c.name}`, col);
-  }
-  for (const c of rows.constraints) {
-    const isFk =
-      c.references_table !== null && c.references_table !== undefined;
-    relationOf(c.table_name, "制約").constraints.push({
-      name: c.name,
-      type: decode(CONTYPES, c.contype, "contype"),
-      columns: c.columns ?? [],
-      definition: c.definition,
-      references: isFk ? `${c.references_schema}.${c.references_table}` : null,
-      referencesColumns: isFk ? (c.references_columns ?? []) : null,
-    });
-  }
-  for (const i of rows.indexes) {
-    relationOf(i.table_name, "索引").indexes.push({
-      name: i.name,
-      unique: i.is_unique,
-      primary: i.is_primary,
-      definition: i.definition,
-    });
-  }
-  for (const p of rows.policies) {
-    relationOf(p.table_name, "ポリシー").policies.push({
-      name: p.name,
-      command: decode(POLCMDS, p.cmd, "polcmd"),
-      permissive: p.permissive,
-      roles: [...(p.roles ?? [])].sort(cmp),
-      using: p.using_expr ?? null,
-      withCheck: p.check_expr ?? null,
-    });
-  }
-  for (const t of rows.triggers) {
-    relationOf(t.table_name, "トリガー").triggers.push({
-      name: t.name,
-      enabled: decode(TRIGGER_ENABLED, t.enabled, "tgenabled"),
-      function: `${t.function_schema}.${functionKey(t.function_name, t.function_args)}`,
-      definition: t.definition,
-    });
-  }
-
-  const functions = new Map();
-  for (const f of rows.functions) {
-    functions.set(functionKey(f.name, f.identity_args), {
-      name: f.name,
-      identityArgs: f.identity_args,
-      result: f.result ?? null,
-      kind: decode(PROKINDS, f.prokind, "prokind"),
-      language: f.language,
-      volatility: decode(VOLATILITIES, f.volatility, "provolatile"),
-      securityDefiner: f.security_definer,
-      config: f.config ?? null,
-      owner: f.owner,
-      prosrcMd5: f.prosrc_md5,
-      definition: toLines(f.definition),
-      grants: [],
-    });
-  }
-
-  const sequences = new Map();
-  const defaultPrivileges = [];
-  for (const g of rows.grants) {
-    const type = String(g.object_type);
-    if (type === "relation") {
-      relationOf(g.name, "権限").grants.push(grantEntry(g));
-    } else if (type === "column") {
-      const col = columns.get(g.name);
-      if (!col)
-        throw new Error(
-          `schema-snapshot: 列の権限の ${g.name} が列の一覧に無い`,
-        );
-      col.grants.push(grantEntry(g));
-    } else if (type === "function") {
-      const fn = functions.get(functionKey(g.name, g.identity_args));
-      if (!fn) {
-        throw new Error(
-          `schema-snapshot: 関数の権限の ${g.name}(${g.identity_args}) が関数の一覧に無い`,
-        );
-      }
-      fn.grants.push(grantEntry(g));
-    } else if (type === "sequence") {
-      if (!sequences.has(g.name))
-        sequences.set(g.name, { name: g.name, grants: [] });
-      sequences.get(g.name).grants.push(grantEntry(g));
-    } else if (type.startsWith("default:")) {
-      const [, scope, objType] = type.split(":");
-      if (!DEFAULT_ACL_SCOPES.includes(scope)) {
-        throw new Error(
-          `schema-snapshot: 知らない既定の権限の範囲 ${JSON.stringify(scope)}`,
-        );
-      }
-      // grantee が null の行は ACL が空（誰にも付けない）の記録。作りつけの既定（関数の PUBLIC の EXECUTE 等）とは逆の意味
-      defaultPrivileges.push({
-        scope,
-        objectType: decode(DEFAULT_ACL_OBJECTS, objType, "defaclobjtype"),
-        role: g.name,
-        ...grantEntry({
-          ...g,
-          grantee: g.grantee ?? null,
-          privileges: g.privileges ?? [],
-        }),
-      });
-    } else {
-      throw new Error(
-        `schema-snapshot: 知らない権限の対象 ${JSON.stringify(g.object_type)}`,
-      );
-    }
-  }
-
-  const relationList = [...relations.values()].sort(byName);
-  for (const r of relationList) {
-    r.columns.sort((a, b) => a.position - b.position);
-    for (const c of r.columns) c.grants.sort(byGrantee);
-    r.constraints.sort(byName);
-    r.indexes.sort(byName);
-    r.policies.sort(byName);
-    r.triggers.sort(byName);
-    r.grants.sort(byGrantee);
-  }
-  const functionList = [...functions.values()].sort(
-    byKeys("name", "identityArgs"),
-  );
-  for (const f of functionList) f.grants.sort(byGrantee);
-  const sequenceList = [...sequences.values()].sort(byName);
-  for (const s of sequenceList) s.grants.sort(byGrantee);
-  defaultPrivileges.sort(byKeys("scope", "objectType", "role", "grantee"));
-
-  const count = (k) => relationList.reduce((a, r) => a + r[k].length, 0);
-  const isView = (r) => r.kind === "view" || r.kind === "materialized_view";
-  const snapshot = {
-    $comment: [
-      "本番 DB（public）のスキーマの写し。記録であり生成物ではない（ADR-0102。ADR-0078 の生成物の一覧に入れない）。リポジトリは公開なので、写しも公開に載る。",
-      "作り直し: git fetch して master の台帳に合わせてから node --env-file=.env.local scripts/db/schema-snapshot.js（claude_ro で読むだけ。scripts/db/ro-query.js を問い合わせごとに呼ぶ）。",
-      "鮮度: appliedFilesAtCapture は取得の時に docs/db-migration/APPLIED.md で適用済みだったファイル。今の台帳で適用済みなのにそこに無いファイルがあれば古い（session-start-check の schemaSnapshot）。",
-      '手で書き換えない。definition・viewDefinition は行の配列（join("\\n") で戻す）。行数の目安（reltuples）は入れない。',
-    ],
-    format: SNAPSHOT_FORMAT,
+  const relations = buildRelations(rows.relations);
+  const relationOf = relationLookup(relations);
+  const columns = addColumns(rows.columns, relationOf);
+  addConstraints(rows.constraints, relationOf);
+  addIndexes(rows.indexes, relationOf);
+  addPolicies(rows.policies, relationOf);
+  addTriggers(rows.triggers, relationOf);
+  const functions = buildFunctions(rows.functions);
+  const { sequences, defaultPrivileges } = applyGrants(rows.grants, { relationOf, columns, functions });
+  const { relationList, functionList, sequenceList } = sortLists(relations, functions, sequences, defaultPrivileges);
+  const snapshot = assembleSnapshot({
     capturedAt,
     appliedThrough,
-    appliedFilesAtCapture: appliedFiles,
-    serverVersionNum: rows.meta[0]?.server_version_num ?? null,
-    counts: {
-      relations: relationList.length,
-      tables: relationList.filter((r) => !isView(r)).length,
-      views: relationList.filter(isView).length,
-      columns: count("columns"),
-      functions: functionList.length,
-      policies: count("policies"),
-      constraints: count("constraints"),
-      indexes: count("indexes"),
-      triggers: count("triggers"),
-    },
-    relations: relationList,
-    functions: functionList,
-    sequences: sequenceList,
+    appliedFiles,
+    rows,
+    relationList,
+    functionList,
+    sequenceList,
     defaultPrivileges,
-  };
+  });
   assertNoSecrets(snapshot);
   return snapshot;
 }

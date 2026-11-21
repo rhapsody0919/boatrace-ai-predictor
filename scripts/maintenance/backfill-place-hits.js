@@ -1,6 +1,54 @@
 // Backfill is_hit_place and payout_place for predictions
 import { supabase, isSupabaseEnabled } from '../lib/supabaseClient.js';
 
+/** 複勝の当たりと配当（純関数）。top_pick が3着以内なら当たり */
+function placeHitOf(topPick, result) {
+  // 複勝判定: top_pickが3着以内
+  const isPlaceHit = topPick === result.rank1 ||
+                     topPick === result.rank2 ||
+                     topPick === result.rank3;
+
+  // 配当を取得
+  let payoutPlace = 0;
+  if (isPlaceHit) {
+    if (topPick === result.rank1) {
+      payoutPlace = result.payout_place_1 || 0;
+    } else if (topPick === result.rank2) {
+      payoutPlace = result.payout_place_2 || 0;
+    } else if (topPick === result.rank3) {
+      // 3着の複勝配当は通常rank2と同程度（簡易処理）
+      payoutPlace = result.payout_place_2 || result.payout_place_1 || 0;
+    }
+  }
+  return { isPlaceHit, payoutPlace };
+}
+
+/** 1件の予測: 結果を読み、複勝の当たりと配当を書く。'skipped'（結果なし）・'updated'・'failed'（書き込みの失敗） */
+async function backfillOne(pred) {
+  // 結果を取得
+  const { data: result } = await supabase
+    .from('race_results')
+    .select('rank1, rank2, rank3, payout_place_1, payout_place_2')
+    .eq('race_id', pred.race_id)
+    .single();
+
+  if (!result) {
+    return 'skipped';
+  }
+
+  const { isPlaceHit, payoutPlace } = placeHitOf(pred.top_pick, result);
+
+  const { error: updateError } = await supabase
+    .from('predictions')
+    .update({
+      is_hit_place: isPlaceHit,
+      payout_place: payoutPlace
+    })
+    .eq('prediction_id', pred.prediction_id);
+
+  return updateError ? 'failed' : 'updated';
+}
+
 async function backfillPlaceHits() {
   if (!isSupabaseEnabled()) {
     console.error('❌ Supabaseが設定されていません');
@@ -26,45 +74,12 @@ async function backfillPlaceHits() {
   let skipped = 0;
 
   for (const pred of predictions || []) {
-    // 結果を取得
-    const { data: result } = await supabase
-      .from('race_results')
-      .select('rank1, rank2, rank3, payout_place_1, payout_place_2')
-      .eq('race_id', pred.race_id)
-      .single();
-
-    if (!result) {
+    const outcome = await backfillOne(pred);
+    if (outcome === 'skipped') {
       skipped++;
       continue;
     }
-
-    // 複勝判定: top_pickが3着以内
-    const isPlaceHit = pred.top_pick === result.rank1 ||
-                       pred.top_pick === result.rank2 ||
-                       pred.top_pick === result.rank3;
-
-    // 配当を取得
-    let payoutPlace = 0;
-    if (isPlaceHit) {
-      if (pred.top_pick === result.rank1) {
-        payoutPlace = result.payout_place_1 || 0;
-      } else if (pred.top_pick === result.rank2) {
-        payoutPlace = result.payout_place_2 || 0;
-      } else if (pred.top_pick === result.rank3) {
-        // 3着の複勝配当は通常rank2と同程度（簡易処理）
-        payoutPlace = result.payout_place_2 || result.payout_place_1 || 0;
-      }
-    }
-
-    const { error: updateError } = await supabase
-      .from('predictions')
-      .update({
-        is_hit_place: isPlaceHit,
-        payout_place: payoutPlace
-      })
-      .eq('prediction_id', pred.prediction_id);
-
-    if (!updateError) {
+    if (outcome === 'updated') {
       updated++;
     }
 

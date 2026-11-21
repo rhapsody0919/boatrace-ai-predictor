@@ -45,9 +45,9 @@ export function validateYoutubeSnapshot(snapshot) {
     throw new Error("youtube_video_too_large");
 }
 
-export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
-  if (!accessToken) throw new Error("YouTube の access token がありません");
-  async function call(
+/** Data API の呼び（call）。失敗・解釈できない応答は投げる（API の本文は出さない） */
+function createYoutubeCall({ accessToken, fetchImpl }) {
+  return async function call(
     url,
     { method = "GET", headers = {}, body, timeoutMs = TIMEOUT_MS } = {},
   ) {
@@ -79,152 +79,174 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
         `YouTube API ${where} の応答を解釈できません: HTTP ${response.status}`,
       );
     return parsed;
-  }
-  // 自分がアップロードした動画だけが processingDetails を返す（他人の動画では見えない）。これを本人の動画の確認に使う
-  async function readVideo(id) {
-    const body = await call(
-      `${API}/videos?part=status,snippet,processingDetails&id=${encodeURIComponent(id)}`,
-    );
-    // items が配列でない応答は「動画が無い（削除済み）」と読まない（閉じる遷移が削除済みとして閉じるため、BOA-1164）
-    if (!Array.isArray(body?.items))
-      throw new Error("YouTube API videos.list の応答に items がありません");
-    return body.items.find((item) => item.id === id) ?? null;
-  }
-  const approvedTitle = (job) => job?.snapshot?.youtube_title ?? null;
-  const isOwnApproved = (video, job) =>
-    Boolean(
-      video &&
-      video.processingDetails &&
-      video.snippet?.title === approvedTitle(job),
-    );
+  };
+}
 
-  return {
-    async upload({
-      snapshot,
-      media,
-      privacyStatus,
-      publishAt,
-      beforeCall,
-      uploaded,
-      thumbnailFailed,
-    }) {
-      if (privacyStatus !== "private" || publishAt !== null)
-        throw new Error("YouTube は非公開でだけ上げる（案B）");
-      const [video, cover] = media;
-      if (!video?.bytes || video.type !== "video/mp4")
-        throw new Error("動画がありません");
-      const metadata = {
-        snippet: {
-          title: snapshot.youtube_title,
-          // 承認した版をそのまま送る: 説明は承認の完成文（本文＋タグの行）、タグは承認したハッシュタグ。どちらも承認の hash に入る
-          description: snapshot.text ?? "",
-          tags: youtubeTagsOf(snapshot),
-        },
-        status: {
-          privacyStatus: "private",
-          ...STATUS_FIELDS,
-        },
-      };
-      const boundary = `ryujin-${crypto.randomUUID()}`;
-      const body = new Blob([
-        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
-        `--${boundary}\r\nContent-Type: video/mp4\r\n\r\n`,
-        video.bytes,
-        `\r\n--${boundary}--`,
-      ]);
-      await beforeCall("videos.insert");
-      const inserted = await call(
-        `${UPLOAD_API}/videos?uploadType=multipart&part=snippet,status`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": `multipart/related; boundary=${boundary}`,
-          },
-          body,
-        },
-      );
-      if (!VIDEO_ID.test(inserted?.id ?? ""))
-        throw new Error("YouTube の動画 ID が返りません");
-      const job = await uploaded(inserted.id);
-      if (cover) {
-        // 送る前の検査・台帳への記録（beforeCall）の失敗は投げる。止める判断（停止・期限・リース・クォータ）で、
-        // 後の videos.update も同じ検査と台帳を通るので、ここで続けても公開できない。呼んでいないのでクォータも使っていない
-        await beforeCall("thumbnails.set");
-        try {
-          // サムネイルの Content-Type は媒体に合わせる（承認時に jpeg・png だけを通している）
-          await call(
-            `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(inserted.id)}&uploadType=media`,
-            {
-              method: "POST",
-              headers: { "Content-Type": cover.type },
-              body: cover.bytes,
-              timeoutMs: THUMBNAIL_TIMEOUT_MS,
-            },
-          );
-        } catch (error) {
-          // サムネイルが付かなくても動画は公開まで進める（BOA-1172）。理由は状態コードと Google の理由だけ（API の本文は入れない）。
-          // 403 はチャンネルの確認（カスタムサムネイルの権限）が無いときにも返る。自動で再試行しない
-          if (!thumbnailFailed) throw error;
-          thumbnailFailed(error.message);
-        }
-      }
-      return job;
+// 自分がアップロードした動画だけが processingDetails を返す（他人の動画では見えない）。これを本人の動画の確認に使う
+async function readVideo(call, id) {
+  const body = await call(
+    `${API}/videos?part=status,snippet,processingDetails&id=${encodeURIComponent(id)}`,
+  );
+  // items が配列でない応答は「動画が無い（削除済み）」と読まない（閉じる遷移が削除済みとして閉じるため、BOA-1164）
+  if (!Array.isArray(body?.items))
+    throw new Error("YouTube API videos.list の応答に items がありません");
+  return body.items.find((item) => item.id === id) ?? null;
+}
+
+const approvedTitle = (job) => job?.snapshot?.youtube_title ?? null;
+const isOwnApproved = (video, job) =>
+  Boolean(
+    video &&
+    video.processingDetails &&
+    video.snippet?.title === approvedTitle(job),
+  );
+
+/** 非公開で上げる（videos.insert の multipart）。サムネイルの失敗は thumbnailFailed があれば理由を渡して続ける（BOA-1172） */
+async function uploadVideo(
+  call,
+  {
+    snapshot,
+    media,
+    privacyStatus,
+    publishAt,
+    beforeCall,
+    uploaded,
+    thumbnailFailed,
+  },
+) {
+  if (privacyStatus !== "private" || publishAt !== null)
+    throw new Error("YouTube は非公開でだけ上げる（案B）");
+  const [video, cover] = media;
+  if (!video?.bytes || video.type !== "video/mp4")
+    throw new Error("動画がありません");
+  const metadata = {
+    snippet: {
+      title: snapshot.youtube_title,
+      // 承認した版をそのまま送る: 説明は承認の完成文（本文＋タグの行）、タグは承認したハッシュタグ。どちらも承認の hash に入る
+      description: snapshot.text ?? "",
+      tags: youtubeTagsOf(snapshot),
     },
-
-    validate: validateYoutubeSnapshot,
-
-    async processing(job) {
-      const video = job.external_post_id
-        ? await readVideo(job.external_post_id)
-        : null;
-      return {
-        confirmed: isOwnApproved(video, job),
-        id: video?.id ?? null,
-        privacyStatus: video?.status?.privacyStatus ?? null,
-        processingStatus: video?.processingDetails?.processingStatus ?? null,
-      };
-    },
-
-    async makePublic({ job, privacyStatus, publishAt, beforeCall }) {
-      if (privacyStatus !== "public" || publishAt !== null)
-        throw new Error("公開は即時だけ");
-      await beforeCall("videos.update");
-      await call(`${API}/videos?part=status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: job.external_post_id,
-          status: {
-            privacyStatus: "public",
-            ...STATUS_FIELDS,
-          },
-        }),
-      });
-      await beforeCall("videos.list");
-      return publicationResult(await readVideo(job.external_post_id), job);
-    },
-
-    // 動画 ID が分からない（insert の応答を失った）job は一覧を探さずオーナーの照合に残す（呼び出しもしない）
-    async lookup(job) {
-      if (!job.external_post_id) return publicationResult(null, job);
-      return publicationResult(await readVideo(job.external_post_id), job);
+    status: {
+      privacyStatus: "private",
+      ...STATUS_FIELDS,
     },
   };
+  const boundary = `ryujin-${crypto.randomUUID()}`;
+  const body = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+    `--${boundary}\r\nContent-Type: video/mp4\r\n\r\n`,
+    video.bytes,
+    `\r\n--${boundary}--`,
+  ]);
+  await beforeCall("videos.insert");
+  const inserted = await call(
+    `${UPLOAD_API}/videos?uploadType=multipart&part=snippet,status`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    },
+  );
+  if (!VIDEO_ID.test(inserted?.id ?? ""))
+    throw new Error("YouTube の動画 ID が返りません");
+  const job = await uploaded(inserted.id);
+  if (cover)
+    await setThumbnail(call, {
+      id: inserted.id,
+      cover,
+      beforeCall,
+      thumbnailFailed,
+    });
+  return job;
+}
 
-  // 公開を確かめた結果。posted_at は公開後の snippet.publishedAt（非公開の間の時刻や upload の終了時刻は使わない）
-  function publicationResult(video, job) {
-    const confirmed =
-      isOwnApproved(video, job) &&
-      video.status?.privacyStatus === "public" &&
-      Number.isFinite(Date.parse(video.snippet?.publishedAt));
-    return {
-      confirmed,
-      // 自分が上げた承認の動画か・videos.list に出たか（非公開のまま閉じるときの確認に使う、BOA-1164。found=false は削除済み）
-      owned: isOwnApproved(video, job),
-      found: Boolean(video),
-      id: video?.id ?? null,
-      privacyStatus: video?.status?.privacyStatus ?? null,
-      posted_at: confirmed ? video.snippet.publishedAt : null,
-    };
+async function setThumbnail(call, { id, cover, beforeCall, thumbnailFailed }) {
+  // 送る前の検査・台帳への記録（beforeCall）の失敗は投げる。止める判断（停止・期限・リース・クォータ）で、
+  // 後の videos.update も同じ検査と台帳を通るので、ここで続けても公開できない。呼んでいないのでクォータも使っていない
+  await beforeCall("thumbnails.set");
+  try {
+    // サムネイルの Content-Type は媒体に合わせる（承認時に jpeg・png だけを通している）
+    await call(
+      `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(id)}&uploadType=media`,
+      {
+        method: "POST",
+        headers: { "Content-Type": cover.type },
+        body: cover.bytes,
+        timeoutMs: THUMBNAIL_TIMEOUT_MS,
+      },
+    );
+  } catch (error) {
+    // サムネイルが付かなくても動画は公開まで進める（BOA-1172）。理由は状態コードと Google の理由だけ（API の本文は入れない）。
+    // 403 はチャンネルの確認（カスタムサムネイルの権限）が無いときにも返る。自動で再試行しない
+    if (!thumbnailFailed) throw error;
+    thumbnailFailed(error.message);
   }
+}
+
+async function processingOf(call, job) {
+  const video = job.external_post_id
+    ? await readVideo(call, job.external_post_id)
+    : null;
+  return {
+    confirmed: isOwnApproved(video, job),
+    id: video?.id ?? null,
+    privacyStatus: video?.status?.privacyStatus ?? null,
+    processingStatus: video?.processingDetails?.processingStatus ?? null,
+  };
+}
+
+async function makePublic(call, { job, privacyStatus, publishAt, beforeCall }) {
+  if (privacyStatus !== "public" || publishAt !== null)
+    throw new Error("公開は即時だけ");
+  await beforeCall("videos.update");
+  await call(`${API}/videos?part=status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: job.external_post_id,
+      status: {
+        privacyStatus: "public",
+        ...STATUS_FIELDS,
+      },
+    }),
+  });
+  await beforeCall("videos.list");
+  return publicationResult(await readVideo(call, job.external_post_id), job);
+}
+
+// 動画 ID が分からない（insert の応答を失った）job は一覧を探さずオーナーの照合に残す（呼び出しもしない）
+async function lookup(call, job) {
+  if (!job.external_post_id) return publicationResult(null, job);
+  return publicationResult(await readVideo(call, job.external_post_id), job);
+}
+
+// 公開を確かめた結果。posted_at は公開後の snippet.publishedAt（非公開の間の時刻や upload の終了時刻は使わない）
+function publicationResult(video, job) {
+  const confirmed =
+    isOwnApproved(video, job) &&
+    video.status?.privacyStatus === "public" &&
+    Number.isFinite(Date.parse(video.snippet?.publishedAt));
+  return {
+    confirmed,
+    // 自分が上げた承認の動画か・videos.list に出たか（非公開のまま閉じるときの確認に使う、BOA-1164。found=false は削除済み）
+    owned: isOwnApproved(video, job),
+    found: Boolean(video),
+    id: video?.id ?? null,
+    privacyStatus: video?.status?.privacyStatus ?? null,
+    posted_at: confirmed ? video.snippet.publishedAt : null,
+  };
+}
+
+export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
+  if (!accessToken) throw new Error("YouTube の access token がありません");
+  const call = createYoutubeCall({ accessToken, fetchImpl });
+  return {
+    upload: (args) => uploadVideo(call, args),
+    validate: validateYoutubeSnapshot,
+    processing: (job) => processingOf(call, job),
+    makePublic: (args) => makePublic(call, args),
+    lookup: (job) => lookup(call, job),
+  };
 }

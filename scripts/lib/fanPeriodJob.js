@@ -137,14 +137,8 @@ async function archiveFanRaw(client, { id, raw, sha256, run }) {
   }
 }
 
-/**
- * @param {Object} ctx 共通ラッパの文脈（targetDate・mode・politeFetch・client・query・worker）
- * @param {{sleepMs?: number, decode?: Function, minRecords?: number}} [options] テスト用の差し替え
- */
-export async function runFanPeriodJob(
-  ctx,
-  { sleepMs = 200, decode = decodeLzhBytes, minRecords = FAN_MIN_RECORDS } = {},
-) {
+/** 対象日・probe の fanId から、取り込む期と、報告の共通部分を決める。形式が不正なら例外 */
+function resolveFanTarget(ctx) {
   const date = ctx.targetDate;
   if (!date)
     throw new Error("対象日を解決できません（ctx.targetDate がありません）");
@@ -156,44 +150,47 @@ export async function runFanPeriodJob(
   const id = probe ? String(probeId) : fanIdEndedBefore(date);
   const { periodYear, periodNo } = periodOfFanId(id);
   const report = { date, mode: ctx.mode, fanId: id, probe };
+  return { date, probe, id, periodYear, periodNo, report };
+}
 
-  if (!probe) {
-    const { data, error } = await ctx.client
-      .from(FAN_TABLES.stats.table)
-      .select("racer_id")
-      .eq("period_year", periodYear)
-      .eq("period_no", periodNo)
-      .limit(1);
-    if (error)
-      throw new Error(
-        `${FAN_TABLES.stats.table} の取得に失敗: ${error.message}`,
-      );
-    if ((data ?? []).length > 0)
-      return {
-        rowsWritten: 0,
-        report: { ...report, status: "already_imported" },
-        body: { fanId: id, status: "already_imported" },
-      };
-    const days = daysSincePeriodEnd(id, date);
-    if (days > FAN_PUBLISH_DEADLINE_DAYS)
-      return {
-        rowsWritten: 0,
-        report: {
-          ...report,
-          status: "overdue",
-          daysSinceEnd: days,
-          alerts: [
-            {
-              key: `fan_overdue:${id}`,
-              text: `期別成績 ${id} が、期の終わりから${days}日たっても取り込めていません（${FAN_PUBLISH_DEADLINE_DAYS}日で取得を止めています）。公式の公開状況を確認し、公開済みなら ?fanId=${id} で取り込んでください`,
-            },
-          ],
-        },
-        body: { fanId: id, status: "overdue", daysSinceEnd: days },
-      };
-  }
+/** 取り込み済み・期限切れなら、取得せずに終える戻り値を返す（そうでなければ null）。DBエラーは例外 */
+async function earlyFanResult(ctx, { date, id, periodYear, periodNo, report }) {
+  const { data, error } = await ctx.client
+    .from(FAN_TABLES.stats.table)
+    .select("racer_id")
+    .eq("period_year", periodYear)
+    .eq("period_no", periodNo)
+    .limit(1);
+  if (error)
+    throw new Error(`${FAN_TABLES.stats.table} の取得に失敗: ${error.message}`);
+  if ((data ?? []).length > 0)
+    return {
+      rowsWritten: 0,
+      report: { ...report, status: "already_imported" },
+      body: { fanId: id, status: "already_imported" },
+    };
+  const days = daysSincePeriodEnd(id, date);
+  if (days > FAN_PUBLISH_DEADLINE_DAYS)
+    return {
+      rowsWritten: 0,
+      report: {
+        ...report,
+        status: "overdue",
+        daysSinceEnd: days,
+        alerts: [
+          {
+            key: `fan_overdue:${id}`,
+            text: `期別成績 ${id} が、期の終わりから${days}日たっても取り込めていません（${FAN_PUBLISH_DEADLINE_DAYS}日で取得を止めています）。公式の公開状況を確認し、公開済みなら ?fanId=${id} で取り込んでください`,
+          },
+        ],
+      },
+      body: { fanId: id, status: "overdue", daysSinceEnd: days },
+    };
+  return null;
+}
 
-  const res = await ctx.politeFetch(buildFanUrl(id));
+/** 取得の応答が 404（未公開）・その他のエラーなら、その戻り値を返す（成功なら null。純関数） */
+function fanFetchFailure(res, { id, probe, report }) {
   if (res.status === 404) {
     // 未公開を確認した。live ならその日は済み（補足の起動は叩かない）。probe は済みにしない
     return {
@@ -210,14 +207,11 @@ export async function runFanPeriodJob(
       rowsParsed: 0,
       report: { ...report, status: "http_error", httpStatus: res.status },
     };
+  return null;
+}
 
-  const raw = new Uint8Array(await res.arrayBuffer());
-  const sha256 = createHash("sha256").update(raw).digest("hex");
-  const fan = parseFanFile(await decode(raw), {
-    id,
-    source: { url: buildFanUrl(id), sha256, bytes: raw.length },
-  });
-  const summary = summarizeFan(fan);
+/** 解析した fan の検査（レコード数・異常・期の一致）。満たさない理由の一覧（純関数） */
+function fanProblems(fan, { minRecords, periodYear, periodNo }) {
   const problems = [];
   if (fan.record_count < minRecords)
     problems.push(
@@ -237,6 +231,65 @@ export async function runFanPeriodJob(
     problems.push(
       `期が想定と違います（想定 ${periodYear}年${periodNo}期、実際 ${fan.period.year}年${fan.period.no}期）`,
     );
+  return problems;
+}
+
+/** racer_period_stats へ、BATCH_SIZE 行ずつ upsert する。失敗なら { error: 戻り値 }、成功なら { written } */
+async function writeStatsBatches(
+  ctx,
+  toWrite,
+  { sleepMs, rows, report, diff },
+) {
+  let written = 0;
+  for (let i = 0; i < toWrite.length; i += BATCH_SIZE) {
+    const part = toWrite.slice(i, i + BATCH_SIZE);
+    const { error } = await ctx.client
+      .from(FAN_TABLES.stats.table)
+      .upsert(part, { onConflict: FAN_TABLES.stats.onConflict });
+    if (error)
+      return {
+        error: {
+          outcome: "error",
+          error: `${FAN_TABLES.stats.table} への書き込みに失敗（${written}/${toWrite.length}行で停止）: ${error.message}`,
+          rowsWritten: written,
+          rowsParsed: rows.length,
+          report: { ...report, status: "write_failed", diff },
+        },
+      };
+    written += part.length;
+    if (sleepMs > 0) await new Promise((r) => setTimeout(r, sleepMs));
+  }
+  return { written };
+}
+
+/**
+ * @param {Object} ctx 共通ラッパの文脈（targetDate・mode・politeFetch・client・query・worker）
+ * @param {{sleepMs?: number, decode?: Function, minRecords?: number}} [options] テスト用の差し替え
+ */
+export async function runFanPeriodJob(
+  ctx,
+  { sleepMs = 200, decode = decodeLzhBytes, minRecords = FAN_MIN_RECORDS } = {},
+) {
+  const target = resolveFanTarget(ctx);
+  const { probe, id, periodYear, periodNo, report } = target;
+
+  if (!probe) {
+    const early = await earlyFanResult(ctx, target);
+    if (early) return early;
+  }
+
+  const res = await ctx.politeFetch(buildFanUrl(id));
+  const failure = fanFetchFailure(res, { id, probe, report });
+  if (failure) return failure;
+
+  const raw = new Uint8Array(await res.arrayBuffer());
+  const sha256 = createHash("sha256").update(raw).digest("hex");
+  const fan = parseFanFile(await decode(raw), {
+    id,
+    source: { url: buildFanUrl(id), sha256, bytes: raw.length },
+  });
+  const summary = summarizeFan(fan);
+  const problems = fanProblems(fan, { minRecords, periodYear, periodNo });
   if (problems.length > 0)
     return {
       outcome: "error",
@@ -279,23 +332,14 @@ export async function runFanPeriodJob(
     sha256,
     run: ctx.worker ?? null,
   });
-  let written = 0;
-  for (let i = 0; i < toWrite.length; i += BATCH_SIZE) {
-    const part = toWrite.slice(i, i + BATCH_SIZE);
-    const { error } = await ctx.client
-      .from(FAN_TABLES.stats.table)
-      .upsert(part, { onConflict: FAN_TABLES.stats.onConflict });
-    if (error)
-      return {
-        outcome: "error",
-        error: `${FAN_TABLES.stats.table} への書き込みに失敗（${written}/${toWrite.length}行で停止）: ${error.message}`,
-        rowsWritten: written,
-        rowsParsed: rows.length,
-        report: { ...report, status: "write_failed", diff },
-      };
-    written += part.length;
-    if (sleepMs > 0) await new Promise((r) => setTimeout(r, sleepMs));
-  }
+  const result = await writeStatsBatches(ctx, toWrite, {
+    sleepMs,
+    rows,
+    report,
+    diff,
+  });
+  if (result.error) return result.error;
+  const { written } = result;
   const fullReport = {
     ...report,
     status: "imported",

@@ -16,7 +16,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { checkMissingContentIndex } from "../../maintenance/content-ops-checks/check-missing-content-index.js";
+import { checkMissingContentIndex } from "./missingContentIndex.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LIFEHACK_HISTORY_PATH = path.join(

@@ -5,8 +5,10 @@
  * - 投稿は POST /2/tweets。返信は reply.in_reply_to_tweet_id、投票は poll.options・poll.duration_minutes（媒体と同じ投稿に載せられない）
  * - POST は自動で再試行しない（応答が分からない投稿は要照合に残す。契約どおり）
  * - posted_at は投稿の ID（snowflake）に入っている作成時刻から求める（読み取りの API を余分に呼ばない）
+ * X_API_BASE は scripts/lib/sns/xApiBase.js（scripts/lib の snsMetricsRunner も読むので api/ から下ろした）
  */
-export const X_API_BASE = "https://api.x.com";
+import { X_API_BASE } from "../../scripts/lib/sns/xApiBase.js";
+
 const TIMEOUT_MS = 30000;
 // X の snowflake ID の時刻の起点（2010-11-04T01:42:54.657Z）
 const SNOWFLAKE_EPOCH_MS = 1288834974657n;
@@ -30,16 +32,9 @@ function validProcessingInfo(info, where) {
   return info;
 }
 
-/**
- * accessToken は呼び出し側（runner）が claim の前に getXAccessToken で取って渡す。
- * adapter の中で取ると、テキストだけの投稿では最初の呼び出しが begin_post の後の createPost になり、
- * トークンの取得の失敗で、何も投稿していない job が要照合に落ちるため
- */
-export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
-  if (!accessToken) throw new Error("X の access token がありません");
-  // 媒体 ID ごとの種類（finalize で動画かどうかを見るため）
-  const categories = new Map();
-  async function call(path, { method = "GET", json, form } = {}) {
+/** X API の呼び（call）。応答の本文は返す。失敗・解釈できない応答は投げる（本文は出さない） */
+function createXCall({ accessToken, fetchImpl }) {
+  return async function call(path, { method = "GET", json, form } = {}) {
     const response = await fetchImpl(`${X_API_BASE}${path}`, {
       method,
       headers: {
@@ -69,109 +64,130 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
       );
     }
     return body;
-  }
-  return {
-    async initialize({ size, type, category }) {
-      const body = await call("/2/media/upload/initialize", {
-        method: "POST",
-        json: { media_type: type, total_bytes: size, media_category: category },
-      });
-      if (!body?.data?.id) throw new Error("X の媒体 ID が返りません");
-      categories.set(body.data.id, category);
-      return { id: body.data.id };
-    },
-    async append({ id, index, bytes }) {
-      const form = new FormData();
-      form.append("segment_index", String(index));
-      form.append("media", new Blob([bytes]), "chunk");
-      await call(`/2/media/upload/${encodeURIComponent(id)}/append`, {
-        method: "POST",
-        form,
-      });
-    },
-    // 処理の完了は明示の状態でだけ認める。応答に data が無い（空・{}・null）ときは投げて、投稿の前に保留にする。
-    // 画像は processing_info を省略した finalize の応答を完了とみなす。動画は省略されても完了とせず、STATUS で
-    // 明示の状態を確かめる（処理を待たずに投稿へ進まないため。開発の補助の点検 D1、2026-10-13）
-    async finalize(id) {
-      const body = await call(
-        `/2/media/upload/${encodeURIComponent(id)}/finalize`,
-        {
-          method: "POST",
-        },
-      );
-      if (!isPlainObject(body?.data))
-        throw new Error("X の媒体の finalize の応答に data がありません");
-      // processing_info のキーが無い（undefined）ときだけ「省略」とみなす（2026-10-13 オーケストレーター決定）。
-      // null・false・0・空文字・状態の無いオブジェクトなど、それ以外の不正な値は投稿の前に止める
-      if (!("processing_info" in body.data))
-        return categories.get(id) === "tweet_video"
-          ? { processing_info: { state: "pending", check_after_secs: 1 } }
-          : { processing_info: null };
-      return {
-        processing_info: validProcessingInfo(
-          body.data.processing_info,
-          "finalize",
-        ),
-      };
-    },
-    async status(id) {
-      const body = await call(
-        `/2/media/upload?command=STATUS&media_id=${encodeURIComponent(id)}`,
-      );
-      if (!isPlainObject(body?.data))
-        throw new Error(
-          "X の媒体の処理状態が読めません（STATUS の応答に data がありません）",
-        );
-      return {
-        processing_info: validProcessingInfo(
-          body.data.processing_info,
-          "STATUS",
-        ),
-      };
-    },
-    async createPost({ text, mediaIds = [], replyTo, poll }) {
-      if (poll && mediaIds.length)
-        throw new Error("X の投票と媒体は同じ投稿に載せられません");
-      const body = await call("/2/tweets", {
-        method: "POST",
-        json: {
-          text,
-          ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
-          ...(replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : {}),
-          ...(poll
-            ? {
-                poll: {
-                  options: poll.options,
-                  duration_minutes: poll.duration_minutes,
-                },
-              }
-            : {}),
-        },
-      });
-      const id = body?.data?.id;
-      // 投稿は作られたが ID が読めない場合も、投げて要照合に残す（再送しない）
-      if (!/^[0-9]{1,19}$/.test(id ?? ""))
-        throw new Error("X の投稿 ID が返りません");
-      return { id, posted_at: postedAtFromId(id) };
-    },
-    /**
-     * 自分の投稿を消す（DELETE /2/tweets/:id、BOA-1279）。既に無い（HTTP 404）ときは already=true で成功にする。
-     * 自動で再試行しない。deleted が true でない応答は投げる（消えたか分からないまま記録を直さない）
-     */
-    async deletePost(id) {
-      if (!/^[0-9]{1,19}$/.test(id ?? ""))
-        throw new Error("X の投稿 ID が不正です");
-      try {
-        const body = await call(`/2/tweets/${id}`, { method: "DELETE" });
-        if (body?.data?.deleted !== true)
-          throw new Error(
-            "X の投稿の削除を確認できません（deleted が true でない）",
-          );
-        return { already: false };
-      } catch (error) {
-        if (/ HTTP 404\b/.test(error.message)) return { already: true };
-        throw error;
-      }
-    },
   };
 }
+
+/** 媒体の分割アップロードの始め。categories に媒体 ID ごとの種類を覚える（finalize で動画かどうかを見るため） */
+async function initializeMedia({ call, categories }, { size, type, category }) {
+  const body = await call("/2/media/upload/initialize", {
+    method: "POST",
+    json: { media_type: type, total_bytes: size, media_category: category },
+  });
+  if (!body?.data?.id) throw new Error("X の媒体 ID が返りません");
+  categories.set(body.data.id, category);
+  return { id: body.data.id };
+}
+
+async function appendMedia(call, { id, index, bytes }) {
+  const form = new FormData();
+  form.append("segment_index", String(index));
+  form.append("media", new Blob([bytes]), "chunk");
+  await call(`/2/media/upload/${encodeURIComponent(id)}/append`, {
+    method: "POST",
+    form,
+  });
+}
+
+// 処理の完了は明示の状態でだけ認める。応答に data が無い（空・{}・null）ときは投げて、投稿の前に保留にする。
+// 画像は processing_info を省略した finalize の応答を完了とみなす。動画は省略されても完了とせず、STATUS で
+// 明示の状態を確かめる（処理を待たずに投稿へ進まないため。開発の補助の点検 D1、2026-10-13）
+async function finalizeMedia({ call, categories }, id) {
+  const body = await call(
+    `/2/media/upload/${encodeURIComponent(id)}/finalize`,
+    {
+      method: "POST",
+    },
+  );
+  if (!isPlainObject(body?.data))
+    throw new Error("X の媒体の finalize の応答に data がありません");
+  // processing_info のキーが無い（undefined）ときだけ「省略」とみなす（2026-10-13 オーケストレーター決定）。
+  // null・false・0・空文字・状態の無いオブジェクトなど、それ以外の不正な値は投稿の前に止める
+  if (!("processing_info" in body.data))
+    return categories.get(id) === "tweet_video"
+      ? { processing_info: { state: "pending", check_after_secs: 1 } }
+      : { processing_info: null };
+  return {
+    processing_info: validProcessingInfo(body.data.processing_info, "finalize"),
+  };
+}
+
+async function mediaStatus(call, id) {
+  const body = await call(
+    `/2/media/upload?command=STATUS&media_id=${encodeURIComponent(id)}`,
+  );
+  if (!isPlainObject(body?.data))
+    throw new Error(
+      "X の媒体の処理状態が読めません（STATUS の応答に data がありません）",
+    );
+  return {
+    processing_info: validProcessingInfo(body.data.processing_info, "STATUS"),
+  };
+}
+
+async function createPost(call, { text, mediaIds = [], replyTo, poll }) {
+  if (poll && mediaIds.length)
+    throw new Error("X の投票と媒体は同じ投稿に載せられません");
+  const body = await call("/2/tweets", {
+    method: "POST",
+    json: {
+      text,
+      ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
+      ...(replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : {}),
+      ...(poll
+        ? {
+            poll: {
+              options: poll.options,
+              duration_minutes: poll.duration_minutes,
+            },
+          }
+        : {}),
+    },
+  });
+  const id = body?.data?.id;
+  // 投稿は作られたが ID が読めない場合も、投げて要照合に残す（再送しない）
+  if (!/^[0-9]{1,19}$/.test(id ?? ""))
+    throw new Error("X の投稿 ID が返りません");
+  return { id, posted_at: postedAtFromId(id) };
+}
+
+/**
+ * 自分の投稿を消す（DELETE /2/tweets/:id、BOA-1279）。既に無い（HTTP 404）ときは already=true で成功にする。
+ * 自動で再試行しない。deleted が true でない応答は投げる（消えたか分からないまま記録を直さない）
+ */
+async function deletePost(call, id) {
+  if (!/^[0-9]{1,19}$/.test(id ?? ""))
+    throw new Error("X の投稿 ID が不正です");
+  try {
+    const body = await call(`/2/tweets/${id}`, { method: "DELETE" });
+    if (body?.data?.deleted !== true)
+      throw new Error(
+        "X の投稿の削除を確認できません（deleted が true でない）",
+      );
+    return { already: false };
+  } catch (error) {
+    if (/ HTTP 404\b/.test(error.message)) return { already: true };
+    throw error;
+  }
+}
+
+/**
+ * accessToken は呼び出し側（runner）が claim の前に getXAccessToken で取って渡す。
+ * adapter の中で取ると、テキストだけの投稿では最初の呼び出しが begin_post の後の createPost になり、
+ * トークンの取得の失敗で、何も投稿していない job が要照合に落ちるため
+ */
+export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
+  if (!accessToken) throw new Error("X の access token がありません");
+  const call = createXCall({ accessToken, fetchImpl });
+  // 媒体 ID ごとの種類（finalize で動画かどうかを見るため）
+  const media = { call, categories: new Map() };
+  return {
+    initialize: (args) => initializeMedia(media, args),
+    append: (args) => appendMedia(call, args),
+    finalize: (id) => finalizeMedia(media, id),
+    status: (id) => mediaStatus(call, id),
+    createPost: (args) => createPost(call, args),
+    deletePost: (id) => deletePost(call, id),
+  };
+}
+
+export { X_API_BASE } from "../../scripts/lib/sns/xApiBase.js";

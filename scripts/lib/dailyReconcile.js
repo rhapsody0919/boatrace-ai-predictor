@@ -214,6 +214,153 @@ export function reconcileRace(row, fact, payoutRows = []) {
   return defects;
 }
 
+const finisherLabel = (fact) => `完走${fact.finisherBoats.length}艇`;
+
+/** 結果の有無などの不一致の1件（race_id・kind・db・k の順） */
+const mismatchOf = (raceId, kind, db, k) => ({
+  race_id: raceId,
+  kind,
+  db,
+  k,
+});
+
+/** 1レースの分類の結果。bucket 以外は、集計に足す分だけ */
+const outcomeOf = (bucket, extra = {}) => ({
+  bucket,
+  mismatches: [],
+  syncPending: [],
+  compared: 0,
+  matched: 0,
+  bothAbsent: 0,
+  ...extra,
+});
+
+/** 確定中止。中止と確定しているのに、Kに結果がある（走ったのに中止と判定した）ものは、不整合 */
+function classifyCancelled(race, fact) {
+  const inK = fact?.hasRows && fact.finisherBoats.length > 0;
+  return outcomeOf("excluded", {
+    mismatches: inK
+      ? [
+          mismatchOf(
+            race.race_id,
+            "cancelled_but_in_k",
+            "confirmed",
+            finisherLabel(fact),
+          ),
+        ]
+      : [],
+  });
+}
+
+/** Kの確定した会場に、このレースの結果が無い */
+function classifyAbsentFromK(race, row) {
+  return row
+    ? outcomeOf("noCompare", {
+        mismatches: [
+          mismatchOf(race.race_id, "result_not_in_k", "あり", "なし"),
+        ],
+      })
+    : outcomeOf("noCompare", { bothAbsent: 1 });
+}
+
+/** 結果もKもあるレースの突合。同期待ちは、最後の照合のときだけ不一致に数える */
+function classifyCompared(race, row, fact, payoutRows, final) {
+  const defects = reconcileRace(row, fact, payoutRows);
+  const isPending = (d) => SYNC_PENDING_KINDS.includes(d.kind);
+  const pendingDefects = defects.filter(isPending);
+  const hard = defects.filter((d) => !isPending(d) || final);
+  return outcomeOf("compared", {
+    compared: 1,
+    mismatches: hard.map((d) => ({ race_id: race.race_id, ...d })),
+    syncPending: pendingDefects.map((d) => ({
+      race_id: race.race_id,
+      kind: d.kind,
+    })),
+    matched: hard.length === 0 && pendingDefects.length === 0 ? 1 : 0,
+  });
+}
+
+/** 1レースを、除外・照合不能・突合のどれかに分ける */
+function classifyRace(race, ctx) {
+  const fact = ctx.kDay.facts.get(race.race_id);
+  if (isCancellationConfirmed(race.cancellation_status)) {
+    return classifyCancelled(race, fact);
+  }
+  if (!ctx.kDay.completeVenues.has(race.venue_code)) {
+    return outcomeOf(
+      ctx.kDay.pendingVenues.has(race.venue_code)
+        ? "kVenuePending"
+        : "kVenueAbsent",
+    );
+  }
+  const row = ctx.resultById.get(race.race_id);
+  if (!fact || !fact.hasRows) return classifyAbsentFromK(race, row);
+  if (!row) {
+    return outcomeOf("noCompare", {
+      mismatches: [
+        mismatchOf(race.race_id, "result_missing", "なし", finisherLabel(fact)),
+      ],
+    });
+  }
+  return classifyCompared(
+    race,
+    row,
+    fact,
+    ctx.payoutsById.get(race.race_id) ?? [],
+    ctx.final,
+  );
+}
+
+const countBy = (list) => {
+  const counts = {};
+  for (const item of list) counts[item.kind] = (counts[item.kind] ?? 0) + 1;
+  return counts;
+};
+
+/** race_payouts の行を race_id ごとに束ねる */
+function groupPayoutsById(payouts) {
+  const payoutsById = new Map();
+  for (const p of payouts) {
+    if (!payoutsById.has(p.race_id)) payoutsById.set(p.race_id, []);
+    payoutsById.get(p.race_id).push(p);
+  }
+  return payoutsById;
+}
+
+/** 1日分の照合の集計（races の順に、分類の結果を足す） */
+function foldOutcomes(races, ctx) {
+  const acc = {
+    excludedCancelled: [],
+    unverifiable: { kVenuePending: [], kVenueAbsent: [] },
+    mismatches: [],
+    syncPending: [],
+    compared: 0,
+    matched: 0,
+    bothAbsent: 0,
+  };
+  for (const race of races) {
+    const o = classifyRace(race, ctx);
+    if (o.bucket === "excluded") acc.excludedCancelled.push(race.race_id);
+    if (o.bucket === "kVenuePending" || o.bucket === "kVenueAbsent")
+      acc.unverifiable[o.bucket].push(race.race_id);
+    acc.mismatches.push(...o.mismatches);
+    acc.syncPending.push(...o.syncPending);
+    acc.compared += o.compared;
+    acc.matched += o.matched;
+    acc.bothAbsent += o.bothAbsent;
+  }
+  return acc;
+}
+
+/** Kにあるが、DBの races に無いレース（DBの取りこぼし） */
+function missingInDb(kDay, raceIds) {
+  return [...kDay.facts]
+    .filter(([raceId, fact]) => !raceIds.has(raceId) && fact.hasRows)
+    .map(([raceId, fact]) =>
+      mismatchOf(raceId, "race_missing_in_db", "なし", finisherLabel(fact)),
+    );
+}
+
 /**
  * 1日分の照合。
  *
@@ -233,111 +380,23 @@ export function reconcileDay({
   payouts = [],
   final = false,
 }) {
-  const resultById = new Map(results.map((r) => [r.race_id, r]));
-  const payoutsById = new Map();
-  for (const p of payouts) {
-    if (!payoutsById.has(p.race_id)) payoutsById.set(p.race_id, []);
-    payoutsById.get(p.race_id).push(p);
-  }
-  const raceIds = new Set(races.map((r) => r.race_id));
-
-  const excludedCancelled = [];
-  const unverifiable = { kVenuePending: [], kVenueAbsent: [] };
-  const mismatches = []; // {race_id, kind, field?, db?, k?}
-  const syncPending = []; // {race_id, kind}
-  let compared = 0;
-  let matched = 0;
-  let bothAbsent = 0;
-
-  for (const race of races) {
-    const fact = kDay.facts.get(race.race_id);
-    if (isCancellationConfirmed(race.cancellation_status)) {
-      excludedCancelled.push(race.race_id);
-      // 中止と確定しているのに、Kに結果がある（走ったのに中止と判定した）ものは、不整合
-      if (fact?.hasRows && fact.finisherBoats.length > 0) {
-        mismatches.push({
-          race_id: race.race_id,
-          kind: "cancelled_but_in_k",
-          db: "confirmed",
-          k: `完走${fact.finisherBoats.length}艇`,
-        });
-      }
-      continue;
-    }
-    if (!kDay.completeVenues.has(race.venue_code)) {
-      (kDay.pendingVenues.has(race.venue_code)
-        ? unverifiable.kVenuePending
-        : unverifiable.kVenueAbsent
-      ).push(race.race_id);
-      continue;
-    }
-    const row = resultById.get(race.race_id);
-    if (!fact || !fact.hasRows) {
-      // Kの確定した会場に、このレースの結果が無い
-      if (row) {
-        mismatches.push({
-          race_id: race.race_id,
-          kind: "result_not_in_k",
-          db: "あり",
-          k: "なし",
-        });
-      } else {
-        bothAbsent++;
-      }
-      continue;
-    }
-    if (!row) {
-      mismatches.push({
-        race_id: race.race_id,
-        kind: "result_missing",
-        db: "なし",
-        k: `完走${fact.finisherBoats.length}艇`,
-      });
-      continue;
-    }
-    compared++;
-    const defects = reconcileRace(
-      row,
-      fact,
-      payoutsById.get(race.race_id) ?? [],
-    );
-    const hard = [];
-    let pending = false;
-    for (const d of defects) {
-      if (SYNC_PENDING_KINDS.includes(d.kind)) {
-        pending = true;
-        syncPending.push({ race_id: race.race_id, kind: d.kind });
-        if (final) hard.push(d);
-      } else {
-        hard.push(d);
-      }
-    }
-    for (const d of hard) mismatches.push({ race_id: race.race_id, ...d });
-    if (hard.length === 0 && !pending) matched++;
-  }
-
-  // Kにあるが、DBの races に無いレース（DBの取りこぼし）
-  for (const [raceId, fact] of kDay.facts) {
-    if (raceIds.has(raceId) || !fact.hasRows) continue;
-    mismatches.push({
-      race_id: raceId,
-      kind: "race_missing_in_db",
-      db: "なし",
-      k: `完走${fact.finisherBoats.length}艇`,
-    });
-  }
-
-  const byKind = {};
-  for (const m of mismatches) byKind[m.kind] = (byKind[m.kind] ?? 0) + 1;
-  const pendingByKind = {};
-  for (const p of syncPending)
-    pendingByKind[p.kind] = (pendingByKind[p.kind] ?? 0) + 1;
-  const mismatchRaceIds = new Set(mismatches.map((m) => m.race_id));
+  const ctx = {
+    kDay,
+    final,
+    resultById: new Map(results.map((r) => [r.race_id, r])),
+    payoutsById: groupPayoutsById(payouts),
+  };
+  const acc = foldOutcomes(races, ctx);
+  const mismatches = [
+    ...acc.mismatches,
+    ...missingInDb(kDay, new Set(races.map((r) => r.race_id))),
+  ];
+  const { unverifiable } = acc;
 
   return {
     date,
     racesInDb: races.length,
-    excludedCancelled: excludedCancelled.length,
+    excludedCancelled: acc.excludedCancelled.length,
     kVenuesComplete: kDay.completeVenues.size,
     kVenuesPending: [...kDay.pendingVenues].sort((a, b) => a - b),
     unverifiable: {
@@ -346,16 +405,16 @@ export function reconcileDay({
       kVenuePending: unverifiable.kVenuePending.length,
       kVenueAbsent: unverifiable.kVenueAbsent.length,
     },
-    bothAbsent,
-    compared,
-    matched,
+    bothAbsent: acc.bothAbsent,
+    compared: acc.compared,
+    matched: acc.matched,
     syncPending: {
-      races: new Set(syncPending.map((p) => p.race_id)).size,
-      byKind: pendingByKind,
+      races: new Set(acc.syncPending.map((p) => p.race_id)).size,
+      byKind: countBy(acc.syncPending),
     },
-    mismatchRaces: mismatchRaceIds.size,
+    mismatchRaces: new Set(mismatches.map((m) => m.race_id)).size,
     mismatchCount: mismatches.length,
-    byKind,
+    byKind: countBy(mismatches),
     mismatches: mismatches.slice(0, MAX_REPORTED_MISMATCHES),
     mismatchesTruncated: Math.max(
       0,

@@ -880,6 +880,11 @@
       "guards": "src/services/scheduleQueries.js の getMorningDigest が morning_digest_days の行を makeDigestDay に通す（DM1x schedule のつなぎ）。正の行は凍結した day、行なしは null、破れは RangeError で reject（キャッシュしない）すること"
     },
     {
+      "script": "verify-morning-digest-rows-make.js",
+      "tier": "ci",
+      "guards": "src/services/scheduleQueries.js の getMorningDigest が morning_digest_rows の行を makeDigestRow に通す（DM1x schedule のつなぎ、A 群）。正の行は値のまま凍結して節ごと、破れは RangeError で reject（キャッシュしない）、未生成の日は行を使わないこと"
+    },
+    {
       "script": "verify-morning-digest.js",
       "tier": "manual",
       "guards": "「本日のデータ一覧」（BOA-402）の集計",
@@ -915,6 +920,11 @@
       "script": "verify-motor-power-shared.js",
       "tier": "ci",
       "guards": "BOA-1245: 画面の機力指数（getMotorPowerIndex・motorWindowStart）と番付の motor_power が同じ純関数 src/utils/motorPowerIndex.js で数える（サービス層に計算の写しが無い、移す前の画面の計算と乱数3,000通りで一致（指数・期間）、会場の全機は1機ずつの計算と同じ、載せる最少の走数は画面の SMALL_SAMPLE_THRESHOLD）、rank-data.js が motor_power の引数の誤りを DB の前に拒否する（DB・通信なし）"
+    },
+    {
+      "script": "verify-motor-pretest-make.js",
+      "tier": "ci",
+      "guards": "src/services/motorQueries2.js の fetchPretestByRacer が motor_pretest_stats の行を makeMotorPretest に通す（DM1x motor のつなぎ、A 群）。select は4列のまま、正の行は凍結、破れは RangeError で reject すること"
     },
     {
       "script": "verify-motor-pretest.js",
@@ -1169,6 +1179,11 @@
       "guards": "朝の初期化が race_entries に書く2連率・3連率を公式と同じ小数2桁で持つ（generate-predictions の processRacersWithScoreFn、BOA-829）。0 は null にしない"
     },
     {
+      "script": "verify-race-entry-rates-make.js",
+      "tier": "ci",
+      "guards": "src/services/raceQueries.js の getRaceEntryOfficialRatesBreakdown が race_entries の行を makeRaceEntry に通す（DM1x race のつなぎ、A 群）。select は9列のまま、正の行は凍結、破れは RangeError で reject（キャッシュしない）すること"
+    },
+    {
       "script": "verify-race-indicator-tones.js",
       "tier": "ci",
       "guards": "レース詳細の緑・赤を付けるかの判定（docs/design/race-detail-ui-unify plan §6）。今節のST判定文 meetStVerdictTone: 差 0.01 や今節2走以下では色なし、差 0.02 以上・3走以上で早い＝緑・遅い＝赤、浮動小数の誤差を2桁で丸める。ST考察の平均との差 diffTone: 走数の少ない艇・0.0 と出る差・向きなしは色なし"
@@ -1276,6 +1291,11 @@
       "guards": "選手単位の730日窓の race_entries の取得（getRacerScopedRaceStats・getRacerVenueStats・getRacerRaceHistory）が1000行で黙って切れないこと（BOA-1051）。上限1000行の偽の PostgREST で、旧の .range() 無しは切れ・fetchAllPages は全件（境目の重複・欠落なし、ちょうど1000行、失敗は例外）。続く fetchAllByIn の in() が URL の長さ（本番の実測で race_id 約850件）で落ちないよう、fetchAllInChunks が値を分けて読み、分けないときと同じ行・並びになること。3関数が fetchRacerEntriesSince（主キーで並べて .range()）を通ること、会場別成績の同数の並びが会場コード順であることを静的に検査"
     },
     {
+      "script": "verify-racer-front-taking-rpc.js",
+      "tier": "ci",
+      "guards": "「イン屋」の札の前付けの件数の RPC（マイグレーション 203、get_racer_front_taking_counts）と呼び手 getRaceFrontTakingByRacer（src/services/racerQueries6.js）。RPC の数えた母数・前付けの走が、6表の読みの行を summarizeFrontTaking で数えた値と同じ（表示中のレースの前後・730日の窓・不成立・結果なし・実進入コースなし・1号艇を除く）。RPC が有れば出走の選手ぜんぶで要求1本・6表を読まず、判定（20走・30%）は今までの読みと同じ。件数の RPC が無ければ選手ごとの走から数え、ほかの失敗は例外のまま。SQL203 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-racer-index-policy.js",
       "tier": "ci",
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
@@ -1319,6 +1339,11 @@
       "script": "verify-racer-scoped-race-rows.js",
       "tier": "ci",
       "guards": "選手の走ごとの行の整形（src/services/racerScopedRaceRows.js、getRacerScopedRaceStats から切り出し。src の12ファイルが読む）。raceId の昇順、不成立・rank1 null の除外、欠場（「欠」と自艇だけ本番STの行が無い走）、FのSTを平均に入れない、race_conditions の取得失敗は undefined、展示の同順位と単独最速（#962・#1010・#1029・#1107・BOA-333 の再現、BOA-1022）"
+    },
+    {
+      "script": "verify-racer-scoped-race-rpc.js",
+      "tier": "ci",
+      "guards": "選手の走を1走1行で返す RPC（マイグレーション 203、get_racer_scoped_race_rows）と、行を6表の形へ戻す src/pure/racerScopedRunTables.js・呼び手 getRacerScopedRaceStats。同じ表から、6表の生の行の読みと RPC の道の返す行が完全に同じ（不成立・結果なし・F・出遅れ・欠場・自艇だけ ST の行なし・展示の同タイム・条件の行なし・同じレースに2艇・窓の外・別の選手）。RPC が有れば6表を読まず要求は選手ごとに1本、1500走を1000行で切らない、関数が無い（PGRST202・42883）・権限なしのときだけ6表の読みに落ち、ほかの失敗は例外のまま。203 の2本とも STABLE・SECURITY INVOKER・search_path 固定・anon が RLS の下で呼べる・2回当てても失敗しない。SQL203 を PGlite、外部接続なし"
     },
     {
       "script": "verify-racer-season-stats-parse.js",
@@ -1448,6 +1473,11 @@
       "script": "verify-schedule-model.js",
       "tier": "ci",
       "guards": "schedule の型 makeDigestDay（morning_digest_days の行）・makeDigestRow（morning_digest_rows の行）（src/pure/scheduleModel.js、設計図 §10 DM15）。主キー（digest_date の実在する日・section 6値・rank 1以上）と、取った列だけ回数は0以上・window_end が window_start 以後・真偽の列・suppressed_venues の整数の配列・会場1〜24・艇番とコースは null か1〜6・レースの3列は returned だけ null・数値の7列は flying・returned 以外で null を許さない（2つの表の CHECK 9本と同じ）を検査して凍結すること。select で取らない列は落とさないこと"
+    },
+    {
+      "script": "verify-schedule-series-races-make.js",
+      "tier": "ci",
+      "guards": "src/services/scheduleQueries.js の getUpcomingSeries・getSeriesOfDate が race_series の行を makeMeet に、getTodaysRacesForVenue が races の行を makeRace に通す（DM1x schedule のつなぎ、A 群）。正の行は凍結、破れは RangeError で reject（キャッシュしない）すること"
     },
     {
       "script": "verify-schema-detect.js",
@@ -1975,6 +2005,11 @@
       "script": "verify-venue-motor-ranking.js",
       "tier": "ci",
       "guards": "会場のモーターの順位と並べ替え（同値は同じ順位・値なしは末尾・機番で並べたときは2連率の順位・浜名湖と宮島を出さない一覧）の回帰と変異検証（BOA-428）"
+    },
+    {
+      "script": "verify-venue-motor-snapshot-make.js",
+      "tier": "ci",
+      "guards": "src/services/motorQueries3.js の getVenueMotorSnapshot が venue_motor_stats の行を makeMotorStat に通す（DM1x motor のつなぎ、A 群）。select は9列のまま、正の行は凍結、破れは error・fetchFailed（キャッシュしない）であること"
     },
     {
       "script": "verify-venue-motor-stats-drift-detection.js",

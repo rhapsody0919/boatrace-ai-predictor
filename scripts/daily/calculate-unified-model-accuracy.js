@@ -56,6 +56,119 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
+// 複勝: ◎○それぞれに100円ずつ賭けた場合の実際の的中率・回収率。
+// ◎○のいずれかが2着以内なら「的中」とカウントし（従来通り）、払戻は
+// ◎○それぞれが2着以内なら加算する（両方的中したレースは両方の払戻を合算）
+function placeOutcome(pred, result) {
+  const actualTop2 = [result.rank1, result.rank2];
+  const candidates = [pred.top_pick, pred.top_2nd].filter((n) => n != null);
+  if (candidates.length === 0) return null;
+  let hitAny = false;
+  let payout = 0;
+  for (const boat of candidates) {
+    if (actualTop2.includes(boat)) {
+      hitAny = true;
+      payout +=
+        (boat === result.rank1
+          ? result.payout_place_1
+          : result.payout_place_2) || 0;
+    }
+  }
+  return { invest: candidates.length * 100, payout, hit: hitAny };
+}
+
+// 展開: 上位パターンのいずれかのwinnerCourseが実際の1着と一致すれば的中
+// （scripts/analysis/verify-turn-prediction-accuracy-v6.js と同じ定義）
+function turnOutcome(pred, result) {
+  const patterns = pred.feature_contributions?.turnPrediction?.patterns;
+  if (!Array.isArray(patterns) || patterns.length === 0) return null;
+  const hit = patterns.some((p) => p.winnerCourse === result.rank1);
+  // 会場別集計（race_id形式: YYYY-MM-DD-VV-RR）
+  const venueCode = parseInt(pred.race_id.split("-")[3], 10);
+  return { venueCode, hit };
+}
+
+function tallyAccuracy(predictions, results) {
+  const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
+  const t = {
+    placeRaces: 0,
+    placeHits: 0,
+    placePayoutSum: 0,
+    placeInvest: 0,
+    turnRaces: 0,
+    turnHits: 0,
+    turnByVenue: new Map(), // venueCode -> { total, hits }
+  };
+  for (const pred of predictions) {
+    const result = resultByRaceId.get(pred.race_id);
+    if (!result) continue; // 未確定レースはスキップ
+
+    const place = placeOutcome(pred, result);
+    if (place) {
+      t.placeRaces += 1;
+      t.placeInvest += place.invest;
+      t.placePayoutSum += place.payout;
+      if (place.hit) t.placeHits += 1;
+    }
+
+    const turn = turnOutcome(pred, result);
+    if (turn) {
+      t.turnRaces += 1;
+      if (turn.hit) t.turnHits += 1;
+      if (!t.turnByVenue.has(turn.venueCode)) {
+        t.turnByVenue.set(turn.venueCode, { total: 0, hits: 0 });
+      }
+      const venueStats = t.turnByVenue.get(turn.venueCode);
+      venueStats.total += 1;
+      if (turn.hit) venueStats.hits += 1;
+    }
+  }
+  return t;
+}
+
+function buildTurnVenueBreakdown(turnByVenue) {
+  return Array.from(turnByVenue.entries())
+    .map(([venueCode, v]) => ({
+      venueCode: String(venueCode).padStart(2, "0"),
+      venueName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
+      totalRaces: v.total,
+      hitRate:
+        v.total > 0 ? parseFloat(((v.hits / v.total) * 100).toFixed(1)) : 0,
+      isReliable: v.total >= 20,
+    }))
+    .sort((a, b) => b.hitRate - a.hitRate);
+}
+
+function buildAccuracySummary(t, turnVenueBreakdown, calculatedAt) {
+  return {
+    calculatedAt,
+    place: {
+      totalRaces: t.placeRaces,
+      hits: t.placeHits,
+      hitRate: t.placeRaces > 0 ? t.placeHits / t.placeRaces : null,
+      recoveryRate: t.placeInvest > 0 ? t.placePayoutSum / t.placeInvest : null,
+    },
+    turn: {
+      totalRaces: t.turnRaces,
+      hits: t.turnHits,
+      hitRate: t.turnRaces > 0 ? t.turnHits / t.turnRaces : null,
+      byVenue: turnVenueBreakdown,
+    },
+  };
+}
+
+function logAccuracySummary(summary) {
+  console.log("\n=== 複勝（unifiedモデル） ===");
+  console.log(
+    `${summary.place.totalRaces}件 | 的中率 ${((summary.place.hitRate ?? 0) * 100).toFixed(1)}% | 回収率 ${((summary.place.recoveryRate ?? 0) * 100).toFixed(1)}%`,
+  );
+  console.log("\n=== 展開（unifiedモデル） ===");
+  console.log(
+    `${summary.turn.totalRaces}件 | 的中率 ${((summary.turn.hitRate ?? 0) * 100).toFixed(1)}%`,
+  );
+  console.log(`  会場別: ${summary.turn.byVenue.length}会場分集計`);
+}
+
 async function main() {
   if (!isSupabaseEnabled()) {
     console.error("❌ Supabase環境変数が未設定です。");
@@ -76,97 +189,16 @@ async function main() {
     "race_id, rank1, rank2, payout_place_1, payout_place_2",
     (q) => q.not("rank1", "is", null).order("race_id"),
   );
-  const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
   console.log(`  ${results.length}件`);
 
-  let placeRaces = 0;
-  let placeHits = 0;
-  let placePayoutSum = 0;
-  let placeInvest = 0;
-  let turnRaces = 0;
-  let turnHits = 0;
-  const turnByVenue = new Map(); // venueCode -> { total, hits }
-
-  for (const pred of predictions) {
-    const result = resultByRaceId.get(pred.race_id);
-    if (!result) continue; // 未確定レースはスキップ
-
-    // 複勝: ◎○それぞれに100円ずつ賭けた場合の実際の的中率・回収率。
-    // ◎○のいずれかが2着以内なら「的中」とカウントし（従来通り）、払戻は
-    // ◎○それぞれが2着以内なら加算する（両方的中したレースは両方の払戻を合算）
-    const actualTop2 = [result.rank1, result.rank2];
-    const candidates = [pred.top_pick, pred.top_2nd].filter((n) => n != null);
-    if (candidates.length > 0) {
-      placeRaces += 1;
-      placeInvest += candidates.length * 100;
-      let hitAny = false;
-      for (const boat of candidates) {
-        if (actualTop2.includes(boat)) {
-          hitAny = true;
-          placePayoutSum +=
-            (boat === result.rank1
-              ? result.payout_place_1
-              : result.payout_place_2) || 0;
-        }
-      }
-      if (hitAny) placeHits += 1;
-    }
-
-    // 展開: 上位パターンのいずれかのwinnerCourseが実際の1着と一致すれば的中
-    // （scripts/analysis/verify-turn-prediction-accuracy-v6.js と同じ定義）
-    const patterns = pred.feature_contributions?.turnPrediction?.patterns;
-    if (Array.isArray(patterns) && patterns.length > 0) {
-      turnRaces += 1;
-      const hit = patterns.some((p) => p.winnerCourse === result.rank1);
-      if (hit) turnHits += 1;
-
-      // 会場別集計（race_id形式: YYYY-MM-DD-VV-RR）
-      const venueCode = parseInt(pred.race_id.split("-")[3], 10);
-      if (!turnByVenue.has(venueCode)) {
-        turnByVenue.set(venueCode, { total: 0, hits: 0 });
-      }
-      const venueStats = turnByVenue.get(venueCode);
-      venueStats.total += 1;
-      if (hit) venueStats.hits += 1;
-    }
-  }
-
-  const turnVenueBreakdown = Array.from(turnByVenue.entries())
-    .map(([venueCode, v]) => ({
-      venueCode: String(venueCode).padStart(2, "0"),
-      venueName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
-      totalRaces: v.total,
-      hitRate:
-        v.total > 0 ? parseFloat(((v.hits / v.total) * 100).toFixed(1)) : 0,
-      isReliable: v.total >= 20,
-    }))
-    .sort((a, b) => b.hitRate - a.hitRate);
-
-  const summary = {
-    calculatedAt: new Date().toISOString(),
-    place: {
-      totalRaces: placeRaces,
-      hits: placeHits,
-      hitRate: placeRaces > 0 ? placeHits / placeRaces : null,
-      recoveryRate: placeInvest > 0 ? placePayoutSum / placeInvest : null,
-    },
-    turn: {
-      totalRaces: turnRaces,
-      hits: turnHits,
-      hitRate: turnRaces > 0 ? turnHits / turnRaces : null,
-      byVenue: turnVenueBreakdown,
-    },
-  };
-
-  console.log("\n=== 複勝（unifiedモデル） ===");
-  console.log(
-    `${summary.place.totalRaces}件 | 的中率 ${((summary.place.hitRate ?? 0) * 100).toFixed(1)}% | 回収率 ${((summary.place.recoveryRate ?? 0) * 100).toFixed(1)}%`,
+  const tally = tallyAccuracy(predictions, results);
+  const turnVenueBreakdown = buildTurnVenueBreakdown(tally.turnByVenue);
+  const summary = buildAccuracySummary(
+    tally,
+    turnVenueBreakdown,
+    new Date().toISOString(),
   );
-  console.log("\n=== 展開（unifiedモデル） ===");
-  console.log(
-    `${summary.turn.totalRaces}件 | 的中率 ${((summary.turn.hitRate ?? 0) * 100).toFixed(1)}%`,
-  );
-  console.log(`  会場別: ${turnVenueBreakdown.length}会場分集計`);
+  logAccuracySummary(summary);
 
   const { error } = await supabase.from("accuracy_cache").upsert({
     key: "unified_model_accuracy",

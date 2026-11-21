@@ -17,7 +17,7 @@
 import {
   COURSE_DEFAULT_DISTRIBUTION,
   COURSE_DEFAULT_DEFENSE,
-} from "../../scripts/lib/winningTechniques.js";
+} from "../pure/winningTechniques.js";
 
 // 全国平均 攻撃分布（14,155レース集計）。集計側の既定の分布と同じもの
 const DEFAULT_ATTACK = COURSE_DEFAULT_DISTRIBUTION;

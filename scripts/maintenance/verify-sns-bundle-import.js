@@ -1,34 +1,44 @@
 import "./snsDraftDiff.js";
-import {
-  runYoutubeQueueJob,
-  createMockYoutubeAdapter,
-} from "../../api/_lib/snsDeadlineQueue.js";
+
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
 import "./snsRawErrors.js";
-import { matchRiskRules } from "../lib/riskRuleMatcher.js";
-import { checkRiskRules } from "../lib/riskRules.js";
+
+
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
   BUNDLE_SCHEMA,
   BUNDLE_SCHEMA_V1,
-  BUNDLE_LIMITS_V1,
   X_VIDEO,
-  BUNDLE_LIMITS,
   validateBundle,
-  readBundleForm,
   sha256,
 } from "../../api/_lib/snsBundleValidation.js";
-import {
-  importValidatedBundle,
-  bundleStore,
-} from "../../api/_lib/snsBundleImport.js";
-import { validateV1Fields } from "../../api/_lib/snsBundleV1.js";
+import { importValidatedBundle } from "../../api/_lib/snsBundleImport.js";
+
 import {
   prepareBundle,
   summarize as summarizeBundle,
 } from "../sns/push-bundle.js";
+import {
+  runSnsBundleImportScenes1,
+  runSnsBundleImportScenes2,
+  runSnsBundleImportScenes3,
+} from "./verifyData/sns-bundle-import-scenes-1.js";
+import {
+  runSnsBundleImportScenes4,
+  runSnsBundleImportScenes5,
+  runSnsBundleImportScenes6,
+  runSnsBundleImportScenes7,
+} from "./verifyData/sns-bundle-import-scenes-2.js";
+import { runSnsBundleImportScenes8, runSnsBundleImportScenes9 } from "./verifyData/sns-bundle-import-scenes-3.js";
+import {
+  runSnsBundleImportScenes10,
+  runSnsBundleImportScenes11,
+  runSnsBundleImportScenes12,
+  runSnsBundleImportScenes13,
+  runSnsBundleImportScenes14,
+} from "./verifyData/sns-bundle-import-scenes-4.js";
 
 const root = new URL("../../", import.meta.url);
 const encode = (s) => new TextEncoder().encode(s);
@@ -164,705 +174,85 @@ for (const title of ["唐 津の展望", "唐　津の展望"]) {
     }
   });
 }
-await check("動画の宣言・scene合計・実hashの不一致と不足は警告のみ", async () => {
-  const mp4 = (await fixture()).get("draft.mp4");
-  const video = {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true};
-  const video_probe = {...video,tool:"ffprobe",sha256:await sha256(mp4)};
-  const ok = await validateBundle(form(await fixture({video,video_probe})));
-  assert(!ok.riskFlags.x.some(w => w.id.startsWith("bundle-video")));
-  const bad = await validateBundle(form(await fixture({video:{...video,width:720,has_audio:false}, video_probe:{...video_probe,duration_seconds:19,sha256:"0".repeat(64)}})));
-  for (const id of ["bundle-video-mismatch","bundle-video-scenes-mismatch","bundle-video-hash-mismatch"])
-    assert(bad.riskFlags.youtube.some(w => w.id === id), id);
-  const missing = await validateBundle(form(await fixture({video_probe:{}})));
-  assert(missing.riskFlags.x.some(w => w.id === "bundle-video-probe-missing"));
-});
-await check("正準表を副作用なしで共有し、類似レースの識別子は照合しない", async () => {
-  const {VENUE_NAMES} = await import("../lib/venueNames.js");
-  assert.equal(Object.keys(VENUE_NAMES).length,24);
-  assert.equal(VENUE_NAMES[18],"徳山");
-  const files = await fixture({venue_name:"びわこ",source_data:{race_code:"2026-10-07-11-10",venue_code:11}});
-  files.set("similar.json", json({neighbors:[{race_id:"2026-10-06-18-01",venue_code:18}]}));
-  const meta = JSON.parse(new TextDecoder().decode(files.get("similar.meta.json")));
-  meta.sha256=await sha256(files.get("similar.json"));
-  files.set("similar.meta.json",json(meta));
-  await refreshHash(files,"similar.json");
-  const result=await validateBundle(form(files));
-  assert(!result.riskFlags.x.some(w => /bundle-(race|venue|body)/.test(w.id)));
-});
-const files = await fixture();
-const validated = await validateBundle(form(files));
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-1.js） ----
+await runSnsBundleImportScenes1({ root, json, check, fixture, form, refreshHash, sbiB2 });
 const riskRules = JSON.parse(
   await fs.readFile(
     new URL("sns-video-studio/remotion/risk-rules.json", root),
     "utf8",
   ),
 ).rules;
-await check(
-  "共通リスク判定は既存3経路の結果・順序・返却形式を維持する",
-  async () => {
-    const approvePath = new URL(
-      "api/admin/sns-hub/insights/[id]/approve.js",
-      root,
-    );
-    let source = await fs.readFile(approvePath, "utf8");
-    let insight;
-    let updates = 0;
-    globalThis.__riskRuleTest = {
-      get: () => insight,
-      update: (value) => {
-        updates++;
-        return value;
-      },
-    };
-    const helpers =
-      "data:text/javascript," +
-      encodeURIComponent(`
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-1.js） ----
+runSnsBundleImportScenes2({ root, json, check, fixture, form, refreshHash, riskRules, sbiB2 });
+
+/** await check( の中身を割った 2/5 */
+async function sbiB2({ approvePath }) {
+  let source = await fs.readFile(approvePath, "utf8");
+  const st = { insight: undefined, updates: 0 };
+  globalThis.__riskRuleTest = {
+    get: () => st.insight,
+    update: (value) => {
+      st.updates++;
+      return value;
+    },
+  };
+  const helpers =
+    "data:text/javascript," +
+    encodeURIComponent(`
     export const jsonResponse=(v,status=200)=>new Response(JSON.stringify(v),{status});
     export const isConfigured=()=>true; export const isValidUuid=()=>true;
     export const getInsightById=async()=>globalThis.__riskRuleTest.get();
     export const updateInsight=async(id,v)=>globalThis.__riskRuleTest.update(v);
     export const requireAdminAuth=async()=>null;
   `);
-    source = source
-      .replace(
-        /"[^"\n]+_lib\/(snsHubHelpers|adminAuth)\.js"/g,
-        JSON.stringify(helpers),
-      )
-      .replace(
-        /"[^"\n]+lib\/riskRuleMatcher\.js"/g,
-        JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href),
-      )
-      .replace(
-        /"[^"\n]+risk-rules\.json"/g,
-        JSON.stringify(
-          "data:text/javascript," +
-            encodeURIComponent(
-              `export default ${JSON.stringify({ rules: riskRules })}`,
-            ),
-        ),
-      );
-    const handler = (
-      await import("data:text/javascript," + encodeURIComponent(source))
-    ).default;
-    const cases = [
-      ["競艇", ["banned-term-kyoutei"]],
-      ["本命 VS", []],
-      ["必ず当たる", ["guaranteed-hit"]],
-      ["稼げる", ["gambling-incitement"]],
-      ...[
-        "必ず当たります",
-        "必ず的中する",
-        "必ず勝つ",
-        "絶対当たる",
-        "絶対に当たる",
-        "絶対的中",
-        "絶対に的中する",
-        "絶対勝つ",
-        "絶対に勝つ",
-        "確実に当たる",
-        "確実に的中する",
-        "確実に勝つ",
-        "100%当たる",
-        "100％当たる",
-        "100%的中",
-        "100％的中",
-        "的中を保証",
-        "的中保証",
-        "必勝パターン",
-      ].map((text) => [text, ["guaranteed-hit"]]),
-      ...[
-        "稼ぐ",
-        "稼いで",
-        "稼いだ",
-        "稼ごう",
-        "副業になる",
-        "副業にできる",
-        "副業にする",
-        "副収入",
-        "収益を保証",
-        "利益を保証",
-      ].map((text) => [text, ["gambling-incitement"]]),
-      ...[
-        "当たり",
-        "的中",
-        "的中率を公開",
-        "選手の稼ぎ頭",
-        "賞金を稼ぎ出した選手",
-        "副業の経験",
-        "収益を集計",
-        "利益の推移",
-      ].map((text) => [text, []]),
-      ["必ず当たるとは限らない", ["guaranteed-hit"]], // 否定・引用でも部分一致の警告。
-      ["稼げるという表現を避ける", ["gambling-incitement"]],
-      ...[
-        "賞金を稼ぐ選手",
-        "賞金を稼いだ選手",
-        "賞金を 稼ぐ 選手",
-        "あなたも賞金を稼ぐ選手になれる",
-        "賞金を稼ぐ選手を目指そう",
-      ].map((text) => [text, ["gambling-incitement"]]),
-      ...[
-        "百発百中",
-        "外れない",
-        "必ず当てる",
-        "絶対に外さない",
-        "絶対外さない",
-        "必ず当てます",
-        "確実に当てる",
-        "必ず外さない",
-        "外れません",
-        "外すことはない",
-        "必ず 当たる",
-        "１００％当たる",
-        "１００%的中",
-        "百発 百中",
-      ].map((text) => [text, ["guaranteed-hit"]]),
-      ["賞金を稼ぐ選手。あなたも稼ぐ", ["gambling-incitement"]],
-      ["賞金を稼いだ選手。必勝", ["gambling-incitement", "guaranteed-hit"]],
-      ["賞金を稼ぐ方法", ["gambling-incitement"]],
-      ["賞金を稼げる選手", ["gambling-incitement"]],
-      ["必ず当てるとは限らない", ["guaranteed-hit"]],
-      ["『外れない』という表現", ["guaranteed-hit"]],
-      ["競\n艇", []],
-      ["競\r\n艇", []],
-      ["必ず\n当たる", []],
-      ["必ず\t当たる", []],
-      ["必ず　当たる", ["guaranteed-hit"]],
-      ["ＶＳ", []],
-      ["稼ぐ 必勝", ["gambling-incitement", "guaranteed-hit"]],
-      ["ボートレースの観測件数", []],
-      [
-        "穴狙い 本命狙い 儲かる 万舟券 競艇 VS",
-        [
-          "banned-term-kyoutei",
-          "deprecated-model-names",
-          "gambling-incitement",
-        ],
-      ],
-    ];
-    try {
-      for (const [content, xIds] of cases) {
-        for (const platform of [
-          "x",
-          "youtube",
-          "tiktok",
-          null,
-          undefined,
-          "unknown",
-        ]) {
-          // 固定期待IDと、全経路の順序・最初の一致を検査する。
-          const expected = riskRules
-            .filter(
-              (r) =>
-                r.platforms === "all" ||
-                !platform ||
-                (Array.isArray(r.platforms) && r.platforms.includes(platform)),
-            )
-            .flatMap((r) => {
-              const normalized = content
-                .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
-                  String.fromCharCode(c.charCodeAt(0) - 0xfee0),
-                )
-                .replace(/[ \u3000]/gu, "");
-              const matchedPattern = r.patterns.find((p) =>
-                normalized.includes(p),
-              );
-              return matchedPattern
-                ? [
-                    {
-                      id: r.id,
-                      category: r.category,
-                      description: r.description,
-                      matchedPattern,
-                    },
-                  ]
-                : [];
-            });
-          assert.deepEqual(
-            matchRiskRules(content, platform, riskRules),
-            expected,
-          );
-          assert.deepEqual(checkRiskRules(content, platform), expected);
-          if (platform === "x")
-            assert.deepEqual(
-              expected.map((r) => r.id),
-              xIds,
-            );
-          if (
-            content === "本命 VS" &&
-            ["tiktok", null, undefined].includes(platform)
-          ) {
-            assert.equal(expected[0].matchedPattern, "本命");
-          }
-          // 2026-10-10 ユーザー判断: YouTubeはXと同じくgambling-connotation-words対象外。
-          if (content === "本命 VS" && ["x", "youtube"].includes(platform)) {
-            assert.deepEqual(
-              expected.map((r) => r.id),
-              [],
-            );
-          }
-          insight = { status: "proposed", insight_text: content, platform };
-          const response = await handler(
-            new Request("https://local.invalid/insights/test/approve", {
-              method: "POST",
-            }),
-          );
-          assert.equal(response.status, 200);
-          assert.deepEqual(
-            (await response.json()).riskWarnings,
-            expected.map(({ id, category, matchedPattern }) => ({
-              id,
-              category,
-              matchedPattern,
-            })),
-          );
-        }
-        const result = await validateBundle(
-          form(
-            await fixture({ title: content, script: content, x_text: content }),
+  source = source
+    .replace(
+      /"[^"\n]+_lib\/(snsHubHelpers|adminAuth)\.js"/g,
+      JSON.stringify(helpers),
+    )
+    .replace(
+      /"[^"\n]+lib\/riskRuleMatcher\.js"/g,
+      JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href),
+    )
+    .replace(
+      /"[^"\n]+risk-rules\.json"/g,
+      JSON.stringify(
+        "data:text/javascript," +
+          encodeURIComponent(
+            `export default ${JSON.stringify({ rules: riskRules })}`,
           ),
-          riskRules,
-        );
-        for (const platform of ["x", "youtube"]) {
-          assert.deepEqual(
-            result.riskFlags[platform],
-            checkRiskRules(content, platform),
-          );
-        }
-      }
-      console.table(
-        cases.map(([text, expected]) => ({
-          text,
-          expected: expected.join(",") || "なし",
-          actual:
-            checkRiskRules(text, "x")
-              .map((r) => r.id)
-              .join(",") || "なし",
-        })),
-      );
-      // bundle の別欄をつなぐ改行を越えて登録語を作らない。
-      for (const [title, script, x_text] of [
-        ["競", "艇", "艇"],
-        ["必ず", "当たる", "当たる"],
-      ]) {
-        const result = await validateBundle(
-          form(await fixture({ title, script, x_text })),
-          riskRules,
-        );
-        for (const platform of ["x", "youtube"])
-          assert.deepEqual(result.riskFlags[platform], []);
-      }
-      assert.equal(updates, cases.length * 6); // 警告があっても承認は継続する。
-      assert.deepEqual(matchRiskRules("VS", "x", []), []);
-    } finally {
-      delete globalThis.__riskRuleTest;
-    }
-  },
-);
-
-await check(
-  "既存riskルールをチャネル別に照合し、QA自己申告に依存しない",
-  async () => {
-    const source = await fixture({
-      script: "万舟券を主役にする",
-      x_text: "過去の観測",
-    });
-    const result = await validateBundle(form(source), riskRules);
-    assert(
-      result.riskFlags.youtube.some((r) => r.id === "gambling-incitement"),
-    );
-    assert(!result.riskFlags.x.some((r) => r.id === "gambling-incitement"));
-  },
-);
-await check("v0正常・全17添付・UUID型に自動対応しない", async () => {
-  assert.equal(validated.bundle.template_variant_id, "loc_win");
-  assert.equal(validated.missing.length, 0);
-  assert.equal(validated.files.size, 17);
-  assert(validated.holds.some((h) => h.includes("v0")));
-});
-await check(
-  "layerの固定段(racecard (fixed))はexhibition段のbundleでも拒否されない(F01対応)",
-  async () => {
-    // layerは出走表時点で固定して取得するため、bundle全体がexhibition段で
-    // 組まれてもlayerの実際の取得URLは?stage=racecardのまま。修正前は
-    // 「URLのstageはbundle.stageと一致」を全sourceに一律で求めていたため、
-    // 展示後bundleに固定段layerを添えると常に拒否されていた。
-    const exhibitionFiles = await fixture({ stage: "exhibition" });
-    for (const source of ["facts", "similar", "scenario"]) {
-      const raw = exhibitionFiles.get(`${source}.json`);
-      exhibitionFiles.set(
-        `${source}.meta.json`,
-        json({
-          url: `https://www.boat-ai.jp/api/analogy/${source}/2026-10-07-11-10?stage=exhibition`,
-          stage: "exhibition",
-          fetched_at: "2026-10-07T05:34:29Z",
-          http_status: 200,
-          sha256: await sha256(raw),
-        }),
-      );
-    }
-    const layerRaw = exhibitionFiles.get("layer.json");
-    exhibitionFiles.set(
-      "layer.meta.json",
-      json({
-        url: "https://www.boat-ai.jp/api/analogy/layer/2026-10-07-11-10?stage=racecard",
-        stage: "racecard (fixed)",
-        fetched_at: "2026-10-07T05:34:29Z",
-        http_status: 200,
-        sha256: await sha256(layerRaw),
-      }),
-    );
-    const integrity = {};
-    for (const [name, bytes] of exhibitionFiles)
-      if (
-        !name.includes(".meta.") &&
-        name !== "qa.json" &&
-        name !== "integrity.json"
-      )
-        integrity[name] = await sha256(bytes);
-    exhibitionFiles.set("integrity.json", json(integrity));
-    // 例外を投げず正常に検証を通ることが期待値（修正前はensureで400拒否されていた）
-    const result = await validateBundle(form(exhibitionFiles));
-    assert.equal(result.bundle.stage, "exhibition");
-  },
-);
-await check(
-  "qa/integrity/*.meta.jsonは自己申告のため未検証でも保留理由を増やさない",
-  async () => {
-    // integrity.jsonは自分自身・qa.json・meta.jsonを外部から固定する手段が無いため、
-    // 正常なbundleでもこの6ファイルは構造上verified=falseになる。holdsには出さず、
-    // manifestにverification:"self_attested"の印だけを残す（2026-10-07レビュー対応）。
-    const selfAttestedNames = [
-      "qa.json",
-      "integrity.json",
-      "facts.meta.json",
-      "similar.meta.json",
-      "scenario.meta.json",
-      "layer.meta.json",
-    ];
-    assert.equal(
-      validated.holds.filter((h) =>
-        h.includes("外部manifestで固定されたハッシュがありません"),
-      ).length,
-      0,
-    );
-    for (const name of selfAttestedNames) {
-      const entry = validated.manifest.find((m) => m.name === name);
-      assert.equal(
-        entry.hash_verified,
-        false,
-        `${name}はhash_verified=falseのはず`,
-      );
-      assert.equal(
-        entry.verification,
-        "self_attested",
-        `${name}にself_attestedの印が必要`,
-      );
-    }
-    // 除外は上記6ファイルに限定され、それ以外（script.txt）がintegrity.jsonから漏れた場合は
-    // 従来どおり保留される（exemptionが過剰に効いていないことの確認）
-    const integrity = JSON.parse(
-      new TextDecoder().decode(files.get("integrity.json")),
-    );
-    delete integrity["script.txt"];
-    const broken = new Map(files).set("integrity.json", json(integrity));
-    const result = await validateBundle(form(broken));
-    const unverifiedHolds = result.holds.filter((h) =>
-      h.includes("外部manifestで固定されたハッシュがありません"),
-    );
-    assert.deepEqual(unverifiedHolds, [
-      "script.txt: 外部manifestで固定されたハッシュがありません",
-    ]);
-  },
-);
-await check("multipart実バイト数の制限と正常読込", async () => {
-  const req = new Request("https://local.invalid/import", {
-    method: "POST",
-    body: form(files),
-  });
-  assert.equal(
-    (await validateBundle(await readBundleForm(req))).versionHash,
-    validated.versionHash,
-  );
-  const huge = new FormData();
-  huge.append(
-    "files",
-    new Blob([new Uint8Array(BUNDLE_LIMITS.request + 1)]),
-    "draft.mp4",
-  );
-  // FormDataをそのままRequestのbodyにして読み途中でcancelすると、Node 24のundiciが
-  // 閉じたstreamへenqueueして未捕捉例外になる（undici側の不具合。本番の受信streamは別経路）。
-  // 同じmultipartのバイト列を先に直列化し、通常のstreamとして渡す。
-  const hugeResponse = new Response(huge);
-  const hugeType = hugeResponse.headers.get("content-type");
-  const hugeBytes = new Uint8Array(await hugeResponse.arrayBuffer());
-  await assert.rejects(
-    () =>
-      readBundleForm(
-        new Request("https://local.invalid", {
-          method: "POST",
-          headers: { "Content-Type": hugeType },
-          body: hugeBytes,
-        }),
       ),
-    /4 MiB/,
-  );
-  await assert.rejects(
-    () =>
-      readBundleForm(
-        new Request("https://local.invalid", { method: "POST", body: "x" }),
-      ),
-    /multipart/,
-  );
-});
-await check(
-  "未知schema・不正型・過容量・重複名・JSON破損・ハッシュ改変を拒否",
-  async () => {
-    const unsupported = await fixture({ schema_version: "ryujin-preview/1" });
-    await assert.rejects(() => validateBundle(form(unsupported)), /schema/);
-    await assert.rejects(() => validateBundle(form(files, "text/html")), /型/);
-    const big = new Map(files).set(
-      "draft.mp4",
-      new Uint8Array(BUNDLE_LIMITS.media + 1),
     );
-    await assert.rejects(() => validateBundle(form(big)), /容量/);
-    const repeated = form(files);
-    repeated.append(
-      "files",
-      new Blob([files.get("bundle.json")]),
-      "bundle.json",
-    );
-    await assert.rejects(() => validateBundle(repeated), /重複/);
-    const broken = new Map(files).set("qa.json", encode("{"));
-    await assert.rejects(() => validateBundle(form(broken)), /JSON/);
-    const changed = new Map(files).set(
-      "scene-2.png",
-      new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 99]),
-    );
-    await assert.rejects(() => validateBundle(form(changed)), /ハッシュ不一致/);
-    const wrongSignature = new Map(files).set(
-      "draft.mp4",
-      encode("this is not mp4"),
-    );
-    await assert.rejects(() => validateBundle(form(wrongSignature)), /MP4/);
-    const traversal = new Map(files).set(
-      "../scene.png",
-      files.get("scene-1.png"),
-    );
-    await assert.rejects(() => validateBundle(form(traversal)), /ファイル名/);
-  },
-);
+  return { source, st };
+}
 
-await check("不足は保留、QA不合格・数値不一致も公開不可", async () => {
-  const incomplete = new Map(files);
-  incomplete.delete("scene-3.png");
-  incomplete.delete("facts.json");
-  const result = await validateBundle(form(incomplete));
-  assert(result.holds.some((h) => h.includes("不足")));
-  assert.notEqual(result.versionHash, validated.versionHash);
-  const failed = new Map(files).set("qa.json", json({ pass: false }));
-  assert(
-    (await validateBundle(form(failed))).holds.some((h) =>
-      h.includes("QA不合格"),
-    ),
-  );
-  const wrongClaim = await fixture({
-    claims: [{ source: "facts", path: ["count"], value: 999 }],
-  });
-  assert(
-    (await validateBundle(form(wrongClaim))).holds.some((h) =>
-      h.includes("数値照合不合格"),
-    ),
-  );
-  const wrongSource = new Map(files).set("facts.json", json({ count: 999 }));
-  await refreshHash(wrongSource, "facts.json");
-  await assert.rejects(
-    () => validateBundle(form(wrongSource)),
-    /出典ハッシュ不一致/,
-  );
-});
-await check("公開フラグ書き換え・選択順変更で解除できない", async () => {
-  const released = await validateBundle(
-    form(
-      await fixture({
-        local_only: false,
-        release_verified: true,
-        approval_status: "approved",
-      }),
-    ),
-  );
-  assert(released.holds.some((h) => h.includes("ローカル保留")));
-  const reverse = await validateBundle(form(new Map([...files].reverse())));
-  assert.equal(reverse.versionHash, validated.versionHash);
-});
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-1.js・sns-bundle-import-scenes-2.js） ----
+await runSnsBundleImportScenes3({ root, json, check, fixture, form, refreshHash, riskRules, sbiB2 });
+await runSnsBundleImportScenes4({ encode, json, check, fixture, form, refreshHash, riskRules });
 
 const db = new PGlite();
-await db.exec(
-  `CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;`,
-);
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-2.js） ----
+await runSnsBundleImportScenes5({ encode, json, check, fixture, form, refreshHash, riskRules, db });
 await db.exec(
   await fs.readFile(
     new URL("docs/db-migration/035_sns_marketing_hub_schema.sql", root),
     "utf8",
   ),
 );
-await db.exec("ALTER TABLE sns_drafts ADD COLUMN title TEXT;");
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-2.js） ----
+await runSnsBundleImportScenes6({ encode, json, check, fixture, form, refreshHash, riskRules, db });
 const migration = await fs.readFile(
   new URL("docs/db-migration/135_sns_preview_bundle_import.sql", root),
   "utf8",
 );
-await db.exec(migration);
-await db.exec(migration);
-const rpc = async (payload) => {
-  const result = await db.query(
-    "SELECT import_sns_preview_bundle($1,$2,$3,$4,$5,$6,$7,$8) AS result",
-    Object.values(payload),
-  );
-  return result.rows[0].result;
-};
-let saved = new Map();
-let failAt = "scene-2.png";
-const store = {
-  async saveFile(path, file) {
-    if (path.endsWith(failAt)) throw new Error("mock保存失敗");
-    saved.set(path, file);
-  },
-  register: rpc,
-};
-await check("media途中失敗では下書きなし、同じパスで再試行", async () => {
-  await assert.rejects(
-    () => importValidatedBundle(validated, store),
-    /保存失敗/,
-  );
-  assert.equal(
-    (await db.query("SELECT count(*)::int AS n FROM sns_drafts")).rows[0].n,
-    0,
-  );
-  failAt = "never";
-  const result = await importValidatedBundle(validated, store);
-  assert(result.drafts.every((d) => d.result === "created"));
-  assert.equal(saved.size, files.size);
-});
-await check(
-  "重複・同時リクエスト・共通group・NULL型・公開情報NULL",
-  async () => {
-    const results = await Promise.all([
-      importValidatedBundle(validated, store),
-      importValidatedBundle(validated, store),
-    ]);
-    assert(
-      results.every((r) => r.drafts.every((d) => d.result === "duplicate")),
-    );
-    const drafts = (await db.query("SELECT * FROM sns_drafts")).rows;
-    assert.equal(drafts.length, 2);
-    assert.equal(drafts[0].content_group_id, drafts[1].content_group_id);
-    for (const draft of drafts) {
-      assert.equal(draft.status, "pending_review");
-      assert.equal(draft.template_variant_id, null);
-      assert.equal(draft.publish_blocked, true);
-      assert.equal(draft.bundle_import_id, draft.content_group_id);
-      assert.equal(
-        draft.caption_text,
-        draft.platform === "x"
-          ? validated.bundle.x_text
-          : validated.bundle.script,
-      );
-    }
-    const imported = (await db.query("SELECT * FROM sns_bundle_imports"))
-      .rows[0];
-    assert.equal(imported.release_evidence.release_status, null);
-    assert(imported.release_evidence.missing_reason);
-  },
-);
-await check(
-  "片側DB失敗は全体rollback、再試行で2件、残存片側も補完",
-  async () => {
-    const other = await validateBundle(
-      form(await fixture({ title: "別の素材版" })),
-    );
-    await db.exec(`CREATE FUNCTION mock_fail_youtube() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.platform = 'youtube' THEN RAISE EXCEPTION 'mock片側失敗'; END IF; RETURN NEW; END; $$;
-    CREATE TRIGGER mock_fail_youtube BEFORE INSERT ON sns_drafts FOR EACH ROW EXECUTE FUNCTION mock_fail_youtube();`);
-    await assert.rejects(() => importValidatedBundle(other, store), /片側失敗/);
-    assert.equal(
-      (await db.query("SELECT count(*)::int AS n FROM sns_bundle_imports"))
-        .rows[0].n,
-      1,
-    );
-    assert.equal(
-      (await db.query("SELECT count(*)::int AS n FROM sns_drafts")).rows[0].n,
-      2,
-    );
-    await db.exec("DROP TRIGGER mock_fail_youtube ON sns_drafts;");
-    const result = await importValidatedBundle(other, store);
-    assert(result.drafts.every((d) => d.result === "created"));
-    await db.query(
-      "DELETE FROM sns_drafts WHERE bundle_version_hash=$1 AND platform='youtube'",
-      [other.versionHash],
-    );
-    const repaired = await importValidatedBundle(other, store);
-    assert.deepEqual(
-      repaired.drafts.map((d) => d.result),
-      ["duplicate", "created"],
-    );
-    assert.equal(repaired.content_group_id, result.content_group_id);
-  },
-);
-await check("DB公開禁止・由来の除去禁止・通常下書きへの非干渉", async () => {
-  for (const patch of [
-    "publish_blocked=false",
-    "status='approved'",
-    "status='posted'",
-    "bundle_import_id=NULL,bundle_version_hash=NULL",
-  ]) {
-    await assert.rejects(
-      () => db.exec(`UPDATE sns_drafts SET ${patch} WHERE platform='x'`),
-      /v0/,
-    );
-  }
-  await db.exec(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,status) VALUES(gen_random_uuid(),'normal','x','ja','approved')",
-  );
-});
-await check(
-  "anon/authenticatedはRPC不可・service_role実行権限あり・RLS有効",
-  async () => {
-    for (const role of ["anon", "authenticated"]) {
-      await db.exec(`SET ROLE ${role}`);
-      await assert.rejects(
-        () =>
-          db.query(
-            "SELECT import_sns_preview_bundle($1,$2,$3,$4,$5,$6,$7,$8)",
-            [validated.versionHash, BUNDLE_SCHEMA, {}, {}, [], [], [], {}],
-          ),
-        /permission denied/,
-      );
-      await db.exec("RESET ROLE");
-    }
-    assert.equal(
-      (
-        await db.query(
-          "SELECT has_function_privilege('service_role','import_sns_preview_bundle(text,text,jsonb,jsonb,jsonb,jsonb,jsonb,jsonb)','EXECUTE') AS ok",
-        )
-      ).rows[0].ok,
-      true,
-    );
-    assert.equal(
-      (
-        await db.query(
-          "SELECT relrowsecurity FROM pg_class WHERE relname='sns_bundle_imports'",
-        )
-      ).rows[0].relrowsecurity,
-      true,
-    );
-    // 既存テーブルのservice role権限はSupabaseの既定権限を再現する。
-    await db.exec(
-      "GRANT SELECT, INSERT, UPDATE ON sns_drafts TO service_role; SET ROLE service_role;",
-    );
-    const result = await importValidatedBundle(validated, store);
-    assert(result.drafts.every((d) => d.result === "duplicate"));
-    await db.exec("RESET ROLE");
-  },
-);
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-2.js・sns-bundle-import-scenes-3.js） ----
+await runSnsBundleImportScenes7({ encode, json, check, fixture, form, refreshHash, riskRules, db, migration });
+await runSnsBundleImportScenes8({ check, fixture, form, riskRules, db, mockHandler });
 
 // API本体を読み、依存境界だけモックに差し替える。鍵・本番接続は不要。
 async function mockHandler(
@@ -920,343 +310,10 @@ async function mockHandler(
   return (await import("data:text/javascript," + encodeURIComponent(source)))
     .default;
 }
-await check(
-  "ハッシュタグ例外はNode・承認API・bundle・編集補助で一致しenabled一つで解除",
-  async () => {
-    const cases = [
-      ["Xタグ", "x", "hashtags", "#競艇", false],
-      ["X本文", "x", "body", "確認 #競艇", true],
-      ["X別タグ", "x", "hashtags", "#競艇場", true],
-      ["タグ裸語", "x", "hashtags", "競艇", true],
-      ["タグ内文", "x", "hashtags", "説明 #競艇", true],
-      ["YouTubeタグ", "youtube", "hashtags", "#競艇", false],
-      [
-        "YouTube末尾",
-        "youtube",
-        "description",
-        "件数を確認\n#競艇 #Shorts",
-        false,
-      ],
-      ["YouTube本文残存", "youtube", "description", "競艇の件数\n#競艇", true],
-      ["YouTube途中", "youtube", "description", "#競艇 の件数", true],
-      ["YouTube別タグ", "youtube", "description", "件数\n#競艇場", true],
-      ["ナレーション", "youtube", "script", "確認\n#競艇", true],
-      ["動画内文字", "youtube", "scene", "#競艇", true],
-      ["タイトル", "youtube", "title", "#競艇", true],
-      ["他媒体タグ", "tiktok", "hashtags", "#競艇", true],
-    ];
-    const rows = [];
-    for (const enabled of [true, false]) {
-      const rules = structuredClone(riskRules);
-      rules.find(
-        (r) => r.id === "banned-term-kyoutei",
-      ).hashtag_exception.enabled = enabled;
-      for (const [name, platform, field, content, warn] of cases) {
-        const expected = warn || !enabled;
-        const nodeField = ["title", "script", "scene"].includes(field)
-          ? "body"
-          : field;
-        const node = checkRiskRules(content, platform, nodeField, rules).some(
-          (r) => r.id === "banned-term-kyoutei",
-        );
-        const draft = {
-          platform,
-          status: "pending_review",
-          title: "件数",
-          caption_text: "確認",
-        };
-        const bundle = {};
-        if (field === "hashtags") {
-          draft.hashtags = [content];
-          bundle[platform === "x" ? "x_hashtags" : "youtube_tags"] = [content];
-        }
-        if (field === "body") {
-          draft.caption_text = content;
-          bundle.x_text = content;
-        }
-        if (field === "description") {
-          draft.caption_text = content;
-          bundle.youtube_description = content;
-        }
-        if (field === "title") {
-          draft.title = content;
-          bundle.title = content;
-        }
-        if (field === "script") {
-          draft.caption_text = content;
-          draft.source_data = { bundle: { script: content } };
-          bundle.script = content;
-        }
-        if (field === "scene") {
-          bundle.scenes = Array.from({ length: 3 }, () => ({
-            seconds: 6,
-            tab: "観測",
-            component: "件数",
-            lines: [content],
-          }));
-          draft.source_data = { bundle: { scenes: bundle.scenes } };
-        }
-        const handler = await mockHandler(
-          "api/admin/sns-hub/drafts/[id]/approve.js",
-          draft,
-          false,
-          true,
-          rules,
-        );
-        const response = await handler(
-          new Request("https://local.invalid/drafts/test/approve", {
-            method: "POST",
-            body: JSON.stringify({ approverId: "mock" }),
-          }),
-        );
-        assert.equal(response.status, 200);
-        const api = (await response.json()).riskWarnings.some(
-          (r) => r.id === "banned-term-kyoutei",
-        );
-        // v0 bundleはX/YouTubeのみ。他媒体は汎用matcherの保守的判定を確認する。
-        const result = await validateBundle(form(await fixture(bundle)), rules);
-        const bundleHit =
-          platform === "tiktok"
-            ? null
-            : result.riskFlags[platform].some(
-                (r) => r.id === "banned-term-kyoutei",
-              );
-        assert.equal(node, expected, name);
-        assert.equal(api, expected, name);
-        if (bundleHit !== null) assert.equal(bundleHit, expected, name);
-        rows.push({
-          enabled,
-          name,
-          expected: expected ? "警告" : "許可",
-          Node: node,
-          API: api,
-          bundle: bundleHit,
-        });
-      }
-    }
-    console.table(rows);
-    // optional欄も型検査し、ナレーションとタグ欄を混同しない。
-    await assert.rejects(
-      validateBundle(form(await fixture({ x_hashtags: "invalid" })), riskRules),
-      /タグ欄/,
-    );
-  },
-);
-await check("承認APIとYouTube公開APIは副作用前に409・認証なし401", async () => {
-  for (const name of ["approve", "publish-youtube"]) {
-    const path = `api/admin/sns-hub/drafts/[id]/${name}.js`;
-    for (const data of [
-      { publish_blocked: true },
-      { bundle_import_id: "import" },
-      { bundle_version_hash: validated.versionHash },
-    ]) {
-      const handler = await mockHandler(path, {
-        ...data,
-        status: "pending_review",
-        platform: "youtube",
-      });
-      const response = await handler(
-        new Request(`https://local.invalid/drafts/id/${name}`, {
-          method: "POST",
-          body: JSON.stringify({ approverId: "mock" }),
-        }),
-      );
-      assert.equal(response.status, 409);
-      assert((await response.json()).error.includes("公開不可"));
-    }
-    const handler = await mockHandler(path, {}, true);
-    assert.equal(
-      (
-        await handler(
-          new Request(`https://local.invalid/drafts/id/${name}`, {
-            method: "POST",
-          }),
-        )
-      ).status,
-      401,
-    );
-  }
-});
-await check(
-  "取り込みAPIの正常・不正schema・multipart不備・認証なし",
-  async () => {
-    const handler = await mockHandler("api/admin/sns-hub/import-bundle.js", {});
-    const ok = await handler(
-      new Request("https://local.invalid/import", {
-        method: "POST",
-        body: form(files),
-      }),
-    );
-    assert.equal(ok.status, 200);
-    assert.equal((await ok.json()).data.publish_blocked, true);
-    const unsupported = await fixture({ schema_version: "ryujin-preview/1" });
-    assert.equal(
-      (
-        await handler(
-          new Request("https://local.invalid/import", {
-            method: "POST",
-            body: form(unsupported),
-          }),
-        )
-      ).status,
-      400,
-    );
-    assert.equal(
-      (
-        await handler(
-          new Request("https://local.invalid/import", {
-            method: "POST",
-            body: "{}",
-          }),
-        )
-      ).status,
-      400,
-    );
-    const denied = await mockHandler(
-      "api/admin/sns-hub/import-bundle.js",
-      {},
-      true,
-    );
-    assert.equal(
-      (
-        await denied(
-          new Request("https://local.invalid/import", { method: "POST" }),
-        )
-      ).status,
-      401,
-    );
-  },
-);
-await db.close();
 
-await check(
-  "bundleStoreのsaveFile/registerは4xxで再試行を案内しない(F02対応)",
-  async () => {
-    // saveFile・registerの実装(実fetch)を対象にする。dbを使わないテストなので
-    // db.close()後でよい。グローバルfetchを差し替え、元に戻すまでtry/finallyで囲む。
-    const originalFetch = globalThis.fetch;
-    async function withMockedFetch(status, detail, run) {
-      globalThis.fetch = async () => ({
-        ok: false,
-        status,
-        text: async () => detail,
-      });
-      try {
-        return await run();
-      } finally {
-        globalThis.fetch = originalFetch;
-      }
-    }
-    await withMockedFetch(400, "invalid path", () =>
-      assert.rejects(
-        () =>
-          bundleStore.saveFile("x", {
-            bytes: new Uint8Array(),
-            mime: "application/octet-stream",
-          }),
-        (err) => {
-          assert(err.message.includes("(400)"));
-          assert(err.message.includes("invalid path"));
-          assert(!err.message.includes("再試行できます"));
-          return true;
-        },
-      ),
-    );
-    await withMockedFetch(503, "temporarily unavailable", () =>
-      assert.rejects(
-        () =>
-          bundleStore.saveFile("x", {
-            bytes: new Uint8Array(),
-            mime: "application/octet-stream",
-          }),
-        (err) => {
-          assert(err.message.includes("(503)"));
-          assert(err.message.includes("temporarily unavailable"));
-          assert(err.message.includes("再試行できます"));
-          return true;
-        },
-      ),
-    );
-    await withMockedFetch(400, "bundleの版・groupの対応が不正です", () =>
-      assert.rejects(
-        () => bundleStore.register({}),
-        (err) => {
-          assert(err.message.includes("(400)"));
-          assert(!err.message.includes("再試行できます"));
-          return true;
-        },
-      ),
-    );
-    await withMockedFetch(502, "bad gateway", () =>
-      assert.rejects(
-        () => bundleStore.register({}),
-        (err) => {
-          assert(err.message.includes("(502)"));
-          assert(err.message.includes("再試行できます"));
-          return true;
-        },
-      ),
-    );
-  },
-);
-
-await check(
-  "Shorts公開未確認は要照合、呼出し前のクォータ記録と候補ID保存",
-  async () => {
-    const mediaBytes = new Uint8Array([1]);
-    const snapshot_text = JSON.stringify({
-      source: { video_storage_path: "a.mp4" },
-      media: [
-        {
-          path: "a.mp4",
-          type: "video/mp4",
-          size: 1,
-          sha256: await sha256(mediaBytes),
-        },
-      ],
-      queue: { youtube_mode: "scheduled" },
-    });
-    let state = "queued";
-    const actions = [];
-    const store = {
-      async transition(id, action, result) {
-        actions.push({ action, result });
-        if (action === "claim") state = "sending";
-        if (action === "begin_post") state = "reconcile";
-        if (action === "complete") state = "posted";
-        return {
-          id,
-          external_post_id: "abcdefghijk",
-          state,
-          channel: "youtube",
-          snapshot_text,
-          approved_hash: await sha256(encode(snapshot_text)),
-        };
-      },
-    };
-    await assert.rejects(
-      runYoutubeQueueJob("mock", {
-        store,
-        youtube: createMockYoutubeAdapter({ privacyStatus: "private" }),
-        preflight: async () => {},
-        loadMedia: async () => mediaBytes,
-      }),
-      /unconfirmed/,
-    );
-    assert.equal(state, "reconcile");
-    assert.deepEqual(
-      actions
-        .filter((a) => a.action === "youtube_call")
-        .map((a) => a.result.method),
-      ["videos.insert", "videos.update", "videos.list"],
-    );
-    assert.equal(
-      actions.find((a) => a.action === "youtube_uploaded").result.id,
-      "abcdefghijk",
-    );
-    assert(!actions.some((a) => a.action === "complete"));
-  },
-);
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-3.js・sns-bundle-import-scenes-4.js） ----
+await runSnsBundleImportScenes9({ check, fixture, form, riskRules, db, mockHandler });
+await runSnsBundleImportScenes10({ encode, check, fixture, form, db, mockHandler, fixtureV1 });
 
 const sample = process.argv.find((a) => a.startsWith("--sample="))?.slice(9);
 if (sample)
@@ -1277,12 +334,9 @@ if (sample)
   );
 // v1（sns-pdca-loop tasks 6）: push-bundle だけが受け付ける。v0 の検査・恒久保留は変えない
 const MP4 = new Uint8Array([0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109]);
-const V1_OPTIONS = {
-  schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
-  limits: BUNDLE_LIMITS_V1,
-  derived: [X_VIDEO],
-  v1Fields: validateV1Fields,
-};
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-4.js） ----
+runSnsBundleImportScenes11({ encode, check, fixture, form, db, mockHandler, MP4, fixtureV1 });
 async function fixtureV1(change = {}, { withXVideo = true } = {}) {
   const v1 = {
     schema_version: BUNDLE_SCHEMA_V1,
@@ -1310,87 +364,9 @@ async function fixtureV1(change = {}, { withXVideo = true } = {}) {
   files.set("integrity.json", json(integrity));
   return files;
 }
-await check("v1: 管理画面の手取り込み（既定の v0 だけ）では受け付けない", async () => {
-  await assert.rejects(validateBundle(form(await fixtureV1())), /未対応または重複したファイル名|v0のみ/);
-  // v1 を受け付けても、v1 の欄の検査（twitter-text）を渡さなければ通さない
-  await assert.rejects(
-    validateBundle(form(await fixtureV1()), [], { ...V1_OPTIONS, v1Fields: null }),
-    /v1Fields/,
-  );
-  const noXVideo = await fixtureV1({}, { withXVideo: false });
-  await assert.rejects(validateBundle(form(noXVideo)), /v0のみ/);
-});
-await check("v1: x_thread・claims・screen_key を検査し、v0 の恒久保留を付けず、スレッドごとの risk を返す", async () => {
-  const result = await validateBundle(form(await fixtureV1()), [], V1_OPTIONS);
-  assert.equal(result.bundle.schema_version, BUNDLE_SCHEMA_V1);
-  assert(!result.holds.some((h) => h.includes("v0素材")));
-  assert(!result.holds.some((h) => h.includes(X_VIDEO)), result.holds.join(" / "));
-  assert.equal(result.manifest.find((m) => m.name === X_VIDEO).verification, "derived");
-  assert.equal(result.riskFlags.x_thread.length, 2);
-  assert.deepEqual(result.missing, []);
-});
-await check("v1: 子の URL・連番の崩れ・親の媒体・文字数・claims の形は拒否する", async () => {
-  const bad = [
-    [{ x_thread: [{ index: 0, text: "親 https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }, { index: 1, text: "子 https://www.boat-ai.jp/race/1" }] }, /URLは親/],
-    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 2, text: "子" }] }, /連番/],
-    [{ x_thread: [{ index: 0, text: "親", media: "scene-1.png" }] }, /draft-x\.mp4/],
-    // 子のあるスレッドは各投稿280まで（親も子も）
-    [{ x_thread: [{ index: 0, text: "あ".repeat(141), media: X_VIDEO }, { index: 1, text: "子" }] }, /文字数/],
-    [{ x_thread: [{ index: 0, text: "親 https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }, { index: 1, text: "あ".repeat(141) }] }, /文字数/],
-    // 親1件だけ（長文の1投稿）でも25,000（全角は2）を超えれば拒否
-    [{ x_thread: [{ index: 0, text: "あ".repeat(12501) + " https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }] }, /文字数|本文が必要/],
-    [{ x_thread: Array.from({ length: 7 }, (_, i) => ({ index: i, text: "本文", ...(i === 0 ? { media: X_VIDEO } : {}) })) }, /1〜6件/],
-    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 1, text: "子", media: "nothing.png" }] }, /媒体が添付にありません/],
-    [{ claims: [{ source: "facts", path: ["count"], value: 30 }] }, /v1のclaims/],
-    [{ claims: [{ id: "c", text: "t", value: 1, source: { endpoint: "https://evil.example/api/x", path: ["a"] } }] }, /v1のclaims/],
-    [{ screen_key: undefined }, /screen_key/],
-    [{ x_thread: [{ index: 0, text: "URL なしの親", media: X_VIDEO }] }, /レースのURL/],
-    [{ x_thread: [{ index: 0, text: "https://example.com/race/1", media: X_VIDEO }] }, /レースのURL/],
-  ];
-  for (const [change, message] of bad)
-    await assert.rejects(
-      validateBundle(form(await fixtureV1(change)), [], V1_OPTIONS),
-      message,
-      JSON.stringify(change).slice(0, 80),
-    );
-});
-await check("v1: 親1件だけのスレッドは長文の1投稿（Premium）として25,000まで通す（2026-10-14 オーナー決定）", async () => {
-  const long = "あ".repeat(5000) + "\nhttps://www.boat-ai.jp/race/202610071110";
-  const result = await validateBundle(
-    form(await fixtureV1({ x_thread: [{ index: 0, text: long, media: X_VIDEO }] })),
-    [],
-    V1_OPTIONS,
-  );
-  assert.equal(result.bundle.x_thread[0].text, long);
-});
-await check("v1: 動画は 32 MiB まで（v0 は 2 MiB のまま）、draft-x.mp4 は v0 では使えない", async () => {
-  const big = new Uint8Array(3 * 1024 * 1024);
-  big.set(MP4);
-  const files = await fixtureV1();
-  files.set(X_VIDEO, big);
-  const result = await validateBundle(form(files), [], V1_OPTIONS);
-  assert.equal(result.files.get(X_VIDEO).bytes.length, big.length);
-  const tooBig = new Uint8Array(32 * 1024 * 1024 + 1);
-  tooBig.set(MP4);
-  files.set(X_VIDEO, tooBig);
-  await assert.rejects(validateBundle(form(files), [], V1_OPTIONS), /容量超過/);
-  const v0 = await fixture();
-  v0.set(X_VIDEO, MP4);
-  await assert.rejects(validateBundle(form(v0), [], V1_OPTIONS), /v1だけ/);
-});
-await check("v1: 取り込みは bundle の版で RPC を呼ぶ（v0 の定数で上書きしない）", async () => {
-  const validated = await validateBundle(form(await fixtureV1()), [], V1_OPTIONS);
-  let payload;
-  await importValidatedBundle(validated, {
-    saveFile: async () => {},
-    register: async (p) => (payload = p),
-  });
-  assert.equal(payload.p_schema_version, BUNDLE_SCHEMA_V1);
-  assert.equal(payload.p_risk_flags.x_thread.length, 2);
-  const v0 = await validateBundle(form(await fixture()));
-  await importValidatedBundle(v0, { saveFile: async () => {}, register: async (p) => (payload = p) });
-  assert.equal(payload.p_schema_version, BUNDLE_SCHEMA);
-});
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-4.js） ----
+await runSnsBundleImportScenes12({ encode, check, fixture, form, db, mockHandler, MP4, fixtureV1 });
 await check("v1: push-bundle はフォルダを読み、draft-x.mp4 が無ければ draft.mp4 から書き出して検査する（素材フォルダは変えない）", async () => {
   const { mkdtemp, writeFile, readdir, rm } = fs;
   const { tmpdir } = await import("node:os");
@@ -1423,17 +399,9 @@ await check("v1: push-bundle はフォルダを読み、draft-x.mp4 が無けれ
     await rm(dir, { recursive: true, force: true });
   }
 });
-await check("v1: X の投稿ごとの risk に、共通のタイトルと場面の文字の警告も入る（点検 08-15 D1）", async () => {
-  const rules = [{ id: "t", category: "c", description: "d", platforms: "all", patterns: ["必勝"] }];
-  const title = await validateBundle(form(await fixtureV1({ title: "必勝の展望" })), rules, V1_OPTIONS);
-  assert(title.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
-  const scene = await validateBundle(
-    form(await fixtureV1({ scenes: Array.from({ length: 3 }, () => ({ seconds: 6, tab: "差がつく材料", component: "観測件数", lines: ["必勝"] })) })),
-    rules,
-    V1_OPTIONS,
-  );
-  assert(scene.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
-});
+
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-4.js） ----
+await runSnsBundleImportScenes13({ encode, check, fixture, form, db, mockHandler, MP4, fixtureV1 });
 await check("push-bundle: v0 の素材には v0 の容量の上限（2 MiB）をかける（点検 08-15 D2）", async () => {
   const { mkdtemp, writeFile, rm } = fs;
   const { tmpdir } = await import("node:os");
@@ -1454,5 +422,5 @@ console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
 );
 
-if (process.argv.includes("--draft-diff-ui"))
-  await import("./snsDraftDiffUi.js");
+// ---- 後半の場面（verifyData/sns-bundle-import-scenes-4.js） ----
+await runSnsBundleImportScenes14({ encode, check, fixture, form, db, mockHandler, MP4, fixtureV1 });

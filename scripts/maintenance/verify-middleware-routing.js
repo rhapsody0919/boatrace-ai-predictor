@@ -38,15 +38,24 @@
  */
 
 import { readFileSync } from "node:fs";
-import middleware, { config, handleApiGate } from "../../middleware.js";
-import { internalApiHeaders } from "../../api/_lib/internalApiHeaders.js";
+import middleware, { config } from "../../middleware.js";
+
+import { BOT_PAGE_USER_AGENTS, resolveSnapshotPath } from "../../src/config/aiCrawlerBots.js";
+import { compileIpRanges } from "../../api/_lib/apiGate.js";
 import {
-  AI_CRAWLER_USER_AGENTS,
-  BOT_PAGE_PREFIXED_LANGS,
-  BOT_PAGE_USER_AGENTS,
-  resolveSnapshotPath,
-} from "../../src/config/aiCrawlerBots.js";
-import { compileIpRanges, decideApiGate } from "../../api/_lib/apiGate.js";
+  runMiddlewareRoutingScenes1,
+  runMiddlewareRoutingScenes2,
+  runMiddlewareRoutingScenes3,
+  runMiddlewareRoutingScenes4,
+  runMiddlewareRoutingScenes5,
+} from "./verifyData/middleware-routing-scenes-1.js";
+import {
+  runMiddlewareRoutingScenes6,
+  runMiddlewareRoutingScenes7,
+  runMiddlewareRoutingScenes8,
+  runMiddlewareRoutingScenes9,
+} from "./verifyData/middleware-routing-scenes-2.js";
+import { runMiddlewareRoutingScenes10 } from "./verifyData/middleware-routing-scenes-3.js";
 
 // [12] の判定に使う IP の範囲（検索ボットの経路は verify-api-gate.js が本物の表で固定する）
 const GATE_TEST_RANGES = compileIpRanges({
@@ -187,118 +196,9 @@ console.log("[2c] 認証ヘッダーの解釈（requireAdminAuth と同じ）");
 const COLON_PASSWORD = "pa:ss:word";
 process.env.SNS_HUB_BASIC_AUTH_USER = USER;
 process.env.SNS_HUB_BASIC_AUTH_PASSWORD = COLON_PASSWORD;
-{
-  const path = "/admin/rules";
-  const full = await call(path, { auth: `${USER}:${COLON_PASSWORD}` });
-  check(
-    "':'入りパスワードの完全一致 → 素通り",
-    full === undefined,
-    describe(full),
-  );
-  for (const partial of ["pa", "pa:ss", "pa:ss:wor", `${COLON_PASSWORD}:`]) {
-    const res = await call(path, { auth: `${USER}:${partial}` });
-    check(
-      `':'入りパスワードの不一致(${partial}) → 401`,
-      res?.status === 401,
-      describe(res),
-    );
-  }
-}
 
-const UTF8_PASSWORD = "パスワード:é";
-process.env.SNS_HUB_BASIC_AUTH_PASSWORD = UTF8_PASSWORD;
-{
-  const res = await call("/admin/sns-hub", {
-    auth: `${USER}:${UTF8_PASSWORD}`,
-  });
-  check(
-    "UTF-8 のパスワード（base64 を UTF-8 として復号）→ 素通り",
-    res === undefined,
-    describe(res),
-  );
-}
-
-process.env.SNS_HUB_BASIC_AUTH_USER = USER;
-process.env.SNS_HUB_BASIC_AUTH_PASSWORD = PASSWORD;
-{
-  const encode = (userPass) => toBase64(userPass);
-  const cases = [
-    ["誤ったパスワード", `Basic ${encode(`${USER}:wrong`)}`, 401],
-    ["誤ったユーザー", `Basic ${encode(`other:${PASSWORD}`)}`, 401],
-    [
-      "パスワードの前方一致",
-      `Basic ${encode(`${USER}:${PASSWORD.slice(0, -1)}`)}`,
-      401,
-    ],
-    ["':' が無い", `Basic ${encode(`${USER}${PASSWORD}`)}`, 401],
-    ["壊れた base64", "Basic !!!", 401],
-    ["Basic 以外の方式", `Bearer ${PASSWORD}`, 401],
-    // requireAdminAuth と同じく方式名の大文字小文字は区別しない（RFC 7235）
-    ["方式名が小文字 basic", `basic ${encode(`${USER}:${PASSWORD}`)}`, null],
-    ["方式名が大文字 BASIC", `BASIC ${encode(`${USER}:${PASSWORD}`)}`, null],
-  ];
-  for (const [label, authorization, expected] of cases) {
-    const res = await call("/admin/rules", { authorization });
-    check(
-      `${label} → ${expected ?? "素通り"}`,
-      expected === null ? res === undefined : res?.status === expected,
-      describe(res),
-    );
-  }
-}
-
-console.log("[3] 一般ページは認証の対象外");
-const PUBLIC_PATHS = [
-  "/",
-  "/race/20260929-01-01",
-  "/venue/01",
-  "/blog",
-  "/blog/some-article",
-  "/winning-technique",
-  "/today",
-  "/robots.txt",
-  "/admin",
-  "/admin/rulesx",
-  "/en/admin/rules",
-];
-for (const path of PUBLIC_PATHS) {
-  const res = await call(path);
-  check(`${path} 人間のUA → 素通り`, res === undefined, describe(res));
-}
-
-console.log("[4] スナップショット配信の経路と matcher の一致");
-const SNAPSHOT_CANDIDATES = [
-  "/winning-technique",
-  "/today",
-  "/blog/some-article",
-  "/racer/3256",
-  ...PUBLIC_PATHS,
-  ...ADMIN_PATHS,
-];
-for (const path of SNAPSHOT_CANDIDATES) {
-  const snapshot = resolveSnapshotPath(path, BOT_UA);
-  if (!snapshot) continue;
-  check(`${path} → ${snapshot} は matcher に一致する`, matchesMatcher(path));
-  const res = await call(path, { ua: BOT_UA });
-  check(
-    `${path} ボットUA → スナップショットへ rewrite`,
-    res?.headers.get("x-middleware-rewrite")?.endsWith(snapshot) ?? false,
-    describe(res),
-  );
-}
-for (const path of [
-  "/winning-technique",
-  "/today",
-  "/blog/some-article",
-  "/racer/3256",
-]) {
-  check(
-    `${path} は配信対象のまま（resolveSnapshotPath が null を返さない）`,
-    resolveSnapshotPath(path, BOT_UA) !== null,
-  );
-}
-
-console.log("[5] 検索・ユーザー起点の取得に使う UA もスナップショットに振り分ける");
+// ---- 後半の場面（verifyData/middleware-routing-scenes-1.js） ----
+await runMiddlewareRoutingScenes1({ USER, PASSWORD, BOT_UA, matchesMatcher, toBase64, call, check, describe, ADMIN_PATHS, COLON_PASSWORD });
 // 実際の UA 文字列（各社の公開ドキュメントの形）。名前だけでなく文字列全体で判定できることを見る
 const SEARCH_BOT_UAS = {
   "OAI-SearchBot":
@@ -320,18 +220,9 @@ const SEARCH_BOT_UAS = {
   "Google-GeminiNotebook":
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 (compatible; Google-GeminiNotebook; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-gemininotebook)",
 };
-for (const [name, ua] of Object.entries(SEARCH_BOT_UAS)) {
-  for (const path of ["/blog/some-article", "/today"]) {
-    const res = await call(path, { ua });
-    check(
-      `${name} ${path} → スナップショットへ rewrite`,
-      res?.headers.get("x-middleware-rewrite")?.endsWith(
-        resolveSnapshotPath(path, BOT_UA),
-      ) ?? false,
-      describe(res),
-    );
-  }
-}
+
+// ---- 後半の場面（verifyData/middleware-routing-scenes-1.js） ----
+await runMiddlewareRoutingScenes2({ USER, PASSWORD, BOT_UA, matchesMatcher, toBase64, call, check, describe, ADMIN_PATHS, COLON_PASSWORD, SEARCH_BOT_UAS });
 const NOT_SNAPSHOT_UAS = {
   Googlebot: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
   // BOA-899: Google の取得器は Google-GeminiNotebook 以外に配らない（ADR 0032 追記）
@@ -348,16 +239,9 @@ const NOT_SNAPSHOT_UAS = {
   "Safari（人間）":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
 };
-for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
-  check(
-    `${name} はスナップショットに振り分けない`,
-    resolveSnapshotPath("/blog/some-article", ua) === null,
-  );
-}
 
-console.log(
-  "[6] 日替わりページ（/ と /venue/1〜24）は配る UA のときだけ関数へ振り分ける（ADR 0089）",
-);
+// ---- 後半の場面（verifyData/middleware-routing-scenes-1.js） ----
+runMiddlewareRoutingScenes3({ USER, PASSWORD, BOT_UA, matchesMatcher, toBase64, call, check, describe, ADMIN_PATHS, COLON_PASSWORD, SEARCH_BOT_UAS, NOT_SNAPSHOT_UAS });
 const ORIGIN = "https://www.boat-ai.jp";
 const BOT_PAGE_UAS = {
   GPTBot: BOT_UA,
@@ -379,27 +263,9 @@ const BOT_PAGE_ROUTES = [
     [`/${lang}/venue/24`, `/api/bot-page/${lang}/venue/24`],
   ]),
 ];
-for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
-  for (const [path, target] of BOT_PAGE_ROUTES) {
-    check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
-    const res = await call(path, { ua });
-    check(
-      `${name} ${path} → ${target}`,
-      res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
-      describe(res),
-    );
-  }
-}
-for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
-  for (const [path] of BOT_PAGE_ROUTES) {
-    const res = await call(path, { ua });
-    check(
-      `${name} ${path} → 素通り（SPA のまま）`,
-      res === undefined,
-      describe(res),
-    );
-  }
-}
+
+// ---- 後半の場面（verifyData/middleware-routing-scenes-1.js） ----
+await runMiddlewareRoutingScenes4({ USER, PASSWORD, BOT_UA, matchesMatcher, toBase64, call, check, describe, ADMIN_PATHS, COLON_PASSWORD, SEARCH_BOT_UAS, NOT_SNAPSHOT_UAS, ORIGIN, BOT_PAGE_UAS, BOT_PAGE_ROUTES });
 const NOT_BOT_PAGE_PATHS = [
   "/venue/01",
   "/venue/0",
@@ -436,192 +302,10 @@ const NOT_BOT_PAGE_PATHS = [
   "/english",
   "/en-US/venue/1",
 ];
-for (const path of NOT_BOT_PAGE_PATHS) {
-  for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
-    const res = await call(path, { ua });
-    check(
-      `${name} ${path} → 素通り（SPA のまま）`,
-      res === undefined,
-      describe(res),
-    );
-  }
-}
-// rewrite 先に元のクエリを持ち込まない。/?x=1 と /?x=2 が同じ rewrite 先になる。
-// ?date= も同じ扱い: 人の /venue/:code は日付をパスからしか取らず、?date= 付きでも本日を出すので、
-// ボットにも本日の HTML を返すのが人と同じ中身になる（ADR 0089 決定2、SEO 再点検 N1）
-for (const [path, target] of [
-  ["/?x=1", "/api/bot-page/top"],
-  ["/?x=2", "/api/bot-page/top"],
-  ["/venue/1?x=1", "/api/bot-page/venue/1"],
-  ["/venue/1?x=2", "/api/bot-page/venue/1"],
-  ["/venue/1?date=2026-10-01", "/api/bot-page/venue/1"],
-  ["/en/?x=1", "/api/bot-page/en/top"],
-  ["/ko/venue/3?date=2026-10-01", "/api/bot-page/ko/venue/3"],
-]) {
-  const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
-  check(
-    `bingbot ${path} → ${target}（クエリを持ち込まない）`,
-    res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
-    describe(res),
-  );
-}
-// /today の ?date= 付きは振り分けない（人の /today は ?date= の日を出す。BOA-848 第2段）。ほかのクエリは落として関数へ
-for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
-  for (const path of ["/today?date=2026-10-01", "/today?x=1&date=", "/today?date"]) {
-    const res = await call(path, { ua });
-    check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
-  }
-}
-{
-  const res = await call("/today?x=1", { ua: SEARCH_BOT_UAS.bingbot });
-  check(
-    "bingbot /today?x=1 → /api/bot-page/today（クエリを持ち込まない）",
-    res?.headers.get("x-middleware-rewrite") === `${ORIGIN}/api/bot-page/today`,
-    describe(res),
-  );
-  check(
-    "resolveSnapshotPath は search を渡さなければ /today を関数へ",
-    resolveSnapshotPath("/today", BOT_UA) === "/api/bot-page/today",
-  );
-}
-// 既存のスナップショット（ブログ・/winning-technique）の振り分けは変わらない
-for (const path of ["/winning-technique", "/blog/some-article"]) {
-  check(
-    `${path} は静的スナップショットのまま`,
-    resolveSnapshotPath(path, SEARCH_BOT_UAS.bingbot)?.startsWith(
-      "/ai-snapshots/",
-    ) ?? false,
-  );
-}
-// 関数の受ける会場コード（api/_lib/botPage.js）と、振り分ける会場コードが同じ 1〜24
-{
-  const { venueCodeFromUrl } = await import("../../api/_lib/botPage.js");
-  for (const code of ["0", "01", "1", "24", "25", "abc"]) {
-    const routed = resolveSnapshotPath(`/venue/${code}`, BOT_UA);
-    const accepted = venueCodeFromUrl(`/api/bot-page/venue/${code}`) !== null;
-    check(
-      `/venue/${code}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
-      Boolean(routed) === accepted,
-    );
-  }
-  // 言語版: 言語の一覧が関数と同じで、振り分け先を関数が受ける（会場コードの範囲も同じ）
-  const { BOT_PAGE_PREFIXED_LANGS: FUNCTION_LANGS, prefixedLangFromUrl } =
-    await import("../../api/_lib/botPage.js");
-  check(
-    "言語版の言語の一覧が関数（api/_lib/botPage.js）と同じ",
-    JSON.stringify(BOT_PAGE_PREFIXED_LANGS) === JSON.stringify(FUNCTION_LANGS),
-    `${BOT_PAGE_PREFIXED_LANGS} / ${FUNCTION_LANGS}`,
-  );
-  for (const lang of [...BOT_PAGE_PREFIXED_LANGS, "fr", "ja"]) {
-    for (const code of ["0", "01", "1", "24", "25", "abc"]) {
-      const path = `/${lang}/venue/${code}`;
-      const routed = resolveSnapshotPath(path, BOT_UA);
-      const accepted =
-        prefixedLangFromUrl("venue", path) === lang &&
-        venueCodeFromUrl(path, lang) !== null;
-      check(
-        `${path}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
-        Boolean(routed) === accepted,
-      );
-      if (routed) {
-        check(
-          `${path}: rewrite 先 ${routed} も関数が同じ言語・会場として受ける`,
-          prefixedLangFromUrl("venue", routed) === lang &&
-            venueCodeFromUrl(routed, lang) === Number(code),
-        );
-      }
-    }
-    for (const path of [`/${lang}/`, `/${lang}`]) {
-      const routed = resolveSnapshotPath(path, BOT_UA);
-      const accepted = prefixedLangFromUrl("top", path) === lang;
-      check(
-        `${path}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
-        Boolean(routed) === accepted,
-      );
-      if (routed) {
-        check(
-          `${path}: rewrite 先 ${routed} も関数が同じ言語として受ける`,
-          prefixedLangFromUrl("top", routed) === lang,
-        );
-      }
-    }
-  }
-  // 言語ごとに rewrite 先が違う（CDN のキーで言語が混ざらない）
-  const targets = ["/", "/en/", "/zh-TW/", "/ko/"].map((p) =>
-    resolveSnapshotPath(p, BOT_UA),
-  );
-  check(
-    "/・/en/・/zh-TW/・/ko/ の rewrite 先がすべて違う",
-    new Set(targets).size === 4,
-    targets.join(","),
-  );
-}
-check(
-  "ページ単位の UA 集合は AI_CRAWLER_USER_AGENTS の部分集合（Googlebot を含まない）",
-  BOT_PAGE_USER_AGENTS.every((ua) => AI_CRAWLER_USER_AGENTS.includes(ua)) &&
-    !BOT_PAGE_USER_AGENTS.some((ua) => /googlebot/i.test(ua)),
-);
 
-console.log(
-  "[6b] 選手ページ（/racer/{4桁}）は配る UA のときだけスナップショットへ振り分ける（BOA-848）",
-);
-for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
-  for (const id of ["3256", "5121"]) {
-    const path = `/racer/${id}`;
-    const target = `/ai-snapshots/racer/${id}.html`;
-    check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
-    const res = await call(path, { ua });
-    check(
-      `${name} ${path} → ${target}`,
-      res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
-      describe(res),
-    );
-  }
-}
-for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
-  const res = await call("/racer/3256", { ua });
-  check(
-    `${name} /racer/3256 → 素通り（SPA のまま）`,
-    res === undefined,
-    describe(res),
-  );
-}
-{
-  const res = await call("/racer/3256");
-  check("人のUA /racer/3256 → 素通り", res === undefined, describe(res));
-}
-const NOT_RACER_SNAPSHOT_PATHS = [
-  "/racer/325",
-  "/racer/32560",
-  "/racer/abc",
-  "/racer/3256/",
-  "/racer/3256/extra",
-  "/racer",
-  "/racers",
-  "/en/racer/3256",
-  "/ko/racer/3256",
-];
-for (const path of NOT_RACER_SNAPSHOT_PATHS) {
-  const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
-  check(
-    `bingbot ${path} → 素通り（SPA のまま）`,
-    res === undefined,
-    describe(res),
-  );
-}
-{
-  const res = await call("/racer/3256?tab=x", { ua: BOT_UA });
-  check(
-    "GPTBot /racer/3256?tab=x → クエリを持ち込まない",
-    res?.headers.get("x-middleware-rewrite") ===
-      `${ORIGIN}/ai-snapshots/racer/3256.html`,
-    describe(res),
-  );
-}
-
-console.log(
-  "[6c] ブログ一覧と翻訳記事は配る UA のときだけスナップショットへ振り分ける（BOA-848 第2段）",
-);
+// ---- 後半の場面（verifyData/middleware-routing-scenes-1.js・middleware-routing-scenes-2.js） ----
+await runMiddlewareRoutingScenes5({ USER, PASSWORD, BOT_UA, matchesMatcher, toBase64, call, check, describe, ADMIN_PATHS, COLON_PASSWORD, SEARCH_BOT_UAS, NOT_SNAPSHOT_UAS, ORIGIN, BOT_PAGE_UAS, BOT_PAGE_ROUTES, NOT_BOT_PAGE_PATHS });
+await runMiddlewareRoutingScenes6({ BOT_UA, matchesMatcher, call, check, describe, SEARCH_BOT_UAS, NOT_SNAPSHOT_UAS, ORIGIN, BOT_PAGE_UAS });
 {
   const routes = [
     ["/blog", "/ai-snapshots/blog-list.html"],
@@ -682,21 +366,24 @@ console.log(
       resolveSnapshotPath(`/${lang}/blog/x`, BOT_UA) === `/ai-snapshots/${lang}/blog/x.html`,
     );
   }
-  const gen = readFileSync(
-    new URL("../generate-ai-snapshots.js", import.meta.url),
-    "utf8",
-  );
+  // 生成側を import して表を見る（import しても main は走らない: isDirectRun）。各言語の値はその言語の記事の表そのもの（表を知らない言語は空でない配列）
+  const { BLOG_TRANSLATIONS } = await import("../generate-ai-snapshots.js");
+  const postsByLang = {
+    en: (await import("../../src/data/blogPostsEn.js")).blogPostsEn,
+    "zh-TW": (await import("../../src/data/blogPostsZhTw.js")).blogPostsZhTw,
+    ko: (await import("../../src/data/blogPostsKo.js")).blogPostsKo,
+  };
   for (const lang of langs) {
     check(
       `生成側が ${lang} の翻訳記事を作る（BLOG_TRANSLATIONS）`,
-      new RegExp(`(?:^|\\s|")${lang.replace("-", "\\-")}"?:\\s*blogPosts`, "m").test(gen),
+      Array.isArray(BLOG_TRANSLATIONS[lang]) &&
+        (postsByLang[lang] ? BLOG_TRANSLATIONS[lang] === postsByLang[lang] : BLOG_TRANSLATIONS[lang].length > 0),
     );
   }
 }
 
-console.log(
-  "[6d] 本日（JST）のレース詳細は配る UA のときだけ関数へ振り分ける（BOA-848 第2段）",
-);
+// ---- 後半の場面（verifyData/middleware-routing-scenes-2.js） ----
+runMiddlewareRoutingScenes7({ BOT_UA, matchesMatcher, call, check, describe, SEARCH_BOT_UAS, NOT_SNAPSHOT_UAS, ORIGIN, BOT_PAGE_UAS });
 const jstDateOf = (ms) =>
   new Date(ms + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const TODAY = jstDateOf(Date.now());
@@ -707,97 +394,9 @@ const RACE_ROUTES = [
   [`/zh-TW/race/${TODAY}-12-03`, `/api/bot-page/zh-TW/race/${TODAY}-12-03`],
   [`/ko/race/${TODAY}-01-12`, `/api/bot-page/ko/race/${TODAY}-01-12`],
 ];
-for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
-  for (const [path, target] of RACE_ROUTES) {
-    check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
-    const res = await call(path, { ua });
-    check(
-      `${name} ${path} → ${target}`,
-      res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
-      describe(res),
-    );
-  }
-}
-for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
-  for (const [path] of RACE_ROUTES) {
-    const res = await call(path, { ua });
-    check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
-  }
-}
-const NOT_RACE_PATHS = [
-  "/race/2020-01-01-01-01", // 過去
-  "/race/2099-01-01-01-01", // 未来
-  `/race/${TODAY}-00-01`,
-  `/race/${TODAY}-25-01`,
-  `/race/${TODAY}-01-00`,
-  `/race/${TODAY}-01-13`,
-  `/race/${TODAY}-1-1`,
-  `/race/${TODAY}-01-01/assist`,
-  `/race/${TODAY}-01-01/`,
-  "/race",
-  "/race/abc",
-  `/fr/race/${TODAY}-01-01`,
-  `/ja/race/${TODAY}-01-01`,
-  `/EN/race/${TODAY}-01-01`,
-];
-for (const path of NOT_RACE_PATHS) {
-  const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
-  check(`bingbot ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
-}
-{
-  const res = await call(`/race/${TODAY}-01-01?tab=odds`, { ua: BOT_UA });
-  check(
-    "GPTBot /race/{本日}?tab=odds → クエリを持ち込まない",
-    res?.headers.get("x-middleware-rewrite") ===
-      `${ORIGIN}/api/bot-page/race/${TODAY}-01-01`,
-    describe(res),
-  );
-}
-// 「本日」は JST。UTC ではまだ前日の JST 0:00〜8:59 も、JST の今日を振り分ける
-{
-  const at = Date.parse("2026-10-11T21:00:00Z"); // JST 10/12 06:00
-  check(
-    "JST 6時（UTC は前日）: JST の今日のレースを振り分ける",
-    resolveSnapshotPath("/race/2026-10-12-01-01", BOT_UA, "", at) ===
-      "/api/bot-page/race/2026-10-12-01-01",
-  );
-  check(
-    "JST 6時: UTC の今日（JST では前日）のレースは振り分けない",
-    resolveSnapshotPath("/race/2026-10-11-01-01", BOT_UA, "", at) === null,
-  );
-  const midnight = Date.parse("2026-10-12T15:00:00Z"); // JST 10/13 00:00
-  check(
-    "JST 0:00 で前日のレースは振り分けから外れる",
-    resolveSnapshotPath("/race/2026-10-12-01-01", BOT_UA, "", midnight) === null &&
-      resolveSnapshotPath("/race/2026-10-13-01-01", BOT_UA, "", midnight) ===
-        "/api/bot-page/race/2026-10-13-01-01",
-  );
-}
-// 振り分けた id を関数が同じ言語・同じレースとして受ける（関数の parseBotRaceUrl）
-{
-  const { parseBotRaceUrl } = await import("../../api/_lib/botRace.js");
-  for (const [path, target] of RACE_ROUTES) {
-    const lang = path.match(/^\/(en|zh-TW|ko)\//)?.[1];
-    const mode = lang ? "prefixed" : "ja";
-    const a = parseBotRaceUrl(path, mode);
-    const b = parseBotRaceUrl(target, mode);
-    check(
-      `${path}: 振り分け先 ${target} を関数が同じレースとして受ける`,
-      a !== null && JSON.stringify(a) === JSON.stringify(b),
-    );
-  }
-  for (const path of NOT_RACE_PATHS.filter((p) => !/20(20|99)-/.test(p))) {
-    const lang = path.match(/^\/(en|zh-TW|ko)\//)?.[1];
-    check(
-      `${path}: 関数も受けない（形が違う）`,
-      parseBotRaceUrl(path, lang ? "prefixed" : "ja") === null,
-    );
-  }
-}
 
-console.log(
-  "[7] vercel.json の no-store 規則は / と /venue/1〜24 だけ配る UA を除外する",
-);
+// ---- 後半の場面（verifyData/middleware-routing-scenes-2.js） ----
+await runMiddlewareRoutingScenes8({ BOT_UA, matchesMatcher, call, check, describe, SEARCH_BOT_UAS, NOT_SNAPSHOT_UAS, ORIGIN, BOT_PAGE_UAS, TODAY, RACE_ROUTES });
 {
   const vercel = JSON.parse(
     readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
@@ -866,210 +465,9 @@ console.log(
   }
 }
 
-console.log(
-  "[12] /api の関門（BOA-1110 段階3: matcher に /api/:path*、観測で判定とログ、禁じた形だけ 400）",
-);
-{
-  const gateOf = (path) =>
-    decideApiGate({
-      url: `${ORIGIN}${path}`,
-      headers: new Headers(),
-      ip: null,
-      mode: "observe",
-      keys: {},
-      ipRanges: GATE_TEST_RANGES,
-    });
-  // middleware が rewrite する先の /api/bot-page/* は、関門の除外に入る（二重に判定しない、plan §1.1）
-  const rewriteTargets = [...BOT_PAGE_ROUTES, ...RACE_ROUTES]
-    .map(([, target]) => target)
-    .filter((target) => target.startsWith("/api/"));
-  check("rewrite 先の /api/bot-page/* が1件以上ある", rewriteTargets.length > 0);
-  for (const target of rewriteTargets) {
-    const d = await gateOf(target);
-    check(`${target} は関門の除外`, d.reason === "excluded", d.reason);
-  }
-  // Basic 認証の /api/admin/* は関門の除外（既存の守りのまま）
-  for (const path of ADMIN_PATHS.filter((p) => p.startsWith("/api/"))) {
-    const d = await gateOf(path);
-    check(`${path} は関門の除外`, d.reason === "excluded", d.reason);
-  }
-  check(
-    'matcher に "/api/:path*" がある（段階3）',
-    config.matcher.includes("/api/:path*"),
-  );
-
-  // console.log を一時的に受けて、1行の JSON ログを見る
-  const captureLogs = async (fn) => {
-    const lines = [];
-    const original = console.log;
-    console.log = (...args) => lines.push(args.join(" "));
-    try {
-      return { value: await fn(), lines };
-    } finally {
-      console.log = original;
-    }
-  };
-  const gateLines = (lines) =>
-    lines.filter((l) => l.startsWith("{")).map((l) => JSON.parse(l));
-
-  // 観測（API_GATE_MODE 未設定）: 外からの要求も通し、would_deny のログを1行出す
-  const OBSERVE_PATHS = [
-    "/api/predictions/2026-10-26",
-    "/api/races/today",
-    "/api/accuracy",
-    "/api/analogy/facts/2026-10-26-01-01",
-    "/api/odds/live",
-    "/api",
-  ];
-  for (const path of OBSERVE_PATHS) {
-    check(`${path} は matcher に一致する`, matchesMatcher(path));
-    const { value: res, lines } = await captureLogs(() =>
-      handleApiGate(
-        new Request(`${ORIGIN}${path}`, { headers: { "user-agent": "curl/8.4.0" } }),
-        {},
-      ),
-    );
-    check(`${path} は観測で通す`, res === undefined, describe(res));
-    const logs = gateLines(lines);
-    check(
-      `${path} は would_deny の1行を出す`,
-      logs.length === 1 &&
-        logs[0].api_gate === "would_deny" &&
-        logs[0].mode === "observe" &&
-        logs[0].group === "other" &&
-        logs[0].tag === "apigate_would_deny_other",
-      lines.join(" | "),
-    );
-  }
-  // middleware 本体から呼んでも素通り（既定の process.env に API_GATE_MODE が無い前提）
-  {
-    const saved = process.env.API_GATE_MODE;
-    delete process.env.API_GATE_MODE;
-    const { value: res, lines } = await captureLogs(() =>
-      call("/api/accuracy", { ua: "python-requests/2.31" }),
-    );
-    check("middleware 本体: /api/accuracy は観測で素通り", res === undefined, describe(res));
-    check(
-      "middleware 本体: would_deny のログが1行",
-      gateLines(lines).length === 1 && gateLines(lines)[0].ua_class === "tool:python",
-      lines.join(" | "),
-    );
-    if (saved !== undefined) process.env.API_GATE_MODE = saved;
-  }
-
-  // 禁じた形のパスは観測でも 400 no-store
-  for (const path of [
-    "/api/bot-page%2F..%2Fpredictions/2026-10-26",
-    "/api/cron/..%2fanalogy/facts/x",
-    "/api//accuracy",
-  ]) {
-    const { value: res } = await captureLogs(() => call(path));
-    check(
-      `${path} は観測でも 400 no-store`,
-      res?.status === 400 && res.headers.get("cache-control") === "no-store",
-      describe(res),
-    );
-  }
-
-  // 除外はログを出さず、既存の分岐へ進む（/api/admin は Basic 認証の 401 のまま、cron・bot-page は素通り）
-  for (const [path, want] of [
-    ["/api/admin/sns-hub/drafts", 401],
-    ["/api/cron/odds", undefined],
-    ["/api/bot-page/top", undefined],
-  ]) {
-    const { value: res, lines } = await captureLogs(() => call(path));
-    check(
-      `${path} は除外（ログ無し・既存の分岐）`,
-      gateLines(lines).length === 0 && (res?.status ?? undefined) === want,
-      `${describe(res)} ${lines.join(" | ")}`,
-    );
-  }
-
-  // 強制（段階4。環境変数だけで入る）: 外は 403、同じ origin のブラウザと合言葉は通す
-  const ENFORCE_ENV = { API_GATE_MODE: "enforce\n", INTERNAL_API_KEY: "verify-key-abc\n" };
-  {
-    const { value: denied } = await captureLogs(() =>
-      handleApiGate(new Request(`${ORIGIN}/api/accuracy`), ENFORCE_ENV),
-    );
-    check(
-      "強制（値の末尾に改行）: 外の要求は 403 no-store",
-      denied?.status === 403 && denied.headers.get("cache-control") === "no-store",
-      describe(denied),
-    );
-    const { value: browser } = await captureLogs(() =>
-      handleApiGate(
-        new Request(`${ORIGIN}/api/accuracy`, {
-          headers: { "sec-fetch-site": "same-origin", "user-agent": HUMAN_UA },
-        }),
-        ENFORCE_ENV,
-      ),
-    );
-    check("強制: 同じ origin のブラウザは通す", browser === undefined, describe(browser));
-  }
-
-  // 再現テスト（段階1の /code-review の指摘1）: Vercel の値の末尾に改行があっても、
-  // fetch が前後の空白を落として送った合言葉と一致する（trim しないと bad_key になる）
-  {
-    const sent = new Headers(internalApiHeaders("bot-page", { INTERNAL_API_KEY: "verify-key-abc" }));
-    const { value: res, lines } = await captureLogs(() =>
-      handleApiGate(new Request(`${ORIGIN}/api/races/today`, { headers: sent }), ENFORCE_ENV),
-    );
-    const log = gateLines(lines)[0];
-    check(
-      "env の鍵の末尾の改行を落として比べる（internal・key_slot=current）",
-      res === undefined &&
-        log?.api_gate === "internal" &&
-        log.key_slot === "current" &&
-        log.caller === "bot-page" &&
-        log.group === "ryujin" &&
-        log.keys_set === "current",
-      `${describe(res)} ${lines.join(" | ")}`,
-    );
-    check("ログに鍵の値が出ない", !lines.join("").includes("verify-key-abc"));
-  }
-}
-
-console.log("[13] X の短いリンクは札を保って /today へ302");
-check("/x/today は matcher に一致する", matchesMatcher("/x/today"));
-for (const ua of [HUMAN_UA, "Twitterbot/1.0", BOT_UA]) {
-  for (const [query, content] of [
-    ["?d=2026-10-25-a", "2026-10-25-a"],
-    ["?d=2026-10-25-b", "2026-10-25-b"],
-    ["", null],
-    ["?d=", null],
-    ["?d=2026-10-25", null],
-    // 今の型 v3 の札（BOA-1314）
-    ["?d=2026-10-25-c", "2026-10-25-c"],
-    ["?d=2026-10-25-d", null],
-    ["?d=2026-1-25-a", null],
-    ["?d=2026-10-25-a%0A", null],
-    ["?d=https://example.com", null],
-    ["?d=2026-10-25-b&date=2000-01-01&utm_source=other", "2026-10-25-b"],
-  ]) {
-    const res = await call(`/x/today${query}`, { ua });
-    const expected = `https://www.boat-ai.jp/today?utm_source=x&utm_medium=social&utm_campaign=today_digest${content ? `&utm_content=${content}` : ""}`;
-    check(
-      `${ua} ${query} → 302・UTM保持`,
-      res?.status === 302 && res.headers.get("location") === expected,
-      describe(res),
-    );
-    if (ua === "Twitterbot/1.0" && res?.status === 302) {
-      const target = new URL(res.headers.get("location"));
-      const bot = await call(`${target.pathname}${target.search}`, { ua });
-      check(
-        "転送後の Twitterbot は既存の /today 関数へ",
-        bot?.headers.get("x-middleware-rewrite") ===
-          "https://www.boat-ai.jp/api/bot-page/today",
-      );
-    }
-  }
-}
-for (const path of ["/x/today/extra", "/x/other", "/en/x/today"]) {
-  check(
-    `${path} は短いリンクの対象外`,
-    !matchesMatcher(path) && (await call(path)) === undefined,
-  );
-}
+// ---- 後半の場面（verifyData/middleware-routing-scenes-2.js・middleware-routing-scenes-3.js） ----
+runMiddlewareRoutingScenes9({ BOT_UA, matchesMatcher, call, check, describe, SEARCH_BOT_UAS, NOT_SNAPSHOT_UAS, ORIGIN, BOT_PAGE_UAS, TODAY, RACE_ROUTES });
+await runMiddlewareRoutingScenes10({ GATE_TEST_RANGES, BOT_UA, HUMAN_UA, matchesMatcher, call, check, describe, ADMIN_PATHS, ORIGIN, BOT_PAGE_ROUTES, RACE_ROUTES });
 
 if (failures.length > 0) {
   console.error(`\nNG: ${failures.length}件失敗`);

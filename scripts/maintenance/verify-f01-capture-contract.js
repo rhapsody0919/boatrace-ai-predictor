@@ -121,24 +121,54 @@ assert.throws(() => f01PartProps("nope", {}, {}), /撮影用の部品 nope は�
   assert.equal(new Set(names).size, names.length, `形の名前が重なる: ${names}`);
 }
 
-// 3. 本番のビルドに入らない: 頁を読むのは main.jsx の旗の分岐の中の動的 import だけ
-const main = readFileSync(join(ROOT, "src/main.jsx"), "utf8");
-// 旗の変数（import.meta.env.VITE_SNS_CAPTURE === "1" を含む式）と、その変数で分けた if の中身（改行・空白の違いは問わない）
-const flag = main.match(
-  /const (\w+)\s*=\s*import\.meta\.env\.VITE_SNS_CAPTURE\s*===\s*['"]1['"]/,
+// 3. 本番のビルドに入らない: main.jsx を本番と同じ置き換え（import.meta.env の旗）と木の刈り込み（rollup）で
+// 組み、旗の無いビルドに撮影用の頁の import が残らず、旗 "1" のビルドには分岐の中の動的 import として残ることを見る
+// （本文の字でなく、組んだ結果の振る舞い。main.jsx 以外の import は外のまま）
+async function buildMain(flag) {
+  const entry = join(ROOT, "src", "main.jsx");
+  const { rollup } = await import("rollup");
+  const { transformWithEsbuild } = await import("vite");
+  const bundle = await rollup({
+    input: entry,
+    onwarn: () => {},
+    plugins: [
+      {
+        name: "main-only",
+        resolveId: (id, importer) => (importer ? { id, external: true } : null),
+        transform: (code, id) =>
+          transformWithEsbuild(code, id, {
+            loader: "jsx",
+            jsx: "automatic",
+            define: { "import.meta.env.VITE_SNS_CAPTURE": flag === undefined ? "undefined" : JSON.stringify(flag) },
+          }),
+      },
+    ],
+  });
+  const { output } = await bundle.generate({ format: "es" });
+  await bundle.close();
+  return output.map((o) => o.code ?? "").join("\n");
+}
+const SNS_IMPORT = /import\(\s*['"]\.\/snsCapture\/F01Capture\.jsx['"]\s*\)/;
+const prodBuild = await buildMain(undefined);
+assert.doesNotMatch(
+  prodBuild,
+  /snsCapture/,
+  "旗の無い本番のビルドに撮影用の頁（snsCapture）が残る。main.jsx の分岐を import.meta.env.VITE_SNS_CAPTURE === '1' で閉じる",
 );
-const gate =
-  flag &&
-  main.match(new RegExp(`if \\(${flag[1]}\\)\\s*\\{([\\s\\S]*?)\\}\\s*else\\s*\\{`));
-assert.ok(
-  gate,
-  "main.jsx の撮影用の頁の分岐が、import.meta.env.VITE_SNS_CAPTURE === '1' で閉じていない",
+assert.match(prodBuild, /createRoot/, "旗の無いビルドで本番の画面を描く分岐が消えた");
+const captureBuild = await buildMain("1");
+assert.match(
+  captureBuild,
+  SNS_IMPORT,
+  "旗 VITE_SNS_CAPTURE=1 のビルドに撮影用の頁の動的 import が無い",
 );
 assert.match(
-  gate[1],
-  /import\(['"]\.\/snsCapture\/F01Capture\.jsx['"]\)/,
-  "撮影用の頁は旗の分岐の中で動的 import する",
+  captureBuild,
+  /\/sns-capture\//,
+  "撮影用の頁は /sns-capture/ の道でだけ描く（旗が立っても本番の道では描かない）",
 );
+const otherFlag = await buildMain("0");
+assert.doesNotMatch(otherFlag, /snsCapture/, "旗が \"1\" 以外のビルドに撮影用の頁が残る");
 const walk = (d) =>
   readdirSync(d).flatMap((x) =>
     statSync(join(d, x)).isDirectory() ? walk(join(d, x)) : [join(d, x)],

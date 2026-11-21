@@ -56,6 +56,7 @@ import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { staticString, mutatesBuiltin } from "./verifyData/pure-imports-mutates-builtin.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
@@ -117,15 +118,6 @@ function judgeSpecifier(fromRel, spec) {
   return null;
 }
 
-/** 文字列リテラルか、式を含まないテンプレートリテラルなら、その文字列。それ以外は null */
-function staticString(node) {
-  if (node?.type === "Literal" && typeof node.value === "string")
-    return node.value;
-  if (node?.type === "TemplateLiteral" && node.expressions.length === 0)
-    return node.quasis[0].value.cooked;
-  return null;
-}
-
 /**
  * コメントの本文から、tsc が解決する行き先を取り出す。
  * 戻り値: { spec } は判定にかける行き先、{ bad } はそれ自体が不合格のもの
@@ -169,40 +161,6 @@ function commentImports(comment) {
     }
   }
   return found;
-}
-
-/** 第1引数の物を書き換える組み込みの関数（Object.defineProperty(Array.prototype, …) 等） */
-const MUTATING_CALLS = {
-  Object: ["defineProperty", "defineProperties", "assign", "setPrototypeOf"],
-  Reflect: ["set", "defineProperty", "deleteProperty", "setPrototypeOf"],
-};
-
-const propName = (m) =>
-  m.computed ? staticString(m.property) : m.property.name;
-
-/**
- * 組み込みのグローバルの識別子が、書き換えの先の根になっているか。
- * 対象: 組み込み（またはその先の a.b.c）への代入・++/--・delete、
- * Object.defineProperty 等・Reflect.set 等の第1引数。別名に入れてから書き換える形は塞がない（限界）
- */
-function mutatesBuiltin(identifier) {
-  let top = identifier;
-  while (top.parent?.type === "MemberExpression" && top.parent.object === top)
-    top = top.parent;
-  const p = top.parent;
-  if (p?.type === "AssignmentExpression" && p.left === top) return true;
-  if (p?.type === "UpdateExpression") return true;
-  if (p?.type === "UnaryExpression" && p.operator === "delete") return true;
-  if (p?.type === "CallExpression" && p.arguments[0] === top) {
-    const c = p.callee;
-    if (
-      c.type === "MemberExpression" &&
-      c.object.type === "Identifier" &&
-      MUTATING_CALLS[c.object.name]?.includes(propName(c))
-    )
-      return true;
-  }
-  return false;
 }
 
 const pureImportsRule = {

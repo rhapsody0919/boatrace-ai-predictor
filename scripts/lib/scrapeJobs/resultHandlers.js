@@ -14,18 +14,31 @@
  *
  * 依存（runForRaces 等）は引数で差し替えられる（scripts/maintenance/verify-scrape-result-job.js が、DB・取得先なしで検証する）。
  */
+import { KFILE_SYNC_LOOKBACK_DAYS, syncKFileForDate } from "../kfileSync.js";
 import {
-  KFILE_SYNC_LOOKBACK_DAYS,
   clearCancellationsWithResultsInRange,
   confirmCancellationsForRaceIds,
-  fetchRaceResultHtml,
-  fixMissingHitFlags,
-  runForRaces,
-  syncKFileForDate,
-} from "../../daily/scrape-results.js";
+} from "../raceCancellation.js";
+import { fetchRaceResultHtml } from "../raceResultPage.js";
+import { fixMissingHitFlags } from "../predictionHitFix.js";
+import { runForRaces } from "../raceResultRun.js";
 import { fetchKFileText, parseKFileRankings } from "../kfileParser.js";
-import { raceStartInstant } from "./time.js";
-import { isCancellationConfirmed } from "../cancellationStatus.js";
+import {
+  catchupCandidates,
+  catchupFetchError,
+  catchupResult,
+  expiredResultSlots,
+  kfileDayCounts,
+  kfileDayProblems,
+  kfileDaySummary,
+  kfileParts,
+  kfileSyncResult,
+  kfileUpdatedCount,
+  openResultSlots,
+  overdueRaceIds,
+  racesWithoutConfirmedCancellation,
+  summarizeCatchupResults,
+} from "./resultHandlerParts.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const RACE_ID_RE = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
@@ -210,28 +223,11 @@ export function createResultCatchupRun({
     const client = ctx.client;
 
     // 1) expired のスロットと、確定中止で終端された（cancelled_race）スロット
-    const expired = await client
-      .from("scrape_slots")
-      .select("race_id, races(cancellation_status)")
-      .eq("job", "result")
-      .eq("race_date", date)
-      .or("status.eq.expired,outcome.eq.cancelled_race");
-    if (expired.error) {
-      throw new Error(
-        `結果のcatch-up: expired のスロットの取得に失敗しました: ${expired.error.message}`,
-      );
-    }
-    const isConfirmedCancel = (row) => {
-      const race = Array.isArray(row.races) ? row.races[0] : row.races;
-      return isCancellationConfirmed(race?.cancellation_status);
-    };
-    const candidateIds = [
-      ...new Set((expired.data ?? []).map((row) => row.race_id)),
-    ];
-    // 確定中止のレース（取れればよい追加分。期待件数・未解決に入れない）
-    const confirmedIds = new Set(
-      (expired.data ?? []).filter(isConfirmedCancel).map((row) => row.race_id),
-    );
+    const expired = await expiredResultSlots(client, date);
+    if (expired.error)
+      throw catchupFetchError("expired のスロットの取得", expired.error);
+    // 確定中止のレース（取れればよい追加分。期待件数・未解決に入れない）は confirmedIds
+    const { candidateIds, confirmedIds } = catchupCandidates(expired.data);
     const races = candidateIds.map((id) => {
       const { race_id, venue_code, race_number } = parseRaceId(id);
       return { race_id, venue_code, race_number };
@@ -248,48 +244,24 @@ export function createResultCatchupRun({
         now: ctx.now,
       });
     }
-    const outcomes = {};
-    for (const r of results)
-      outcomes[r.outcome] = (outcomes[r.outcome] ?? 0) + 1;
-    const isObtained = (r) =>
-      ["ok", "partial", "skipped_have_data"].includes(r.outcome);
     // 期待件数・0件エラー・未解決は、確定中止でないレースだけで数える（確定中止は、取れればよい追加分）
-    const primary = results.filter((r) => !confirmedIds.has(r.race_id));
-    const obtained = primary.filter(isObtained).length;
-    const rowsWritten = results.reduce(
-      (sum, r) => sum + (r.rowsWritten ?? 0),
-      0,
-    );
-    const unresolved = primary
-      .filter((r) => !["ok", "skipped_have_data"].includes(r.outcome))
-      .map((r) => ({ race_id: r.race_id, outcome: r.outcome, error: r.error }));
-    // 確定中止のレースのうち、取り直して結果が取れたもの（2' が確定を外す。発生したら取り逃しがあった証拠）
-    const recoveredFromCancellation = results
-      .filter((r) => confirmedIds.has(r.race_id) && isObtained(r))
-      .map((r) => r.race_id);
+    const summary = summarizeCatchupResults(results, confirmedIds);
 
     // 2) 中止・順延の確定の取りこぼし（live のみ）
     let confirmed = 0;
     if (live) {
-      const rows = await client
-        .from("races")
-        .select("race_id, start_time")
-        .eq("race_date", date)
-        .not("start_time", "is", null)
-        .or(NOT_CONFIRMED);
-      if (rows.error) {
-        throw new Error(
-          `結果のcatch-up: races の取得に失敗しました: ${rows.error.message}`,
-        );
-      }
-      const nowMs = ctx.now().getTime();
-      const overdueIds = (rows.data ?? [])
-        .filter(
-          (r) =>
-            nowMs - raceStartInstant(date, r.start_time).getTime() >
-            CANCELLATION_CONFIRM_AFTER_MIN * 60 * 1000,
-        )
-        .map((r) => r.race_id);
+      const rows = await racesWithoutConfirmedCancellation(
+        client,
+        date,
+        NOT_CONFIRMED,
+      );
+      if (rows.error) throw catchupFetchError("races の取得", rows.error);
+      const overdueIds = overdueRaceIds(
+        rows.data,
+        date,
+        ctx.now().getTime(),
+        CANCELLATION_CONFIRM_AFTER_MIN * 60 * 1000,
+      );
       confirmed = (await confirm(client, overdueIds)).confirmed.length;
     }
 
@@ -312,48 +284,23 @@ export function createResultCatchupRun({
     }
 
     // 4) まだ未完了のスロット（最終レースの期限は、この起動の後）
-    const open = await client
-      .from("scrape_slots")
-      .select("race_id")
-      .eq("job", "result")
-      .eq("race_date", date)
-      .in("status", ["pending", "running"]);
-    if (open.error) {
-      throw new Error(
-        `結果のcatch-up: 未完了のスロットの取得に失敗しました: ${open.error.message}`,
-      );
-    }
+    const open = await openResultSlots(client, date);
+    if (open.error)
+      throw catchupFetchError("未完了のスロットの取得", open.error);
     const openSlots = open.data?.length ?? 0;
 
-    return {
-      rowsWritten: live ? rowsWritten : 0,
-      rowsExpected: races.length - confirmedIds.size,
-      rowsParsed: obtained,
-      incomplete: openSlots > 0,
-      report: {
-        date,
-        mode: ctx.mode,
-        candidates: races.length,
-        retriedConfirmedCancellations: confirmedIds.size,
-        recoveredFromCancellation,
-        outcomes,
-        unresolved,
-        confirmedCancellations: confirmed,
-        clearedCancellations,
-        hitFlags,
-        openSlots,
-      },
-      body: {
-        candidates: races.length,
-        retriedConfirmedCancellations: confirmedIds.size,
-        recoveredFromCancellation: recoveredFromCancellation.length,
-        outcomes,
-        confirmedCancellations: confirmed,
-        clearedCancellations: clearedCancellations?.length ?? null,
-        hitFlags,
-        openSlots,
-      },
-    };
+    return catchupResult({
+      date,
+      mode: ctx.mode,
+      live,
+      races,
+      confirmedIds,
+      summary,
+      confirmed,
+      clearedCancellations,
+      hitFlags,
+      openSlots,
+    });
   };
 }
 
@@ -416,91 +363,29 @@ export function createKFileSyncRun({
         client: ctx.client,
         fetchImpl: ctx.politeFetch,
       });
-      const parts = [
-        ["進入コース", r.actualCourse],
-        ["rank4〜6", r.rank456],
-        // 成績コード（マイグレーション116、BOA-553）。監視（last_report）から件数と状態が見えるようにする
-        ...(r.officialFinishCode ? [["成績コード", r.officialFinishCode]] : []),
-      ];
-      for (const [label, part] of parts) {
-        if (
-          part.status === "kfile_error" ||
-          part.status === "pending_check_failed"
-        ) {
-          problems.push(
-            `${date} ${label}: ${part.status}（${part.error ?? "理由不明"}）`,
-          );
-        } else if (part.status === "no_races_parsed") {
-          problems.push(
-            `${date} ${label}: Kファイルからレースを抽出できませんでした`,
-          );
-        } else if (part.status === "column_missing") {
-          // 116 は適用済み。列が無いのは、DB の状態が想定と違う（書き込みが止まっている）
-          problems.push(
-            `${date} ${label}: 列が見つかりません（column_missing）`,
-          );
-        } else if (part.status === "kfile_unavailable") {
-          if (!unpublished.includes(date)) unpublished.push(date);
-        }
-      }
-      // 0件エラーの判定: Kファイルをダウンロードできた日（synced・no_races_parsed）を期待に数え、
-      // レースを抽出できた日（synced）を解析に数える
-      const downloaded = parts.some(([, p]) =>
-        ["synced", "no_races_parsed"].includes(p.status),
-      );
-      if (downloaded) {
+      const parts = kfileParts(r);
+      const day = kfileDayProblems(date, parts);
+      problems.push(...day.problems);
+      if (day.unavailable && !unpublished.includes(date))
+        unpublished.push(date);
+      const counts = kfileDayCounts(parts);
+      if (counts.downloaded) {
         rowsExpected++;
-        if (parts.some(([, p]) => p.status === "synced")) rowsParsed++;
+        if (counts.synced) rowsParsed++;
       }
-      if (live)
-        rowsWritten +=
-          (r.actualCourse.updated ?? 0) +
-          (r.rank456.updated ?? 0) +
-          (r.officialFinishCode?.updated ?? 0);
-      days.push({
-        date,
-        downloads: r.downloads,
-        actualCourse: {
-          status: r.actualCourse.status,
-          updated: r.actualCourse.updated,
-        },
-        rank456: {
-          status: r.rank456.status,
-          updated: r.rank456.updated,
-          pending: r.rank456.pending,
-        },
-        ...(r.officialFinishCode
-          ? {
-              officialFinishCode: {
-                status: r.officialFinishCode.status,
-                updated: r.officialFinishCode.updated,
-                pending: r.officialFinishCode.pending,
-              },
-            }
-          : {}),
-      });
+      if (live) rowsWritten += kfileUpdatedCount(r);
+      days.push(kfileDaySummary(date, r));
     }
 
-    const report = { base, mode: ctx.mode, days, unpublished, problems };
-    if (problems.length > 0) {
-      return {
-        outcome: "error",
-        error:
-          `Kファイル同期に失敗した日があります: ${problems.join(" / ")}`.slice(
-            0,
-            480,
-          ),
-        rowsWritten,
-        report,
-      };
-    }
-    return {
+    return kfileSyncResult({
+      base,
+      mode: ctx.mode,
+      days,
+      unpublished,
+      problems,
       rowsWritten,
       rowsExpected,
       rowsParsed,
-      incomplete: unpublished.length > 0,
-      report,
-      body: { days: days.length, unpublished },
-    };
+    });
   };
 }

@@ -15,7 +15,7 @@ import {
   readObject,
   rest,
   writeObject,
-} from "../../api/_lib/analogyV16.js";
+} from "./analogyV16Store.js";
 import { buildLiveFeatures } from "../../src/utils/analogyRaceFeatures.js";
 import { BOATS, todayExhibition } from "./analogyV16ExhibitionToday.js";
 import {

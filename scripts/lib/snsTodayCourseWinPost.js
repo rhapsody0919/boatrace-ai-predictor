@@ -7,7 +7,7 @@
  * この検査が1つでも通らなければ、計画は型 b を出さずに型 a で送る（理由は content_type.fallback_reason）。
  */
 import twitterText from "twitter-text";
-import { X_POST_MAX } from "../../api/_lib/snsXLength.js";
+import { X_POST_MAX } from "./sns/xLength.js";
 
 /** 本文の最後の免責とタグ（「#競艇」は付けない、hq §6） */
 // 進入の一言（wording-editor P2-3）は本文に足すと加重280を超える日がある（長い名前・言い切りの日で 286）ので、
@@ -52,6 +52,18 @@ export const xWeightedLength = (text) =>
  * @param {{imageKey: string|null, url: string, venueName?: (code: number) => string}} options imageKey は撮影用のページが画面に出した指紋（撮れた画像と同じ行か）
  */
 export function checkCourseWinPost(text, sheet, { imageKey, url, venueName }) {
+  const problems = [
+    ...sheetProblems(text, sheet, imageKey),
+    ...wordingProblems(text, sheet, venueName),
+  ];
+  if (!text.includes(url)) problems.push("link_missing");
+  if (!text.endsWith(COURSE_WIN_FOOT)) problems.push("foot_missing");
+  if (xWeightedLength(text) > X_POST_MAX) problems.push("too_long");
+  return [...new Set(problems)];
+}
+
+// 画像（撮影用のページ）と本文の人・値が合うか
+function sheetProblems(text, sheet, imageKey) {
   const problems = [];
   const f = sheet.featured;
   // 本文の人が画像の1コースの段の1行目か（同じ行・同じ窓から作ったか）
@@ -68,6 +80,13 @@ export function checkCourseWinPost(text, sheet, { imageKey, url, venueName }) {
     problems.push("name_mismatch");
   // 半角の空白1つだけ（全角の空白・連続した空白・タブ等は画像とずれる）
   if (/\s{2,}|[^\S ]/.test(f.racer_name)) problems.push("name_spacing");
+  return problems;
+}
+
+// 順位・差の言い方の検査
+function wordingProblems(text, sheet, venueName) {
+  const problems = [];
+  const f = sheet.featured;
   // 語の検査は選手名・会場名を除いた文に掛ける（名前に「高」等が入ると誤って型 a に落ちる。wording-editor P3-4）
   const fixed = text
     .replaceAll(f.racer_name, "")
@@ -77,8 +96,5 @@ export function checkCourseWinPost(text, sheet, { imageKey, url, venueName }) {
   // 差を書くのは線を通った日だけ
   const saysDiff = /上回|下回|高い|低い|ポイント|pt|倍/.test(fixed);
   if (saysDiff && !sheet.claim) problems.push("diff_without_line");
-  if (!text.includes(url)) problems.push("link_missing");
-  if (!text.endsWith(COURSE_WIN_FOOT)) problems.push("foot_missing");
-  if (xWeightedLength(text) > X_POST_MAX) problems.push("too_long");
-  return [...new Set(problems)];
+  return problems;
 }

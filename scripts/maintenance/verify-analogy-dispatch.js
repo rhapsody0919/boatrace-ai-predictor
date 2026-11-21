@@ -27,12 +27,11 @@ import {
   morningRetryNeeded,
   morningShouldDispatch,
 } from "../lib/analogyDispatch.js";
-import {
-  STALE_AFTER_MS,
-  createDbApplyDispatchRun,
-} from "../lib/dbApplyDispatch.js";
+
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { evaluateJobStates } from "../lib/scrapeJobs/monitor.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
+import { runAnalogyDispatchScenes1 } from "./verifyData/analogy-dispatch-scenes.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -46,6 +45,12 @@ const check = (ok, label, detail = "") => {
   if (!ok) failures++;
 };
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const vercel = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+);
+/** .github/workflows の yml の本文（コードではない） */
+const readWorkflow = (name) =>
+  fs.readFileSync(path.join(ROOT, ".github/workflows", name), "utf8");
 
 const at = (hhmm) => new Date(`2026-10-04T${hhmm}:00+09:00`);
 function fakeFetch(status = 204) {
@@ -62,6 +67,32 @@ function fakeFetch(status = 204) {
   return f;
 }
 const ctxOf = (now, mode = "live") => ({ now: () => now, client: null, mode });
+
+/**
+ * api/cron の本の配線。本文の字は読まず、export（config・default）と、共通ラッパへ渡した引数で見る
+ * （verifyData/cronWiring.js）。run は shadow で呼び（GitHub を起動しない）、report の target で起動の対象を見る
+ */
+async function wiringOf(load) {
+  const api = await cronWiring(load);
+  const opts = api.made[0]?.options ?? {};
+  const shadow = await opts.run?.(ctxOf(at("04:00"), "shadow"));
+  return {
+    maxDuration: api.config?.maxDuration,
+    job: opts.job,
+    modeGated: opts.modeGated,
+    target: shadow?.report?.target,
+    exported: api.made.length === 1 && api.handler === api.made[0].handler,
+    run: opts.run,
+  };
+}
+/** wiringOf の期待（レジストリの maxDuration・job 名・モードのゲート・起動の対象・default export）。run は JSON に出ないので比べない */
+const wired = (def, job, target) => ({
+  maxDuration: def?.maxDurationSec,
+  job,
+  modeGated: true,
+  target,
+  exported: true,
+});
 const ENV = { GITHUB_ACTIONS_DISPATCH_TOKEN: "t0ken" };
 const run = (f, env = ENV) =>
   createAnalogyDispatchRun("train", { fetchImpl: f, env });
@@ -180,24 +211,18 @@ const run = (f, env = ENV) =>
     "(d) validateRegistry に問題が無い",
     JSON.stringify(validateRegistry()),
   );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
-  );
   const def = SCRAPE_JOBS.analogy_dispatch_train;
   check(
     def?.kind === "monitor" && def.failureAlertAfter === 1,
     "(d) analogy_dispatch_train: monitor・failureAlertAfter 1",
   );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/analogy-dispatch-train.js"),
-    "utf8",
+  const w = await wiringOf(
+    () => import("../../api/cron/analogy-dispatch-train.js"),
   );
-  const m = /maxDuration:\s*(\d+)/.exec(src);
   check(
-    Number(m?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "analogy_dispatch_train"'),
+    same(w, wired(def, "analogy_dispatch_train", "train")),
     "(d) api/cron/analogy-dispatch-train.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
+    JSON.stringify(w),
   );
   const crons = vercel.crons
     .filter((c) => c.path === "/api/cron/analogy-dispatch-train")
@@ -295,18 +320,13 @@ const run = (f, env = ENV) =>
     def?.kind === "monitor" && def.failureAlertAfter === 1,
     "(e) analogy_dispatch_morning: monitor・failureAlertAfter 1",
   );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/analogy-dispatch-morning.js"),
-    "utf8",
+  const w = await wiringOf(
+    () => import("../../api/cron/analogy-dispatch-morning.js"),
   );
   check(
-    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "analogy_dispatch_morning"'),
+    same(w, wired(def, "analogy_dispatch_morning", "v16_morning")),
     "(e) api/cron/analogy-dispatch-morning.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
-  );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+    JSON.stringify(w),
   );
   const crons = vercel.crons
     .filter((c) => c.path === "/api/cron/analogy-dispatch-morning")
@@ -318,320 +338,8 @@ const run = (f, env = ENV) =>
   );
 }
 
-// ---------------------------------------------------------------- (f)
-{
-  const f = fakeFetch();
-  const r = await createAnalogyDispatchRun("in_caution_nightly", {
-    fetchImpl: f,
-    env: ENV,
-  })(ctxOf(at("02:30")));
-  check(
-    r.report?.dispatched === true &&
-      f.calls[0]?.url.endsWith(
-        "/workflows/in-caution-nightly.yml/dispatches",
-      ) &&
-      same(JSON.parse(f.calls[0].init.body), { ref: "master", inputs: {} }),
-    "(f) in_caution_nightly は in-caution-nightly.yml を inputs 空（直近14日・時間外は書かない）で起動する",
-    JSON.stringify(f.calls[0]),
-  );
-  const def = SCRAPE_JOBS.in_caution_dispatch;
-  check(
-    def?.kind === "monitor" && def.failureAlertAfter === 1,
-    "(f) in_caution_dispatch: monitor・failureAlertAfter 1",
-  );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/in-caution-dispatch.js"),
-    "utf8",
-  );
-  check(
-    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "in_caution_dispatch"') &&
-      src.includes('createAnalogyDispatchRun("in_caution_nightly")'),
-    "(f) api/cron/in-caution-dispatch.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
-  );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
-  );
-  const crons = vercel.crons
-    .filter((c) => c.path === "/api/cron/in-caution-dispatch")
-    .map((c) => c.schedule);
-  check(
-    same(crons, ["30 17 * * *"]),
-    "(f) vercel.json: JST 2:30（UTC 17:30）に1本（結果の確定の後、races-init の前）",
-    JSON.stringify(crons),
-  );
-  const wf = fs.readFileSync(
-    path.join(ROOT, ".github/workflows/in-caution-nightly.yml"),
-    "utf8",
-  );
-  check(
-    !/^\s*schedule:/m.test(wf) &&
-      /group:\s*in-caution-nightly/.test(wf) &&
-      /if: failure\(\)/.test(wf),
-    "(f) in-caution-nightly.yml: schedule を使わない・concurrency・失敗は Slack",
-  );
-}
-
-// ---------------------------------------------------------------- (g)
-{
-  const now = at("12:17");
-  const hoursAgo = (h) =>
-    new Date(now.getTime() - h * 3600 * 1000).toISOString();
-  // GitHub の偽物: POST は dispatch、GET は runs・jobs を返す
-  const fakeGh = ({
-    runs = [],
-    jobsOf = {},
-    getStatus = 200,
-    hang = false,
-  } = {}) => {
-    const calls = [];
-    const f = async (url, init = {}) => {
-      calls.push({ url, init });
-      if (init.method === "POST")
-        return { ok: true, status: 204, text: async () => "" };
-      // GitHub が返らない: 期限（signal）で打ち切られるまで待つ。本物のソケットの代わりに、プロセスを生かすタイマーを置く
-      // （AbortSignal.timeout のタイマーは unref なので、これが無いと打ち切りの前にプロセスが終わる）。打ち切られなければ5秒で失敗
-      if (hang)
-        return new Promise((_, reject) => {
-          const keep = setTimeout(
-            () => reject(new Error("打ち切られなかった")),
-            5000,
-          );
-          init.signal?.addEventListener("abort", () => {
-            clearTimeout(keep);
-            reject(new Error("timeout"));
-          });
-        });
-      const jobsOfRun = /\/runs\/(\d+)\/jobs/.exec(url);
-      const body = jobsOfRun
-        ? { jobs: jobsOf[jobsOfRun[1]] ?? [] }
-        : { workflow_runs: runs };
-      return {
-        ok: getStatus === 200,
-        status: getStatus,
-        json: async () => body,
-        text: async () => "boom",
-      };
-    };
-    f.calls = calls;
-    f.posts = () => calls.filter((c) => c.init.method === "POST");
-    f.gets = () => calls.filter((c) => c.init.method !== "POST");
-    return f;
-  };
-  // 前の起動（last_tick_at）は既定で1時間前（毎時の起動が続いている）
-  const ctxG = (mode, liveSince, lastTick = hoursAgo(1)) => ({
-    now: () => now,
-    client: null,
-    mode,
-    state: liveSince
-      ? { last_report: { liveSince }, last_tick_at: lastTick }
-      : null,
-  });
-  const runG = (f) => createDbApplyDispatchRun({ fetchImpl: f, env: ENV });
-  const job = (name, conclusion, completedHoursAgo) => ({
-    name,
-    conclusion,
-    completed_at:
-      completedHoursAgo == null ? null : hoursAgo(completedHoursAgo),
-  });
-
-  check(STALE_AFTER_MS === 3 * 3600 * 1000, "(g) 見張りの窓は3時間");
-
-  let f = fakeGh();
-  let r = await runG(f)(ctxG("live", null));
-  check(
-    r.outcome !== "error" &&
-      f.posts().length === 1 &&
-      f.posts()[0].url.endsWith("/workflows/db-apply.yml/dispatches") &&
-      same(JSON.parse(f.posts()[0].init.body), {
-        ref: "master",
-        inputs: { mode: "reconcile" },
-      }) &&
-      f.gets().length === 0 &&
-      r.report?.liveSince === now.toISOString(),
-    "(g) 初回の live: db-apply.yml を master・mode=reconcile で起動し、liveSince を今にする（3時間以内なので見張らない）",
-    JSON.stringify({ r, calls: f.calls.map((c) => c.url) }),
-  );
-
-  f = fakeGh();
-  r = await runG(f)(ctxG("live", hoursAgo(2)));
-  check(
-    r.outcome !== "error" &&
-      f.gets().length === 0 &&
-      r.report?.liveSince === hoursAgo(2),
-    "(g) live の最初の起動から3時間以内は見張らない（liveSince は前の値を引き継ぐ）",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh({
-    runs: [{ id: 11 }, { id: 10 }],
-    jobsOf: {
-      11: [job("reconcile", "skipped", 0.1)],
-      10: [job("reconcile", "success", 1), job("judge", "skipped", 1)],
-    },
-  });
-  r = await runG(f)(ctxG("live", hoursAgo(5)));
-  const runsUrl = decodeURIComponent(f.gets()[0]?.url ?? "");
-  check(
-    r.outcome !== "error" &&
-      f.posts().length === 1 &&
-      runsUrl.includes(
-        `/workflows/db-apply.yml/runs?created=>=${hoursAgo(3)}`,
-      ) &&
-      r.report?.watch?.found === true,
-    "(g) 直近3時間に reconcile の job が success の run があれば成功（直近3時間の run を見る）",
-    JSON.stringify({ r, runsUrl }),
-  );
-
-  f = fakeGh({
-    runs: [{ id: 21 }, { id: 20 }],
-    // 21: REVIEWER_BOT_USER_ID が空で skipped（run の結論は success になる）。20: reconcile がまだ終わっていない
-    jobsOf: {
-      21: [job("reconcile", "skipped", 0.2), job("judge", "skipped", 0.2)],
-      20: [job("reconcile", null, null)],
-    },
-  });
-  r = await runG(f)(ctxG("live", hoursAgo(5)));
-  check(
-    r.outcome === "error" &&
-      /reconcile の job が success/.test(r.error) &&
-      f.posts().length === 1,
-    "(g) reconcile が skipped・未完了の run しか無ければ、起動した上で失敗にする（run の結論でなく job で数える）",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh({
-    runs: [{ id: 31 }],
-    jobsOf: { 31: [job("reconcile", "success", 3.5)] },
-  });
-  r = await runG(f)(ctxG("live", hoursAgo(5)));
-  check(
-    r.outcome === "error" && f.posts().length === 1,
-    "(g) 3時間より前に終わった reconcile の成功は数えない",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh({ runs: [] });
-  r = await runG(f)(ctxG("live", hoursAgo(5)));
-  check(
-    r.outcome === "error" && f.posts().length === 1,
-    "(g) 直近3時間に run が1本も無ければ失敗にする（dispatch が run を作っていない）",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh({ getStatus: 403 });
-  r = await runG(f)(ctxG("live", hoursAgo(5)));
-  check(
-    r.outcome === "error" &&
-      /見張れなかった/.test(r.error) &&
-      /HTTP 403/.test(r.error) &&
-      f.posts().length === 1,
-    "(g) run を読めないときも起動はし、失敗にする（黙らない）",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh({ hang: true });
-  r = await createDbApplyDispatchRun({
-    fetchImpl: f,
-    env: ENV,
-    watchTimeoutMs: 50,
-  })(ctxG("live", hoursAgo(5)));
-  check(
-    r.outcome === "error" &&
-      /見張れなかった/.test(r.error) &&
-      f.posts().length === 1,
-    "(g) GitHub の読み取りが返らないときは期限で打ち切り、起動した上で失敗にする（関数の上限で黙らない）",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh();
-  r = await createDbApplyDispatchRun({ fetchImpl: f, env: {} })(
-    ctxG("live", hoursAgo(5)),
-  );
-  check(
-    r.outcome === "error" &&
-      /GITHUB_ACTIONS_DISPATCH_TOKEN/.test(r.error) &&
-      f.calls.length === 0,
-    "(g) トークン未設定は失敗にする",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh({ runs: [] });
-  r = await runG(f)(ctxG("live", hoursAgo(30), hoursAgo(24)));
-  check(
-    r.outcome !== "error" &&
-      f.gets().length === 0 &&
-      r.report?.liveSince === now.toISOString(),
-    "(g) off から戻したとき（前の起動が2.5時間より前）は liveSince を今にし、すぐには知らせない",
-    JSON.stringify(r),
-  );
-  f = fakeGh({ runs: [] });
-  r = await runG(f)(ctxG("live", hoursAgo(5), hoursAgo(2)));
-  check(
-    r.outcome === "error" && f.gets().length === 1,
-    "(g) 失敗が続く間（毎時の起動は来ている）は liveSince を引き継いで知らせ続ける（Vercel Cron の1回の抜けも許す）",
-    JSON.stringify(r),
-  );
-
-  f = fakeGh();
-  r = await runG(f)(ctxG("shadow", hoursAgo(5)));
-  check(
-    r.report?.wouldDispatch === true &&
-      f.calls.length === 0 &&
-      r.report?.liveSince === undefined,
-    "(g) shadow は起動も見張りもしない（liveSince を残さないので、live にした時点から3時間を数え直す）",
-    JSON.stringify(r),
-  );
-
-  const def = SCRAPE_JOBS.db_apply_dispatch;
-  check(
-    def?.kind === "monitor" && def.failureAlertAfter === 1,
-    "(g) db_apply_dispatch: monitor・failureAlertAfter 1",
-  );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/db-apply-dispatch.js"),
-    "utf8",
-  );
-  check(
-    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "db_apply_dispatch"') &&
-      src.includes("createDbApplyDispatchRun()"),
-    "(g) api/cron/db-apply-dispatch.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
-  );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
-  );
-  const crons = vercel.crons
-    .filter((c) => c.path === "/api/cron/db-apply-dispatch")
-    .map((c) => c.schedule);
-  check(
-    same(crons, ["17 * * * *"]),
-    "(g) vercel.json: 毎時17分に1本",
-    JSON.stringify(crons),
-  );
-  const wf = fs.readFileSync(
-    path.join(ROOT, ".github/workflows/db-apply.yml"),
-    "utf8",
-  );
-  const schedules = [...wf.matchAll(/^ {4}- cron: "([^"]+)"$/gm)].map(
-    (m) => m[1],
-  );
-  check(
-    same(schedules, ["47 * * * *"]),
-    "(g) db-apply.yml の schedule は予備の毎時47分だけ（dispatch の17分と重ねない。重なると互いを busy と見て両方とも何もしない）",
-    JSON.stringify(schedules),
-  );
-  const modeBlock = /^ {6}mode:\n((?: {8}.*\n)+)/m.exec(wf)?.[1] ?? "";
-  check(
-    /type: choice/.test(modeBlock) &&
-      /default: manual/.test(modeBlock) &&
-      /- manual\n {10}- reconcile/.test(modeBlock),
-    "(g) db-apply.yml の mode は choice（manual・reconcile）で、既定は manual（人の起動は今までどおり手で当てる）",
-    modeBlock,
-  );
-}
+// ---- 後半の場面（verifyData/analogy-dispatch-scenes.js） ----
+await runAnalogyDispatchScenes1({ check, same, vercel, readWorkflow, at, fakeFetch, ctxOf, wiringOf, wired, ENV });
 
 // ---------------------------------------------------------------- (h)
 {
@@ -656,9 +364,6 @@ const run = (f, env = ENV) =>
       alertAfter: 3,
     },
   ];
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
-  );
   for (const c of cases) {
     const f = fakeFetch();
     const r = await createAnalogyDispatchRun(c.target, {
@@ -685,16 +390,11 @@ const run = (f, env = ENV) =>
       `(h) ${c.job}: monitor・failureAlertAfter ${c.alertAfter}`,
       JSON.stringify(def),
     );
-    const src = fs.readFileSync(
-      path.join(ROOT, `api/cron/${c.api}.js`),
-      "utf8",
-    );
+    const w = await wiringOf(() => import(`../../api/cron/${c.api}.js`));
     check(
-      Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-        /modeGated:\s*true/.test(src) &&
-        src.includes(`job: "${c.job}"`) &&
-        src.includes(`createAnalogyDispatchRun("${c.target}")`),
+      same(w, wired(def, c.job, c.target)),
       `(h) api/cron/${c.api}.js: maxDuration がレジストリと一致し、モードのゲートを掛ける`,
+      JSON.stringify(w),
     );
     const crons = vercel.crons
       .filter((x) => x.path === `/api/cron/${c.api}`)
@@ -705,10 +405,7 @@ const run = (f, env = ENV) =>
       JSON.stringify(crons),
     );
     // 予備の schedule を残し、Vercel Cron と同じ時刻にする（片方が来なくても同じ時刻に起動する）
-    const wf = fs.readFileSync(
-      path.join(ROOT, ".github/workflows", c.workflow),
-      "utf8",
-    );
+    const wf = readWorkflow(c.workflow);
     const scheduled = [...wf.matchAll(/^\s*- cron:\s*['"]([^'"]+)['"]/gm)].map(
       (m) => m[1],
     );
@@ -720,10 +417,7 @@ const run = (f, env = ENV) =>
   }
 
   // e2e は gate=true で起動する。workflow 側の入力は boolean・既定 false（人の起動は今と同じく判定せずに撮る）
-  const e2e = fs.readFileSync(
-    path.join(ROOT, ".github/workflows/e2e-rerecord.yml"),
-    "utf8",
-  );
+  const e2e = readWorkflow("e2e-rerecord.yml");
   check(
     /\n {6}gate:\s*\n(?: {8}description: .*\n)? {8}type: boolean\s*\n {8}default: false/.test(
       e2e,
@@ -737,3 +431,4 @@ if (failures > 0) {
   process.exit(1);
 }
 console.log("\n✅ すべての検査が通過");
+

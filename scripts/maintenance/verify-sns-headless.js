@@ -2,13 +2,14 @@
 // 本番の画面での確認は手で: node scripts/maintenance/verify-sns-headless.js --live <race_id>（未ログインの Chromium で本番を開く）
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { createChromiumHeadless } from "../../api/_lib/snsHeadless.js";
 import {
   checkPublicDisplay,
   createMockHeadless,
 } from "../../api/_lib/snsDeadlineQueue.js";
 import { SCREEN_MARKERS, SCREEN_TABS } from "../lib/snsScreenMarkers.js";
+import { runSnsHeadlessScenes1 } from "./verifyData/sns-headless-scenes.js";
+import { analogyControlsShape } from "./verifyData/sns-headless-analogy-controls.js";
 
 function fakeBrowser({ visible = [], finalUrl } = {}) {
   const log = {
@@ -123,16 +124,17 @@ test("race-sonar の印は展示の前後どちらでも出る要素だけ（段
   assert.ok(
     !SCREEN_MARKERS["race-sonar"].some((s) => s.includes("analogy-stage-chip")),
   );
-  const controls = await readFile(
-    new URL(
-      "../../src/components/race/analogy/AnalogyControls.jsx",
-      import.meta.url,
-    ),
-    "utf8",
-  );
-  // 箱は展示の有無で分かれる前の外側にある（段の表示とボタンはその中で入れ替わる）
-  const box = controls.indexOf('data-testid="analogy-controls"');
-  assert.ok(box > 0 && box < controls.indexOf("exhibitionReady ?"));
+  // 箱は展示の有無で分かれる前の外側にある（段の表示とボタンはその中で入れ替わる）。部品を展示の前・後で描いて見る
+  assert.deepEqual(await analogyControlsShape(false), {
+    box: true,
+    chip: true,
+    stageButtons: 0,
+  });
+  assert.deepEqual(await analogyControlsShape(true), {
+    box: true,
+    chip: false,
+    stageButtons: 2,
+  });
 });
 
 test("Chromium は開くたびに起動して閉じ、新しい context で開き、解析のタグを止め、見えた印だけを返す（--single-process は context を閉じるとブラウザごと終わる、2026-10-17）", async () => {
@@ -378,135 +380,34 @@ test("screenshot: 撮る前に Cookie の同意を「拒否」で記録し、帯
     /screenshot_overlay_visible/,
   );
   assert.equal(covered.log.screenshots, undefined);
-  // 同意のキーは画面の側（analytics.js）と同じ
-  const analytics = await readFile(
-    new URL("../../src/utils/analytics.js", import.meta.url),
-    "utf8",
-  );
-  assert.match(analytics, new RegExp(`CONSENT_KEY = "${CONSENT_KEY}"`));
-});
-
-test("screenshot の element・label（龍神ソナーの図、2026-10-16）: 要素の先頭に見出しを差し込み、その要素だけを撮る。要素が見えなければ撮らない", async () => {
-  const URL_RACE = "https://www.boat-ai.jp/race/2026-10-16-19-12?tab=sonar";
-  const fake = fakeBrowser({
-    visible: [...SCREEN_MARKERS["race-sonar"], ".af-hep .af-dark"],
-  });
-  const shot = await createChromiumHeadless({ launch: fake.launch }).screenshot(
-    {
-      url: URL_RACE,
-      requiredSelectors: SCREEN_MARKERS["race-sonar"],
-      viewport: { width: 390, height: 844 },
-      element: ".af-hep .af-dark",
-      label: "下関12R 22:45締切",
+  // 同意のキーは画面の側（analytics.js）と同じ。画面の読み書き（getCookieConsent・setCookieConsent）を偽の localStorage で回して見る
+  const { getCookieConsent, setCookieConsent } =
+    await import("../../src/utils/analytics.js");
+  const store = new Map();
+  const saved = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
     },
-  );
-  assert.equal(String(shot.png), "element");
-  assert.deepEqual(fake.log.labels, [
-    { selector: ".af-hep .af-dark", arg: "下関12R 22:45締切" },
-  ]);
-  assert.deepEqual(fake.log.elementShots, [
-    { selector: ".af-hep .af-dark", options: { type: "png" } },
-  ]);
-  assert.equal(fake.log.screenshots, undefined);
-  const hidden = fakeBrowser({ visible: SCREEN_MARKERS["race-sonar"] });
-  await assert.rejects(
-    createChromiumHeadless({ launch: hidden.launch }).screenshot({
-      url: URL_RACE,
-      requiredSelectors: SCREEN_MARKERS["race-sonar"],
-      element: ".af-hep .af-dark",
-    }),
-    /screenshot_component_missing/,
-  );
-});
-
-test("screenshot の element: 位置と大きさが落ち着くまで待ってから撮る。落ち着かなければ screenshot_unstable（2026-10-19 /today の4枚目の帯と切れ）", async () => {
-  const { waitForStableBox } = await import("../../api/_lib/snsHeadless.js");
-  const boxes = [
-    { x: 0, y: 120, width: 375, height: 300 },
-    { x: 0, y: 60, width: 375, height: 300 },
-    { x: 0, y: 10, width: 375, height: 300 },
-    { x: 0, y: 10, width: 375, height: 300 },
-  ];
-  const waits = [];
-  const page = { waitForTimeout: async (ms) => waits.push(ms) };
-  const box = await waitForStableBox(page, {
-    boundingBox: async () => boxes.shift(),
   });
-  assert.equal(box.y, 10);
-  assert.equal(waits.length, 3);
-  let y = 0;
-  await assert.rejects(
-    waitForStableBox(
-      page,
-      { boundingBox: async () => ({ x: 0, y: (y += 5), width: 1, height: 1 }) },
-      { tries: 4, gapMs: 1 },
-    ),
-    /screenshot_unstable/,
-  );
+  try {
+    setCookieConsent("rejected");
+    assert.deepEqual([...store], [[CONSENT_KEY, "rejected"]]);
+    store.set(CONSENT_KEY, "accepted");
+    assert.equal(getCookieConsent(), "accepted");
+  } finally {
+    if (saved) Object.defineProperty(globalThis, "localStorage", saved);
+    else delete globalThis.localStorage;
+  }
 });
 
-test("captureElement（2026-10-24 BOA-1013）: 撮る途中で位置がずれたら撮り直し、上下の色が図の外周の色でなければ撮り直す。決めた回数で合わなければ screenshot_misframed", async () => {
-  const { captureElement } = await import("../../api/_lib/snsHeadless.js");
-  const page = { waitForTimeout: async () => {} };
-  const target = (boxes, edges = []) => {
-    const log = { shots: 0, edgeArgs: [] };
-    return {
-      log,
-      boundingBox: async () => boxes.shift(),
-      screenshot: async () => {
-        log.shots += 1;
-        return Buffer.from(`png${log.shots}`);
-      },
-      evaluate: async (fn, arg) => {
-        log.edgeArgs.push(arg);
-        return edges.shift();
-      },
-    };
-  };
-  const at = (y) => ({ x: 0, y, width: 374, height: 303 });
-  // 1回目: 落ち着いた（10・10）後、撮った直後に 185 へずれた（上の部品が広がった）→ 撮り直す。2回目は合う
-  const moved = target([at(10), at(10), at(185), at(185), at(185), at(185)]);
-  assert.equal(String(await captureElement(page, moved)), "png2");
-  assert.equal(moved.log.shots, 2);
-  // 色の検査: 1回目は外れ（別の部品が入った）、2回目で合う。検査には撮った画像と CSS の変数名を渡す
-  const framed = target(
-    [at(10), at(10), at(10), at(10), at(10), at(10)],
-    [false, true],
-  );
-  assert.equal(
-    String(
-      await captureElement(page, framed, {
-        edgeColorVar: "--ryujin-navy-600",
-      }),
-    ),
-    "png2",
-  );
-  assert.equal(framed.log.edgeArgs[0].edgeColorVar, "--ryujin-navy-600");
-  assert.equal(
-    framed.log.edgeArgs[0].edgeCheck,
-    Buffer.from("png1").toString("base64"),
-  );
-  // 3回とも外れたら撮れなかった扱い（投稿に崩れた画像を載せない）
-  const never = target(Array(9).fill(at(10)), [false, false, false]);
-  await assert.rejects(
-    captureElement(page, never, { edgeColorVar: "--ryujin-navy-600" }),
-    /screenshot_misframed/,
-  );
-  assert.equal(never.log.shots, 3);
-  // 比べる色が分からない（CSS の変数が無い）ときは撮り直さず、理由を分けて止める（2026-10-24 審査の P2）
-  const noColor = target(Array(3).fill(at(10)), ["no_color"]);
-  await assert.rejects(
-    captureElement(page, noColor, { edgeColorVar: "--ryujin-navy-600" }),
-    /screenshot_edge_color_missing/,
-  );
-  assert.equal(noColor.log.shots, 1);
-});
+// ---- 後半の場面（verifyData/sns-headless-scenes.js） ----
+runSnsHeadlessScenes1({ fakeBrowser });
 
-test("/today の図は外周の色の検査つきで撮る（SONAR_EDGE_COLOR_VAR を headless.screenshot に渡す）", async () => {
+// headless.screenshot に渡すこと自体は verify-sns-today-plan.js が計画を偽の撮影で回して見る（撮った図の要求の edgeColorVar）
+test("/today の図の外周の色の検査は ryujin の紺（SONAR_EDGE_COLOR_VAR）", async () => {
   const planner = await import("../lib/snsTodayPlanner.js");
   assert.equal(planner.SONAR_EDGE_COLOR_VAR, "--ryujin-navy-600");
-  const src = await (
-    await import("node:fs/promises")
-  ).readFile(new URL("../lib/snsTodayPlanner.js", import.meta.url), "utf8");
-  assert.match(src, /edgeColorVar: SONAR_EDGE_COLOR_VAR/);
 });

@@ -199,6 +199,55 @@ async function updateRaceResult(raceId, winningTechnique, dryRun) {
   return { success: !error, error };
 }
 
+// 1レースの出走表を取り、race_entries を書く（取れなければスキップ）
+async function backfillEntries(race, progress, options, counts) {
+  if (options.verbose) console.log(`${progress} ${race.race_id} - entries取得中...`);
+  const racers = await scrapeRacelist(race.race_date, race.venue_code, race.race_number);
+  if (racers) {
+    const result = await updateRaceEntries(race.race_id, racers, options.dryRun);
+    if (result.success) {
+      counts.entriesUpdated++;
+      if (options.verbose) console.log(`${progress} ${race.race_id} - entries更新OK`);
+    } else {
+      counts.errors++;
+      console.error(`${progress} ${race.race_id} entries更新エラー:`, result.error?.message);
+    }
+  } else {
+    counts.entriesSkipped++;
+    if (options.verbose) console.log(`${progress} ${race.race_id} - entriesスキップ`);
+  }
+}
+
+// 1レースの決まり手を取り、race_results を書く（既に決まり手があればスキップ）
+async function backfillResult(race, progress, options, counts) {
+  // 既にwinning_techniqueがある場合はスキップ
+  const { data: existing } = await supabase
+    .from('race_results')
+    .select('winning_technique')
+    .eq('race_id', race.race_id)
+    .single();
+
+  if (existing && !existing.winning_technique) {
+    if (options.verbose) console.log(`${progress} ${race.race_id} - results取得中...`);
+    const technique = await scrapeWinningTechnique(race.race_date, race.venue_code, race.race_number);
+    if (technique) {
+      const result = await updateRaceResult(race.race_id, technique, options.dryRun);
+      if (result.success) {
+        counts.resultsUpdated++;
+        if (options.verbose) console.log(`${progress} ${race.race_id} - results更新OK (${technique})`);
+      } else {
+        counts.errors++;
+        console.error(`${progress} ${race.race_id} results更新エラー:`, result.error?.message);
+      }
+    } else {
+      counts.resultsSkipped++;
+      if (options.verbose) console.log(`${progress} ${race.race_id} - resultsスキップ`);
+    }
+  } else {
+    counts.resultsSkipped++;
+  }
+}
+
 // メイン処理
 async function main() {
   const options = parseArgs();
@@ -243,11 +292,13 @@ async function main() {
   console.log(`対象レース数: ${races.length}件${options.limit ? ` (limit: ${options.limit})` : ''}`);
   console.log('');
 
-  let entriesUpdated = 0;
-  let resultsUpdated = 0;
-  let entriesSkipped = 0;
-  let resultsSkipped = 0;
-  let errors = 0;
+  const counts = {
+    entriesUpdated: 0,
+    resultsUpdated: 0,
+    entriesSkipped: 0,
+    resultsSkipped: 0,
+    errors: 0,
+  };
 
   for (let i = 0; i < races.length; i++) {
     const race = races[i];
@@ -255,56 +306,17 @@ async function main() {
 
     // race_entries更新
     if (!options.resultsOnly) {
-      if (options.verbose) console.log(`${progress} ${race.race_id} - entries取得中...`);
-      const racers = await scrapeRacelist(race.race_date, race.venue_code, race.race_number);
-      if (racers) {
-        const result = await updateRaceEntries(race.race_id, racers, options.dryRun);
-        if (result.success) {
-          entriesUpdated++;
-          if (options.verbose) console.log(`${progress} ${race.race_id} - entries更新OK`);
-        } else {
-          errors++;
-          console.error(`${progress} ${race.race_id} entries更新エラー:`, result.error?.message);
-        }
-      } else {
-        entriesSkipped++;
-        if (options.verbose) console.log(`${progress} ${race.race_id} - entriesスキップ`);
-      }
+      await backfillEntries(race, progress, options, counts);
     }
 
     // race_results更新（決まり手）
     if (!options.entriesOnly) {
-      // 既にwinning_techniqueがある場合はスキップ
-      const { data: existing } = await supabase
-        .from('race_results')
-        .select('winning_technique')
-        .eq('race_id', race.race_id)
-        .single();
-
-      if (existing && !existing.winning_technique) {
-        if (options.verbose) console.log(`${progress} ${race.race_id} - results取得中...`);
-        const technique = await scrapeWinningTechnique(race.race_date, race.venue_code, race.race_number);
-        if (technique) {
-          const result = await updateRaceResult(race.race_id, technique, options.dryRun);
-          if (result.success) {
-            resultsUpdated++;
-            if (options.verbose) console.log(`${progress} ${race.race_id} - results更新OK (${technique})`);
-          } else {
-            errors++;
-            console.error(`${progress} ${race.race_id} results更新エラー:`, result.error?.message);
-          }
-        } else {
-          resultsSkipped++;
-          if (options.verbose) console.log(`${progress} ${race.race_id} - resultsスキップ`);
-        }
-      } else {
-        resultsSkipped++;
-      }
+      await backfillResult(race, progress, options, counts);
     }
 
     // 進捗表示（10件ごと）
     if ((i + 1) % 10 === 0 || i === races.length - 1) {
-      console.log(`${progress} entries: ${entriesUpdated}件更新, results: ${resultsUpdated}件更新`);
+      console.log(`${progress} entries: ${counts.entriesUpdated}件更新, results: ${counts.resultsUpdated}件更新`);
     }
 
     // レート制限対策（50msの遅延）
@@ -313,11 +325,11 @@ async function main() {
 
   console.log('');
   console.log('=== 完了 ===');
-  console.log(`race_entries更新: ${entriesUpdated}件`);
-  console.log(`race_entriesスキップ: ${entriesSkipped}件`);
-  console.log(`race_results更新: ${resultsUpdated}件`);
-  console.log(`race_resultsスキップ: ${resultsSkipped}件`);
-  console.log(`エラー: ${errors}件`);
+  console.log(`race_entries更新: ${counts.entriesUpdated}件`);
+  console.log(`race_entriesスキップ: ${counts.entriesSkipped}件`);
+  console.log(`race_results更新: ${counts.resultsUpdated}件`);
+  console.log(`race_resultsスキップ: ${counts.resultsSkipped}件`);
+  console.log(`エラー: ${counts.errors}件`);
 }
 
 main().catch(console.error);

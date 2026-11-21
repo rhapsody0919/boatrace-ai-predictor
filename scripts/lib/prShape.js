@@ -11,15 +11,8 @@ export const LIMITS = {
   maxPatchChars: 200_000,
 };
 
-/**
- * 機械で落とす形。1つでもあれば落とす（fail closed）
- *
- * @param {{ filename: string, status: string, patch?: string, previous_filename?: string }[]} files compare の files と同じ形（使う欄だけ）
- * @param {Map<string, string>} headModes PR の head の木での、変更したパスのモード（"100644"・"120000" 等）
- * @param {boolean} treeTruncated 木の取得が切られたか
- * @returns {string[]}
- */
-export function mechanicalRejections(files, headModes, treeTruncated) {
+// PR 全体の形（差分の有無・ファイルの数・木の切れ・差分の字数）で落とす理由
+function wholeRejections(files, treeTruncated) {
   const reasons = [];
   if (files.length === 0) reasons.push("差分が無い");
   if (files.length > LIMITS.maxFiles)
@@ -33,37 +26,56 @@ export function mechanicalRejections(files, headModes, treeTruncated) {
     reasons.push(
       `差分が大きすぎる（${patchChars}字、上限 ${LIMITS.maxPatchChars}）`,
     );
-  for (const f of files) {
-    const names = [f.filename, f.previous_filename].filter(Boolean);
-    if (
-      names.some((n) => n === ".gitattributes" || n.endsWith("/.gitattributes"))
-    )
-      reasons.push(`${f.filename}: .gitattributes の変更`);
-    if (names.some((n) => n === ".gitmodules"))
-      reasons.push(`${f.filename}: submodule の設定の変更`);
-    // 本文の無い差分は、消したファイル以外は全部落とす。バイナリ（NUL を1つ含むだけの JS も git はバイナリと扱う）は
-    // changes が0で patch が無いので、changes で絞ると中身を見せないまま通る。中身を変えない改名・複製も本文が無く、
-    // 中身を危険な場所（.github/workflows/・api/）へ移せるので同じく落とす
-    if (f.patch === undefined && f.status !== "removed")
-      reasons.push(
-        `${f.filename}: 差分の本文が無い（バイナリ・大きすぎる・中身を変えない改名や複製）`,
-      );
-    // ポインタは1行目が「version https://git-lfs.github.com/spec/v1」のファイル。行の頭（足した行か、変えない行＝
-    // 既にあるポインタの oid・size を変えたとき）にあるときだけ落とす。gate は本文のどこかに URL があれば（消したファイル・
-    // 試験の文字列でも）落としていたが、verify は必須の check なので、この検査の試験そのもの（URL を文字列で持つ）を
-    // 変える PR まで止めないよう、行の頭に絞った
-    if (
-      f.patch !== undefined &&
-      f.status !== "removed" &&
-      /^[+ ]version https:\/\/git-lfs\.github\.com\/spec\//m.test(f.patch)
-    )
-      reasons.push(`${f.filename}: Git LFS のポインタ`);
-    const mode = headModes.get(f.filename);
-    if (mode === "120000") reasons.push(`${f.filename}: シンボリックリンク`);
-    if (mode === "160000") reasons.push(`${f.filename}: submodule`);
-    if (f.status !== "removed" && mode === undefined && !treeTruncated)
-      reasons.push(`${f.filename}: head の木に見つからない`);
-  }
+  return reasons;
+}
+
+// 1ファイルの形で落とす理由
+function fileRejections(f, headModes, treeTruncated) {
+  const reasons = [];
+  const names = [f.filename, f.previous_filename].filter(Boolean);
+  if (
+    names.some((n) => n === ".gitattributes" || n.endsWith("/.gitattributes"))
+  )
+    reasons.push(`${f.filename}: .gitattributes の変更`);
+  if (names.some((n) => n === ".gitmodules"))
+    reasons.push(`${f.filename}: submodule の設定の変更`);
+  // 本文の無い差分は、消したファイル以外は全部落とす。バイナリ（NUL を1つ含むだけの JS も git はバイナリと扱う）は
+  // changes が0で patch が無いので、changes で絞ると中身を見せないまま通る。中身を変えない改名・複製も本文が無く、
+  // 中身を危険な場所（.github/workflows/・api/）へ移せるので同じく落とす
+  if (f.patch === undefined && f.status !== "removed")
+    reasons.push(
+      `${f.filename}: 差分の本文が無い（バイナリ・大きすぎる・中身を変えない改名や複製）`,
+    );
+  // ポインタは1行目が「version https://git-lfs.github.com/spec/v1」のファイル。行の頭（足した行か、変えない行＝
+  // 既にあるポインタの oid・size を変えたとき）にあるときだけ落とす。gate は本文のどこかに URL があれば（消したファイル・
+  // 試験の文字列でも）落としていたが、verify は必須の check なので、この検査の試験そのもの（URL を文字列で持つ）を
+  // 変える PR まで止めないよう、行の頭に絞った
+  if (
+    f.patch !== undefined &&
+    f.status !== "removed" &&
+    /^[+ ]version https:\/\/git-lfs\.github\.com\/spec\//m.test(f.patch)
+  )
+    reasons.push(`${f.filename}: Git LFS のポインタ`);
+  const mode = headModes.get(f.filename);
+  if (mode === "120000") reasons.push(`${f.filename}: シンボリックリンク`);
+  if (mode === "160000") reasons.push(`${f.filename}: submodule`);
+  if (f.status !== "removed" && mode === undefined && !treeTruncated)
+    reasons.push(`${f.filename}: head の木に見つからない`);
+  return reasons;
+}
+
+/**
+ * 機械で落とす形。1つでもあれば落とす（fail closed）
+ *
+ * @param {{ filename: string, status: string, patch?: string, previous_filename?: string }[]} files compare の files と同じ形（使う欄だけ）
+ * @param {Map<string, string>} headModes PR の head の木での、変更したパスのモード（"100644"・"120000" 等）
+ * @param {boolean} treeTruncated 木の取得が切られたか
+ * @returns {string[]}
+ */
+export function mechanicalRejections(files, headModes, treeTruncated) {
+  const reasons = wholeRejections(files, treeTruncated);
+  for (const f of files)
+    reasons.push(...fileRejections(f, headModes, treeTruncated));
   return reasons;
 }
 

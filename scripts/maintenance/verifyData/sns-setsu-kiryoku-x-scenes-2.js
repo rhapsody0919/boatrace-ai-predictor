@@ -1,0 +1,280 @@
+/**
+ * verify-sns-setsu-kiryoku-x.js の後半の場面（2/2）。verify ではない。
+ * 判定と期待値は分ける前の verify-sns-setsu-kiryoku-x.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
+ */
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { PGlite } from "@electric-sql/pglite";
+import { SETSU_TYPE, checkResearchBundle } from "../../sns/push-research-image.js";
+import { HQ_KIND } from "../../sns/x-slots-check.js";
+import { SLOT_KINDS } from "../../lib/snsXSlots.js";
+
+let BASE_FILES, MIGRATION, MD5_193, sqlOf, forTest, guardedForTest, GUARDS, db, first, riskRules, DAY, at, bundle, setClock, push, transition;
+
+function scene1() {
+  test("本番の取り置き（2026-11-02: digest1・finals3・research1 月水金・today_thinking6、上限11）: setsu の行なしだと月水金の 21:30 は kind_slot_full。オーナーの SQL（上限12・setsu 1）の後は送れる", async () => {
+    // 2037-11-04 は水曜（JST）
+    const WED = "2037-11-04";
+    const reserves = async (limit, withSetsu) => {
+      await db.exec(`DELETE FROM sns_x_kind_reserves;
+      INSERT INTO sns_x_kind_reserves(kind, daily_count, weekdays) VALUES ('digest',1,NULL),('finals_image',3,NULL),('full_picture',0,NULL),
+        ('research_image',1,'{1,3,5}'),('today_thinking',6,NULL)${withSetsu ? ",('setsu_kiryoku',1,NULL)" : ""};
+      UPDATE sns_x_send_control SET daily_limit_x=${limit};`);
+    };
+    const run = async () => {
+      await db.exec(
+        "DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;",
+      );
+      await db.exec(
+        "ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+      );
+      await setClock(at("21:05:00", WED));
+      const result = await push(
+        bundle({ date: WED, source_observed_at: `${WED} 11R まで` }),
+        {
+          now: at("21:05:00", WED),
+        },
+      );
+      assert.ok(result.job_id, JSON.stringify(result));
+      await setClock(at("21:30:00", WED));
+      return transition(result.job_id, "claim");
+    };
+    await reserves(11, false);
+    const held = await run();
+    assert.deepEqual([held.state, held.error_code], ["held", "kind_slot_full"]);
+    await reserves(12, true);
+    assert.equal((await run()).state, "sending");
+    // 月水金以外（木曜）の取り置きの合計は11で、上限12に1の空きが残る
+    const room = await first(
+      "SELECT public.sns_x_slot_room('setsu_kiryoku', 1, true, NULL, NULL) r",
+    );
+    assert.equal(room.r.reserved_total, 12);
+    await setClock(at("21:05:00", "2037-11-05"));
+    const thu = await first(
+      "SELECT public.sns_x_slot_room('setsu_kiryoku', 1, true, NULL, NULL) r",
+    );
+    assert.equal(thu.r.reserved_total, 11);
+  });
+  test("X の日の枠: hq の出し物の名前 setsu_kiryoku と取り込みの出し物は kind setsu_kiryoku", () => {
+    assert.equal(HQ_KIND.setsu_kiryoku, "setsu_kiryoku");
+    assert.equal(SLOT_KINDS.setsuKiryoku, "setsu_kiryoku");
+    assert.equal(SETSU_TYPE.kind, "setsu_kiryoku");
+  });
+  test("hq 33bd771 の形: source_observed_at は時差つき ISO、as_of は別の欄。ISO の時刻で鮮度を見る（古ければ拒む）、as_of は下書きに残す", async () => {
+    const b = bundle({
+      source_observed_at: at("21:02:00").toISOString().replace("Z", "+00:00"),
+      as_of: `${DAY} 11R まで`,
+    });
+    assert.deepEqual(checkResearchBundle(b, riskRules, SETSU_TYPE), []);
+    const result = await push(b);
+    assert.ok(result.job_id, JSON.stringify(result));
+    const draft = await first("SELECT * FROM sns_drafts");
+    assert.equal(draft.source_data.setsu_kiryoku.as_of, `${DAY} 11R まで`);
+    assert.equal(
+      Date.parse(draft.source_data.deadline_queue.source_observed_at),
+      at("21:02:00").getTime(),
+    );
+    // 集計の時刻が送る時刻の期限（22:30）より24時間以上前なら拒む（前の日の 22:00 に作った束）
+    const stale = await push(
+      bundle({
+        slug: "v04-motor-gap",
+        images: ["v04-motor-gap.png"],
+        source_observed_at: "2037-11-02T22:00:00+09:00",
+        as_of: `${DAY} 11R まで`,
+      }),
+    );
+    assert.match(stale.reasons.join(), /source_observed_at が古い/);
+    // 集計の時刻が今より後なら拒む
+    const future = await push(
+      bundle({ source_observed_at: "2037-11-03T21:10:00+09:00" }),
+    );
+    assert.match(future.reasons.join(), /今より後/);
+  });
+}
+
+function scene2() {
+  test("当てる順: 193 の前に 194 を当てると先頭の照合で止まり、全体が戻る（kind・列・索引は増えない）", async () => {
+    const pg = new PGlite();
+    try {
+      await pg.exec(
+        "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
+      );
+      await pg.exec(
+        "CREATE TABLE test_clock(value timestamptz); INSERT INTO test_clock VALUES(NULL); CREATE FUNCTION test_now() RETURNS timestamptz LANGUAGE sql AS 'SELECT coalesce(value,now()) FROM test_clock';",
+      );
+      await pg.exec(
+        "CREATE TABLE scrape_job_state(job TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'off' CHECK (mode IN ('off','shadow','live')));",
+      );
+      await pg.exec(`
+      CREATE TABLE races(race_id VARCHAR PRIMARY KEY, race_date DATE, start_time TIME, cancellation_status TEXT, race_grade VARCHAR, race_number SMALLINT);
+      CREATE TABLE race_conditions(race_id VARCHAR PRIMARY KEY, race_stage VARCHAR);`);
+      const upTo189 = BASE_FILES.slice(0, -1);
+      for (const [i, file] of upTo189.entries()) {
+        const guard = GUARDS[file];
+        await pg.exec(
+          guard
+            ? await guardedForTest(file, upTo189.slice(0, i), guard[0], guard[1])
+            : forTest(await sqlOf(file)),
+        );
+      }
+      // 194 の照合は試験の 193 の本文の md5 に差し替える（本番と同じく、189 の本文では一致しない）
+      await assert.rejects(
+        pg.exec(
+          await guardedForTest(
+            MIGRATION,
+            BASE_FILES,
+            "transition_sns_send_139",
+            MD5_193,
+          ),
+        ),
+        /194: transition_sns_send_139 の本文が 193 でない/,
+      );
+      await pg.exec("ROLLBACK").catch(() => {});
+      const one = async (sql) => (await pg.query(sql)).rows[0];
+      assert.equal(
+        (
+          await one(
+            "SELECT count(*)::int n FROM pg_attribute WHERE attrelid='public.sns_auto_send_control'::regclass AND attname='setsu_kiryoku_enabled' AND NOT attisdropped",
+          )
+        ).n,
+        0,
+      );
+      assert.equal(
+        (
+          await one(
+            "SELECT count(*)::int n FROM pg_indexes WHERE indexname='sns_auto_send_items_setsu_x_day'",
+          )
+        ).n,
+        0,
+      );
+      assert.doesNotMatch(
+        (
+          await one(
+            "SELECT pg_get_constraintdef(oid) d FROM pg_constraint WHERE conname='sns_auto_send_items_kind_check'",
+          )
+        ).d,
+        /setsu_kiryoku/,
+      );
+    } finally {
+      await pg.close();
+    }
+  });
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（BASE_FILES・MIGRATION・MD5_193・sqlOf・forTest・guardedForTest・GUARDS・db・first・riskRules・DAY・at・bundle・setClock・push・transition） */
+export function runSnsSetsuKiryokuXScenes3(env) {
+  ({ BASE_FILES, MIGRATION, MD5_193, sqlOf, forTest, guardedForTest, GUARDS, db, first, riskRules, DAY, at, bundle, setClock, push, transition } = env);
+  scene1();
+  scene2();
+}
+
+// ---- 偽の store（verify の storeOf）。文は分ける前の verify-sns-setsu-kiryoku-x.js のまま、100行の線で読み（storeReads）と書き（storeWrites）に割った。all・first・saved は verify 側の束縛 ----
+const storeReads = ({ all, first }, kind, prefix, column) => ({
+  researchItems: (date) =>
+    all(
+      "SELECT id, state, draft_id, race_id, held_reason FROM sns_auto_send_items WHERE kind=$1 AND race_id LIKE $2 ORDER BY created_at DESC",
+      [kind, `${prefix}:${date}:%`],
+    ),
+  controls: async () =>
+    Object.fromEntries(
+      (
+        await all(
+          `SELECT channel, mode, dry_run, auto_approver_id, ${column} FROM sns_auto_send_control`,
+        )
+      ).map((r) => [r.channel, r]),
+    ),
+  sendControl: () =>
+    first(
+      "SELECT daily_limit, daily_limit_x, daily_baseline_date::text, daily_external_count FROM sns_x_send_control",
+    ),
+  jobsAttemptedOn: (day) =>
+    all(
+      "SELECT id, state, attempt_dates::text[] attempt_dates, attempt_channels FROM sns_x_send_jobs WHERE $1::date = ANY(attempt_dates)",
+      [day],
+    ),
+  jobForDraft: (draftId) =>
+    first(
+      "SELECT id, state, error_code, scheduled_at::text, expires_at::text, posted_at, external_post_id, external_post_url FROM sns_x_send_jobs WHERE draft_id=$1",
+      [draftId],
+    ),
+});
+const storeWrites = ({ first, saved }) => ({
+  saveFile: async (p, bytes) => saved.push([p, bytes.byteLength]),
+  insertDraft: (row) =>
+    first(
+      `INSERT INTO sns_drafts(content_group_id,platform,language,status,format,title,caption_text,hashtags,publish_blocked,
+        publication_hold_reasons,send_lane,scheduled_at,cover_image_path,source_data)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      [
+        row.content_group_id,
+        row.platform,
+        row.language,
+        row.status,
+        row.format,
+        row.title,
+        row.caption_text,
+        row.hashtags,
+        row.publish_blocked,
+        JSON.stringify(row.publication_hold_reasons),
+        row.send_lane,
+        row.scheduled_at,
+        row.cover_image_path,
+        row.source_data,
+      ],
+    ),
+  insertItem: (row) =>
+    first(
+      `INSERT INTO sns_auto_send_items(kind,variant,draft_id,channel,race_id,deadline_at,notify_by,veto_until,state,checks,notified_at,stop_token_hash,held_reason)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [
+        row.kind,
+        row.variant,
+        row.draft_id,
+        row.channel,
+        row.race_id,
+        row.deadline_at,
+        row.notify_by,
+        row.veto_until,
+        row.state,
+        row.checks,
+        row.notified_at ?? null,
+        row.stop_token_hash ?? null,
+        row.held_reason ?? null,
+      ],
+    ),
+  updateItem: async (id, from, patch) => {
+    const row = await first(
+      "UPDATE sns_auto_send_items SET state=$3, stopped_at=$4, stopped_via=$5, held_reason=$6 WHERE id=$1 AND state=$2 RETURNING *",
+      [
+        id,
+        from,
+        patch.state,
+        patch.stopped_at ?? null,
+        patch.stopped_via ?? null,
+        patch.held_reason ?? null,
+      ],
+    );
+    if (!row) throw new Error(`item ${id} を更新できない`);
+    return row;
+  },
+  updateDraft: (id, patch) =>
+    first("UPDATE sns_drafts SET publish_blocked=$2 WHERE id=$1 RETURNING *", [
+      id,
+      patch.publish_blocked,
+    ]),
+  approve: async (a) =>
+    (
+      await first("SELECT public.approve_sns_x_send($1,$2,$3,$4) r", [
+        a.p_draft_id,
+        a.p_approver_id,
+        a.p_snapshot,
+        a.p_scheduled_at,
+      ])
+    ).r,
+});
+/** verify の storeOf（kind, prefix, column → 偽の store）。env は verify 側の all・first・saved */
+export const makeStoreOf = (env) => (kind, prefix, column) => ({
+  ...storeReads(env, kind, prefix, column),
+  ...storeWrites(env),
+});
