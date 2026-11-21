@@ -1,45 +1,22 @@
-/**
- * 龍神ソナー（BOA-271 v16、承認版モック Version 16。screens S-1）。
- * レース詳細の独立したタブ「龍神ソナー」の中身（基本情報と AI予想の間。2026-10-08 に AI予想タブの下から移した。
- * 承認モック docs/design/analogy-finder/mock/APPROVED.md の「龍神ソナーの別タブ化」）。
- *
- * 上から副題、内部タブ（差がつく材料・類似レース・展開シナリオ。下に送っても固定）、着順と時点の箱、中身、
- * 一番下に「使っている項目」。画面の中の声は各内部タブの中身の終わり（折りたたみより上）に置く。
- * 節全体の状態（欠場・保存なし）は facts の応答の status で決める（画面は時刻で判定しない。plan「API」）。
- * facts・scenario は展示後の値（exhibition）も一緒に返すので stage=exhibition で1回だけ読み、時点の切り替えは
- * 画面で行う。類似レースは時点ごとに並びが違うので時点ごとに読む。タブ2・3は開いたときに初めて読む。
- * 選んだタブ・艇番・時点・着順は URL にも localStorage にも残さない（spec「やらないこと」）。
- * ただし投稿などから内部タブへ直接来られるよう、?sonar=facts|similar|scenario を開いたときに1回だけ読む
- * （読むだけで、押しても URL は書き換えない。2026-10-08 D3）。
- */
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import AnalogyControls, { AnalogyTabs } from "./AnalogyControls";
+import { SonarPanel, SonarShell, SonarBody } from "./AnalogyFinderPanels";
 import AnalogyFeedback from "./AnalogyFeedback";
-import ConditionFactsTab from "./ConditionFactsTab";
-import SimilarRacesTab from "./SimilarRacesTab";
-import ScenarioTab from "./ScenarioTab";
-import DataSources from "./DataSources";
 import {
   useAnalogyFacts,
   useAnalogyScenario,
   useAnalogySimilar,
 } from "../../../hooks/useAnalogyV16";
-import { venueLabel } from "../../../utils/analogyFormat";
 import { sonarExpired, sonarKeepFrom } from "../../../utils/analogyRetention";
 import { markAnalogySeen, trackEvent } from "../../../utils/analytics";
 import {
   RACE_SONAR_PARAM,
   RACE_FIRST_PARAM,
   parseFirstParam,
-  SONAR_TAB_IDS,
   parseSonarParam,
 } from "../../../utils/raceUrlState";
 import "./AnalogyV16.css";
-
-const TABS = SONAR_TAB_IDS;
-const SONAR_SECTION_ID = "ryujin-sonar";
 
 // レースごとに1回だけにするための記録。RaceTabs は選んでいないタブの中身を外して作り直すので、
 // コンポーネントの ref ではほかのタブから戻るたびに送り直してしまう（別タブにした 2026-10-08 から）
@@ -47,24 +24,6 @@ const viewedRaces = new Set();
 const visibleRaces = new Set();
 // ?sonar=・?first= を使い終えたリンク。ほかのタブから戻るたびに選び直さないため
 const linkUsedRaces = new Set();
-
-/** 展示前の時点の札（screens「状態」）。展示後はボタン2つにする */
-const STAGE_CHIP = {
-  before_exhibition: "chipBefore",
-  exhibition_reflecting: "chipReflecting",
-};
-
-function TabError({ onRetry }) {
-  const { t } = useTranslation();
-  return (
-    <div className="af-tab-error">
-      <p className="af-warn">{t("aiPredictionTab.analogy.states.error")}</p>
-      <button type="button" className="af-btn" onClick={onRetry}>
-        {t("aiPredictionTab.analogy.states.retry")}
-      </button>
-    </div>
-  );
-}
 
 const SCENARIO_RETRY_MAX = 3;
 
@@ -269,72 +228,6 @@ function useSonarTabs(raceId, linkedTab) {
   return { tab, opened, selectTab };
 }
 
-function LoadingLine() {
-  const { t } = useTranslation();
-  return (
-    <p className="af-v16-line">{t("aiPredictionTab.analogy.states.loading")}</p>
-  );
-}
-
-function FactsPanel({ facts, stage, target, feedback }) {
-  const { t } = useTranslation();
-  if (facts.status === "error") return <TabError onRetry={facts.retry} />;
-  if (facts.data?.today)
-    return (
-      <ConditionFactsTab
-        data={facts.data}
-        stage={stage}
-        target={target}
-        feedback={feedback}
-      />
-    );
-  return (
-    <p className="af-v16-line">
-      {t("aiPredictionTab.analogy.states.notSaved")}
-    </p>
-  );
-}
-
-function SimilarPanel({ similar, facts, stage, target, feedback }) {
-  if (similar.status === "error") return <TabError onRetry={similar.retry} />;
-  if (similar.data && similar.status !== "loading")
-    return (
-      <SimilarRacesTab
-        data={similar.data}
-        stage={stage}
-        target={target}
-        exhibition={facts.data?.exhibition ?? null}
-        feedback={feedback}
-      />
-    );
-  return <LoadingLine />;
-}
-
-function ScenarioPanel({ scenario, facts, props }) {
-  if (scenario.status === "error") return <TabError onRetry={scenario.retry} />;
-  if (scenario.data && scenario.status !== "loading")
-    return (
-      <ScenarioTab
-        data={scenario.data}
-        today={facts.data?.today ?? null}
-        {...props}
-      />
-    );
-  return <LoadingLine />;
-}
-
-function SonarPanel({ tab, scenarioProps, scenario, similar, ...rest }) {
-  if (tab === "facts") return <FactsPanel {...rest} />;
-  if (tab === "similar") return <SimilarPanel similar={similar} {...rest} />;
-  return (
-    <ScenarioPanel
-      scenario={scenario}
-      facts={rest.facts}
-      props={scenarioProps}
-    />
-  );
-}
-
 /** 節全体の状態は、タブごとの取得の失敗より優先する（screens「細部の約束」）。
  *  2年より前の日は、snapshot の行が残っていても表示用のファイルが夜の掃除で消えているので、状態より先に日付で決める */
 function stateLineKey(raceId, keepFrom, status) {
@@ -342,76 +235,6 @@ function stateLineKey(raceId, keepFrom, status) {
   if (status === "absent") return "absent";
   if (status === "not_saved") return "notSaved";
   return null;
-}
-
-function SonarShell({ sectionRef, headingId, raceId, children }) {
-  const { t } = useTranslation();
-  const [, , , venueCode, raceNumber] = String(raceId).split("-");
-  const heading = t("aiPredictionTab.analogy.heading", {
-    venue: venueLabel(Number(venueCode), t),
-    race: Number(raceNumber),
-  });
-  return (
-    <section
-      className="af-v16"
-      id={SONAR_SECTION_ID}
-      aria-labelledby={headingId}
-      ref={sectionRef}
-    >
-      {/* 見出しはタブ名とページ上部のレース名で足りるので画面には出さない（承認モック v3）。読み上げ用に残す */}
-      <h2 id={headingId} className="af-sr-only">
-        {heading}
-      </h2>
-      <p className="af-v16-subtitle">{t("aiPredictionTab.analogy.subtitle")}</p>
-      {children}
-    </section>
-  );
-}
-
-function SonarBody({
-  tab,
-  onTab,
-  tabId,
-  stage,
-  status,
-  exhibitionReady,
-  onStage,
-  target,
-  onTarget,
-  facts,
-  similar,
-  children,
-}) {
-  const anyPeriod = Object.values(facts.data?.facts ?? {})[0]?.period ?? null;
-  return (
-    <>
-      <div className="af-tabs-sticky">
-        <AnalogyTabs tabs={TABS} tab={tab} onTab={onTab} tabId={tabId} />
-      </div>
-      <AnalogyControls
-        stage={stage}
-        exhibitionReady={exhibitionReady}
-        stageChipKey={STAGE_CHIP[status] ?? "chipBefore"}
-        onStage={onStage}
-        target={target}
-        onTarget={onTarget}
-        showTarget={tab !== "scenario"}
-      />
-      <div
-        className="af-v16-box"
-        role="tabpanel"
-        id={`${tabId(tab)}-panel`}
-        aria-labelledby={tabId(tab)}
-      >
-        {children}
-      </div>
-      <DataSources
-        stage={stage}
-        period={anyPeriod}
-        conditions={similar.data?.similar?.conditions ?? null}
-      />
-    </>
-  );
 }
 
 export default function AnalogyFinderSection({
