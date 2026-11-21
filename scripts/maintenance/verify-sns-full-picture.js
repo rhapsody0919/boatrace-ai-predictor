@@ -4,6 +4,7 @@ import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
+import { setupSnsDb } from "./verifyData/sns-db-setup.js";
 import { checkFullPicture, pushFullPicture } from "../sns/push-full-picture.js";
 import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
 
@@ -28,46 +29,32 @@ const NOW = new Date("2037-10-18T19:20:00+09:00");
 const VIDEO = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112, 1, 2, 3]);
 
 before(async () => {
-  await db.exec(
-    "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
-  );
-  await db.exec(
-    "CREATE TABLE test_clock(value timestamptz); INSERT INTO test_clock VALUES(NULL); CREATE FUNCTION test_now() RETURNS timestamptz LANGUAGE sql AS 'SELECT coalesce(value,now()) FROM test_clock';",
-  );
-  await db.exec(
-    "CREATE TABLE scrape_job_state(job TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'off' CHECK (mode IN ('off','shadow','live')));",
-  );
-  await db.exec(`
+  await setupSnsDb(db, {
+    base: import.meta.url,
+    extraSql: `
     CREATE TABLE races(race_id VARCHAR PRIMARY KEY, race_date DATE, start_time TIME, cancellation_status TEXT);
-    CREATE TABLE race_conditions(race_id VARCHAR PRIMARY KEY, race_stage VARCHAR);`);
-  for (const file of [
-    "035_sns_marketing_hub_schema.sql",
-    "042_content_drafts_columns.sql",
-    "135_sns_preview_bundle_import.sql",
-    "136_sns_metric_observations.sql",
-    "137_sns_x_send.sql",
-    "138_sns_external_operations.sql",
-    "139_sns_deadline_queue.sql",
-    "140_sns_mobile_approval.sql",
-    "145_sns_edit_assist.sql",
-    "146_sns_shorts_send.sql",
-    "147_sns_draft_diff.sql",
-    "148_sns_posted_approval_guard.sql",
-    "153_sns_auto_send.sql",
-    "154_sns_tokens_metric_jobs.sql",
-    "158_sns_lanes_digest_period.sql",
-    "160_sns_x_multiple_images.sql",
-    "161_sns_full_picture_items.sql",
-    "172_sns_full_picture_shorts.sql",
-  ])
-    await db.exec(
-      (
-        await readFile(
-          new URL("../../docs/db-migration/" + file, import.meta.url),
-          "utf8",
-        )
-      ).replaceAll("now()", "test_now()"),
-    );
+    CREATE TABLE race_conditions(race_id VARCHAR PRIMARY KEY, race_stage VARCHAR);`,
+    files: [
+      "035_sns_marketing_hub_schema.sql",
+      "042_content_drafts_columns.sql",
+      "135_sns_preview_bundle_import.sql",
+      "136_sns_metric_observations.sql",
+      "137_sns_x_send.sql",
+      "138_sns_external_operations.sql",
+      "139_sns_deadline_queue.sql",
+      "140_sns_mobile_approval.sql",
+      "145_sns_edit_assist.sql",
+      "146_sns_shorts_send.sql",
+      "147_sns_draft_diff.sql",
+      "148_sns_posted_approval_guard.sql",
+      "153_sns_auto_send.sql",
+      "154_sns_tokens_metric_jobs.sql",
+      "158_sns_lanes_digest_period.sql",
+      "160_sns_x_multiple_images.sql",
+      "161_sns_full_picture_items.sql",
+      "172_sns_full_picture_shorts.sql",
+    ],
+  });
 });
 beforeEach(async () => {
   await db.exec(`

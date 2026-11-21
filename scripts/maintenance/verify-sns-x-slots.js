@@ -3,9 +3,9 @@
 // 外部接続なし。X へは何も送らない
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
+import { setupSnsDb } from "./verifyData/sns-db-setup.js";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 
 
@@ -30,48 +30,34 @@ let seeded;
 let seq = 0;
 
 before(async () => {
-  await db.exec(
-    "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
-  );
-  await db.exec(
-    "CREATE TABLE test_clock(value timestamptz); INSERT INTO test_clock VALUES(NULL); CREATE FUNCTION test_now() RETURNS timestamptz LANGUAGE sql AS 'SELECT coalesce(value,now()) FROM test_clock';",
-  );
-  await db.exec(
-    "CREATE TABLE scrape_job_state(job TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'off' CHECK (mode IN ('off','shadow','live')));",
-  );
-  for (const file of [
-    "035_sns_marketing_hub_schema.sql",
-    "042_content_drafts_columns.sql",
-    "135_sns_preview_bundle_import.sql",
-    "136_sns_metric_observations.sql",
-    "137_sns_x_send.sql",
-    "138_sns_external_operations.sql",
-    "139_sns_deadline_queue.sql",
-    "140_sns_mobile_approval.sql",
-    "145_sns_edit_assist.sql",
-    "146_sns_shorts_send.sql",
-    "147_sns_draft_diff.sql",
-    "148_sns_posted_approval_guard.sql",
-    "153_sns_auto_send.sql",
-    "154_sns_tokens_metric_jobs.sql",
-    "158_sns_lanes_digest_period.sql",
-    "160_sns_x_multiple_images.sql",
-    "161_sns_full_picture_items.sql",
-    "172_sns_full_picture_shorts.sql",
-    "176_sns_finals_image_items.sql",
-    "177_sns_finals_replies.sql",
-    "179_sns_research_image_items.sql",
-    "180_sns_research_image_send.sql",
-    "182_sns_x_kind_reserves.sql",
-  ])
-    await db.exec(
-      (
-        await readFile(
-          new URL("../../docs/db-migration/" + file, import.meta.url),
-          "utf8",
-        )
-      ).replaceAll("now()", "test_now()"),
-    );
+  await setupSnsDb(db, {
+    base: import.meta.url,
+    files: [
+      "035_sns_marketing_hub_schema.sql",
+      "042_content_drafts_columns.sql",
+      "135_sns_preview_bundle_import.sql",
+      "136_sns_metric_observations.sql",
+      "137_sns_x_send.sql",
+      "138_sns_external_operations.sql",
+      "139_sns_deadline_queue.sql",
+      "140_sns_mobile_approval.sql",
+      "145_sns_edit_assist.sql",
+      "146_sns_shorts_send.sql",
+      "147_sns_draft_diff.sql",
+      "148_sns_posted_approval_guard.sql",
+      "153_sns_auto_send.sql",
+      "154_sns_tokens_metric_jobs.sql",
+      "158_sns_lanes_digest_period.sql",
+      "160_sns_x_multiple_images.sql",
+      "161_sns_full_picture_items.sql",
+      "172_sns_full_picture_shorts.sql",
+      "176_sns_finals_image_items.sql",
+      "177_sns_finals_replies.sql",
+      "179_sns_research_image_items.sql",
+      "180_sns_research_image_send.sql",
+      "182_sns_x_kind_reserves.sql",
+    ],
+  });
   seeded = await all(
     "SELECT kind, daily_count, weekdays FROM sns_x_kind_reserves ORDER BY kind",
   );
