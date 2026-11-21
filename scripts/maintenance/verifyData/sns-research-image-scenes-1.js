@@ -5,27 +5,28 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resultLine, researchStatus } from "../../sns/push-research-image.js";
+import { pushResearchImage, resultLine, researchStatus } from "../../sns/push-research-image.js";
 
-let db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push;
+let db, first, riskRules, DAY, SLUG, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, IMAGE, transition, counts, NOTHING, theJob;
 
-export const transition = (jobId, action, result = {}) =>
-  first("SELECT public.transition_sns_x_send($1,$2,$3::jsonb) r", [
-    jobId,
-    action,
-    JSON.stringify(result),
-  ]).then((row) => row.r);
-
-export const counts = async () => ({
-  drafts: Number((await first("SELECT count(*) n FROM sns_drafts")).n),
-  items: Number((await first("SELECT count(*) n FROM sns_auto_send_items")).n),
-  jobs: Number((await first("SELECT count(*) n FROM sns_x_send_jobs")).n),
-  saved: saved.length,
-});
-
-export const NOTHING = { drafts: 0, items: 0, jobs: 0, saved: 0 };
-
-export const theJob = () => first("SELECT * FROM sns_x_send_jobs");
+export const push = (b = bundle(), opts = {}, image = IMAGE) => {
+  const f = {
+    "/f/bundle.json": new TextEncoder().encode(JSON.stringify(b)),
+    ...(image ? { [`/f/${SLUG}.png`]: image } : {}),
+  };
+  const notes = [];
+  return pushResearchImage("/f", {
+    store,
+    readBytes: async (p) => {
+      if (!f[p]) throw Object.assign(new Error("no file"), { code: "ENOENT" });
+      return f[p];
+    },
+    notify: async (text) => notes.push(text),
+    riskRules,
+    now: PUSHED_AT,
+    ...opts,
+  }).then((r) => ({ ...r, notes }));
+};
 
 /** test("取り置き（180 の v_a_pending）: 通り道 B の claim は、今日まだ送っていない research_ima の中身を割った 1/4 */
 async function sriRsv1() {
@@ -85,9 +86,9 @@ async function sriRsv4({ b, me, snapshot }) {
   assert.equal((await transition(bJob.id, "claim")).state, "sending");
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・OBSERVED・setClock・CAPTION・bundle・saved・store・push） */
+/** verify から呼ぶ入口。env は verify 側の束縛（db・first・riskRules・DAY・SLUG・ID・at・PUSHED_AT・OBSERVED・png・setClock・CAPTION・bundle・saved・store・IMAGE） */
 export function runSnsResearchImageScenes1(env) {
-  ({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push } = env);
+  ({ db, first, riskRules, DAY, SLUG, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, IMAGE } = env);
 
 }
 
@@ -257,10 +258,64 @@ function sri1Scene3() {
   });
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・OBSERVED・setClock・CAPTION・bundle・saved・store・push） */
+/** verify から呼ぶ入口。env は verify 側の束縛（db・first・riskRules・DAY・SLUG・ID・at・PUSHED_AT・OBSERVED・png・setClock・CAPTION・bundle・saved・store・IMAGE・transition・counts・NOTHING・theJob） */
 export function runSnsResearchImageScenes2(env) {
-  ({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push } = env);
+  ({ db, first, riskRules, DAY, SLUG, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, IMAGE, transition, counts, NOTHING, theJob } = env);
   sri1Scene1();
   sri1Scene2();
   sri1Scene3();
+}
+
+function sri1Scene4() {
+  test("検査（時刻・画像）: 今日でない・期限の10分前を過ぎた・集計が未来・期限までに24時間を越える・画像の大きさ。拒否は Slack に知らせて何も書かない", async () => {
+    const reasonsOf = async (b, opts, image) =>
+      (await push(b, opts, image)).reasons?.join() ?? "";
+    assert.match(await reasonsOf(bundle({ date: "2037-10-29" })), /今日/);
+    // 期限 20:00 の10分前（19:50）ちょうどは拒否、その1秒前は受け取る
+    assert.match(
+      await reasonsOf(bundle(), { now: at("19:50:00") }),
+      /10分前を過ぎた/,
+    );
+    assert.match(
+      await reasonsOf(
+        bundle({ source_observed_at: at("15:30:00").toISOString() }),
+      ),
+      /今より後/,
+    );
+    // 期限 20:00 の24時間前ちょうどは古い
+    assert.match(
+      await reasonsOf(
+        bundle({
+          source_observed_at: new Date(
+            at("20:00:00").getTime() - 86400000,
+          ).toISOString(),
+        }),
+      ),
+      /古い/,
+    );
+    // 時差の無い時刻は、Node と DB で別の時刻に読まれるので受け取らない
+    assert.match(
+      await reasonsOf(bundle({ source_observed_at: "2037-10-28T14:30:00" })),
+      /時差/,
+    );
+    assert.match(await reasonsOf(bundle(), {}, png(1200, 1350)), /1080×1350/);
+    assert.match(await reasonsOf(bundle(), {}, null), /無い/);
+    assert.deepEqual(await counts(), NOTHING);
+    const rejected = await push(bundle({ x_text: "儲かる数字" }));
+    assert.match(rejected.notes[0], /検査で拒否/);
+    assert.equal(resultLine(rejected).code, 1);
+    // 19:49:59 は受け取る（送る時刻は今＋2分）
+    const late = await push(bundle(), { now: at("19:49:59") });
+    assert.equal(late.reasons, undefined);
+    assert.equal(
+      late.send_at,
+      new Date(at("19:49:59").getTime() + 120000).toISOString(),
+    );
+  });
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（db・first・riskRules・DAY・SLUG・ID・at・PUSHED_AT・OBSERVED・png・setClock・CAPTION・bundle・saved・store・IMAGE・transition・counts・NOTHING・theJob） */
+export function runSnsResearchImageScenes3(env) {
+  ({ db, first, riskRules, DAY, SLUG, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, IMAGE, transition, counts, NOTHING, theJob } = env);
+  sri1Scene4();
 }
