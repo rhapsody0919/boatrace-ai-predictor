@@ -24,19 +24,29 @@
   margin: 0 auto 0.75rem;
 }
 
-.home-ai-intro__links {
+/* 説明文の直後の運営・データ・成績の3行（PV09 T2）。説明文と同じ幅・字の大きさで、行の頭に区切りの線 */
+.home-ai-intro__facts {
   list-style: none;
   padding: 0;
-  margin: 1.25rem auto 0;
+  margin: 0 auto 1rem;
   max-width: 720px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.home-ai-intro__facts li {
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--border-hairline);
 }
 
 /* 既定のリンク色（#0000ee）はダークテーマの背景で読めない（axe のコントラスト違反）。
    テーマで切り替わるブランドのアクセント色を使う */
-.home-ai-intro__links a {
+.home-ai-intro__facts a {
   color: var(--brand-accent-primary);
   font-weight: var(--font-weight-bold);
 }

@@ -15,7 +15,21 @@ export const link = (href, text) =>
 const listOf = (tag, items) =>
   `<${tag}>\n${items.map((x) => `<li>${escapeHtml(x)}</li>`).join("\n")}\n</${tag}>`;
 
-// 人のトップの HomeAiIntro と同じ並び（見出し → 紹介文 → 2つの確かめ方 → 成績ページへのリンク → よくある質問）
+// 説明文の直後の運営・データ・成績の3行（PV09 T2）。人の HomeAiIntro の .home-ai-intro__facts と同じ要素・同じ並び
+function aiIntroFactsHtml(f) {
+  const updated = f.data.updated
+    ? ` <time datetime="${escapeHtml(f.data.updated.datetime)}">${escapeHtml(f.data.updated.text)}</time>`
+    : "";
+  return [
+    "<ul>",
+    `<li><span>${escapeHtml(f.operator.text)}</span> ${link(f.operator.link.href, f.operator.link.text)}</li>`,
+    `<li><span>${escapeHtml(f.data.text)}</span>${updated}</li>`,
+    `<li><span>${escapeHtml(f.results.text)}</span> ${f.results.links.map((l) => link(l.href, l.text)).join(" ")} <span>${escapeHtml(f.results.note)}</span></li>`,
+    "</ul>",
+  ].join("\n");
+}
+
+// 人のトップの HomeAiIntro と同じ並び（見出し → 説明文 → 運営・データ・成績の3行 → 紹介文 → 2つの確かめ方 → よくある質問）
 export function aiIntroHtml(a) {
   const tools = a.tools.map(
     (tool) =>
@@ -29,6 +43,8 @@ export function aiIntroHtml(a) {
   return [
     "<section>",
     `<h2>${escapeHtml(a.title)}</h2>`,
+    `<p>${escapeHtml(a.lead)}</p>`,
+    aiIntroFactsHtml(a.facts),
     ...a.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`),
     "<div>",
     `<h3>${escapeHtml(a.checkTitle)}</h3>`,
@@ -37,7 +53,6 @@ export function aiIntroHtml(a) {
     `<p>${link(a.venuesLink.href, a.venuesLink.text)}</p>`,
     `<p>${escapeHtml(a.note)}</p>`,
     "</div>",
-    `<ul>\n${a.links.map((l) => `<li>${link(l.href, l.text)}</li>`).join("\n")}\n</ul>`,
     "<div>",
     `<h3>${escapeHtml(a.faqTitle)}</h3>`,
     ...faq,
