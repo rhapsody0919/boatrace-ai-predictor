@@ -74,9 +74,44 @@ if (jobsArg) {
   jobs = parsed;
 }
 
+/** 1つの項目の問題の一覧（条件と文の対を、出す順に並べる） */
+function entryProblems(e, files) {
+  const checks = [
+    [
+      !files.includes(e.script),
+      () =>
+        `ファイルなし: verify-registry.json の ${e.script} が存在しません。削除したならレジストリからも消してください`,
+    ],
+    [
+      !["ci", "manual"].includes(e.tier),
+      () => `tierが不正: ${e.script} の tier="${e.tier}"（ci / manual）`,
+    ],
+    [
+      !e.guards,
+      () => `guardsなし: ${e.script} に「何を守るか」の1行がありません`,
+    ],
+    [
+      e.runner && !["node", "bash"].includes(e.runner),
+      () =>
+        `runnerが不正: ${e.script} の runner="${e.runner}"（node / bash。省略時は node）`,
+    ],
+    [
+      e.timeoutSec !== undefined &&
+        !(Number.isInteger(e.timeoutSec) && e.timeoutSec > 0),
+      () =>
+        `timeoutSecが不正: ${e.script} の timeoutSec=${JSON.stringify(e.timeoutSec)}（1以上の整数・秒）`,
+    ],
+    [
+      e.tier === "manual" && (!e.reason || !e.command),
+      () =>
+        `manualの説明不足: ${e.script} には reason（なぜCIに載せないか）と command（実行方法）が要ります`,
+    ],
+  ];
+  return checks.filter(([bad]) => bad).map(([, text]) => text());
+}
+
 /** レジストリと実ファイルを突き合わせ、問題の一覧を返す */
 async function checkRegistry(entries) {
-  const problems = [];
   // .js だけを見ていると、verify-push-with-retry.sh のような別形式が
   // 未登録のまま素通りする（実際に1本あった）。
   // 対象は scripts/maintenance/ 直下のみ。サブディレクトリの check-*.js と
@@ -86,59 +121,24 @@ async function checkRegistry(entries) {
     .filter((f) => /^verify-.*\.(js|mjs|cjs|sh)$/.test(f))
     .sort();
   const registered = new Set(entries.map((e) => e.script));
-
-  for (const f of files) {
-    if (!registered.has(f)) {
-      problems.push(
+  const unregistered = files
+    .filter((f) => !registered.has(f))
+    .map(
+      (f) =>
         `未登録: ${f} が verify-registry.json にありません。tier（ci / manual）と guards を追記してください`,
-      );
-    }
-  }
-  for (const e of entries) {
-    if (!files.includes(e.script)) {
-      problems.push(
-        `ファイルなし: verify-registry.json の ${e.script} が存在しません。削除したならレジストリからも消してください`,
-      );
-    }
-    if (!["ci", "manual"].includes(e.tier)) {
-      problems.push(
-        `tierが不正: ${e.script} の tier="${e.tier}"（ci / manual）`,
-      );
-    }
-    if (!e.guards) {
-      problems.push(
-        `guardsなし: ${e.script} に「何を守るか」の1行がありません`,
-      );
-    }
-    if (e.runner && !["node", "bash"].includes(e.runner)) {
-      problems.push(
-        `runnerが不正: ${e.script} の runner="${e.runner}"（node / bash。省略時は node）`,
-      );
-    }
-    if (
-      e.timeoutSec !== undefined &&
-      !(Number.isInteger(e.timeoutSec) && e.timeoutSec > 0)
-    ) {
-      problems.push(
-        `timeoutSecが不正: ${e.script} の timeoutSec=${JSON.stringify(e.timeoutSec)}（1以上の整数・秒）`,
-      );
-    }
-    if (e.tier === "manual" && (!e.reason || !e.command)) {
-      problems.push(
-        `manualの説明不足: ${e.script} には reason（なぜCIに載せないか）と command（実行方法）が要ります`,
-      );
-    }
-  }
+    );
   const dup = entries
     .map((e) => e.script)
     .filter((s, i, a) => a.indexOf(s) !== i);
-  for (const s of new Set(dup)) {
-    problems.push(`重複エントリ: ${s} がレジストリに複数あります`);
-  }
-  return problems;
+  return [
+    ...unregistered,
+    ...entries.flatMap((e) => entryProblems(e, files)),
+    ...[...new Set(dup)].map(
+      (s) => `重複エントリ: ${s} がレジストリに複数あります`,
+    ),
+  ];
 }
 
-/** 暴走出力でランナーがメモリを食い潰さないための上限 */
 const MAX_CAPTURE_BYTES = 256 * 1024;
 const capped = (buf, chunk) =>
   buf.length >= MAX_CAPTURE_BYTES ? buf : buf + chunk;
