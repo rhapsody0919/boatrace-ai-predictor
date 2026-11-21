@@ -30,9 +30,12 @@ import {
 import { mainRefresh as mainRefreshRaw } from "../daily/generate-predictions.js";
 import { scrapeAndUpsertRaces } from "../daily/scrape-exhibition-data.js";
 import { createFakeClient } from "./verifyData/prediction-refresh-fake-client.js";
-import { preRaceRefresh } from "./verifyData/cron-entry-probe.js";
+import { checkRefreshWiring } from "./verifyData/prediction-refresh-wiring.js";
 import { runPredictionRefreshScenes1 } from "./verifyData/prediction-refresh-scenes-1.js";
-import { runPredictionRefreshScenes2, runPredictionRefreshScenes3 } from "./verifyData/prediction-refresh-scenes-2.js";
+import {
+  runPredictionRefreshScenes2,
+  runPredictionRefreshScenes3,
+} from "./verifyData/prediction-refresh-scenes-2.js";
 import { runPredictionRefreshScenes4 } from "./verifyData/prediction-refresh-scenes-3.js";
 
 // 対象日を指定しない呼び出しは、実行日（JSTの今日）が対象になり、フィクスチャ（2026-09-20）と、日付が変わると食い違って
@@ -266,8 +269,23 @@ async function quiet(fn) {
 }
 
 // ---- 後半の場面（verifyData/prediction-refresh-scenes-1.js・prediction-refresh-scenes-2.js） ----
-await runPredictionRefreshScenes1({ mainRefresh, check, show, raceTables, NOW, NOW_LATE, quiet });
-await runPredictionRefreshScenes2({ mainRefresh, check, show, raceTables, NOW, quiet });
+await runPredictionRefreshScenes1({
+  mainRefresh,
+  check,
+  show,
+  raceTables,
+  NOW,
+  NOW_LATE,
+  quiet,
+});
+await runPredictionRefreshScenes2({
+  mainRefresh,
+  check,
+  show,
+  raceTables,
+  NOW,
+  quiet,
+});
 
 // ---------------------------------------------------------------------------
 // (f) 展示取得（scrapeAndUpsertRaces）が、実際に書き込んだレースを changedRaceIds で返す
@@ -387,75 +405,30 @@ await runPredictionRefreshScenes2({ mainRefresh, check, show, raceTables, NOW, q
 }
 
 // ---- 後半の場面（verifyData/prediction-refresh-scenes-2.js） ----
-await runPredictionRefreshScenes3({ mainRefresh, check, show, raceTables, NOW, quiet });
+await runPredictionRefreshScenes3({
+  mainRefresh,
+  check,
+  show,
+  raceTables,
+  NOW,
+  quiet,
+});
 
 // ---------------------------------------------------------------------------
-// (h) 配線の静的確認（scrape-scheduled.js・api/cron/exhibition.js は、import 時に実行される／HTTPハンドラーの
-//     ため、ここでは実行できない。トグルの配線が外れていないことを、ソースで確認する）
+// (h) 配線（scrape-scheduled.js・api/cron/exhibition.js・race-info.js は import 時に動く／HTTPハンドラーの入口なので、
+//     偽の import で入口を回して見る。verifyData/prediction-refresh-wiring.js）
 // ---------------------------------------------------------------------------
-{
-  const fs = await import("node:fs");
-  const read = (path) =>
-    fs.readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
-  const scheduled = read("scripts/daily/scrape-scheduled.js");
-  check(
-    "scrape-scheduled.js: オッズ起点の除外は SKIP_ODDS_REFRESH_ON_GHA（isOddsRefreshSkippedOnGha）で決まり、collectGhaRefreshRaceIds で対象を集める",
-    /const skipOddsRefresh = isOddsRefreshSkippedOnGha\(\)/.test(scheduled) &&
-      /collectGhaRefreshRaceIds\(\{[\s\S]*?skipOddsRefresh,[\s\S]*?\}\)/.test(
-        scheduled,
-      ),
-  );
-  check(
-    "scrape-scheduled.js: 書き込み方式を指定しない（既定の upsert。replace は BOA-628 で廃止）",
-    !/writeMode/.test(scheduled),
-  );
-  check(
-    "scrape-scheduled.js: オッズ・レース情報・展示の各起点を別々の集合に集めている（オッズ起点だけを外せる）",
-    /oddsRaceIds\.add/.test(scheduled) &&
-      /infoRaceIds\.add/.test(scheduled) &&
-      /exhibitionRaceIds\.add/.test(scheduled) &&
-      !/updatedRaceIds\.add/.test(scheduled),
-  );
-  const workflow = read(".github/workflows/scrape-scheduled.yml");
-  check(
-    "scrape-scheduled.yml: SKIP_ODDS_REFRESH_ON_GHA を、リポジトリ変数（vars）から環境に渡す（未設定なら空＝off）",
-    /SKIP_ODDS_REFRESH_ON_GHA: \$\{\{ vars\.SKIP_ODDS_REFRESH_ON_GHA \}\}/.test(
-      workflow,
-    ),
-  );
-  // 展示・レース情報の Vercel 関数の本体は scripts/lib/scrapeJobs/preRaceHandlers.js（api/cron/exhibition.js・race-info.js は薄い入口）
-  const handlers = read("scripts/lib/scrapeJobs/preRaceHandlers.js");
-  // 動的 import の先は字でなく振る舞いで見る: 予測の再計算の本（predictionRun.js・generate-predictions.js）を偽にして preRaceHandlers.js を読み込み、
-  // 読み込みの直後は偽が読まれず、既定の refresh を1回呼ぶと偽が読まれ、その mainRefresh に引数がそのまま渡る（verifyData/cron-entry-probe.js）
-  const refreshArgs = { isDryRun: false, specificRaceIds: ["probe-race"] };
-  const probe = await preRaceRefresh(refreshArgs);
-  check(
-    "preRaceHandlers.js: mainRefresh は有効なときだけ動的 import する（無効なときは同じモジュール読み込み）。展示の従来の経路（runLegacyExhibition）は消した（scraping-load-budget spec の P0）",
-    !/runLegacyExhibition\(/.test(handlers) &&
-      !/^import .*(generate-predictions|predictionRun)/m.test(handlers) &&
-      probe.status === 200 &&
-      !probe.loadedAtImport.includes("predictions") &&
-      probe.loadedAfter.includes("predictions") &&
-      probe.refreshes.length === 1 &&
-      probe.refreshes[0][0] === refreshArgs,
-    show({ status: probe.status, loadedAtImport: probe.loadedAtImport, loadedAfter: probe.loadedAfter, refreshes: probe.refreshes.length }),
-  );
-  check(
-    "preRaceHandlers.js: レース情報・展示のスロットの経路は、全スロットの完了後に、変更を書いたレースについて refreshAfterChange を呼ぶ（スロットのリースの外）",
-    /refreshAfterChange\(\{\s*result: \{ changedRaceIds/.test(handlers),
-  );
-  for (const file of ["exhibition", "race-info"]) {
-    const entry = read(`api/cron/${file}.js`);
-    check(
-      `api/cron/${file}.js: 本体は preRaceHandlers.js（mainRefresh を静的 import しない）`,
-      /scripts\/lib\/scrapeJobs\/preRaceHandlers\.js/.test(entry) &&
-        !/generate-predictions/.test(entry.replace(/\/\*[\s\S]*?\*\//g, "")),
-    );
-  }
-}
+await checkRefreshWiring({ check, show });
 
 // ---- 後半の場面（verifyData/prediction-refresh-scenes-3.js） ----
-await runPredictionRefreshScenes4({ mainRefresh, check, show, raceTables, NOW, quiet });
+await runPredictionRefreshScenes4({
+  mainRefresh,
+  check,
+  show,
+  raceTables,
+  NOW,
+  quiet,
+});
 
 if (failures > 0) {
   console.error(`\n❌ ${failures}件の検証に失敗`);
