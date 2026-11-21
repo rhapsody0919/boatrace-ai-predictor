@@ -1,8 +1,8 @@
-// 実行: node --test src/pure/venueCourseTableRows.test.js（BOA-1687）
+// 実行: node --test scripts/tests/venueCourseTableRows.test.js（BOA-1687）
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { VENUE_SUMMARY_STATS } from "../data/venueSummaryStats.js";
-import { venueCourseTableRows } from "./venueCourseTableRows.js";
+import { VENUE_SUMMARY_STATS } from "../../src/data/venueSummaryStats.js";
+import { venueCourseTableRows } from "../../src/pure/venueCourseTableRows.js";
 
 const { venues, national } = VENUE_SUMMARY_STATS;
 

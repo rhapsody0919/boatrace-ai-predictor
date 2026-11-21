@@ -64,8 +64,6 @@ async function open(page, venue) {
   });
 }
 
-// 変更前の master（1f118bc）で測った最初のレースカードの文書上の top（/venue/2・/venue/4 とも同じ）。許容 +1px
-const MASTER_FIRST_CARD_TOP = { 375: 451.8, 1280: 288.5 };
 const VIEWPORTS = [
   { width: 375, height: 812 },
   { width: 1280, height: 800 },
@@ -164,15 +162,26 @@ for (const viewport of VIEWPORTS) {
         );
         expect(nextIsNineR).toBe(true);
 
-        // (2) 最初のレースカードの文書上の top が master より下がらない
+        // (2) 最初のレースカードの文書上の top が master より下がらない（許容 +1px）。
+        // master の値は字の幅で要約の折り返しが変わり環境ごとに違う（macOS の手元 375: 451.8・1280: 288.5、
+        // CI の Linux は 375 で約19px 下）。そこで同じ画面でリンクの行を外した形を master の形として測る。
+        // リンクが無いと :has の詰め（VenueRaceListPage.css）も外れ、要約より上は master と同じ CSS になる
         await page.evaluate(() => document.fonts.ready);
-        const top = await page
-          .locator(".race-card")
-          .first()
-          .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
-        expect(top).toBeLessThanOrEqual(
-          MASTER_FIRST_CARD_TOP[viewport.width] + 1,
-        );
+        // 動きの途中で値が揺れないよう、リンク有りと外した形を1回の同期の配置計算の中で続けて測る
+        const { top, masterTop } = await page.evaluate(() => {
+          const cardTop = () =>
+            document.querySelector(".race-card").getBoundingClientRect().top +
+            window.scrollY;
+          const p = document.querySelector(".venue-race-list__course-link");
+          const parent = p.parentNode;
+          const next = p.nextSibling;
+          const withLink = cardTop();
+          p.remove();
+          const withoutLink = cardTop();
+          parent.insertBefore(p, next);
+          return { top: withLink, masterTop: withoutLink };
+        });
+        expect(top).toBeLessThanOrEqual(masterTop + 1);
 
         // (3) 要約2行の直下に節へのページ内リンク。押すと節がヘッダーの直下〜画面内に入る
         const link = page.locator(
