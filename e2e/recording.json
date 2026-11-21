@@ -1,12 +1,12 @@
 {
   "$comment": "E2Eの録画のポインタ（ADR-0077）。本体は GitHub Release の添付。npm run e2e:recording:fetch で取得する",
-  "tag": "e2e-recording-20261120-1248",
+  "tag": "e2e-recording-20261121-1024",
   "asset": "e2e-recording.zip",
-  "sha256": "7a0ed90674b19bd9bb168936e601d3879fdaefe6c509ac7afe19d95ee24acf88",
-  "bytes": 26034781,
-  "recordedAt": "2026-11-20T03:48:44.762Z",
+  "sha256": "0330d273c1fa294df806c614415dde654076499d56f08eb3d8fd3d46db58ce4f",
+  "bytes": 26186569,
+  "recordedAt": "2026-11-21T01:24:54.453Z",
   "supabaseOrigin": "https://phwgirodvaptywzyibmi.supabase.co",
-  "entries": 5840,
+  "entries": 5868,
   "tests": 2564,
   "skipped": 0
 }
