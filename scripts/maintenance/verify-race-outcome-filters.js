@@ -6,7 +6,8 @@
  *   (b) NOT_NO_RACE_FILTER: PostgREST の条件が「race_status が NULL、または no_race 以外」（078 の IS DISTINCT FROM）
  *   (c) 再発防止: scripts/daily・scripts/lib と、日次で動く aggregate-racer-stats.js・保守用の update-venue-stats.js のコードが、旧フラグ is_no_race（全行 false で機能していない）を条件に使わない
  *       （コメントでの言及と、過去分の取り込みの書き込み kbResultsBackfillRows.js は除く）
- *   (d) 置き換えた集計（6本のクエリ）が、共通の条件 NOT_NO_RACE_FILTER を使う
+ *   (d) 置き換えた集計（6本のクエリ）が、共通の条件 NOT_NO_RACE_FILTER を使う。本文の字は読まず、偽の DB で6本を直接実行と同じに回し、
+ *       race_results への問い合わせの連なりが .or(NOT_NO_RACE_FILTER) を含むかで見る
  *   (e) placedRanks: 返還艇（refund_boats）の位置は着順の艇なし（null）。完走した艇の着順は詰めない（BOA-579）
  *   (f) 選手のコース別2連対率・3連対率（aggregate-racer-stats.js）と会場×枠番の2連対率・3連対率
  *       （calculate-venue-grade-stats.js）が、refund_boats を読み、placedRanks を通して数える（BOA-579）。
@@ -24,7 +25,9 @@ import {
 } from "../lib/raceOutcomeFilters.js";
 import { getDateDaysAgo } from "../lib/dateUtils.js";
 import {
+  DAILY_JOBS,
   fakeDb,
+  runDailyJob,
   loadAggregateRacerStats,
   loadVenueGradeStats,
   chainsOf,
@@ -91,21 +94,39 @@ check(
   offenders.join(", "),
 );
 
-// (d) 置き換えた6本が共通の条件を使う
-const QUERY_FILES = [
-  "update-exhibition-time-top-stats",
-  "update-losing-technique-stats",
-  "update-nige-outcome-distribution",
-  "update-outcome-distribution",
-  "update-top-start-stats",
-  "update-winning-technique-stats",
-];
-const missing = QUERY_FILES.filter(
-  (f) =>
-    !fs
-      .readFileSync(path.join(ROOT, `scripts/daily/${f}.js`), "utf8")
-      .includes(".or(NOT_NO_RACE_FILTER)"),
-);
+// (d) 置き換えた6本を偽の DB で回し、race_results への問い合わせが共通の条件で不成立を外すかを見る（本文の字は読まない）。
+//     展示タイム・スタートの2本は、先に読む表が空だと race_results を問い合わせずに終わるので、直近の1行を置く
+const RECENT = getDateDaysAgo(10);
+const FIRST_READS = {
+  "update-exhibition-time-top-stats": {
+    exhibition_data: [
+      { race_id: `${RECENT}-11-01`, boat_number: 1, exhibition_time: 6.75 },
+    ],
+  },
+  "update-top-start-stats": {
+    race_start_timings: [
+      {
+        race_id: `${RECENT}-11-01`,
+        boat_number: 1,
+        start_timing: 0.12,
+        is_flying: false,
+        finish_mark: null,
+      },
+    ],
+  },
+};
+const missing = [];
+for (const job of DAILY_JOBS) {
+  const { scene } = await runDailyJob(job, FIRST_READS[job]);
+  const chains = chainsOf(scene, "race_results");
+  const filtered = chains.filter((c) =>
+    c.some((q) => q.method === "or" && q.args[0] === NOT_NO_RACE_FILTER),
+  );
+  if (chains.length === 0 || filtered.length < chains.length)
+    missing.push(
+      `${job}（race_results の問い合わせ ${chains.length}本のうち ${filtered.length}本）`,
+    );
+}
 check(
   "(d) 置き換えた6本の集計が .or(NOT_NO_RACE_FILTER) で不成立を外す",
   missing.length === 0,
@@ -140,7 +161,6 @@ check(
 
 // (f) 2連対率・3連対率の集計を偽の DB で回す（本文の字は読まない）。返還艇が表の行順で2着・3着に入ったレースで、
 //     返還艇を2連対・3連対に数えない（placedRanks を通す）こと、結果の取得が refund_boats を読むことを見る
-const RECENT = getDateDaysAgo(10);
 const refunded = (race_id, ranks, refund_boats) => ({
   race_id,
   ...ranks,
