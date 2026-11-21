@@ -10,11 +10,11 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2718 |
-| 読み書きのあるファイル | 320 |
-| 表の読み手（箇所） | 949 |
+| 読んだファイル | 2741 |
+| 読み書きのあるファイル | 322 |
+| 表の読み手（箇所） | 952 |
 | 表の書き手（箇所） | 195 |
-| RPC の呼び手（箇所） | 56 |
+| RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 283 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
@@ -30,7 +30,7 @@
 
 | 表 | 種類 | 権限 | 読み手 | 書き手 | 本体で読む RPC・ビュー | 本体で書く RPC | 取得のジョブ | 外の読み手 |
 |---|---|---|---|---|---|---|---|---|
-| [accuracy_cache](#t-accuracy_cache) | table | anon 可 | 5 | 3 | data_health_nightly_freshness |  |  |  |
+| [accuracy_cache](#t-accuracy_cache) | table | anon 可 | 6 | 3 | data_health_nightly_freshness |  |  |  |
 | [analogy_contribution_profiles](#t-analogy_contribution_profiles) | table | anon 可 | 2 | 0 |  |  |  |  |
 | [analogy_feedback](#t-analogy_feedback) | table | service だけ | 0 | 1 | analogy_feedback_guard |  |  |  |
 | [analogy_models](#t-analogy_models) | table | anon 可 | 4 | 0 | activate_analogy_model | activate_analogy_model |  |  |
@@ -58,13 +58,13 @@
 | [mycroft_predictions](#t-mycroft_predictions) | table | anon 可 | 1 | 1 |  |  |  |  |
 | [nige_outcome_distribution](#t-nige_outcome_distribution) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  | outcome_distribution_update |  |
 | [nige_second_by_course](#t-nige_second_by_course) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
-| [outcome_distribution](#t-outcome_distribution) | table | anon 可 | 5 | 2 | data_health_nightly_freshness |  | outcome_distribution_update |  |
+| [outcome_distribution](#t-outcome_distribution) | table | anon 可 | 6 | 2 | data_health_nightly_freshness |  | outcome_distribution_update |  |
 | [poirot_predictions](#t-poirot_predictions) | table | anon 可 | 2 | 1 | data_health_morning_freshness |  |  |  |
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
 | [predictions](#t-predictions) | table | anon 可 | 44 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか3 | hq:platform/finals_sheet.py |
 | [race_conditions](#t-race_conditions) | table | anon 可 | 44 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか3 |  |
 | [race_entries](#t-race_entries) | table | anon 可 | 146 | 17 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
-| [race_history_cache](#t-race_history_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
+| [race_history_cache](#t-race_history_cache) | table | anon 可 | 3 | 1 | data_health_nightly_freshness |  |  |  |
 | [race_notices_health](#t-race_notices_health) | table | service だけ | 2 | 1 |  |  | race_notices |  |
 | [race_odds](#t-race_odds) | table | anon 可 | 15 | 3 | data_health_coverage, data_health_table_rows |  | odds |  |
 | [race_odds_final](#t-race_odds_final) | table | anon 可 | 3 | 1 |  |  | odds_final |  |
@@ -145,7 +145,7 @@
 | activate_analogy_model | service だけ |  | 名前の文字列: scripts/ml/analogy/db.py:136 |  | analogy_models | analogy_models |  |
 | add_fetch_counts | service だけ |  | scripts/lib/scrapeJobs/fetchCounter.js:166 / 名前の文字列: scripts/lib/scrapeJobs/fetchCounter.js:15, scripts/maintenance/verifyData/fetch-counter-scenes.js:155, scripts/maintenance/verifyData/fetch-counter-scenes.js:168 ほか2 |  |  | fetch_counts, fetch_counts_minute |  |
 | analogy_feedback_guard | service だけ | yes | トリガー: analogy_feedback |  | analogy_feedback |  |  |
-| append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:198, scripts/lib/snsDailyRunnerStore.js:28, scripts/lib/snsMetricsRunnerStore.js:94, scripts/maintenance/verify-sns-daily-runner.js:1279 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
+| append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:198, scripts/lib/snsDailyRunnerStore.js:28, scripts/lib/snsMetricsRunnerStore.js:94, scripts/maintenance/verifyData/sns-daily-runner-scenes-4.js:104 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
 | approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:115, scripts/lib/snsTodayPlannerStore.js:110, scripts/sns/pushFinalsImageStore.js:183, scripts/sns/pushFullPictureStore.js:101 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
 | claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:43 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17, scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:194, scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:230 |  | races, scrape_slots | scrape_slots |  |
 | claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:156 / 名前の文字列: scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:176, scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:229 |  | races, scrape_slots | scrape_slots |  |
@@ -181,7 +181,7 @@
 | get_race_st_predictability | anon 可 |  | scripts/lib/raceIndicatorData.js:32, src/services/raceQueries.js:348 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:324, scripts/maintenance/check-anon-access.js:107 |  | exhibition_data, race_entries, race_start_timings |  |  |
 | get_race_technique_profile | anon 可 |  | scripts/lib/raceIndicatorData.js:42, src/services/raceQueries3.js:301 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:342, scripts/maintenance/check-anon-access.js:108 |  | race_entries, race_results |  |  |
 | get_racer_accident_records | anon 可 |  | src/services/racerQueries4.js:130 / 名前の文字列: scripts/maintenance/check-anon-access.js:112, scripts/maintenance/verifyData/full-picture-scene2-b-3.js:129, sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:683 |  | race_conditions, race_entries, race_start_timings |  |  |
-| get_today_races | anon 可 |  | api/races/today.js:30, scripts/maintenance/verify-display-coverage.js:175, src/services/scheduleQueries.js:55 / 名前の文字列: scripts/maintenance/check-anon-access.js:116, scripts/maintenance/check-anon-access.js:179 |  | predictions, race_conditions, race_entries, race_results, races |  |  |
+| get_today_races | anon 可 |  | api/races/today.js:30, scripts/maintenance/verify-display-coverage.js:175, scripts/verification/verify-cache-config.js:36, src/services/scheduleQueries.js:55 / 名前の文字列: scripts/maintenance/check-anon-access.js:116, scripts/maintenance/check-anon-access.js:179 |  | predictions, race_conditions, race_entries, race_results, races |  |  |
 | guard_sns_diff_approval | service だけ |  | トリガー: sns_drafts | sns_diff_content | sns_x_send_jobs |  |  |
 | guard_sns_preview_bundle_draft | service だけ |  | トリガー: sns_drafts | sns_bundle_send_allowed | sns_bundle_imports, sns_drafts, sns_x_send_jobs |  |  |
 | guard_sns_x_approval | service だけ |  | トリガー: sns_drafts |  | sns_x_send_jobs | sns_x_send_jobs |  |
@@ -273,8 +273,9 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/ml/analogy/in_caution_bands.py:211`, `scripts/ml/analogy/in_caution_bands.py:230`, `scripts/ml/analogy/tests/test_in_caution_bands.py:342`
-- 読み手（5）: 
+- 読み手（6）: 
   - `api/accuracy/index.js:31` select(rest) [data, key]
+  - `scripts/verification/verify-cache-config.js:31` rest(rest)
   - `src/services/predictionQueries3.js:441` select [data, key]
   - `src/services/predictionQueries3.js:467` select [data, key]
   - `src/services/predictionQueries4.js:22` select [data, key]
@@ -644,10 +645,11 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 取得のジョブ: outcome_distribution_update
-- 読み手（5）: 
+- 読み手（6）: 
   - `api/outcome-distribution/index.js:47` select(rest) [count_90days, first_boat, venue_code]
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
   - `scripts/maintenance/verifyData/full-picture-scene2-b-6.js:209` rest(rest)
+  - `scripts/verification/verify-cache-config.js:33` rest(rest)
   - `src/services/venueQueries.js:98` select [count_90days, first_boat]
   - `src/services/venueQueries.js:224` select [*, count_90days, first_boat, venue_code]
 - 書き手（2）: 
@@ -989,11 +991,13 @@
 
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
-- 読み手（2）: 
+- 読み手（3）: 
   - `api/race-history/summary.js:37` select(rest) [data, key]
+  - `scripts/verification/verify-cache-config.js:32` rest(rest)
   - `src/services/scheduleQueries.js:187` select [data, key]
 - 書き手（1）: 
   - `scripts/daily/update-race-history-cache.js:124` upsert [data, key, updated_at]
+- 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_notices_health"></a>race_notices_health
 
@@ -1889,10 +1893,10 @@
   - `scripts/maintenance/verify-data-readers.js:179` rest(rest) [created_at, id, status] （検査）
   - `scripts/maintenance/verify-data-readers.js:201` rest(rest) [id] （検査）
   - `scripts/maintenance/verify-display-coverage.js:170` rest(rest) [*] （検査）
-  - `scripts/maintenance/verify-sns-daily-runner.js:966` rest(rest) [caption_text, format, id, platform, posted_at] （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:47` rest(rest) （検査）
   - `scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:290` rest(rest) [bundle_import_id]
   - `scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:298` rest(rest) [id, status]
+  - `scripts/maintenance/verifyData/sns-daily-runner-scenes-3.js:90` rest(rest) [caption_text, format, id, platform, posted_at]
   - `scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:67` rest(rest)
   - `scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:260` rest(rest)
   - `scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:263` rest(rest) [format, send_lane]

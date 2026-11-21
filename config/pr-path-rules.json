@@ -65,6 +65,7 @@
       "reason": "判定とビルドの守り（足すだけでも人）",
       "paths": [
         "^scripts/maintenance/pr-lane\\.js$",
+        "^scripts/maintenance/prLane(Classify|Human|Lines)\\.js$",
         "^config/pr-path-rules\\.json$",
         "^scripts/lib/relativeImportGraph\\.js$",
         "^scripts/maintenance/prLaneMoveOnly[^/]*\\.js$",
@@ -165,6 +166,7 @@
         "-allowlist\\.json$",
         "^sns-video-studio/remotion/risk-rules\\.json$",
         "^scripts/maintenance/pr-lane\\.js$",
+        "^scripts/maintenance/prLane(Classify|Human|Lines)\\.js$",
         "^scripts/maintenance/verify-pr-lane\\.js$",
         "^config/pr-path-rules\\.json$",
         "^scripts/lib/relativeImportGraph\\.js$"

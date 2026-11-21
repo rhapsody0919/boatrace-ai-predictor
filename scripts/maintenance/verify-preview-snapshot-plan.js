@@ -5,8 +5,9 @@
  * - 本番・手元（VERCEL_ENV が preview 以外）は必ず作る（本番のボット向け HTML を欠かさない）
  * - Preview は既定で作らない。コミットのメッセージの [bot-html] か BOT_SNAPSHOTS_ON_PREVIEW=1 で作る
  * - 生成スクリプトが VERCEL_GIT_COMMIT_MESSAGE・BOT_SNAPSHOTS_ON_PREVIEW を渡し、作らないときはブログ等を呼ばないこと
+ *   （generate-ai-snapshots.js を import し、main をブラウザ・dist の無い偽の道具で回して見る。verifyData/ai-snapshots-main.js）
  */
-import { readFileSync } from "node:fs";
+import { runMain } from "./verifyData/ai-snapshots-main.js";
 import {
   planBlogSnapshots,
   PREVIEW_BOT_HTML_MARKER,
@@ -81,27 +82,45 @@ check(
   planBlogSnapshots({ vercelEnv: "production", optIn: "0" }).build === true,
 );
 
-// 生成スクリプトの配線（判定の結果でブログ等を呼ぶか、status に作らなかった理由を書くか）
-const source = readFileSync(
-  new URL("../generate-ai-snapshots.js", import.meta.url),
-  "utf8",
-);
-check(
-  "生成: VERCEL_ENV・VERCEL_GIT_COMMIT_MESSAGE・BOT_SNAPSHOTS_ON_PREVIEW を渡す",
-  /planBlogSnapshots\(\{\s*vercelEnv: process\.env\.VERCEL_ENV,\s*commitMessage: process\.env\.VERCEL_GIT_COMMIT_MESSAGE,\s*optIn: process\.env\.BOT_SNAPSHOTS_ON_PREVIEW,?\s*\}\)/.test(
-    source,
-  ),
-);
-check(
-  "生成: 作らないときはブログ・翻訳・一覧を呼ばない",
-  /if \(blogPlan\.build\) \{\s*\(\{ failed, translatedResult, listResult \} = await generateBlogFamily\(/.test(
-    source,
-  ),
-);
-check(
-  "生成: 作らなかった理由を status.json に渡す",
-  /skipped: blogPlan\.build \? null : blogPlan\.reason/.test(source),
-);
+// 生成スクリプトの配線（判定の結果でブログ等を呼ぶか、status に作らなかった理由を書くか）。main を env ごとに回す
+const blogFamilyCalled = (calls) =>
+  calls.some(([name]) => name === "generateBlogFamily");
+try {
+  const off = await runMain({
+    VERCEL_ENV: "preview",
+    VERCEL_GIT_COMMIT_MESSAGE: "feat: x",
+  });
+  const marked = await runMain({
+    VERCEL_ENV: "preview",
+    VERCEL_GIT_COMMIT_MESSAGE: "chore: Preview で確かめる [bot-html]\n\n本文",
+  });
+  const optedIn = await runMain({
+    VERCEL_ENV: "preview",
+    VERCEL_GIT_COMMIT_MESSAGE: "x",
+    BOT_SNAPSHOTS_ON_PREVIEW: "1",
+  });
+  const production = await runMain({ VERCEL_ENV: "production" });
+  check(
+    "生成: VERCEL_ENV・VERCEL_GIT_COMMIT_MESSAGE・BOT_SNAPSHOTS_ON_PREVIEW を渡す",
+    !blogFamilyCalled(off.calls) &&
+      blogFamilyCalled(marked.calls) &&
+      blogFamilyCalled(optedIn.calls) &&
+      blogFamilyCalled(production.calls),
+  );
+  check(
+    "生成: 作らないときはブログ・翻訳・一覧を呼ばない",
+    !blogFamilyCalled(off.calls) && blogFamilyCalled(production.calls),
+  );
+  check(
+    "生成: 作らなかった理由を status.json に渡す",
+    typeof off.status.blog?.skipped === "string" &&
+      off.status.blog.skipped.includes(PREVIEW_BOT_HTML_MARKER) &&
+      production.status.blog?.skipped == null,
+    JSON.stringify(off.status.blog ?? null),
+  );
+} catch (error) {
+  check("生成: main を偽の道具で回せる", false, error.message);
+}
 
 if (failures > 0) {
   console.error(`\n❌ ${failures}件の検証に失敗`);

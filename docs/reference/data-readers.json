@@ -5,11 +5,11 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2718,
-    "filesWithAccess": 320,
-    "tableReaders": 949,
+    "sourceFiles": 2741,
+    "filesWithAccess": 322,
+    "tableReaders": 952,
     "tableWriters": 195,
-    "rpcCallers": 56,
+    "rpcCallers": 57,
     "nameMentions": 283,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
@@ -41,6 +41,12 @@
             "data",
             "key"
           ]
+        },
+        {
+          "ref": "scripts/verification/verify-cache-config.js:31",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "src/services/predictionQueries3.js:441",
@@ -4819,6 +4825,12 @@
           "columns": []
         },
         {
+          "ref": "scripts/verification/verify-cache-config.js:33",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
+        },
+        {
           "ref": "src/services/venueQueries.js:98",
           "op": "select",
           "via": "client",
@@ -9107,6 +9119,12 @@
             "data",
             "key"
           ]
+        },
+        {
+          "ref": "scripts/verification/verify-cache-config.js:32",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "src/services/scheduleQueries.js:187",
@@ -21142,19 +21160,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-daily-runner.js:966",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "caption_text",
-            "format",
-            "id",
-            "platform",
-            "posted_at"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-sns-month-calendar.js:47",
           "op": "rest",
           "via": "rest",
@@ -21176,6 +21181,18 @@
           "columns": [
             "id",
             "status"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-daily-runner-scenes-3.js:90",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "caption_text",
+            "format",
+            "id",
+            "platform",
+            "posted_at"
           ]
         },
         {
@@ -21366,8 +21383,8 @@
             "scripts/lib/snsTodayPlannerStore.js:92",
             "scripts/maintenance/verify-data-readers.js:179",
             "scripts/maintenance/verify-data-readers.js:201",
-            "scripts/maintenance/verify-sns-daily-runner.js:966",
             "scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:298",
+            "scripts/maintenance/verifyData/sns-daily-runner-scenes-3.js:90",
             "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:287",
             "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushFinalsImageStore.js:165",
@@ -21426,7 +21443,7 @@
             "scripts/lib/snsDailyRunnerStore.js:65",
             "scripts/lib/snsMetricsRunnerStore.js:62",
             "scripts/lib/snsTodayPlannerStore.js:45",
-            "scripts/maintenance/verify-sns-daily-runner.js:966",
+            "scripts/maintenance/verifyData/sns-daily-runner-scenes-3.js:90",
             "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:263",
             "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushSetsuKiryokuShortStore.js:78",
@@ -21482,7 +21499,7 @@
             "scripts/lib/snsDailyRunnerStore.js:60",
             "scripts/lib/snsDailyRunnerStore.js:65",
             "scripts/lib/snsMetricsRunnerStore.js:62",
-            "scripts/maintenance/verify-sns-daily-runner.js:966"
+            "scripts/maintenance/verifyData/sns-daily-runner-scenes-3.js:90"
           ],
           "writers": [],
           "sql": [
@@ -21559,7 +21576,7 @@
             "api/_lib/snsClaimCheckReaders.js:149",
             "scripts/lib/snsAutoPlanRunnerStore.js:61",
             "scripts/lib/snsDailyRunnerStore.js:65",
-            "scripts/maintenance/verify-sns-daily-runner.js:966",
+            "scripts/maintenance/verifyData/sns-daily-runner-scenes-3.js:90",
             "scripts/sns/today-picks.js:98"
           ],
           "writers": [],
@@ -21664,7 +21681,7 @@
             "scripts/lib/snsDailyRunnerStore.js:60",
             "scripts/lib/snsDailyRunnerStore.js:65",
             "scripts/lib/snsMetricsRunnerStore.js:62",
-            "scripts/maintenance/verify-sns-daily-runner.js:966"
+            "scripts/maintenance/verifyData/sns-daily-runner-scenes-3.js:90"
           ],
           "writers": [],
           "sql": [
@@ -26877,7 +26894,7 @@
           "via": "rest"
         },
         {
-          "ref": "scripts/maintenance/verify-sns-daily-runner.js:1279",
+          "ref": "scripts/maintenance/verifyData/sns-daily-runner-scenes-4.js:104",
           "via": "rest"
         }
       ],
@@ -27937,6 +27954,10 @@
         },
         {
           "ref": "scripts/maintenance/verify-display-coverage.js:175",
+          "via": "rest"
+        },
+        {
+          "ref": "scripts/verification/verify-cache-config.js:36",
           "via": "rest"
         },
         {
