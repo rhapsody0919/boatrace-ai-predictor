@@ -32,9 +32,7 @@ import "./RacerProfile.css";
 // title・description は画面に表示されないメタ情報なので「競艇」を含めてよい（code-style.md 例外1の暫定措置。
 // 役所への営業前に外す）。選手名＋成績で検索されるので、成績の語を前に置く（集客レーン、2026-10-02）
 // プロフィールが無い・取得中・失敗のときも登録番号を入れ、選手ごとに別のページにする（同じ中身の重複を避ける）
-// 期別の要約が届いたら title に勝率の数字1つ、description に期の名前つきの勝率等を足す（BOA-1688）。
-// 例外1の語を含む行は許可リスト（kyotei-wording-allowlist.json）の行と同じ字に保ち、数字は後から差し込む
-function buildRacerMeta(data, racerId, summary = null) {
+function buildRacerMeta(data, racerId) {
   const displayName = data?.profile?.name?.replace(/\s+/g, "") ?? "選手";
   const title = data?.profile
     ? `${displayName}（競艇）選手の成績・勝率・決まり手 | 龍神レーダー`
@@ -51,13 +49,18 @@ function buildRacerMeta(data, racerId, summary = null) {
     ? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`
     : `登録番号${racerId}の選手のページ | 龍神レーダー`;
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
+  return { displayName, title, description, canonicalUrl };
+}
+
+// 期別の要約が届いたら title に勝率の数字1つ、description に期の名前つきの勝率等を差し込む（BOA-1688）。
+// 例外1の語を含む行は許可リスト（kyotei-wording-allowlist.json）の行と同じ字に保つため、buildRacerMeta は変えない
+function withPeriodStats(meta, data, summary) {
   const stats = data?.profile ? periodSentence(summary) : null;
-  if (!stats) return { displayName, title, description, canonicalUrl };
+  if (!stats) return meta;
   return {
-    displayName,
-    title: title.replace("・勝率・", `・勝率${summary.winRate.toFixed(2)}・`),
-    description: description.replace("成績データ。", `成績データ。${stats}`),
-    canonicalUrl,
+    ...meta,
+    title: meta.title.replace("・勝率・", `・勝率${summary.winRate.toFixed(2)}・`),
+    description: meta.description.replace("成績データ。", `成績データ。${stats}`),
   };
 }
 
@@ -92,7 +95,11 @@ export default function RacerProfile() {
 
   // 期別の値が届く前は今の文のまま、届いたら勝率等を足した文に差し替える（BOA-1688）
   const summary = buildRacerSummary(period.periodRows);
-  const { displayName, title, description, canonicalUrl } = buildRacerMeta(data, racerId, summary);
+  const { displayName, title, description, canonicalUrl } = withPeriodStats(
+    buildRacerMeta(data, racerId),
+    data,
+    summary,
+  );
   useSocialMeta(buildSocialMeta({ loading, error, data, title, description, canonicalUrl }));
   const snapshotReady = isSnapshotReady({
     loading, error, data, statsLoading, stats, motorState, historyState,
