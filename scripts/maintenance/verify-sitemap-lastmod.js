@@ -6,18 +6,23 @@
  * 一致しない lastmod を無視するため、再クロールの合図として働いていなかった。
  *
  * 1. scripts/lib/sitemapLastmod.js の部品（最終コミット日・日付の比較・<url> の出力）
- * 2. generate-sitemap.js が lastmod に生成日・mtime を使っていないこと（ソースの検査）
+ * 2. generate-sitemap.js が lastmod に生成日・mtime を使っていないこと（import して今を止め、偽の DB で生成した XML を見る）
  * 3. 言語版の組（hreflang）を xhtml:link で出していること（BOA-560。画面の hreflang は
  *    JS 実行後の head にしか無く、日本語の検索に /en/・/ko/ が出ていた）
  */
-import { readFileSync } from "fs";
 import { execFileSync } from "child_process";
 import path from "path";
-import {
-  raceDetailFixture,
-  sitemapFixture,
-} from "./verify-sitemap-coverage.js";
 import { fileURLToPath } from "url";
+import { blogPosts } from "../../src/data/blogPosts.js";
+import {
+  FAKE_COMMIT_DATE,
+  FIXED_NOW,
+  atFixedNow,
+  emptyDbScene,
+  loadSitemapGenerator,
+  raceDetailRun,
+  urlEntries,
+} from "./verifyData/sitemap-generator.js";
 import {
   gitLastCommitDate,
   laterDate,
@@ -108,44 +113,62 @@ check(
   "存在しないファイルで null にならない",
 );
 
-// 2. generate-sitemap.js が生成日・mtime を lastmod に使っていないこと
-const source = readFileSync(path.join(ROOT, file), "utf-8");
-check(
-  !/lastmod:\s*new Date\(\)/.test(source),
-  "generate-sitemap.js が lastmod に生成日（new Date()）を使っている",
-);
-check(
-  !/mtime/.test(source.replace(/\/\/.*$/gm, "")),
-  "generate-sitemap.js が lastmod にファイルの mtime を使っている（CI では毎日の checkout 時刻になる）",
-);
-
-check(
-  source.includes('xmlns:xhtml="http://www.w3.org/1999/xhtml"'),
-  "urlset に xhtml 名前空間が無い（xhtml:link を使うと XML として不正になる）",
-);
-check(
-  /alternates:\s*alternatesFor\(/.test(source),
-  "generate-sitemap.js が各URLに言語版の組（alternatesFor）を渡していない",
-);
-
-// BOA-1186: 結果の日は開催日。取得日・生成日（JST 10/31）に更新しない。
+// 2. generate-sitemap.js が生成日・mtime を lastmod に使っていないこと。今を記事・開催のどの日とも重ならない遠い日
+//    （GENERATED_AT）に止め、記事の md の最終コミット日は決まった日（FAKE_COMMIT_DATE）を返す写しで生成し、出た lastmod を見る
+const GENERATED_AT = "2099-06-15T03:00:00Z";
+const raceRow = {
+  race_id: "2026-10-25-01-01",
+  race_date: "2026-10-25",
+  race_results: { rank1: 1 },
+};
 try {
-  const pages = await raceDetailFixture(source, [
-    {
-      race_id: "2026-10-25-01-01",
-      race_date: "2026-10-25",
-      race_results: { rank1: 1 },
-    },
-  ]);
+  const gen = await loadSitemapGenerator();
+  emptyDbScene([raceRow]);
+  const xml = await atFixedNow(() => gen.generateSitemap(), GENERATED_AT);
+  const entries = urlEntries(xml);
+  const nowDates = new Set([GENERATED_AT.slice(0, 10)]);
+  check(entries.length > 0, "生成した sitemap に <url> が無い");
+  check(
+    entries.every((e) => !nowDates.has(e.lastmod)),
+    "generate-sitemap.js が lastmod に生成日（new Date()）を使っている",
+  );
+  const postDate = new Map(blogPosts.map((p) => [p.id, p.date ?? null]));
+  const jaBlog = entries.filter((e) =>
+    /^https:\/\/www\.boat-ai\.jp\/blog\/[^/]+$/.test(e.loc),
+  );
+  check(jaBlog.length > 0, "生成した sitemap に記事（/blog/…）が無い");
+  check(
+    jaBlog.every((e) => {
+      const id = e.loc.split("/").at(-1);
+      return e.lastmod === laterDate(FAKE_COMMIT_DATE, postDate.get(id) ?? null);
+    }),
+    "generate-sitemap.js が記事の lastmod に md の最終コミット日と公開日の新しい方を使っていない（mtime は CI では毎日の checkout 時刻になる）",
+  );
+  check(
+    /<urlset [^>]*xmlns:xhtml="http:\/\/www\.w3\.org\/1999\/xhtml"/.test(xml),
+    "urlset に xhtml 名前空間が無い（xhtml:link を使うと XML として不正になる）",
+  );
+  const top = entries.find((e) => e.loc === "https://www.boat-ai.jp/");
+  check(
+    top?.alternates.some(
+      (a) => a.hreflang === "en" && a.href === "https://www.boat-ai.jp/en/",
+    ) ?? false,
+    "generate-sitemap.js が各URLに言語版の組（alternatesFor）を渡していない",
+  );
+
+  // BOA-1186: 結果の日は開催日。取得日・生成日（JST 10/31）に更新しない。
+  const pages = await raceDetailRun(gen, [raceRow]);
   check(pages.length === 1, "確定済み /race が無い");
   check(
     pages[0]?.lastmod === "2026-10-25",
     "/race の lastmod が結果の日ではない",
   );
+  emptyDbScene([raceRow]);
+  const raceXml = await atFixedNow(() => gen.generateSitemap(), FIXED_NOW);
   check(
-    (await sitemapFixture(source, pages)).includes(
-      "<lastmod>2026-10-25</lastmod>",
-    ),
+    urlEntries(raceXml).find(
+      (e) => e.loc === "https://www.boat-ai.jp/race/2026-10-25-01-01",
+    )?.lastmod === "2026-10-25",
     "/race の XML に結果の日が出ていない",
   );
 } catch (error) {

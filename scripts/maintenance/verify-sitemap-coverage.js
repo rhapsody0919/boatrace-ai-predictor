@@ -1,14 +1,12 @@
 /**
  * AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages を突き合わせ、
  * sitemap登録漏れを検知する（BOA: /winning-technique 未登録インシデントの再発防止）。
+ *
+ * 本文の字は読まない。ルートは AppRouter を描いて各言語の <Route path> を集め（verifyData/app-routes.js）、
+ * sitemap は generate-sitemap.js を import して staticPages と生成の関数を偽の DB で回す（verifyData/sitemap-generator.js）。
  */
 
-import { promises as fs } from "fs";
-import path from "path";
 import assert from "node:assert/strict";
-import vm from "node:vm";
-import { renderUrlEntry } from "../lib/sitemapLastmod.js";
-import { getDaysAgoJST } from "../../src/utils/dateUtils.js";
 import {
   SUPPORTED_LANGUAGES,
   DEFAULT_LANGUAGE,
@@ -16,10 +14,15 @@ import {
 } from "../../src/config/languages.js";
 import { fileURLToPath } from "url";
 import { meetSeries, makeMeetRun } from "./verifyData/sitemap-coverage-meet.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const APP_ROUTER_PATH = path.join(__dirname, "../../src/AppRouter.jsx");
-const SITEMAP_SCRIPT_PATH = path.join(__dirname, "../generate-sitemap.js");
+import {
+  atFixedNow,
+  emptyDbScene,
+  loadSitemapGenerator,
+  raceDetailRun,
+  sitemapScene,
+  urlEntries,
+} from "./verifyData/sitemap-generator.js";
+import { appRoutePaths } from "./verifyData/app-routes.js";
 
 // AppRouter.jsx にはあるが、意図的にsitemap非対象のルート。
 // 新しいルートを除外する場合はここに理由付きで追記すること（暗黙の見落としを防ぐため）
@@ -35,134 +38,23 @@ const EXPECTED_EXCLUSIONS = {
   poirot: "α版・動線非公開ページ",
   "share/today-sheet":
     "X の /today 投稿の型 b の画像を撮る撮影用のページ（人が見るページではない。noindex）",
+  "admin/sns-hub/auto": "管理画面（SNSマーケティングハブの用途別ページ）。非公開",
+  "admin/sns-hub/metrics": "管理画面（SNSマーケティングハブの用途別ページ）。非公開",
+  "admin/sns-hub/library": "管理画面（SNSマーケティングハブの用途別ページ）。非公開",
 };
 
-function extractLocalizedRoutesBlock(source) {
-  const start = source.indexOf("function LocalizedRoutes(");
-  const end = source.indexOf("function LanguageSync(");
-  if (start === -1 || end === -1) {
-    throw new Error(
-      "AppRouter.jsx の LocalizedRoutes/LanguageSync が見つかりません。関数名が変更された場合はこのスクリプトの抽出ロジックを更新してください",
-    );
-  }
-  return source.slice(start, end);
+// 描いた <Route path> のうち、静的な1枚のページの path（入れ物の /{lang}/*・/*、不明なパスの *、:param を持つ物を除く）
+function staticRoutePaths(paths) {
+  return [
+    ...new Set(
+      paths.filter(
+        (p) => typeof p === "string" && !p.endsWith("*") && !p.includes(":"),
+      ),
+    ),
+  ];
 }
 
-function extractStaticRoutePaths(routesBlock) {
-  const matches = [...routesBlock.matchAll(/<Route\s+path="([^"]*)"/g)];
-  return matches.map((m) => m[1]).filter((p) => p !== "*" && !p.includes(":"));
-}
-
-function extractSitemapStaticLocs(sitemapSource) {
-  const start = sitemapSource.indexOf("const staticPages = [");
-  const end = sitemapSource.indexOf("\n];", start);
-  if (start === -1 || end === -1) {
-    throw new Error(
-      "generate-sitemap.js の staticPages 配列が見つかりません。定義が変更された場合はこのスクリプトの抽出ロジックを更新してください",
-    );
-  }
-  const block = sitemapSource.slice(start, end);
-  const matches = [...block.matchAll(/loc:\s*"([^"]*)"/g)];
-  return new Set(matches.map((m) => m[1]));
-}
-
-// 生成器の実関数だけを隔離して実行し、DB・鍵・生成物に触れない。
-export async function raceDetailFixture(source, rows, { fail = false } = {}) {
-  const match = source.match(
-    /async function getRaceDetailPages\(\) \{[\s\S]*?\n\}/,
-  );
-  assert.ok(match, "確定済み /race の生成関数が無い");
-  const now = new Date("2026-10-30T15:30:00Z"); // JST 10/31、UTC 10/30
-  const query = {
-    gte(key, value) {
-      rows = rows.filter((r) => r[key] >= value);
-      return this;
-    },
-    lte(key, value) {
-      rows = rows.filter((r) => r[key] <= value);
-      return this;
-    },
-    not(key, op, value) {
-      assert.equal(key, "race_results.rank1");
-      assert.equal(op, "is");
-      assert.equal(value, null);
-      rows = rows.filter((r) => r.race_results?.rank1 != null);
-      return this;
-    },
-    order(key) {
-      assert.equal(key, "race_id");
-      return this;
-    },
-  };
-  const fetchSource = await fs.readFile(
-    path.join(__dirname, "../lib/supabaseClient.js"),
-    "utf8",
-  );
-  const fetchCode = fetchSource
-    .match(/export async function fetchAll\([\s\S]*?\n\}/)[0]
-    .replace("export ", "");
-  const fetchAll = vm.runInNewContext(
-    `(() => { ${fetchCode}; return fetchAll; })()`,
-    {
-      assertOrdered: () => {},
-    },
-  );
-  let range;
-  query.range = (from, to) => {
-    range = [from, to];
-    return query;
-  };
-  query.select = () => query;
-  query.then = (resolve) =>
-    resolve({ data: rows.slice(range[0], range[1] + 1), error: null });
-  const client = {
-    isSupabaseEnabled: () => true,
-    fetchAll: async (table, columns, build) => {
-      assert.equal(table, "races");
-      assert.match(columns, /race_results!inner\(rank1\)/);
-      if (fail) throw new Error("fixture read failed");
-      return fetchAll(table, columns, build, { client: { from: () => query } });
-    },
-  };
-  const code = match[0].replace(
-    /await import\("\.\/lib\/supabaseClient\.js"\)/g,
-    "client",
-  );
-  return vm.runInNewContext(
-    `(async () => { ${code}; return getRaceDetailPages(); })()`,
-    {
-      client,
-      getDaysAgoJST: (days) => getDaysAgoJST(days, now),
-    },
-  );
-}
-
-export async function sitemapFixture(source, pages, baseCount = 0) {
-  const code = source.match(
-    /async function generateSitemap\(\) \{[\s\S]*?\n\}/,
-  )[0];
-  return vm.runInNewContext(
-    `(async () => { ${code}; return generateSitemap(); })()`,
-    {
-      getBlogPosts: () => [],
-      getRacePages: async () => [],
-      getRaceDetailPages: async () => pages,
-      getRacerPages: async () => [],
-      getLatestRaceDates: async () => ({ overall: null, byVenue: new Map() }),
-      getMeetPages: async () => [],
-      staticPages: Array.from({ length: baseCount }, () => ({ loc: "/" })),
-      localizedPages: [],
-      SITE_URL: "https://www.boat-ai.jp",
-      renderUrlEntry,
-      alternatesFor: () => [],
-      localizePath,
-      SUPPORTED_LANGUAGES,
-      DEFAULT_LANGUAGE,
-    },
-  );
-}
-
-async function verifyRaceDetails(source) {
+async function verifyRaceDetails(gen) {
   const row = (date, n, rank1 = 1) => ({
     race_id: `${date}-01-${String(n).padStart(2, "0")}`,
     race_date: date,
@@ -178,7 +70,7 @@ async function verifyRaceDetails(source) {
     { ...row("2026-10-31", 3, null), cancellation_status: "confirmed" },
     { ...row("2026-10-31", 4), cancellation_status: "confirmed" },
   ];
-  const pages = await raceDetailFixture(source, rows);
+  const pages = await raceDetailRun(gen, rows);
   assert.deepEqual(
     Array.from(pages, (p) => p.loc),
     [
@@ -188,14 +80,19 @@ async function verifyRaceDetails(source) {
     ],
   );
   const many = Array.from({ length: 2016 }, (_, i) => row("2026-10-31", i));
-  assert.equal((await raceDetailFixture(source, many)).length, 2016);
+  assert.equal((await raceDetailRun(gen, many)).length, 2016);
   await assert.rejects(
-    raceDetailFixture(source, [], { fail: true }),
+    raceDetailRun(gen, [], { fail: true }),
     /fixture read failed/,
   );
-  const xml = await sitemapFixture(source, pages);
+  // 生成の全体（staticPages・記事・他の DB の読みは空）に、確定済み /race の固定データを流す
+  emptyDbScene(rows);
+  const xml = await atFixedNow(() => gen.generateSitemap());
+  const raceLocs = urlEntries(xml)
+    .map((e) => e.loc)
+    .filter((loc) => /\/race\//.test(loc));
   // ja 3件 + 言語版（en・zh-TW・ko）3件×3言語
-  assert.equal((xml.match(/<url>/g) ?? []).length, 3 + 3 * 3);
+  assert.equal(raceLocs.length, 3 + 3 * 3);
   for (const page of pages) {
     assert.ok(xml.includes(`<loc>https://www.boat-ai.jp${page.loc}</loc>`));
     for (const { code } of SUPPORTED_LANGUAGES) {
@@ -207,26 +104,39 @@ async function verifyRaceDetails(source) {
       );
     }
   }
-  assert.ok(!xml.includes("/assist"));
-  assert.equal(
-    ((await sitemapFixture(source, [], 50000)).match(/<url>/g) ?? []).length,
-    50000,
-  );
-  await assert.rejects(sitemapFixture(source, pages, 49998), /上限超過/);
+  // 思考アシスト（/race/{id}/assist）は足さない（記事の名前の assist は別物なので /race の URL だけを見る）
+  assert.ok(!raceLocs.some((loc) => loc.includes("/assist")));
+  // 総数の上限 50000: staticPages（export の配列）に埋めの行を足して、ちょうど上限は出し、1つ越えは止める
+  emptyDbScene([]);
+  const base = urlEntries(await atFixedNow(() => gen.generateSitemap())).length;
+  const fill = (n) =>
+    gen.staticPages.push(...Array.from({ length: n }, () => ({ loc: "/" })));
+  const restore = gen.staticPages.length;
+  try {
+    fill(50000 - base);
+    assert.equal(
+      urlEntries(await atFixedNow(() => gen.generateSitemap())).length,
+      50000,
+    );
+    fill(1);
+    await assert.rejects(
+      atFixedNow(() => gen.generateSitemap()),
+      /上限超過/,
+    );
+  } finally {
+    gen.staticPages.length = restore;
+  }
   console.log(
     `✅ /race 掲載条件・取得失敗・1000件超・総数上限を確認（固定データ${pages.length}件）`,
   );
 }
 
-// getMeetPages の実装を固定データで実行する。生成器全体は import しない。
-async function verifyMeetPages(source) {
+// 本物の getMeetPages を固定データ（偽の DB）で実行する。
+async function verifyMeetPages(gen) {
   const model = await import("../../src/utils/meetPageModel.js");
   const languages = await import("../../src/config/languages.js");
-  const fn = source.match(
-    /async function getMeetPages\(latest\) \{[\s\S]*?\n\}/,
-  )[0];
   const series = meetSeries;
-  const run = makeMeetRun({ fn, model, languages });
+  const run = makeMeetRun(gen);
   for (const [meet, dates, included] of [
     [series("2026-11-01"), ["2026-11-01"], false],
     [series("2026-11-01"), [], false],
@@ -302,17 +212,14 @@ async function verifyMeetPages(source) {
 }
 
 // BOA-1232: 読取失敗を「データなし」にせず、3種類とも生成を止める。
-async function verifyReadFailures(source) {
+async function verifyReadFailures(gen) {
   const failures = [];
   for (const [name, label] of [
     ["getRacePages", "レースページ"],
     ["getRacerPages", "選手ページ"],
     ["getLatestRaceDates", "開催日"],
   ]) {
-    const match = source.match(
-      new RegExp(`async function ${name}\\(\\) \\{[\\s\\S]*?\\n\\}`),
-    );
-    assert.ok(match, `${name} が無い`);
+    assert.equal(typeof gen[name], "function", `${name} が無い`);
     const run = (enabled, error) => {
       const query = {
         select: () => query,
@@ -324,30 +231,17 @@ async function verifyReadFailures(source) {
         then: (resolve, reject) =>
           Promise.resolve({ data: error ? null : [], error }).then(resolve, reject),
       };
-      const client = {
-        isSupabaseEnabled: () => enabled,
-        supabase: {
+      sitemapScene({
+        enabled,
+        client: {
           from: () => {
             assert.ok(enabled, "未設定時に読み取らない");
             return query;
           },
         },
         fetchAll: async () => [],
-      };
-      const code = match[0].replace(
-        /await import\("\.\/lib\/supabaseClient\.js"\)/g,
-        "client",
-      );
-      return vm.runInNewContext(
-        `(async () => { ${code}; return ${name}(); })()`,
-        {
-          client,
-          console: { log() {}, warn() {}, error() {} },
-          getDaysAgoJST,
-          RACER_INDEX_ACTIVE_DAYS: 30,
-          laterDate: (a, b) => (!a || b > a ? b : a),
-        },
-      );
+      });
+      return atFixedNow(() => gen[name]());
     };
     for (const enabled of [false, true]) {
       const empty = await run(enabled, null);
@@ -371,18 +265,14 @@ async function verifyReadFailures(source) {
 }
 
 async function main() {
-  const [appRouterSource, sitemapSource] = await Promise.all([
-    fs.readFile(APP_ROUTER_PATH, "utf-8"),
-    fs.readFile(SITEMAP_SCRIPT_PATH, "utf-8"),
-  ]);
+  // generate-sitemap.js を先に読み込む（AppRouter を描く renderJsx の hooks が src/ の import を Vite 向けに変える前に）
+  const gen = await loadSitemapGenerator();
+  await verifyReadFailures(gen);
+  await verifyRaceDetails(gen);
+  await verifyMeetPages(gen);
 
-  await verifyReadFailures(sitemapSource);
-  await verifyRaceDetails(sitemapSource);
-  await verifyMeetPages(sitemapSource);
-
-  const routesBlock = extractLocalizedRoutesBlock(appRouterSource);
-  const routePaths = extractStaticRoutePaths(routesBlock);
-  const sitemapLocs = extractSitemapStaticLocs(sitemapSource);
+  const routePaths = staticRoutePaths(await appRoutePaths());
+  const sitemapLocs = new Set(gen.staticPages.map((p) => p.loc));
 
   const missing = routePaths.filter((routePath) => {
     if (routePath in EXPECTED_EXCLUSIONS) return false;

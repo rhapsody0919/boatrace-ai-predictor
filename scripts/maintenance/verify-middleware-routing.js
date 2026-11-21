@@ -366,14 +366,18 @@ await runMiddlewareRoutingScenes6({ BOT_UA, matchesMatcher, call, check, describ
       resolveSnapshotPath(`/${lang}/blog/x`, BOT_UA) === `/ai-snapshots/${lang}/blog/x.html`,
     );
   }
-  const gen = readFileSync(
-    new URL("../generate-ai-snapshots.js", import.meta.url),
-    "utf8",
-  );
+  // 生成側を import して表を見る（import しても main は走らない: isDirectRun）。各言語の値はその言語の記事の表そのもの（表を知らない言語は空でない配列）
+  const { BLOG_TRANSLATIONS } = await import("../generate-ai-snapshots.js");
+  const postsByLang = {
+    en: (await import("../../src/data/blogPostsEn.js")).blogPostsEn,
+    "zh-TW": (await import("../../src/data/blogPostsZhTw.js")).blogPostsZhTw,
+    ko: (await import("../../src/data/blogPostsKo.js")).blogPostsKo,
+  };
   for (const lang of langs) {
     check(
       `生成側が ${lang} の翻訳記事を作る（BLOG_TRANSLATIONS）`,
-      new RegExp(`(?:^|\\s|")${lang.replace("-", "\\-")}"?:\\s*blogPosts`, "m").test(gen),
+      Array.isArray(BLOG_TRANSLATIONS[lang]) &&
+        (postsByLang[lang] ? BLOG_TRANSLATIONS[lang] === postsByLang[lang] : BLOG_TRANSLATIONS[lang].length > 0),
     );
   }
 }
