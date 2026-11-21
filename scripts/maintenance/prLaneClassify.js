@@ -103,6 +103,98 @@ function reachedFiles(entryPatterns, trees, changedSet) {
   return found;
 }
 
+/** パス・追加・変更の型の当たりの理由（元の順: パス → 新しいファイル → 既存のファイルの変更・削除。当たらない物は falsy） */
+function pathReasons(rule, { status, path }) {
+  const added = status === "A";
+  const p = (rule.paths ?? []).find((re) => new RegExp(re).test(path));
+  const a =
+    added && (rule.added ?? []).find((re) => new RegExp(re).test(path));
+  const c =
+    !added && (rule.changed ?? []).find((re) => new RegExp(re).test(path));
+  return [
+    p && `パス ${p}`,
+    a && `新しいファイル ${a}`,
+    c && `既存のファイルの変更・削除 ${c}`,
+  ];
+}
+
+/** rowsOnlyAdded: 行の追加だけでない（既存の行を変えた・消した）ときの理由 */
+function rowsReason(rule, { status, path }, patches) {
+  if (!anyMatch(rule.rowsOnlyAdded, path)) return null;
+  const patch = patches.get(path);
+  // 配列の末尾に足すと前の行の "}" が "}," に変わる。この形の消した行は書き換えに数えない
+  const removed = patch?.removed.filter(
+    (line) => !patch.added.includes(`${line},`),
+  );
+  return status === "D" || removed === undefined || removed.length > 0
+    ? "既存の行を変えた・消した（行の追加だけではない）"
+    : null;
+}
+
+/** 既存の .css は changed で当てるので、全体のセレクタは新しいファイル（中身が全部足した行）だけで見る */
+function selectorReason(rule, { status, path }, patches) {
+  if (status !== "A" || !anyMatch(rule.globalSelectors, path)) return null;
+  const patch = patches.get(path);
+  if (!patch) return "差分の行を読めない（安全側）";
+  const found = globalSelectors(patch.added);
+  return found.length > 0
+    ? `全体に効くセレクタ: ${found.join("・")}`
+    : null;
+}
+
+/** 語（H9）: 足した行に新しく入った語の理由 */
+function termReason(rule, { path }, patches, termLines) {
+  if (
+    !rule.terms ||
+    !anyMatch(rule.terms.scan, path) ||
+    anyMatch(rule.terms.except, path)
+  )
+    return null;
+  // 行を読めないときは語を確かめられないので当てる（安全側。rowsOnlyAdded と同じ）
+  if (!patches.get(path)) return "差分の行を読めない（安全側）";
+  // 別のファイルから字のまま移した行は数えない（withoutMovedLines）。語の一覧は merge-base の木から読んだ物
+  const lines = termLines.get(path);
+  const fresh = rule.terms.words.filter(
+    (w) => count(lines.added, w) > count(lines.removed, w),
+  );
+  return fresh.length > 0
+    ? `足した行に新しく入った語: ${fresh.join("・")}`
+    : null;
+}
+
+/** この規則が、このファイルを見ない（except・追加の except・移すだけ） */
+function skipped(rule, { status, path }, moved) {
+  if (anyMatch(rule.except, path)) return true;
+  if (status === "A" && anyMatch(rule.exceptAdded, path)) return true;
+  // 移すだけ（moveOnlyPaths）と分かったデータ層のファイルは、H3（数字の定義）と H9（語が新しく入る）を外す
+  return Boolean(rule.exceptMoveOnly && moved.has(path));
+}
+
+/** 1つの規則の当たり（[ファイル, 理由] を元の順で: 差分の順にファイルごとの理由、最後に import の閉包） */
+function ruleHits(rule, { changes, patches, trees, moved, changedSet }) {
+  const termLines = rule.terms
+    ? withoutMovedLines(
+        patches,
+        termPaths(rule, changes, moved),
+        rule.terms.words,
+      )
+    : null;
+  const found = [];
+  for (const change of changes) {
+    if (skipped(rule, change, moved)) continue;
+    const reasons = [
+      ...pathReasons(rule, change),
+      rowsReason(rule, change, patches),
+      selectorReason(rule, change, patches),
+      termReason(rule, change, patches, termLines),
+    ];
+    for (const reason of reasons) if (reason) found.push([change.path, reason]);
+  }
+  if (rule.reachFrom && trees.length > 0)
+    found.push(...reachedFiles(rule.reachFrom, trees, changedSet));
+  return found;
+}
+
 /**
  * 判定の本体（git に触れない）
  * @param {{
@@ -125,77 +217,14 @@ export function classify({
 }) {
   const changedSet = new Set(changes.map((c) => c.path));
   const hits = [];
+  // 同じ規則×ファイルは先の理由が勝つ
   const hit = (rule, file, reason) => {
     if (!hits.some((h) => h.rule === rule.id && h.file === file))
       hits.push({ rule: rule.id, file, reason });
   };
   for (const rule of rules) {
-    const termLines = rule.terms
-      ? withoutMovedLines(
-          patches,
-          termPaths(rule, changes, moved),
-          rule.terms.words,
-        )
-      : null;
-    for (const { status, path } of changes) {
-      const added = status === "A";
-      if (anyMatch(rule.except, path)) continue;
-      if (added && anyMatch(rule.exceptAdded, path)) continue;
-      // 移すだけ（moveOnlyPaths）と分かったデータ層のファイルは、H3（数字の定義）と H9（語が新しく入る）を外す
-      if (rule.exceptMoveOnly && moved.has(path)) continue;
-      const p = (rule.paths ?? []).find((re) => new RegExp(re).test(path));
-      if (p) hit(rule, path, `パス ${p}`);
-      const a =
-        added && (rule.added ?? []).find((re) => new RegExp(re).test(path));
-      if (a) hit(rule, path, `新しいファイル ${a}`);
-      const c =
-        !added && (rule.changed ?? []).find((re) => new RegExp(re).test(path));
-      if (c) hit(rule, path, `既存のファイルの変更・削除 ${c}`);
-      if (anyMatch(rule.rowsOnlyAdded, path)) {
-        const patch = patches.get(path);
-        // 配列の末尾に足すと前の行の "}" が "}," に変わる。この形の消した行は書き換えに数えない
-        const removed = patch?.removed.filter(
-          (line) => !patch.added.includes(`${line},`),
-        );
-        if (status === "D" || removed === undefined || removed.length > 0)
-          hit(rule, path, "既存の行を変えた・消した（行の追加だけではない）");
-      }
-      // 既存の .css は changed で当てるので、全体のセレクタは新しいファイル（中身が全部足した行）だけで見る
-      if (added && anyMatch(rule.globalSelectors, path)) {
-        const patch = patches.get(path);
-        const found = patch && globalSelectors(patch.added);
-        if (!patch) hit(rule, path, "差分の行を読めない（安全側）");
-        else if (found.length > 0)
-          hit(rule, path, `全体に効くセレクタ: ${found.join("・")}`);
-      }
-      if (
-        rule.terms &&
-        anyMatch(rule.terms.scan, path) &&
-        !anyMatch(rule.terms.except, path)
-      ) {
-        const patch = patches.get(path);
-        if (!patch) {
-          // 行を読めないときは語を確かめられないので当てる（安全側。rowsOnlyAdded と同じ）
-          hit(rule, path, "差分の行を読めない（安全側）");
-        } else {
-          // 別のファイルから字のまま移した行は数えない（withoutMovedLines）。語の一覧は merge-base の木から読んだ物
-          const lines = termLines.get(path);
-          const fresh = rule.terms.words.filter(
-            (w) => count(lines.added, w) > count(lines.removed, w),
-          );
-          if (fresh.length > 0)
-            hit(rule, path, `足した行に新しく入った語: ${fresh.join("・")}`);
-        }
-      }
-    }
-    if (rule.reachFrom && trees.length > 0) {
-      for (const [file, reason] of reachedFiles(
-        rule.reachFrom,
-        trees,
-        changedSet,
-      ))
-        hit(rule, file, reason);
-    }
+    const ctx = { changes, patches, trees, moved, changedSet };
+    for (const [file, reason] of ruleHits(rule, ctx)) hit(rule, file, reason);
   }
   const order = (h) => Number(h.rule.slice(1));
   hits.sort((x, y) => order(x) - order(y) || x.file.localeCompare(y.file));

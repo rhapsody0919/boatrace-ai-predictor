@@ -364,6 +364,13 @@ expect("判定の script 自身", ["M scripts/maintenance/pr-lane.js"], "heavy",
   "H1",
   "H5",
 ]);
+for (const part of ["Classify", "Human", "Lines"])
+  expect(
+    `判定の script の部品 prLane${part}.js`,
+    [`M scripts/maintenance/prLane${part}.js`],
+    "heavy",
+    ["H1", "H5"],
+  );
 expect("判定の規則", ["M config/pr-path-rules.json"], "heavy", ["H5", "H8"]);
 expect("import の辿り方", ["M scripts/lib/relativeImportGraph.js"], "heavy", [
   "H1",
@@ -1237,6 +1244,9 @@ const moveRun = (texts, changes = moveChanges) => {
   ex(["M src/components/Foo.jsx"], { patches: patch("src/components/Foo.jsx", ["<p>回収率</p>"]) }, { human: ["terms src/components/Foo.jsx"], noHuman: ["sns src/components/Foo.jsx"] });
   ex(["M public/robots.txt"], {}, { human: ["seo public/robots.txt"] });
   ex(["M scripts/maintenance/pr-lane.js"], {}, { human: ["judge scripts/maintenance/pr-lane.js"], noNeeds: ["line-mutation scripts/maintenance/pr-lane.js"] });
+  for (const f of ["prLaneClassify.js", "prLaneHuman.js", "prLaneLines.js"])
+    ex([`M scripts/maintenance/${f}`], {}, { human: [`judge scripts/maintenance/${f}`], noNeeds: [`line-mutation scripts/maintenance/${f}`] });
+  ex(["A scripts/maintenance/prLaneClassify.js"], {}, { human: ["judge scripts/maintenance/prLaneClassify.js"], noNeeds: ["line-mutation scripts/maintenance/prLaneClassify.js"] });
   ex(["M e2e/fixtures.js"], {}, { human: ["fixture e2e/fixtures.js"], noNeeds: ["base-spec-on-head e2e/fixtures.js"] });
   ex(["M e2e/recordings/x.json.gz"], {}, { human: ["fixture e2e/recordings/x.json.gz"], noNeeds: ["base-spec-on-head e2e/recordings/x.json.gz"] });
   ex(["D scripts/maintenance/verify-foo.js"], {}, { human: ["weaken scripts/maintenance/verify-foo.js"] });
@@ -1528,11 +1538,14 @@ const moveRun = (texts, changes = moveChanges) => {
     "上限を超えたら投げる（CLI は 0 以外）",
   );
 
-  // hq の写し: pr-lane.js・prLaneMoveOnly*.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
+  // hq の写し: pr-lane.js・その部品 prLane(Classify|Human|Lines).js・prLaneMoveOnly*.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
   {
     const copy = mkdtempSync(join(tmpdir(), "pr-lane-hq-"));
     for (const p of [
       "scripts/maintenance/pr-lane.js",
+      "scripts/maintenance/prLaneClassify.js",
+      "scripts/maintenance/prLaneHuman.js",
+      "scripts/maintenance/prLaneLines.js",
       "scripts/maintenance/prLaneMoveOnly.js",
       "scripts/maintenance/prLaneMoveOnlyParse.js",
       "config/pr-path-rules.json",
@@ -1604,6 +1617,7 @@ const moveRun = (texts, changes = moveChanges) => {
 // hq との約束: Node の組み込みと相対の import だけ（npm の部品を使わない）
 for (const p of [
   "scripts/maintenance/pr-lane.js",
+  "scripts/maintenance/prLaneClassify.js",
   "scripts/maintenance/prLaneMoveOnly.js",
   "scripts/lib/relativeImportGraph.js",
 ]) {
@@ -1613,6 +1627,15 @@ for (const p of [
   );
   assert.ok(specs.length > 0, p);
   for (const s of specs)
+    assert.match(s, /^(node:|\.\.?\/)/, `${p} が組み込み以外を import: ${s}`);
+}
+// 依存なしの部品（import が無いのが今の形。足すときも組み込みと相対だけ）
+for (const p of [
+  "scripts/maintenance/prLaneHuman.js",
+  "scripts/maintenance/prLaneLines.js",
+]) {
+  const src = readFileSync(join(ROOT, p), "utf8");
+  for (const [, s] of src.matchAll(/^import[^"']*["']([^"']+)["']/gm))
     assert.match(s, /^(node:|\.\.?\/)/, `${p} が組み込み以外を import: ${s}`);
 }
 

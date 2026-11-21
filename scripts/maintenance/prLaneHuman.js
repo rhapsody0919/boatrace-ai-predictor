@@ -1,3 +1,8 @@
+/**
+ * pr-lane.js の部品: heavy の hits に、人にしか判断できない理由（human）と機械の確かめ（needs）を付ける。lane の判定には使わない。
+ * 依存なし。hq の写しの一覧に入る（pr-lane.js の頭の注釈）。
+ */
+
 const anyMatch = (patterns = [], path, flags = "") =>
   patterns.some((p) => new RegExp(p, flags).test(path));
 

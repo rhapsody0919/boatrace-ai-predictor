@@ -1,3 +1,8 @@
+/**
+ * pr-lane.js の部品: 差分の行の中身を見る純関数（語の数え・字のまま移した行の除き・全体に効くセレクタ）。
+ * 依存なし。hq の写しの一覧に入る（pr-lane.js の頭の注釈）。
+ */
+
 const count = (lines, word) =>
   lines.reduce((n, line) => n + line.split(word).length - 1, 0);
 
