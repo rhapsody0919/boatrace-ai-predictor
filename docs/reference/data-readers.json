@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2686,
+    "sourceFiles": 2691,
     "filesWithAccess": 319,
     "tableReaders": 949,
     "tableWriters": 195,
     "rpcCallers": 56,
-    "nameMentions": 275,
+    "nameMentions": 281,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -16903,21 +16903,20 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "race_id",
-            "start_time"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:288",
           "op": "rest",
           "via": "rest",
           "columns": [
             "race_id"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-5.js:144",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "race_id",
+            "start_time"
           ]
         },
         {
@@ -17480,8 +17479,8 @@
             "scripts/maintenance/verify-data-readers.js:369",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-scrape-slots-on-db.js:68",
-            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
             "scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:288",
+            "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-5.js:144",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:103",
             "scripts/sns/pushFinalsImageStore.js:71",
             "scripts/sns/pushFinalsImageStore.js:77",
@@ -17767,7 +17766,7 @@
             "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-analogy-v16.js:308",
             "scripts/maintenance/verify-scrape-slots-on-db.js:68",
-            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
+            "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-5.js:144",
             "scripts/sns/pushFinalsImageStore.js:71",
             "scripts/sns/pushFinalsImageStore.js:77",
             "scripts/sns/pushFullPictureStore.js:43",
@@ -28503,6 +28502,11 @@
       },
       "callers": [],
       "mentions": [
+        "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:187",
+        "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:194",
+        "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:204",
+        "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:276",
+        "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:278",
         "scripts/maintenance/verifyData/sns-setsu-kiryoku-x-scenes-2.js:127"
       ],
       "triggerOn": [],
@@ -28545,7 +28549,9 @@
           "via": "rest"
         }
       ],
-      "mentions": [],
+      "mentions": [
+        "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:182"
+      ],
       "triggerOn": [],
       "calledByRpc": [],
       "reads": [
