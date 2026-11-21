@@ -22,8 +22,10 @@ import {
   isSnapshotReady,
   buildIndexInput,
   buildSocialMeta,
+  periodSentence,
   pickTodayVenue,
 } from "./RacerProfileMeta.js";
+import { buildRacerSummary } from "../pure/racerOfficialPeriodStats.js";
 import RacerProfileLoaded, { RacerProfileFailed } from "./RacerProfileLoaded.jsx";
 import "./RacerProfile.css";
 
@@ -48,6 +50,18 @@ function buildRacerMeta(data, racerId) {
     : `登録番号${racerId}の選手のページ | 龍神レーダー`;
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
   return { displayName, title, description, canonicalUrl };
+}
+
+// 期別の要約が届いたら title に勝率の数字1つ、description に期の名前つきの勝率等を差し込む（BOA-1688）。
+// 例外1の語を含む行は許可リスト（kyotei-wording-allowlist.json）の行と同じ字に保つため、buildRacerMeta は変えない
+function withPeriodStats(meta, data, summary) {
+  const stats = data?.profile ? periodSentence(summary) : null;
+  if (!stats) return meta;
+  return {
+    ...meta,
+    title: meta.title.replace("・勝率・", `・勝率${summary.winRate.toFixed(2)}・`),
+    description: meta.description.replace("成績データ。", `成績データ。${stats}`),
+  };
 }
 
 export default function RacerProfile() {
@@ -79,7 +93,13 @@ export default function RacerProfile() {
   // （race_idの再パース・文字列sliceを重複させない）
   const todayVenueCode = pickTodayVenue(motorStatus, isToday);
 
-  const { displayName, title, description, canonicalUrl } = buildRacerMeta(data, racerId);
+  // 期別の値が届く前は今の文のまま、届いたら勝率等を足した文に差し替える（BOA-1688）
+  const summary = buildRacerSummary(period.periodRows);
+  const { displayName, title, description, canonicalUrl } = withPeriodStats(
+    buildRacerMeta(data, racerId),
+    data,
+    summary,
+  );
   useSocialMeta(buildSocialMeta({ loading, error, data, title, description, canonicalUrl }));
   const snapshotReady = isSnapshotReady({
     loading, error, data, statsLoading, stats, motorState, historyState,
@@ -91,7 +111,11 @@ export default function RacerProfile() {
       <meta name="description" content={description} />
       <link rel="canonical" href={canonicalUrl} />
       {data?.profile && (
-        <RacerStructuredData profile={data.profile} racerId={racerId} />
+        <RacerStructuredData
+          profile={data.profile}
+          racerId={racerId}
+          dateModified={summary?.dateModified ?? null}
+        />
       )}
 
       <Header />
@@ -120,6 +144,7 @@ export default function RacerProfile() {
             displayName={displayName}
             front={front}
             period={period}
+            summary={summary}
             motorStatus={motorStatus}
             stats={stats}
             statsLoading={statsLoading}

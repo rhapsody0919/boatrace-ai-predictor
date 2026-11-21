@@ -13,8 +13,13 @@ const RACER_OFFICIAL_PERIOD_STATS = existsSync(
 )
   ? "../../src/pure/racerOfficialPeriodStats.js"
   : "../../src/utils/racerOfficialPeriodStats.js";
-const { buildPeriodRows, buildCourseRows, periodLabel, periodAppliedLabel } =
-  await import(RACER_OFFICIAL_PERIOD_STATS);
+const {
+  buildPeriodRows,
+  buildCourseRows,
+  buildRacerSummary,
+  periodLabel,
+  periodAppliedLabel,
+} = await import(RACER_OFFICIAL_PERIOD_STATS);
 
 const failures = [];
 let checked = 0;
@@ -161,6 +166,32 @@ check(
   buildCourseRows([row(2026, 2, { starts: 0 })]),
   null,
 );
+
+// 選手ページの最初の画面の要約（buildRacerSummary、BOA-1688 R1）
+{
+  const s = buildRacerSummary([
+    row(2026, 2, { finals: 3, wins: 1, c1_f: 1, c4_f: 2 }),
+    row(2019, 2, { finals: 2, wins: 2 }),
+    row(2024, 1, { finals: 0, wins: 0 }),
+  ]);
+  check("要約: 優出は全期の和", s.finals, 5);
+  check("要約: 優勝は全期の和", s.wins, 3);
+  check("要約: 和の最初の期の呼び名をデータから組む", s.sinceLabel, "2019年後期");
+  check("要約: 最新の期の呼び名", s.label, "2026年後期");
+  check("要約: 勝率は最新の期の公式の値", s.winRate, 8.05);
+  check("要約: 2連率は最新の期の公式の値", s.top2Rate, 51.4);
+  check("要約: その期の優出", s.periodFinals, 3);
+  check("要約: F 数はコース別 F の和", s.fCount, 3);
+  check("要約: dateModified は最新の期の calc_to", s.dateModified, "2026-04-30");
+  const skip = buildRacerSummary([
+    row(2026, 2, { starts: 0 }),
+    row(2026, 1, { win_rate: "7.12" }),
+  ]);
+  check("要約: 出走0の期を飛ばして最新の期を決める", skip.label, "2026年前期");
+  check("要約: 飛ばした後の勝率", skip.winRate, 7.12);
+  check("要約: コース別 F の列が全部無ければ F 数は出さない", skip.fCount, null);
+  check("要約: 出走のある期が無ければ null", buildRacerSummary([]), null);
+}
 
 if (failures.length > 0) {
   console.error(`❌ ${failures.length}/${checked} 件が不一致`);

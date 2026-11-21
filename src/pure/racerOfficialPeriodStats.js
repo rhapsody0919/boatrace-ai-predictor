@@ -162,3 +162,35 @@ export function buildCourseRows(rows, periods = COURSE_SUM_PERIODS) {
     courses,
   };
 }
+
+/**
+ * 選手ページの最初の画面の要約（BOA-1688 R1）。最新の期は出走のある期のうち一番新しい期。
+ * - fCount はその期のコース別 F（c{N}_f）の和。列が全部 NULL なら null（出さない）
+ * - finals・wins は取り込んだ全期の和。sinceLabel は和の最初の期の呼び名（データから組む）
+ * - dateModified は最新の期の calc_to（ISO の日付）
+ * @returns {object | null} 出走のある期が無ければ null
+ */
+export function buildRacerSummary(rows) {
+  const all = [...(rows ?? [])].sort(
+    (a, b) => a.period_year - b.period_year || a.period_no - b.period_no,
+  );
+  const latest = all.findLast((r) => (num(r.starts) ?? 0) > 0);
+  if (!latest) return null;
+  const fCols = COURSES.map((c) => num(latest[`c${c}_f`]));
+  const sum = (key) => all.reduce((s, r) => s + (num(r[key]) ?? 0), 0);
+  return {
+    label: periodLabel(latest.period_year, latest.period_no),
+    winRate: num(latest.win_rate),
+    top2Rate: num(latest.top2_rate),
+    starts: num(latest.starts),
+    periodFinals: num(latest.finals) ?? 0,
+    periodWins: num(latest.wins) ?? 0,
+    fCount: fCols.every((v) => v === null)
+      ? null
+      : fCols.reduce((s, v) => s + (v ?? 0), 0),
+    finals: sum("finals"),
+    wins: sum("wins"),
+    sinceLabel: periodLabel(all[0].period_year, all[0].period_no),
+    dateModified: latest.calc_to ?? null,
+  };
+}
