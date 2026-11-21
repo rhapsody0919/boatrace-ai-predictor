@@ -1,12 +1,14 @@
 /**
  * VenueRaceListPage の表示の部品（見出し・会場カード・一覧・出走表の後のコース別の節）。
  */
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { isInCautionEnabled } from "../config/featureFlags";
 import FavoriteStarButton from "../components/common/FavoriteStarButton.jsx";
 import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
 import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
+import VenueSummaryLines from "../components/venue/VenueSummaryLines";
 import VenueDaySummaryCard from "../components/race/VenueDaySummaryCard";
 import { VENUE_SUMMARY_STATS } from "../data/venueSummaryStats";
 import {
@@ -35,26 +37,30 @@ export function VenueCourseSection({ venueCode }) {
   return <VenueCharacteristicsCard venueCode={venueCode} />;
 }
 
-// 要約2行の直下に置く、節へのページ内リンク（375px では節が出走表12R分下になるため、BOA-1687）。
-// 節を出さない会場（静的な値が無い）では出さない
-export function VenueCourseSectionLink({ venueCode, venueName, t }) {
-  if (
-    !venueCourseTableRows(
-      VENUE_SUMMARY_STATS.venues[venueCode],
-      VENUE_SUMMARY_STATS.national,
-    )
-  ) {
-    return null;
-  }
+// 見出しの直下の常設の要約2行（BOA-1189）と、その直下の節へのページ内リンク（375px では節が出走表12R分
+// 下になるため、BOA-1687）。数字は静的な値なので読み込みを待たずに出す。節を出さない会場ではリンクを出さない
+export function VenueSummaryWithLink({ venueCode }) {
+  const { t } = useTranslation();
+  const hasSection = venueCourseTableRows(
+    VENUE_SUMMARY_STATS.venues[venueCode],
+    VENUE_SUMMARY_STATS.national,
+  );
   return (
-    <p className="venue-race-list__course-link">
-      <a
-        href={`#${VENUE_COURSE_SECTION_ID}`}
-        data-testid="venue-course-section-link"
-      >
-        {t("venueRaceList.courseSectionLink", { venue: venueName })}
-      </a>
-    </p>
+    <>
+      <VenueSummaryLines venueCode={venueCode} />
+      {hasSection && (
+        <p className="venue-race-list__course-link">
+          <a
+            href={`#${VENUE_COURSE_SECTION_ID}`}
+            data-testid="venue-course-section-link"
+          >
+            {t("venueRaceList.courseSectionLink", {
+              venue: t(`venues.${venueCode}`),
+            })}
+          </a>
+        </p>
+      )}
+    </>
   );
 }
 
