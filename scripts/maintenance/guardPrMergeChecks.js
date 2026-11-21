@@ -1,4 +1,9 @@
 /**
+ * guard-pr-merge.js の部品: 必須チェック（verify・ml-tests・e2e の集約）の判定と、ruleset が同じ集合を持つかの判定（純関数）。
+ * 検証: scripts/maintenance/verify-guard-pr-merge.js（guard-pr-merge.js 経由）
+ */
+
+/**
  * 必須チェック。ruleset「master-checks」の必須チェックと同じ集合（どちらかを変えたらもう片方も変える）。
  * onFailure: 終わって成功以外のときの判定。e2e は録画に無い通信を本番へ素通しするため DB の状態で
  * 落ちることがあり（ADR-0077）、止めずに確認を挟む。

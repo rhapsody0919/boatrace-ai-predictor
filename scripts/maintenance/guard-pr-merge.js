@@ -397,7 +397,8 @@ function resolveTarget(target, cwd) {
   return n && /^\d+$/.test(n) ? n : null;
 }
 
-function main() {
+/** フックの入力から `gh pr merge` のコマンドと、それが走るディレクトリを読む。対象でなければ素通しで終える */
+function readMergeCommand() {
   let payload;
   try {
     payload = JSON.parse(readFileSync(0, "utf8"));
@@ -413,6 +414,40 @@ function main() {
     typeof payload.cwd === "string" && existsSync(payload.cwd)
       ? payload.cwd
       : repoRoot;
+  return { command, cwd };
+}
+
+/** 必須チェックと e2e の範囲。--auto で GitHub に任せる PR（byGithub）はワークフローの変更だけを見る */
+function checkGate(pr, files, byGithub) {
+  if (byGithub) {
+    const auto = files && judgeAutoWorkflowChange(pr, files);
+    if (auto) respond(auto.decision, auto.reason);
+    return;
+  }
+  const checks = fetchChecks(pr);
+  const gate = checks && judgeChecks(pr, checks);
+  if (gate) respond(gate.decision, gate.reason);
+  if (files && checks) {
+    const master = masterE2eScope(pr, files);
+    const scope = judgeE2eScope(pr, master.scope, checks, master.note);
+    if (scope) respond(scope.decision, scope.reason);
+  }
+}
+
+/** 1本の PR の検査（マージ順 → 必須チェックと e2e の範囲 → worktree のデータ）。止めるときは respond が終える */
+function checkOnePr(pr, { command, ledger, byGithub }) {
+  const order = checkMergeOrder(pr, ledger);
+  if (order) respond(order.decision, order.reason);
+
+  const files = fetchPrFiles(pr);
+  checkGate(pr, files, byGithub);
+
+  const data = checkWorktreeData(pr, command);
+  if (data) respond(data.decision, data.reason);
+}
+
+function main() {
+  const { command, cwd } = readMergeCommand();
   const targets = extractMergeTargets(command);
   const resolved = targets.map((t) => resolveTarget(t, cwd));
   const ledger = loadLedger();
@@ -428,28 +463,12 @@ function main() {
     prs.some(autoOnly) && rulesetEnforcesChecks(fetchMasterRules());
 
   // 台帳に制約が無ければ、確定できなかったものは従来どおり検査せずに通す
-  for (const pr of prs) {
-    const order = checkMergeOrder(pr, ledger);
-    if (order) respond(order.decision, order.reason);
-
-    const files = fetchPrFiles(pr);
-    if (rulesEnforce && autoOnly(pr)) {
-      const auto = files && judgeAutoWorkflowChange(pr, files);
-      if (auto) respond(auto.decision, auto.reason);
-    } else {
-      const checks = fetchChecks(pr);
-      const gate = checks && judgeChecks(pr, checks);
-      if (gate) respond(gate.decision, gate.reason);
-      if (files && checks) {
-        const master = masterE2eScope(pr, files);
-        const scope = judgeE2eScope(pr, master.scope, checks, master.note);
-        if (scope) respond(scope.decision, scope.reason);
-      }
-    }
-
-    const data = checkWorktreeData(pr, command);
-    if (data) respond(data.decision, data.reason);
-  }
+  for (const pr of prs)
+    checkOnePr(pr, {
+      command,
+      ledger,
+      byGithub: Boolean(rulesEnforce && autoOnly(pr)),
+    });
 
   respond("allow");
 }

@@ -1,3 +1,8 @@
+/**
+ * guard-pr-merge.js の部品: `gh pr merge` のコマンドの字から、マージの対象（番号・ブランチ・確定できない）と --auto・--delete-branch を読む純関数。
+ * 検証: scripts/maintenance/verify-guard-pr-merge.js・verify-merge-order-guard.js（guard-pr-merge.js 経由）
+ */
+
 /** 値を取るオプション。次のトークンは値であって位置引数ではない。 */
 const VALUE_OPTIONS = new Set([
   "-b",
