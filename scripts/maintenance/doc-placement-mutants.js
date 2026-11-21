@@ -1,5 +1,7 @@
 /**
- * verify-doc-placement-mutants.js - verify-doc-placement.js の変異検査（HR74 6節 d、hq の docs/decisions/ryujin-boundary.md 11/9）。
+ * doc-placement-mutants.js - verify-doc-placement.js の変異検査（HR74 6節 d、hq の docs/decisions/ryujin-boundary.md 11/9）。verify ではなく手元の道具
+ * （一時の場所に書き子プロセスを起こすので verify の静的な守り guard_weakening の外に置く）。verify-doc-placement.js を変える PR は
+ * `node scripts/maintenance/doc-placement-mutants.js --old=origin/master` を手元で回し、結果を PR 本文に貼る。
  * verify-doc-placement.js は製品のファイルを読まず置き場（パスの一覧）だけを見るので、変異は「木と表を壊す」形で作る。
  * 一時の場所に今の木と同じパスの空のファイル（.gitignore・verify・表・共通の試験・package.json だけは本物）で git の木を作り、
  * 変異ごとに verify を回して、期待（red＝失敗・warn＝成功だが placement-shadow か placement-loosen-warn を出す・green）と合うかを見る。
@@ -11,13 +13,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { listRepoPaths } from "../lib/repoPaths.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "../..");
 const VERIFY = "scripts/maintenance/verify-doc-placement.js";
 const TABLE = "scripts/maintenance/file-placement.json";
 const CASES = "scripts/maintenance/file-placement.cases.json";
-const REAL = [".gitignore", VERIFY, TABLE, CASES];
+const REAL = [".gitignore", VERIFY, TABLE, CASES, "scripts/lib/repoPaths.js"];
 
 const editJson = (rel, fn) => (dir) => {
   const p = path.join(dir, rel);
@@ -54,11 +57,7 @@ export const MUTANTS = [
   ["共通の試験の期待を壊す", editJson(CASES, (c) => ({ ...c, classify: [{ path: "README.md", row: 1, problem: null }, ...c.classify] })), "red", {}, true],
 ];
 
-const listPaths = () => {
-  const z = (args) => execFileSync("git", ["-C", ROOT, ...args, "-z"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).split("\0").filter(Boolean);
-  const deleted = new Set(z(["ls-files", "--deleted"]));
-  return [...new Set([...z(["ls-files"]).filter((p) => !deleted.has(p)), ...z(["ls-files", "--others", "--exclude-standard"])])];
-};
+const listPaths = () => listRepoPaths(ROOT);
 
 const g = (dir, args) =>
   execFileSync("git", ["-C", dir, "-c", "core.hooksPath=/dev/null", "-c", "user.name=mutants", "-c", "user.email=mutants@example.invalid", ...args], {
@@ -125,10 +124,10 @@ const main = () => {
     if (lost.length) wrong.push(`旧で落ちて新で落ちない変異 ${lost.join("・")}`);
   }
   if (wrong.length > 0) {
-    console.error(["verify-doc-placement-mutants: NG", ...wrong.map((w) => `  - ${w}`), ...lines].join("\n"));
+    console.error(["doc-placement-mutants: NG", ...wrong.map((w) => `  - ${w}`), ...lines].join("\n"));
     process.exit(1);
   }
-  console.log([`verify-doc-placement-mutants: OK（変異 ${MUTANTS.length} 個が期待どおり、うち赤 ${now.filter((o) => o === "red").length}）`, ...lines].join("\n"));
+  console.log([`doc-placement-mutants: OK（変異 ${MUTANTS.length} 個が期待どおり、うち赤 ${now.filter((o) => o === "red").length}）`, ...lines].join("\n"));
 };
 
 if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) main();

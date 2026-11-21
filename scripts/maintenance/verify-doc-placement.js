@@ -16,11 +16,12 @@
  *       （旧 ROOT_FROZEN を verify の中で直すのと同じ重さ）、それ以外は shadow の間は警告・red で失敗
  *   どれも減ったら成功のまま「凍結を下げる・行を消す」と出す。
  * 起動のたびに純関数の自己試験（文字列と共通の試験 file-placement.cases.json）を先に回し、落ちたら失敗にする。
+ * git を読むのは scripts/lib/repoPaths.js。この verify を変えたら doc-placement-mutants.js --old=origin/master（変異検査）を手元で回す。
  */
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { listRepoPaths, showAtRef } from "../lib/repoPaths.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, "../..");
@@ -265,16 +266,9 @@ const selfTest = (cases) => {
   return fails;
 };
 
-const git = (args) =>
-  execFileSync("git", ["-C", ROOT, ...args], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
-const zlist = (args) => git([...args, "-z"]).split("\0").filter(Boolean);
-
 const readBase = (ref) => {
-  try {
-    return JSON.parse(git(["show", `${ref}:${TABLE_REL}`]));
-  } catch {
-    return null;
-  }
+  const text = showAtRef(ROOT, ref, TABLE_REL);
+  return text === null ? null : JSON.parse(text);
 };
 
 const prBody = () => {
@@ -295,9 +289,7 @@ const main = () => {
   }
   const ignorePath = path.join(ROOT, ".gitignore");
   const ignoreRules = fs.existsSync(ignorePath) ? rootIgnoreRules(fs.readFileSync(ignorePath, "utf8")) : [];
-  // 追跡は作業ツリーで消した物を除く。未追跡は ignore の外だけ
-  const deleted = new Set(zlist(["ls-files", "--deleted"]));
-  const paths = [...new Set([...zlist(["ls-files"]).filter((p) => !deleted.has(p)), ...zlist(["ls-files", "--others", "--exclude-standard"])])].sort();
+  const paths = listRepoPaths(ROOT);
   const table = JSON.parse(fs.readFileSync(path.join(ROOT, TABLE_REL), "utf8"));
   const base = readBase(process.env.DOC_PLACEMENT_BASE || "origin/master");
   const { ok, lines } = judge({ paths, ignoreRules }, { table, docsFrozen: DOCS_FROZEN, base, body: prBody() });
