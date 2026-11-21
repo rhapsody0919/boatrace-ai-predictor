@@ -71,18 +71,13 @@ const returnedRow = (date, rank, extra = {}) => ({
   ...extra,
 });
 
-function use(days, rows = []) {
-  return setFakeSupabase(
-    createFakeSupabase({ morning_digest_days: days, morning_digest_rows: rows }, { project: true }),
-  );
-}
+/** 偽の supabase に2表の行を置く（select で頼んだ列だけ返す） */
+const use = (days, rows) =>
+  setFakeSupabase(createFakeSupabase({ morning_digest_days: days, morning_digest_rows: rows }, { project: true }));
 
-let count = 0;
-async function test(name, fn) {
-  await fn();
-  count += 1;
-  console.log(`ok - ${name}`);
-}
+// 試験は順に回す（キャッシュの有無を順で見るため）。数は最後に出す
+const cases = [];
+const test = (name, fn) => cases.push({ name, fn });
 
 const BROKEN = [
   ["racer_id が null", (d) => featuredRow(d, 1, { racer_id: null }), /digest_row の racer_id/],
@@ -96,7 +91,7 @@ const BROKEN = [
 // 破れの試験はそれぞれ別の日付で引く（成功はキャッシュに残るため。失敗が残らないことは最後の正の試験で見る）
 for (const [i, [label, build, message]] of BROKEN.entries()) {
   const date = `2026-09-${String(10 + i).padStart(2, "0")}`;
-  await test(`${label}の行は RangeError で reject する`, async () => {
+  test(`${label}の行は RangeError で reject する`, async () => {
     use([dayRow(date)], [featuredRow(date, 2), build(date)]);
     await assert.rejects(getMorningDigest(date), (err) => {
       assert.ok(err instanceof RangeError, `RangeError でない: ${err}`);
@@ -107,7 +102,7 @@ for (const [i, [label, build, message]] of BROKEN.entries()) {
   });
 }
 
-await test("未生成の日は行が破れていても not_generated で返る（rows を使わない）", async () => {
+test("未生成の日は行が破れていても not_generated で返る（rows を使わない）", async () => {
   const date = "2026-09-20";
   use([dayRow(date, { generated_at: null })], [featuredRow(date, 1, { racer_id: null })]);
   const out = await getMorningDigest(date);
@@ -115,7 +110,7 @@ await test("未生成の日は行が破れていても not_generated で返る�
   assert.deepEqual(out.sections, {});
 });
 
-await test("正の行は値のまま凍結して節ごとに返る（直前の破れはキャッシュに残らない）", async () => {
+test("正の行は値のまま凍結して節ごとに返る（直前の破れはキャッシュに残らない）", async () => {
   const rows = [featuredRow(DATE, 2), featuredRow(DATE, 1), returnedRow(DATE, 1)];
   // 最初の破れの試験と同じ日付の失敗が残っていないことも見る
   const first = "2026-09-10";
@@ -135,4 +130,8 @@ await test("正の行は値のまま凍結して節ごとに返る（直前の�
   assert.ok(Object.isFrozen(again.sections.featured[0]), "前に失敗した日の行が凍結されていない");
 });
 
-console.log(`verify-morning-digest-rows-make: ${count} 件 OK`);
+for (const { name, fn } of cases) {
+  await fn();
+  console.log(`ok - ${name}`);
+}
+console.log(`verify-morning-digest-rows-make: ${cases.length} 件 OK`);
