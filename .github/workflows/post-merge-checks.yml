@@ -72,7 +72,14 @@ jobs:
       - name: Install Chromium（build の AI スナップショット生成用）
         id: chromium
         continue-on-error: true
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 5
+        # 1回目が詰まっても再試行が入るよう個別の上限を付ける（HR73: 取り消しの原因はこの手順の止まり）
+        run: |
+          timeout 150 npx playwright install --with-deps chromium || {
+            echo "Install Chromium の1回目が失敗（終了コード $?）。10秒後に再試行"
+            sleep 10
+            npx playwright install --with-deps chromium
+          }
 
       - name: ビルド
         id: build
