@@ -95,16 +95,16 @@ function abVariants() {
     variants: [
       {
         id: "a",
-        uuid: null,
         type_id: "today-a",
         heading: "本日のデータ一覧（{date}）",
+        uuid: null,
       },
       {
         id: "b",
-        uuid: null,
         type_id: "today-b-course-win",
         body: "course_win",
         heading: "【今日の注目データ】{date}",
+        uuid: null,
       },
     ],
   };
