@@ -115,7 +115,7 @@ async function defaultExistingVenueCodes(client, date) {
 /** 1会場の races・race_entries・exhibition_data・predictions・race_conditions を書く（失敗は例外） */
 async function defaultWriteVenue(venue, { date, client, now }) {
   const { generateAndWriteFromRacesData } =
-    await import("../../daily/generate-predictions.js");
+    await import("../predictionRun.js");
   await generateAndWriteFromRacesData({
     racesData: { success: true, date, data: [venue] },
     date,
@@ -439,7 +439,7 @@ export function createPredictCodeOnTick({ check } = {}) {
       now: ctx.now,
       // 再計算のモジュールは、ハッシュが変わったときだけ読み込む
       refresh: async (args) =>
-        (await import("../../daily/generate-predictions.js")).mainRefresh(args),
+        (await import("../predictionRun.js")).mainRefresh(args),
       getSchedule: getRaceSchedule,
     });
   };
