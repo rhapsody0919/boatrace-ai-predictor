@@ -79,22 +79,21 @@ export function blogHtml(b) {
 }
 
 // まもなく締切のレース（BOA-1690）。人の UpcomingDeadlineRaces と同じ並び（会場名 R → 締切予定 → グレード・優勝戦 → 1号艇。注意度の札は入れない）。
-// 人の画面はスマホで4行目以降を隠すが、PC の幅では全部見えるので、ボットは全行を出す。「もっと見る」のボタンは入れない
+// 人の画面はスマホで4行目以降を隠すが、PC の幅では全部見えるので、ボットは全行を出す。「もっと見る」のボタンは入れない。
+// 本日開催中の欄（section#today-venues）の中に置くので、入れ物は section でなく div、行は li でなく p にする
+// （欄の中の li は会場の一覧の行、section の閉じは欄の終わり。verify-bot-page-function がそう読む）
 export function upcomingDeadlineHtml(u) {
   const row = (r) =>
     [
-      `<li><a href="${escapeHtml(r.href)}">`,
+      `<p><a href="${escapeHtml(r.href)}">`,
       `<span>${escapeHtml(r.race)}</span>`,
       ` <span>${escapeHtml(r.deadline.label)}</span> <span>${escapeHtml(r.deadline.value)}</span>`,
       span(r.gradeLabel),
       span(r.finalLabel),
       r.racer ? `${span(r.racer.name)}${span(r.racer.rank)}` : "",
-      "</a></li>",
+      "</a></p>",
     ].join("");
-  return [
-    "<section>",
-    `<h3>${escapeHtml(u.title)}</h3>`,
-    `<ul>\n${u.rows.map(row).join("\n")}\n</ul>`,
-    "</section>",
-  ].join("\n");
+  return ["<div>", `<h3>${escapeHtml(u.title)}</h3>`, ...u.rows.map(row), "</div>"].join(
+    "\n",
+  );
 }
