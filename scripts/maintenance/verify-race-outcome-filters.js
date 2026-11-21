@@ -7,7 +7,7 @@
  *   (c) 再発防止: scripts/daily・scripts/lib と、日次で動く aggregate-racer-stats.js・保守用の update-venue-stats.js のコードが、旧フラグ is_no_race（全行 false で機能していない）を条件に使わない
  *       （コメントでの言及と、過去分の取り込みの書き込み kbResultsBackfillRows.js は除く）
  *   (d) 置き換えた集計（6本のクエリ）が、共通の条件 NOT_NO_RACE_FILTER を使う。
- *       本文の字は読まず、6本の CLI を偽の DB（verifyData/daily-queries-fake-db.js）に向けて子の node で回し、race_results への問い合わせで見る
+ *       本文の字は読まず、6本の CLI を偽の DB（verifyData/daily-queries-fake-db.js）に向けてそれぞれの入口で回し、race_results への問い合わせで見る
  *   (e) placedRanks: 返還艇（refund_boats）の位置は着順の艇なし（null）。完走した艇の着順は詰めない（BOA-579）
  *   (f) 選手のコース別2連対率・3連対率（aggregate-racer-stats.js）と会場×枠番の2連対率・3連対率
  *       （calculate-venue-grade-stats.js）が、refund_boats を読み、placedRanks を通して数える（BOA-579）。
@@ -32,7 +32,7 @@ import {
   chainsOf,
   quietly,
 } from "./verifyData/aggregate-racer-stats-fake-db.js";
-import { runDaily } from "./verifyData/daily-queries-fake-db.js";
+import { DAILY, runDaily } from "./verifyData/daily-queries-fake-db.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 let failures = 0;
@@ -94,30 +94,45 @@ check(
   offenders.join(", "),
 );
 
-// (d) 置き換えた6本が共通の条件を使う。本文の字は読まず、子の node で CLI を偽の DB に向けて直接実行し（verifyData/daily-queries-fake-db.js）、
+// (d) 置き換えた6本が共通の条件を使う。本文の字は読まず、6本の CLI を偽の DB に向けてそれぞれの入口で回し（verifyData/daily-queries-fake-db.js）、
 //     race_results への問い合わせの連なりのすべてに .or(NOT_NO_RACE_FILTER) が入ることを見る。
 //     展示・スタートの2本は先に読む表が空だと race_results を問い合わせずに終わり、決まり手の1本は期間の表で新しい表（race_results）・
 //     長期の表（kb_archive_races）が0件だと止まる（失敗を投げる）ので、1行ずつ置く
 const FUTURE_RACE = "2099-01-01-01-01"; // どの「90日前」より後
 const ARCHIVE = sourceRanges(getDateDaysAgo(0)).archive;
 const QUERY_RUNS = [
-  [
-    new URL("../daily/update-exhibition-time-top-stats.js", import.meta.url),
-    {
+  {
+    name: "update-exhibition-time-top-stats",
+    url: DAILY.exhibitionTimeTop,
+    entry: "argv",
+    tables: {
       exhibition_data: [
         { race_id: FUTURE_RACE, boat_number: 1, exhibition_time: 6.7 },
       ],
     },
-  ],
-  [new URL("../daily/update-losing-technique-stats.js", import.meta.url), {}],
-  [
-    new URL("../daily/update-nige-outcome-distribution.js", import.meta.url),
-    {},
-  ],
-  [new URL("../daily/update-outcome-distribution.js", import.meta.url), {}],
-  [
-    new URL("../daily/update-top-start-stats.js", import.meta.url),
-    {
+  },
+  {
+    name: "update-losing-technique-stats",
+    url: DAILY.losingTechnique,
+    entry: "import",
+  },
+  {
+    name: "update-nige-outcome-distribution",
+    url: DAILY.nigeOutcome,
+    entry: "export",
+    run: "runNigeOutcomeDistribution",
+  },
+  {
+    name: "update-outcome-distribution",
+    url: DAILY.outcome,
+    entry: "export",
+    run: "runOutcomeDistribution",
+  },
+  {
+    name: "update-top-start-stats",
+    url: DAILY.topStart,
+    entry: "argv",
+    tables: {
       race_start_timings: [
         {
           race_id: FUTURE_RACE,
@@ -128,10 +143,12 @@ const QUERY_RUNS = [
         },
       ],
     },
-  ],
-  [
-    new URL("../daily/update-winning-technique-stats.js", import.meta.url),
-    {
+  },
+  {
+    name: "update-winning-technique-stats",
+    url: DAILY.winningTechnique,
+    entry: "import",
+    tables: {
       race_results: [
         {
           race_id: `${getDateDaysAgo(2)}-01-01`,
@@ -154,23 +171,22 @@ const QUERY_RUNS = [
           ]
         : [],
     },
-  ],
+  },
 ];
-const missing = QUERY_RUNS.flatMap(([url, tables]) => {
-  const name = path.basename(url.pathname, ".js");
-  const run = runDaily(url, tables);
-  if (run.status !== 0 || !run.queries)
-    return [
-      `${name}（終了 ${run.status}: ${run.stderr.trim().split("\n").at(-1) ?? ""}）`,
-    ];
-  const chains = chainsOf({ queries: run.queries }, "race_results");
+const missing = [];
+for (const { name, url, entry, run, tables = {} } of QUERY_RUNS) {
+  const db = fakeDb({ tables });
+  const status = await runDaily(url, { entry, run });
+  const chains = chainsOf(db, "race_results");
   const filtered = chains.filter((c) =>
     c.some((q) => q.method === "or" && q.args[0] === NOT_NO_RACE_FILTER),
   );
-  return chains.length > 0 && filtered.length === chains.length
-    ? []
-    : [`${name}（race_results ${chains.length}本のうち ${filtered.length}本）`];
-});
+  if (status !== 0) missing.push(`${name}（終了 ${status}）`);
+  else if (chains.length === 0 || filtered.length !== chains.length)
+    missing.push(
+      `${name}（race_results ${chains.length}本のうち ${filtered.length}本）`,
+    );
+}
 check(
   "(d) 置き換えた6本の集計が、race_results への問い合わせのすべてで .or(NOT_NO_RACE_FILTER) で不成立を外す",
   missing.length === 0,
