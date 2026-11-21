@@ -389,12 +389,12 @@ test("6:40 に一覧を撮って下書き・item（digest）を作り、本人�
       ],
     ],
   );
-  // 図の前に待つのは条件のカードだけ（段の表示は展示の後に消える、2026-10-17 夜）
+  // 図の前に待つのは条件のカードだけ（段の表示は展示の後に消える、2026-10-17 夜）。外周の色の検査は ryujin の紺で撮る
   assert.ok(
     headless.calls.every(
       (c) =>
-        JSON.stringify(c.requiredSelectors) ===
-        JSON.stringify(['[data-testid="analogy-fact-card"]']),
+        JSON.stringify([c.requiredSelectors, c.edgeColorVar]) ===
+        JSON.stringify([['[data-testid="analogy-fact-card"]'], "--ryujin-navy-600"]),
     ),
   );
   const revision = draft.source_data.digest.revision;
