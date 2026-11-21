@@ -15,6 +15,7 @@ import { supabase } from "../lib/supabaseClient.js";
 import { toTechniqueKey } from "../lib/winningTechniques.js";
 import { isNoRaceResult, placedRanks } from "../lib/raceOutcomeFilters.js";
 import { upsertChangedRows } from "../lib/unchangedRows.js";
+import { isDirectRun } from "../lib/isDirectRun.js";
 
 // race_gradeが安定して記録されるようになった日付（それ以前はNULLの欠損期間）
 const CLEAN_DATA_SINCE = "2026-02-04";
@@ -166,7 +167,7 @@ function printNarutoSample(rows) {
     });
 }
 
-async function calculateVenueGradeStats() {
+export async function calculateVenueGradeStats() {
   console.log(
     `🔬 会場×グレード×艇番統計を集計中（${CLEAN_DATA_SINCE} 〜、race_gradeがNULLの欠損期間は除外）`,
   );
@@ -227,7 +228,10 @@ async function calculateVenueGradeStats() {
   console.log("✅ venue_grade_boat_stats集計完了");
 }
 
-calculateVenueGradeStats().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+// 直接起動のときだけ集計を回す（import されただけなら DB の読み書き・process.exit は走らない。verify が偽の DB で呼ぶため）
+if (isDirectRun(import.meta.url)) {
+  calculateVenueGradeStats().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
