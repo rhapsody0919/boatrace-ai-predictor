@@ -37,11 +37,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as cheerio from "cheerio";
+
+import { runForRaces as realRaceInfoRun } from "../daily/update-race-info.js";
 
 
 
-import { parsePreRaceId } from "../lib/scrapeJobs/preRaceHandlers.js";
 
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
 
@@ -54,7 +54,7 @@ import {
 } from "../lib/scrapeJobs/registry.js";
 
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
-
+import { CONFIRM_STREAK_THRESHOLD } from "../lib/cancellationStatus.js";
 
 
 import { createDb } from "./verifyData/scrape-pre-race-job-db.js";
@@ -67,17 +67,29 @@ import { checkScheduledPreRace } from "./verifyData/scrape-scheduled-scenes.js";
 
 
 import {
-  riHandler,
-  exHandler,
+  DATE,
+  RACE,
+  createFetcher,
+  raceOf,
+  upsertsOf,
+  writeCount,
+  runScrapePreRaceJobScenesB1,
+  runScrapePreRaceJobScenesB2,
   runScrapePreRaceJobScenesB3,
   runScrapePreRaceJobScenesB4,
-} from "./verifyData/scrape-pre-race-job-scenes-b-3.js";
-import { runScrapePreRaceJobScenesB1 } from "./verifyData/scrape-pre-race-job-scenes-b-1.js";
-import { runScrapePreRaceJobScenesB2 } from "./verifyData/scrape-pre-race-job-scenes-b-2.js";
-import {
   runScrapePreRaceJobScenesB5,
-  runScrapePreRaceJobScenesB6,
+} from "./verifyData/scrape-pre-race-job-scenes-b-1.js";
+import {
+  riHandler,
+  exHandler,
   runScrapePreRaceJobScenesB7,
+  runScrapePreRaceJobScenesB8,
+} from "./verifyData/scrape-pre-race-job-scenes-b-3.js";
+import { runScrapePreRaceJobScenesB6 } from "./verifyData/scrape-pre-race-job-scenes-b-2.js";
+import {
+  runScrapePreRaceJobScenesB9,
+  runScrapePreRaceJobScenesB10,
+  runScrapePreRaceJobScenesB11,
 } from "./verifyData/scrape-pre-race-job-scenes-b-4.js";
 
 // 検証対象のコードが出す警告・エラー・進捗のログで出力が埋まらないよう、検証中は無効にし、結果の表示だけ元の関数で行う
@@ -109,33 +121,9 @@ const BEFORE_HTML = fixture(
   "beforeinfo",
   "beforeinfo-2026-09-16-23-12-absent.html",
 );
-// 展示航走前（展示タイム・展示STが空）の直前情報
-const BEFORE_UNPUBLISHED_HTML = fixture(
-  "beforeinfo",
-  "beforeinfo-2026-09-21-10-08-before-exhibition.html",
-);
-// 発走の後（2026-09-22の取得）の住之江5R（発走17:02）の直前情報。この5Rは、発走の33〜7分前の13回の取得が全て「展示未公開」で、
-// 公開が窓の終わりより後だった。展示タイム（1号艇 6.89）・展示ST（1号艇 0.10）が載っている
-const BEFORE_AFTER_START_HTML = fixture(
-  "beforeinfo",
-  "beforeinfo-2026-09-21-12-05-after-start.html",
-);
-// 展示タイムの欄を空にして、展示STだけが公開されている状態を作る（一部の会場で、STが先に出る）
-const BEFORE_ST_ONLY_HTML = (() => {
-  const $ = cheerio.load(
-    fixture("beforeinfo", "beforeinfo-2026-09-19-02-09-f-exhibition.html"),
-  );
-  $("tbody.is-fs12").each((_, tbody) => {
-    $(tbody).find("tr").first().find("td").eq(4).text("-");
-  });
-  return $.html();
-})();
 
-const DATE = "2026-09-16";
-const SUMI_DATE = "2026-09-21";
-const SUMI_RACE = "2026-09-21-12-05";
-const RACE = "2026-09-16-23-12";
-const RACE_11 = "2026-09-16-23-11";
+// ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-1.js） ----
+runScrapePreRaceJobScenesB1({ check, show, fixture, LIST_HTML, runRaceInfo });
 const NOW = new Date("2026-09-16T13:30:00+09:00");
 const FIXTURE_TIMES =
   "08:44,09:10,09:36,10:02,10:28,10:59,11:35,12:05,12:33,13:05,13:39,14:21".split(
@@ -158,21 +146,8 @@ const seedRaces = () =>
 const freshDb = (extra = {}) =>
   createDb({ tables: { races: seedRaces() }, ...extra });
 
-/** 取得先の差し替え。handler(url) が、HTML・HTTPステータス（数値）・例外を返す。通信の記録つき */
-function createFetcher(handler) {
-  const calls = [];
-  const fn = async (url) => {
-    calls.push(String(url));
-    const r = handler(String(url));
-    if (r instanceof Error) throw r;
-    if (typeof r === "number") {
-      return { ok: r >= 200 && r < 300, status: r, text: async () => "" };
-    }
-    return { ok: true, status: 200, text: async () => r };
-  };
-  fn.calls = calls;
-  return fn;
-}
+// ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-1.js） ----
+runScrapePreRaceJobScenesB2({ check, show, fixture, LIST_HTML, NOW, freshDb, runRaceInfo });
 const pagesHandler =
   ({ list = LIST_HTML, before = BEFORE_HTML } = {}) =>
   (url) =>
@@ -181,13 +156,9 @@ const pagesHandler =
       : url.includes("/beforeinfo?")
         ? before
         : 404;
-const raceOf = (raceId) => {
-  const { venue_code, race_number } = parsePreRaceId(raceId);
-  return { race_id: raceId, venue_code, race_number };
-};
-const upsertsOf = (db, table) =>
-  db.state.upserts.filter((u) => u.table === table);
-const writeCount = (db) => db.state.upserts.length + db.state.updates.length;
+
+// ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-1.js） ----
+runScrapePreRaceJobScenesB3({ check, show, fixture, LIST_HTML, NOW, freshDb, pagesHandler, runRaceInfo });
 
 // ---------------------------------------------------------------------------
 // (a) レース情報 runForRaces
@@ -203,10 +174,51 @@ async function runRaceInfo(run, db, options = {}, fetcher = null) {
   return { results, result: results[0], fetcher: f };
 }
 
+// ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-1.js） ----
+await runScrapePreRaceJobScenesB4({ check, show, fixture, LIST_HTML, NOW, freshDb, pagesHandler, runRaceInfo });
+
+// 選手0人（中止・未公開の可能性）: no_values。中止・順延の暫定検知の連続回数を進める（3回で暫定）
+{
+  const emptyHandler = pagesHandler({ list: "<html><body></body></html>" });
+  const db = freshDb();
+  const outcomes = [];
+  for (let i = 0; i < CONFIRM_STREAK_THRESHOLD; i++) {
+    const { result } = await runRaceInfo(
+      realRaceInfoRun,
+      db,
+      { mode: "live" },
+      createFetcher(emptyHandler),
+    );
+    outcomes.push(result.outcome);
+  }
+  const race = db.state.tables.races.find((r) => r.race_id === RACE);
+  check(
+    "A1 選手0人: outcome=no_values（再試行）。書き込みは無く、中止・順延の暫定検知の連続回数が進み、3回で tentative になる",
+    outcomes.every((o) => o === "no_values") &&
+      race.cancellation_check_streak === CONFIRM_STREAK_THRESHOLD &&
+      race.cancellation_status === "tentative" &&
+      upsertsOf(db, "race_entries").length === 0,
+    show({ outcomes, race }),
+  );
+  const shadowDb = freshDb();
+  await runRaceInfo(
+    realRaceInfoRun,
+    shadowDb,
+    { mode: "shadow" },
+    createFetcher(emptyHandler),
+  );
+  check(
+    "A1 選手0人（shadow）: 中止・順延の暫定検知も書かない",
+    writeCount(shadowDb) === 0 &&
+      shadowDb.state.tables.races.find((r) => r.race_id === RACE)
+        .cancellation_check_streak === 0,
+  );
+}
+
 // ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-1.js・scrape-pre-race-job-scenes-b-2.js・scrape-pre-race-job-scenes-b-3.js） ----
-await runScrapePreRaceJobScenesB1({ check, show, LIST_HTML, DATE, RACE, RACE_11, NOW, freshDb, createFetcher, pagesHandler, raceOf, upsertsOf, writeCount, runRaceInfo });
-await runScrapePreRaceJobScenesB2({ check, show, BEFORE_UNPUBLISHED_HTML, BEFORE_ST_ONLY_HTML, RACE, NOW, freshDb, createFetcher, pagesHandler, upsertsOf });
-await runScrapePreRaceJobScenesB3({ check, show, RACE, RACE_11, freshDb, runRaceInfo });
+await runScrapePreRaceJobScenesB5({ check, show, fixture, LIST_HTML, NOW, freshDb, pagesHandler, runRaceInfo });
+await runScrapePreRaceJobScenesB6({ check, show, NOW, freshDb, pagesHandler });
+await runScrapePreRaceJobScenesB7({ check, show, freshDb, runRaceInfo });
 
 // ---------------------------------------------------------------------------
 // (d) 共通ラッパ経由
@@ -245,7 +257,7 @@ async function runViaWrapper({
 }
 
 // ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-3.js） ----
-runScrapePreRaceJobScenesB4({ check, show, RACE, RACE_11, freshDb, runRaceInfo });
+runScrapePreRaceJobScenesB8({ check, show, freshDb, runRaceInfo });
 
 for (const [job, createHandleSlot, offset] of [
   ["race_info", riHandler, -60],
@@ -325,7 +337,7 @@ for (const [job, createHandleSlot, offset] of [
 }
 
 // ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-4.js） ----
-await runScrapePreRaceJobScenesB5({ printOut, check, show, LIST_HTML, BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, DATE, SUMI_RACE, RACE, RACE_11, NOW, seedRaces, freshDb, createFetcher, pagesHandler, upsertsOf, writeCount, slotOf, runViaWrapper });
+await runScrapePreRaceJobScenesB9({ printOut, check, show, LIST_HTML, NOW, seedRaces, freshDb, pagesHandler, slotOf, runViaWrapper });
 
 // ---------------------------------------------------------------------------
 // (h) 設定の整合
@@ -479,11 +491,11 @@ await runScrapePreRaceJobScenesB5({ printOut, check, show, LIST_HTML, BEFORE_UNP
 }
 
 // ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-4.js） ----
-await runScrapePreRaceJobScenesB6({ printOut, check, show, LIST_HTML, BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, DATE, SUMI_RACE, RACE, RACE_11, NOW, seedRaces, freshDb, createFetcher, pagesHandler, upsertsOf, writeCount, slotOf, runViaWrapper });
+await runScrapePreRaceJobScenesB10({ printOut, check, show, LIST_HTML, NOW, seedRaces, freshDb, pagesHandler, slotOf, runViaWrapper });
 if (failures > 0) {
   printErr(`❌ ${failures} 件の検証に失敗しました`);
   process.exit(1);
 }
 
 // ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-b-4.js） ----
-runScrapePreRaceJobScenesB7({ printOut, check, show, LIST_HTML, BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, DATE, SUMI_RACE, RACE, RACE_11, NOW, seedRaces, freshDb, createFetcher, pagesHandler, upsertsOf, writeCount, slotOf, runViaWrapper });
+runScrapePreRaceJobScenesB11({ printOut, check, show, LIST_HTML, NOW, seedRaces, freshDb, pagesHandler, slotOf, runViaWrapper });

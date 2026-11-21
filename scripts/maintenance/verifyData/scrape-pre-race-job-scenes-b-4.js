@@ -13,9 +13,10 @@ import { runScrapePreRaceJobScenes5 } from "./scrape-pre-race-job-scenes-4.js";
 import { runScrapePreRaceJobScenes6 } from "./scrape-pre-race-job-scenes-5.js";
 import { runScrapePreRaceJobScenes7, runScrapePreRaceJobScenes8 } from "./scrape-pre-race-job-scenes-6.js";
 import { riHandler, exHandler } from "./scrape-pre-race-job-scenes-b-3.js";
-import { raceInfoShadowWritesNothing, raceInfoFetchesOnlyRacelist, exhibitionShadowWritesNothing } from "./scrape-pre-race-job-scenes-b-1.js";
+import { RACE, createFetcher, BEFORE_UNPUBLISHED_HTML, RACE_11, DATE, writeCount, BEFORE_AFTER_START_HTML, SUMI_RACE, upsertsOf, raceInfoShadowWritesNothing, raceInfoFetchesOnlyRacelist } from "./scrape-pre-race-job-scenes-b-1.js";
+import { exhibitionShadowWritesNothing } from "./scrape-pre-race-job-scenes-b-2.js";
 
-let printOut, check, show, LIST_HTML, BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, DATE, SUMI_RACE, RACE, RACE_11, NOW, seedRaces, freshDb, createFetcher, pagesHandler, upsertsOf, writeCount, slotOf, runViaWrapper;
+let printOut, check, show, LIST_HTML, NOW, seedRaces, freshDb, pagesHandler, slotOf, runViaWrapper;
 
 /** 元の verify の1つの塊 { } を割った 1/2 */
 async function sprjb4Scene1() {
@@ -146,9 +147,9 @@ async function sprjb4Scene3() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・LIST_HTML・BEFORE_UNPUBLISHED_HTML・BEFORE_AFTER_START_HTML・DATE・SUMI_RACE・RACE・RACE_11・NOW・seedRaces・freshDb・createFetcher・pagesHandler・upsertsOf・writeCount・slotOf・runViaWrapper） */
-export async function runScrapePreRaceJobScenesB5(env) {
-  ({ printOut, check, show, LIST_HTML, BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, DATE, SUMI_RACE, RACE, RACE_11, NOW, seedRaces, freshDb, createFetcher, pagesHandler, upsertsOf, writeCount, slotOf, runViaWrapper } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・LIST_HTML・NOW・seedRaces・freshDb・pagesHandler・slotOf・runViaWrapper） */
+export async function runScrapePreRaceJobScenesB9(env) {
+  ({ printOut, check, show, LIST_HTML, NOW, seedRaces, freshDb, pagesHandler, slotOf, runViaWrapper } = env);
   await sprjb4Scene3();
 }
 
@@ -161,9 +162,9 @@ async function sprjb4Scene4() {
   await runScrapePreRaceJobScenes7({ printOut, check, show, DATE, RACE, freshDb, createFetcher, pagesHandler, slotOf });
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・LIST_HTML・BEFORE_UNPUBLISHED_HTML・BEFORE_AFTER_START_HTML・DATE・SUMI_RACE・RACE・RACE_11・NOW・seedRaces・freshDb・createFetcher・pagesHandler・upsertsOf・writeCount・slotOf・runViaWrapper） */
-export async function runScrapePreRaceJobScenesB6(env) {
-  ({ printOut, check, show, LIST_HTML, BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, DATE, SUMI_RACE, RACE, RACE_11, NOW, seedRaces, freshDb, createFetcher, pagesHandler, upsertsOf, writeCount, slotOf, runViaWrapper } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・LIST_HTML・NOW・seedRaces・freshDb・pagesHandler・slotOf・runViaWrapper） */
+export async function runScrapePreRaceJobScenesB10(env) {
+  ({ printOut, check, show, LIST_HTML, NOW, seedRaces, freshDb, pagesHandler, slotOf, runViaWrapper } = env);
   await sprjb4Scene4();
 }
 
@@ -172,8 +173,8 @@ function sprjb4Scene5() {
   runScrapePreRaceJobScenes8({ printOut, check, show, DATE, RACE, freshDb, createFetcher, pagesHandler, slotOf });
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・LIST_HTML・BEFORE_UNPUBLISHED_HTML・BEFORE_AFTER_START_HTML・DATE・SUMI_RACE・RACE・RACE_11・NOW・seedRaces・freshDb・createFetcher・pagesHandler・upsertsOf・writeCount・slotOf・runViaWrapper） */
-export function runScrapePreRaceJobScenesB7(env) {
-  ({ printOut, check, show, LIST_HTML, BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, DATE, SUMI_RACE, RACE, RACE_11, NOW, seedRaces, freshDb, createFetcher, pagesHandler, upsertsOf, writeCount, slotOf, runViaWrapper } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・LIST_HTML・NOW・seedRaces・freshDb・pagesHandler・slotOf・runViaWrapper） */
+export function runScrapePreRaceJobScenesB11(env) {
+  ({ printOut, check, show, LIST_HTML, NOW, seedRaces, freshDb, pagesHandler, slotOf, runViaWrapper } = env);
   sprjb4Scene5();
 }

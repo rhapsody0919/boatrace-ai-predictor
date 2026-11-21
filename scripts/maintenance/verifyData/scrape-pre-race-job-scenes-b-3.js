@@ -12,9 +12,9 @@ import {
   compareExhibitionShadowDigests,
 } from "../check-pre-race-shadow.js";
 import { checkShadowReadOnly } from "./cron-entry-checks.js";
-import { runExhibition } from "./scrape-pre-race-job-scenes-b-1.js";
+import { RACE, runExhibition, RACE_11 } from "./scrape-pre-race-job-scenes-b-1.js";
 
-let check, show, RACE, RACE_11, freshDb, runRaceInfo;
+let check, show, freshDb, runRaceInfo;
 
 export const riHandler = () => createRaceInfoSlotHandler();
 
@@ -248,14 +248,14 @@ async function sprjb3Scene3() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check・show・RACE・RACE_11・freshDb・runRaceInfo） */
-export async function runScrapePreRaceJobScenesB3(env) {
-  ({ check, show, RACE, RACE_11, freshDb, runRaceInfo } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・freshDb・runRaceInfo） */
+export async function runScrapePreRaceJobScenesB7(env) {
+  ({ check, show, freshDb, runRaceInfo } = env);
   await sprjb3Scene3();
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check・show・RACE・RACE_11・freshDb・runRaceInfo） */
-export function runScrapePreRaceJobScenesB4(env) {
-  ({ check, show, RACE, RACE_11, freshDb, runRaceInfo } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・freshDb・runRaceInfo） */
+export function runScrapePreRaceJobScenesB8(env) {
+  ({ check, show, freshDb, runRaceInfo } = env);
 
 }

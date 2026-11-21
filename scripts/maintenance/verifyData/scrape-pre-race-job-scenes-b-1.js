@@ -3,12 +3,50 @@
  * 判定と期待値は分ける前の verify-scrape-pre-race-job.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
+import * as cheerio from "cheerio";
 import { runForRaces as realRaceInfoRun } from "../../daily/update-race-info.js";
 import { computeRaceInfoDigest } from "../../lib/scrapeJobs/preRaceDigest.js";
+import { parsePreRaceId } from "../../lib/scrapeJobs/preRaceHandlers.js";
 import { BreakerOpenError } from "../../lib/scrapeJobs/circuitBreaker.js";
-import { CONFIRM_STREAK_THRESHOLD } from "../../lib/cancellationStatus.js";
 
-let check, show, LIST_HTML, DATE, RACE, RACE_11, NOW, freshDb, createFetcher, pagesHandler, raceOf, upsertsOf, writeCount, runRaceInfo;
+let check, show, fixture, LIST_HTML, NOW, freshDb, pagesHandler, runRaceInfo;
+export let BEFORE_UNPUBLISHED_HTML, BEFORE_AFTER_START_HTML, BEFORE_ST_ONLY_HTML;
+
+export const DATE = "2026-09-16";
+
+const SUMI_DATE = "2026-09-21";
+
+export const SUMI_RACE = "2026-09-21-12-05";
+
+export const RACE = "2026-09-16-23-12";
+
+export const RACE_11 = "2026-09-16-23-11";
+
+/** 取得先の差し替え。handler(url) が、HTML・HTTPステータス（数値）・例外を返す。通信の記録つき */
+export function createFetcher(handler) {
+  const calls = [];
+  const fn = async (url) => {
+    calls.push(String(url));
+    const r = handler(String(url));
+    if (r instanceof Error) throw r;
+    if (typeof r === "number") {
+      return { ok: r >= 200 && r < 300, status: r, text: async () => "" };
+    }
+    return { ok: true, status: 200, text: async () => r };
+  };
+  fn.calls = calls;
+  return fn;
+}
+
+export const raceOf = (raceId) => {
+  const { venue_code, race_number } = parsePreRaceId(raceId);
+  return { race_id: raceId, venue_code, race_number };
+};
+
+export const upsertsOf = (db, table) =>
+  db.state.upserts.filter((u) => u.table === table);
+
+export const writeCount = (db) => db.state.upserts.length + db.state.updates.length;
 
 /** shadow が書かないことの検証（変異検証で使うため関数にする） */
 export async function raceInfoShadowWritesNothing(run) {
@@ -48,20 +86,50 @@ export async function runExhibition(run, db, options = {}, fetcher = null) {
   return { results, result: results[0], fetcher: f };
 }
 
-export async function exhibitionShadowWritesNothing(run) {
-  const db = freshDb();
-  const { result } = await runExhibition(run, db, { mode: "shadow" });
-  return (
-    result.outcome === "ok" &&
-    typeof result.resultDigest === "string" &&
-    result.rowsWritten === 0 &&
-    result.changed === false &&
-    writeCount(db) === 0
+function sprjb1Scene1() {
+  // 展示航走前（展示タイム・展示STが空）の直前情報
+  BEFORE_UNPUBLISHED_HTML = fixture(
+    "beforeinfo",
+    "beforeinfo-2026-09-21-10-08-before-exhibition.html",
   );
+  // 発走の後（2026-09-22の取得）の住之江5R（発走17:02）の直前情報。この5Rは、発走の33〜7分前の13回の取得が全て「展示未公開」で、
+  // 公開が窓の終わりより後だった。展示タイム（1号艇 6.89）・展示ST（1号艇 0.10）が載っている
+  BEFORE_AFTER_START_HTML = fixture(
+    "beforeinfo",
+    "beforeinfo-2026-09-21-12-05-after-start.html",
+  );
+  // 展示タイムの欄を空にして、展示STだけが公開されている状態を作る（一部の会場で、STが先に出る）
+  BEFORE_ST_ONLY_HTML = (() => {
+    const $ = cheerio.load(
+      fixture("beforeinfo", "beforeinfo-2026-09-19-02-09-f-exhibition.html"),
+    );
+    $("tbody.is-fs12").each((_, tbody) => {
+      $(tbody).find("tr").first().find("td").eq(4).text("-");
+    });
+    return $.html();
+  })();
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・fixture・LIST_HTML・runRaceInfo） */
+export function runScrapePreRaceJobScenesB1(env) {
+  ({ check, show, fixture, LIST_HTML, runRaceInfo } = env);
+  sprjb1Scene1();
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・fixture・LIST_HTML・NOW・freshDb・runRaceInfo） */
+export function runScrapePreRaceJobScenesB2(env) {
+  ({ check, show, fixture, LIST_HTML, NOW, freshDb, runRaceInfo } = env);
+
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・fixture・LIST_HTML・NOW・freshDb・pagesHandler・runRaceInfo） */
+export function runScrapePreRaceJobScenesB3(env) {
+  ({ check, show, fixture, LIST_HTML, NOW, freshDb, pagesHandler, runRaceInfo } = env);
+
 }
 
 /** 元の verify の1つの塊 { } を割った 1/2 */
-async function sprjb1Scene1() {
+async function sprjb1Scene2() {
   const db = freshDb();
   const first = await runRaceInfo(realRaceInfoRun, db, { mode: "live" });
   const r = first.result;
@@ -120,7 +188,7 @@ async function sprjb1Scene1() {
 }
 
 /** 元の verify の1つの塊 { } を割った 2/2 */
-async function sprjb1Scene2({ db, first, shadow }) {
+async function sprjb1Scene3({ db, first, shadow }) {
   check(
     "A1 shadow: 取得・解析のみで、DBへ一切書かない（upsert・update とも0件）。resultDigest を返し、rowsWritten=0・changed=false",
     (await raceInfoShadowWritesNothing(realRaceInfoRun)) &&
@@ -155,51 +223,20 @@ async function sprjb1Scene2({ db, first, shadow }) {
   );
 }
 
-async function sprjb1Scene3() {
+async function sprjb1Scene4() {
   {
-    const s1 = await sprjb1Scene1();
-    await sprjb1Scene2(s1);
-  }
-  // 選手0人（中止・未公開の可能性）: no_values。中止・順延の暫定検知の連続回数を進める（3回で暫定）
-  {
-    const emptyHandler = pagesHandler({ list: "<html><body></body></html>" });
-    const db = freshDb();
-    const outcomes = [];
-    for (let i = 0; i < CONFIRM_STREAK_THRESHOLD; i++) {
-      const { result } = await runRaceInfo(
-        realRaceInfoRun,
-        db,
-        { mode: "live" },
-        createFetcher(emptyHandler),
-      );
-      outcomes.push(result.outcome);
-    }
-    const race = db.state.tables.races.find((r) => r.race_id === RACE);
-    check(
-      "A1 選手0人: outcome=no_values（再試行）。書き込みは無く、中止・順延の暫定検知の連続回数が進み、3回で tentative になる",
-      outcomes.every((o) => o === "no_values") &&
-        race.cancellation_check_streak === CONFIRM_STREAK_THRESHOLD &&
-        race.cancellation_status === "tentative" &&
-        upsertsOf(db, "race_entries").length === 0,
-      show({ outcomes, race }),
-    );
-    const shadowDb = freshDb();
-    await runRaceInfo(
-      realRaceInfoRun,
-      shadowDb,
-      { mode: "shadow" },
-      createFetcher(emptyHandler),
-    );
-    check(
-      "A1 選手0人（shadow）: 中止・順延の暫定検知も書かない",
-      writeCount(shadowDb) === 0 &&
-        shadowDb.state.tables.races.find((r) => r.race_id === RACE)
-          .cancellation_check_streak === 0,
-    );
+    const s1 = await sprjb1Scene2();
+    await sprjb1Scene3(s1);
   }
 }
 
-async function sprjb1Scene4() {
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・fixture・LIST_HTML・NOW・freshDb・pagesHandler・runRaceInfo） */
+export async function runScrapePreRaceJobScenesB4(env) {
+  ({ check, show, fixture, LIST_HTML, NOW, freshDb, pagesHandler, runRaceInfo } = env);
+  await sprjb1Scene4();
+}
+
+async function sprjb1Scene5() {
   // 通信・HTTPエラー・ブレーカー・書き込みの失敗
   {
     const db500 = freshDb();
@@ -288,9 +325,8 @@ async function sprjb1Scene4() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check・show・LIST_HTML・DATE・RACE・RACE_11・NOW・freshDb・createFetcher・pagesHandler・raceOf・upsertsOf・writeCount・runRaceInfo） */
-export async function runScrapePreRaceJobScenesB1(env) {
-  ({ check, show, LIST_HTML, DATE, RACE, RACE_11, NOW, freshDb, createFetcher, pagesHandler, raceOf, upsertsOf, writeCount, runRaceInfo } = env);
-  await sprjb1Scene3();
-  await sprjb1Scene4();
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・fixture・LIST_HTML・NOW・freshDb・pagesHandler・runRaceInfo） */
+export async function runScrapePreRaceJobScenesB5(env) {
+  ({ check, show, fixture, LIST_HTML, NOW, freshDb, pagesHandler, runRaceInfo } = env);
+  await sprjb1Scene5();
 }

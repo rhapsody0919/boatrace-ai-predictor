@@ -6,9 +6,21 @@
 import { runForRaces as realExhibitionRun } from "../../daily/scrape-exhibition-data.js";
 import { computeExhibitionDigest } from "../../lib/scrapeJobs/preRaceDigest.js";
 import { BreakerOpenError } from "../../lib/scrapeJobs/circuitBreaker.js";
-import { runExhibition, exhibitionShadowWritesNothing } from "./scrape-pre-race-job-scenes-b-1.js";
+import { runExhibition, writeCount, upsertsOf, RACE, createFetcher, BEFORE_UNPUBLISHED_HTML, BEFORE_ST_ONLY_HTML } from "./scrape-pre-race-job-scenes-b-1.js";
 
-let check, show, BEFORE_UNPUBLISHED_HTML, BEFORE_ST_ONLY_HTML, RACE, NOW, freshDb, createFetcher, pagesHandler, upsertsOf;
+let check, show, NOW, freshDb, pagesHandler;
+
+export async function exhibitionShadowWritesNothing(run) {
+  const db = freshDb();
+  const { result } = await runExhibition(run, db, { mode: "shadow" });
+  return (
+    result.outcome === "ok" &&
+    typeof result.resultDigest === "string" &&
+    result.rowsWritten === 0 &&
+    result.changed === false &&
+    writeCount(db) === 0
+  );
+}
 
 /** 元の verify の1つの塊 { } を割った 1/2 */
 async function sprjb2Scene1() {
@@ -224,8 +236,8 @@ async function sprjb2Scene5() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check・show・BEFORE_UNPUBLISHED_HTML・BEFORE_ST_ONLY_HTML・RACE・NOW・freshDb・createFetcher・pagesHandler・upsertsOf） */
-export async function runScrapePreRaceJobScenesB2(env) {
-  ({ check, show, BEFORE_UNPUBLISHED_HTML, BEFORE_ST_ONLY_HTML, RACE, NOW, freshDb, createFetcher, pagesHandler, upsertsOf } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・NOW・freshDb・pagesHandler） */
+export async function runScrapePreRaceJobScenesB6(env) {
+  ({ check, show, NOW, freshDb, pagesHandler } = env);
   await sprjb2Scene5();
 }
