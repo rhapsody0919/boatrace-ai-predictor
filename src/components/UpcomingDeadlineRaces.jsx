@@ -21,7 +21,7 @@ import {
   pickUpcomingDeadlineRaces,
   moreButtonVenues,
   UPCOMING_MOBILE_VISIBLE,
-} from "../utils/upcomingDeadlineRaces";
+} from "../pure/upcomingDeadlineRaces";
 import InCautionBadge from "./race/InCautionBadge";
 import "./UpcomingDeadlineRaces.css";
 

@@ -16,7 +16,7 @@
  * - 時刻で変わる状態（次のレース・締切間近・発売中・全レース終了）は入れない（同 決定3）。
  *   節の日目だけは人のカードに合わせ、次レースが残る会場に限って出す（BOA-1220）。
  *   トップの「まもなく締切のレース」の節（PV09 T1、BOA-1690）は票の決定で人と同じ行を同じ並びに出す
- *   （行の選び方は人の画面と同じ upcomingDeadlineRaces.js。nowHHMM が無ければ出さない）
+ *   （行の選び方は人の画面と同じ src/pure/upcomingDeadlineRaces.js。nowHHMM が無ければ出さない）
  * - 形が壊れた入力は例外にする。正しく取れて0件のときだけ「開催なし」のモデルを返す（ADR 0069）
  *
  * Node から import するため、ブラウザ専用の依存を持ち込まない。検証: scripts/maintenance/verify-bot-page-model.js
@@ -49,7 +49,7 @@ import { localizePath } from "../pure/localizePath.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
 import { meetBannerSeriesOf, seriesOfDate } from "./meetPageModel.js";
-import { pickUpcomingDeadlineRaces } from "./upcomingDeadlineRaces.js";
+import { pickUpcomingDeadlineRaces } from "../pure/upcomingDeadlineRaces.js";
 
 const DEFAULT_LANG = "ja";
 

@@ -4,13 +4,13 @@
  * 人のトップ（UpcomingDeadlineRaces.jsx）と、ボット向けのトップ（botPageModel.js の buildTopModel）の両方が使う。
  * 材料は getRaces()（/api/races/today）の今の応答だけ。新しい DB の読み・API は足さない。
  * Node から import するため、ブラウザ専用の依存を持ち込まない。import は拡張子付きで書く。
- * 試験: scripts/tests/upcomingDeadlineRaces.test.js
+ * 試験: scripts/tests/upcomingDeadlineRaces.test.js（新しい置き場は src/pure。src/utils に新しいファイルを足さない）
  */
-import { gradeConfigOf } from "./raceListDisplay.js";
-import { isRaceCancelled } from "./raceCancellation.js";
+import { gradeConfigOf } from "../utils/raceListDisplay.js";
+import { isRaceCancelled } from "../utils/raceCancellation.js";
 import { getRaceId } from "./raceId.js";
-import { isFinalStage } from "../constants/raceStageConfig.js";
-import { splitRacerName } from "./racerName.js";
+import { isFinalStage } from "./raceStageConfig.js";
+import { splitRacerName } from "../utils/racerName.js";
 
 /** 節に出す行の上限（PC は全部、3列×2段） */
 export const UPCOMING_MAX_ROWS = 6;
@@ -47,33 +47,14 @@ export function pickUpcomingDeadlineRaces(
   nowHHMM,
   { max = UPCOMING_MAX_ROWS } = {},
 ) {
-  if (!nowHHMM || !HHMM.test(nowHHMM)) return [];
-  const rows = [];
-  for (const venue of venuesData || []) {
+  if (!isHHMM(nowHHMM)) return [];
+  const rows = (venuesData || []).flatMap((venue) => {
     const venueCode = Number(venue.placeCd ?? venue.place_cd);
-    for (const race of venue.races || []) {
-      if (typeof race.startTime !== "string" || !HHMM.test(race.startTime))
-        continue;
-      if (race.startTime <= nowHHMM) continue;
-      if (isRaceCancelled(race)) continue;
-      const raceId = getRaceId({
-        rawData: { ...race, placeCd: race.placeCd ?? venueCode },
-      });
-      if (!raceId) continue;
-      const grade = gradeConfigOf(race.raceGrade);
-      rows.push({
-        raceId,
-        venueCode,
-        raceNo: race.raceNo,
-        startTime: race.startTime,
-        gradeLabel: grade?.label ?? null,
-        gradeColor: grade?.color ?? null,
-        isFinal: isFinalStage(race.raceStage),
-        boat1: boat1Of(race),
-        cautionHigh: race.inCaution?.level === "high",
-      });
-    }
-  }
+    return (venue.races || [])
+      .filter((race) => isUpcoming(race, nowHHMM))
+      .map((race) => toRow(race, venueCode))
+      .filter((row) => row.raceId);
+  });
   rows.sort(
     (a, b) =>
       a.startTime.localeCompare(b.startTime) ||
@@ -81,6 +62,29 @@ export function pickUpcomingDeadlineRaces(
       a.raceNo - b.raceNo,
   );
   return rows.slice(0, max);
+}
+
+const isHHMM = (v) => typeof v === "string" && HHMM.test(v);
+
+// 締切予定が nowHHMM より後で、中止でない（startTime の欠けた行は入れない）
+const isUpcoming = (race, nowHHMM) =>
+  isHHMM(race.startTime) && race.startTime > nowHHMM && !isRaceCancelled(race);
+
+function toRow(race, venueCode) {
+  const grade = gradeConfigOf(race.raceGrade);
+  return {
+    raceId: getRaceId({
+      rawData: { ...race, placeCd: race.placeCd ?? venueCode },
+    }),
+    venueCode,
+    raceNo: race.raceNo,
+    startTime: race.startTime,
+    gradeLabel: grade?.label ?? null,
+    gradeColor: grade?.color ?? null,
+    isFinal: isFinalStage(race.raceStage),
+    boat1: boat1Of(race),
+    cautionHigh: race.inCaution?.level === "high",
+  };
 }
 
 /**

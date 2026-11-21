@@ -51,15 +51,8 @@ function TodayVenuesSection({
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
             />
-            {/* まもなく締切のレース（PV09 T1・案 B、BOA-1690）。初めての人の案内のカードより上に置き、
-                最初の画面にレースの中身を出す。取得に失敗したときは出さない（エラーは下の DataFetchError） */}
-            {!error && (
-              <UpcomingDeadlineRaces
-                venuesData={venuesData}
-                nowHHMM={nowHHMM}
-                loading={loading}
-              />
-            )}
+            {/* まもなく締切のレース（PV09 T1、BOA-1690）。案内より上。取得の失敗時は出さない */}
+            {!error && <UpcomingDeadlineRaces {...{ venuesData, nowHHMM, loading }} />}
             {isFirstVisit && i18n.language === "ja" ? (
               <FirstVisitGuideCard />
             ) : (

@@ -6,7 +6,7 @@ import { rewriteTodayRaces, setJstNoon } from "./today-races-rewrite.js";
  * トップの「まもなく締切のレース」の節（PV09 T1・案 B、BOA-1690）。
  *
  * 録画の本日のレースを作った会場に置き換え、時計を JST の正午に固定して、開催日程に左右されずに確かめる。
- * 行の選び方は src/utils/upcomingDeadlineRaces.js（単体の試験は scripts/tests/upcomingDeadlineRaces.test.js）。
+ * 行の選び方は src/pure/upcomingDeadlineRaces.js（単体の試験は scripts/tests/upcomingDeadlineRaces.test.js）。
  * 見た目の目標は hq の drafts/media/proto-pv09-t1-20261121/（B-375・B-375-open・B-1280・finished-*）。
  */
 

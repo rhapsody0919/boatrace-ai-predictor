@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   pickUpcomingDeadlineRaces,
   moreButtonVenues,
-} from "../../src/utils/upcomingDeadlineRaces.js";
+} from "../../src/pure/upcomingDeadlineRaces.js";
 
 const DATE = "2026-11-22";
 const racers = (name, rank = "A1") => [
