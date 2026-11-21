@@ -1,0 +1,51 @@
+{
+  "$comment": "置き場の表の判定の共通の試験（HR74 3節）。龍神の verify-doc-placement.js の自己試験と hq の tests/test_placement.py（origin/master のこの1ファイルを git show で読む）が同じ入力を通し、2実装（js と py）の食い違いを落とす。classify は 1 パスの判定（row は当たった行の番号か null、problem は null・none・ext・ignore）。evaluate は一覧を通した外れ（ext は frozen を越えた行だけ）。table_errors は表の形の誤りの数",
+  "table": {
+    "mode": "shadow",
+    "rows": [
+      {"glob": "README.md", "kind": "入口", "owner": "x", "ext": ["md"], "git": "track", "frozen": 0},
+      {"glob": ".gitignore", "kind": "ignore", "owner": "x", "ext": [""], "git": "track", "frozen": 0},
+      {"glob": "**/*.log", "kind": "ログ", "owner": "x", "ext": "*", "git": "ignore", "frozen": 0},
+      {"glob": "docs/design/**", "kind": "設計", "owner": "x", "ext": ["md"], "git": "track", "frozen": 1},
+      {"glob": "docs/**", "kind": "文書", "owner": "x", "ext": ["md", "json"], "git": "track", "frozen": 0},
+      {"glob": "scripts/*", "kind": "直下", "owner": "x", "ext": [], "git": "track", "frozen": 1},
+      {"glob": "scripts/**", "kind": "実行物", "owner": "x", "ext": ["js", ""], "git": "track", "frozen": 0},
+      {"glob": "drafts/rank-proof*/**", "kind": "試作", "owner": "x", "ext": ["md", "png"], "git": "track", "frozen": 0},
+      {"glob": "drafts/?.md", "kind": "1字", "owner": "x", "ext": ["md"], "git": "track", "frozen": 0}
+    ]
+  },
+  "classify": [
+    {"path": "README.md", "row": 0, "problem": null},
+    {"path": "readme.md", "row": null, "problem": "none"},
+    {"path": ".gitignore", "row": 1, "problem": null},
+    {"path": "x.log", "row": 2, "problem": "ignore"},
+    {"path": "docs/a/b/c.log", "row": 2, "problem": "ignore"},
+    {"path": "docs/design/a.md", "row": 3, "problem": null},
+    {"path": "docs/design/deep/x/y.PY", "row": 3, "problem": "ext"},
+    {"path": "docs/a.json", "row": 4, "problem": null},
+    {"path": "docs/x/設計の図.png", "row": 4, "problem": "ext"},
+    {"path": "docsx/a.md", "row": null, "problem": "none"},
+    {"path": "scripts/run.js", "row": 5, "problem": "ext"},
+    {"path": "scripts/lib/a.js", "row": 6, "problem": null},
+    {"path": "scripts/lib/Makefile", "row": 6, "problem": null},
+    {"path": "scripts/lib/.env", "row": 6, "problem": null},
+    {"path": "scripts/lib/a.tar.gz", "row": 6, "problem": "ext"},
+    {"path": "drafts/rank-proof-20261103/a.png", "row": 7, "problem": null},
+    {"path": "drafts/rank-proof/a.txt", "row": 7, "problem": "ext"},
+    {"path": "drafts/a.md", "row": 8, "problem": null},
+    {"path": "drafts/ab.md", "row": null, "problem": "none"},
+    {"path": "drafts/a+b.md", "row": null, "problem": "none"}
+  ],
+  "evaluate": [
+    {"paths": ["README.md", "docs/design/a.py", "scripts/run.js"], "outside": []},
+    {"paths": ["README.md", "docs/design/a.py", "docs/design/b.sh", "scripts/run.js", "scripts/go.js"],
+     "outside": ["docs/design/a.py", "docs/design/b.sh", "scripts/go.js", "scripts/run.js"]},
+    {"paths": ["x.log", "LICENSE", "docs/a.md"], "outside": ["LICENSE", "x.log"]}
+  ],
+  "table_errors": [
+    {"table": {"mode": "shadow", "rows": [{"glob": "src/**", "kind": "k", "owner": "o", "ext": "*", "git": "track", "frozen": 0}]}, "errors": 1},
+    {"table": {"mode": "loud", "rows": [{"glob": "a", "kind": "k", "owner": "o", "ext": ["md"], "git": "keep", "frozen": -1}]}, "errors": 3},
+    {"table": {"mode": "red", "rows": [{"glob": "*.md", "kind": "k", "owner": "o", "ext": ["md"], "git": "track", "frozen": 0}, {"glob": "*.md", "kind": "k", "owner": "o", "ext": ["md"], "git": "track", "frozen": 0}]}, "errors": 3},
+    {"table": {"mode": "red", "rows": [{"glob": "src/**", "kind": "k", "owner": "o", "ext": ["js"], "git": "track", "frozen": 0}]}, "errors": 0}
+  ]
+}
