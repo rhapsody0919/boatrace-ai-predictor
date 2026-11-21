@@ -3,20 +3,40 @@
  * 判定と期待値は分ける前の verify-scrape-result-job.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import {
-  createResultOnTick,
-  createResultSlotHandler,
-  CANCELLATION_CONFIRM_AFTER_MIN,
-  overdueWindows,
-} from "../../lib/scrapeJobs/resultHandlers.js";
+import { runForRaces } from "../../daily/scrape-results.js";
+import { createResultOnTick, createResultSlotHandler } from "../../lib/scrapeJobs/resultHandlers.js";
 import { runScrapeJob } from "../../lib/scrapeJobs/cronWrapper.js";
 import { SCRAPE_JOBS } from "../../lib/scrapeJobs/registry.js";
 import { createMemoryStore } from "../../lib/scrapeJobs/testing/memoryStore.js";
 import { createFakeDb } from "./scrape-result-job-fake-db.js";
-import { NOW_TICK, politeFor, slotFor } from "./scrape-result-job-scenes-b-2.js";
-import { baseDb, RACE_A, RACE_B, digestA, RACE_NONE } from "./scrape-result-job-scenes-b-1.js";
+import { racesA, DATE, NOW_FN, baseDb } from "./scrape-result-job-scenes-b-2.js";
+import { RACE_A, RACE_B, digestA, RACE_NONE } from "./scrape-result-job-scenes-b-1.js";
 
-let check, show, same, HTML_NONE, HTML_PARTIAL;
+let check, show, same, HTML_A, HTML_NONE, HTML_PARTIAL, URL_TO_HTML;
+export let NOW_TICK;
+
+ // 14:40 JST
+export const slotFor = (raceId, overrides = {}) => ({
+  job: "result",
+  race_id: raceId,
+  offset_min: 5,
+  race_date: "2026-09-19",
+  status: "running",
+  attempts: 1,
+  last_attempt_at: NOW_TICK.toISOString(),
+  lease_until: "2026-09-19T06:40:00Z",
+  ...overrides,
+});
+
+export const politeFor = (map = URL_TO_HTML) => {
+  const calls = [];
+  const fn = async (url) => {
+    calls.push(url);
+    return new Response(map(url), { status: 200 });
+  };
+  fn.calls = calls;
+  return fn;
+};
 
 export async function runResultJob({
   mode,
@@ -62,6 +82,93 @@ export async function runResultJob({
 
 async function srjb3Scene1() {
   {
+    // 書き込みの失敗は error（ok にしない）
+    const db = createFakeDb(
+      {
+        race_results: [],
+        race_start_timings: [],
+        race_conditions: [],
+        races: [],
+        predictions: [],
+      },
+      { failOn: [{ table: "race_results", op: "upsert" }] },
+    );
+    const res = await runForRaces([racesA], {
+      date: DATE,
+      mode: "live",
+      fetchHtml: async () => HTML_A,
+      client: db,
+      now: NOW_FN,
+    });
+    check(
+      "race_results の書き込みが失敗したら error（完了にしない。次の再試行で書き直す）",
+      res[0].outcome === "error" &&
+        /race_results/.test(res[0].error) &&
+        res[0].resultDigest === undefined,
+      show(res),
+    );
+    const dbRead = createFakeDb(
+      { race_results: [] },
+      { readError: { race_results: "接続断" } },
+    );
+    let thrown = null;
+    try {
+      await runForRaces([racesA], {
+        date: DATE,
+        mode: "live",
+        fetchHtml: async () => HTML_A,
+        client: dbRead,
+      });
+    } catch (e) {
+      thrown = e;
+    }
+    check(
+      "完了済みの確認（読み取り）が失敗したら例外（「未完了」とみなして取得・書き込みを進めない）",
+      thrown && /接続断/.test(thrown.message) && dbRead.writes.length === 0,
+    );
+  }
+  {
+    // 並列度の上限
+    let active = 0;
+    let peak = 0;
+    const many = Array.from({ length: 6 }, (_, i) => ({
+      race_id: `2026-09-19-05-${String(i + 1).padStart(2, "0")}`,
+      venue_code: 5,
+      race_number: i + 1,
+    }));
+    await runForRaces(many, {
+      date: DATE,
+      mode: "shadow",
+      fetchHtml: async () => {
+        active++;
+        peak = Math.max(peak, active);
+        await new Promise((r) => setTimeout(r, 5));
+        active--;
+        return HTML_NONE;
+      },
+      concurrency: 2,
+    });
+    check(
+      "並列度の上限: concurrency=2 で同時取得は2件まで",
+      peak === 2,
+      `peak=${peak}`,
+    );
+    let threw = false;
+    try {
+      await runForRaces([racesA], { date: DATE, mode: "dry" });
+    } catch {
+      threw = true;
+    }
+    check("mode が live・shadow 以外なら例外", threw);
+  }
+  // ---------------------------------------------------------------------------
+  // (c)(d) 共通ラッパ経由の result
+  // ---------------------------------------------------------------------------
+  NOW_TICK = new Date("2026-09-19T05:40:00Z");
+}
+
+async function srjb3Scene2() {
+  {
     // off・行なし・075未適用: 何も取得せず何も書かない
     for (const [label, opts] of [
       ["mode=off", { mode: "off", slots: [slotFor(RACE_A)] }],
@@ -103,7 +210,7 @@ async function srjb3Scene1() {
   }
 }
 
-async function srjb3Scene2() {
+async function srjb3Scene3() {
   {
     // shadow: 取得・解析のみ。予定表に digest を記録。データテーブルへは書かない。onTick も呼ばない
     const r = await runResultJob({
@@ -154,7 +261,7 @@ async function srjb3Scene2() {
   }
 }
 
-async function srjb3Scene3() {
+async function srjb3Scene4() {
   {
     // partial / no_values → 完了にせず再試行（retrySlot）。error だけなら500
     const partial = await runResultJob({
@@ -212,111 +319,11 @@ async function srjb3Scene3() {
     same(SCRAPE_JOBS.result.offsets, [10]),
     show(SCRAPE_JOBS.result.offsets),
   );
-  // 中止・順延の確定
-  check(
-    "確定の基準: 結果のスロットの期限+許容幅（発走+10分+80分）が、中止・順延の確定の基準（発走+90分）と一致する",
-    SCRAPE_JOBS.result.offsets[0] + SCRAPE_JOBS.result.graceMin ===
-      CANCELLATION_CONFIRM_AFTER_MIN,
-  );
 }
 
-async function srjb3Scene4() {
-  {
-    // overdueWindows: 発走 < now-90分（排他）、15分の範囲
-    const w = overdueWindows(new Date("2026-09-19T05:40:00Z")); // 14:40 JST → 発走13:10未満・12:55以上
-    check(
-      "overdueWindows: 14:40 JST → 発走 12:55:00〜13:10:00（未満）の1範囲",
-      same(w, [{ date: "2026-09-19", from: "12:55:00", to: "13:10:00" }]),
-      show(w),
-    );
-    const w2 = overdueWindows(new Date("2026-09-19T15:16:00Z")); // 00:16 JST（翌日）→ 前日22:31〜22:46
-    check(
-      "overdueWindows: 翌 00:16 JST → 前日（2026-09-19）の発走 22:31:00〜22:46:00（未満）。最終レース22:45発走が入る（日付をまたいでも拾う）",
-      same(w2, [{ date: "2026-09-19", from: "22:31:00", to: "22:46:00" }]) &&
-        "22:45:00" >= w2[0].from &&
-        "22:45:00" < w2[0].to,
-      show(w2),
-    );
-    const wExact = overdueWindows(new Date("2026-09-19T15:15:00Z")); // 00:15:00 ちょうど: 22:45発走は「90分ちょうど」で、まだ超えていない
-    check(
-      "overdueWindows: 22:45発走のレースは、翌 00:15:00 ちょうどでは対象外（発走+90分を「超えた」後＝排他）",
-      !("22:45:00" < wExact[0].to),
-      show(wExact),
-    );
-    const wCross = overdueWindows(new Date("2026-09-19T16:40:00Z")); // 01:40 JST → 前日23:55〜（終日）と当日 00:00〜00:10
-    check(
-      "overdueWindows: 日付をまたぐ範囲は、前日の終わりまでと当日の 00:00 からの2つに分ける",
-      same(wCross, [
-        { date: "2026-09-19", from: "23:55:00", to: null },
-        { date: "2026-09-20", from: "00:00:00", to: "00:10:00" },
-      ]),
-      show(wCross),
-    );
-  }
-  {
-    // onTick: 発走時刻の範囲のレースを問い合わせ、確定の処理へ渡す
-    const db = createFakeDb({
-      races: [
-        {
-          race_id: "A",
-          race_date: "2026-09-19",
-          start_time: "12:56:00",
-          cancellation_status: null,
-        },
-        {
-          race_id: "B",
-          race_date: "2026-09-19",
-          start_time: "13:09:00",
-          cancellation_status: null,
-        },
-        {
-          race_id: "C",
-          race_date: "2026-09-19",
-          start_time: "13:10:00",
-          cancellation_status: null,
-        }, // 上限（排他）
-        {
-          race_id: "D",
-          race_date: "2026-09-19",
-          start_time: "12:50:00",
-          cancellation_status: null,
-        }, // 範囲外（古い）
-        {
-          race_id: "E",
-          race_date: "2026-09-19",
-          start_time: "13:00:00",
-          cancellation_status: "confirmed",
-        }, // 確定済み
-        {
-          race_id: "F",
-          race_date: "2026-09-18",
-          start_time: "13:00:00",
-          cancellation_status: null,
-        }, // 別の日
-      ],
-    });
-    const seen = [];
-    const tick = await createResultOnTick({
-      confirm: async (client, ids) => {
-        seen.push(ids);
-        return { checked: ids.length, confirmed: ["A"] };
-      },
-    })({ client: db, now: () => NOW_TICK });
-    check(
-      "onTick: 発走 12:55〜13:10（未満）・未確定・当日のレースだけを、確定の処理に渡す",
-      same(seen, [["A", "B"]]) && same(tick, { overdue: 2, confirmed: 1 }),
-      show({ seen, tick }),
-    );
-    check(
-      "onTick: 書き込みは自分ではしない（確定は confirm 経由）",
-      db.writes.length === 0,
-    );
-  }
-}
-
-/** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・HTML_NONE・HTML_PARTIAL） */
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・HTML_A・HTML_NONE・HTML_PARTIAL・URL_TO_HTML） */
 export async function runScrapeResultJobScenesB4(env) {
-  ({ check, show, same, HTML_NONE, HTML_PARTIAL } = env);
+  ({ check, show, same, HTML_A, HTML_NONE, HTML_PARTIAL, URL_TO_HTML } = env);
   await srjb3Scene1();
   await srjb3Scene2();
   await srjb3Scene3();

@@ -9,8 +9,9 @@ import { runScrapeJob } from "../../lib/scrapeJobs/cronWrapper.js";
 import { createMemoryStore } from "../../lib/scrapeJobs/testing/memoryStore.js";
 import { createFakeDb } from "./scrape-result-job-fake-db.js";
 import { kDb, K_DATE } from "./scrape-result-job-scenes-b-4.js";
-import { RACE_A, DATE, RACE_B } from "./scrape-result-job-scenes-b-1.js";
-import { politeFor } from "./scrape-result-job-scenes-b-2.js";
+import { RACE_A, RACE_B } from "./scrape-result-job-scenes-b-1.js";
+import { DATE } from "./scrape-result-job-scenes-b-2.js";
+import { politeFor } from "./scrape-result-job-scenes-b-3.js";
 
 let check, show, same, K_TEXT;
 
@@ -352,7 +353,7 @@ async function srjb5Scene5() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・K_TEXT） */
-export async function runScrapeResultJobScenesB7(env) {
+export async function runScrapeResultJobScenesB8(env) {
   ({ check, show, same, K_TEXT } = env);
   await srjb5Scene5();
 }

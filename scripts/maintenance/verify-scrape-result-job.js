@@ -24,13 +24,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  buildRaceResultRow,
-  isResultComplete,
-  parseRaceResultHtml,
+  clearCancellationsWithResults,
+  clearCancellationsWithResultsInRange,
   run as runResultsLegacy,
 } from "../daily/scrape-results.js";
 
-import { RESULT_DIGEST_COLUMNS } from "../lib/scrapeJobs/resultDigest.js";
+
 import { addDays, parseRaceId } from "../lib/scrapeJobs/resultHandlers.js";
 
 
@@ -40,19 +39,18 @@ import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { cronWiring } from "./verifyData/cronWiring.js";
 import { checkScheduledResults } from "./verifyData/scrape-scheduled-scenes.js";
 import { supabase as moduleSupabase } from "../lib/supabaseClient.js";
-
-import {
-  RACE_A,
-  DATE,
-  runScrapeResultJobScenesB1,
-  runScrapeResultJobScenesB2,
-} from "./verifyData/scrape-result-job-scenes-b-1.js";
-import { runScrapeResultJobScenesB3 } from "./verifyData/scrape-result-job-scenes-b-2.js";
+import { createFakeDb } from "./verifyData/scrape-result-job-fake-db.js";
+import { DATE, runScrapeResultJobScenesB3 } from "./verifyData/scrape-result-job-scenes-b-2.js";
+import { runScrapeResultJobScenesB1, runScrapeResultJobScenesB2 } from "./verifyData/scrape-result-job-scenes-b-1.js";
 import { runScrapeResultJobScenesB4 } from "./verifyData/scrape-result-job-scenes-b-3.js";
-import { runScrapeResultJobScenesB5, runScrapeResultJobScenesB6 } from "./verifyData/scrape-result-job-scenes-b-4.js";
-import { runScrapeResultJobScenesB7 } from "./verifyData/scrape-result-job-scenes-b-5.js";
-import { runScrapeResultJobScenesB8, runScrapeResultJobScenesB9 } from "./verifyData/scrape-result-job-scenes-b-6.js";
-import { runScrapeResultJobScenesB10 } from "./verifyData/scrape-result-job-scenes-b-7.js";
+import {
+  runScrapeResultJobScenesB5,
+  runScrapeResultJobScenesB6,
+  runScrapeResultJobScenesB7,
+} from "./verifyData/scrape-result-job-scenes-b-4.js";
+import { runScrapeResultJobScenesB8 } from "./verifyData/scrape-result-job-scenes-b-5.js";
+import { runScrapeResultJobScenesB9, runScrapeResultJobScenesB10 } from "./verifyData/scrape-result-job-scenes-b-6.js";
+import { runScrapeResultJobScenesB11 } from "./verifyData/scrape-result-job-scenes-b-7.js";
 
 // 検証対象のコードが出す警告・エラー・進捗のログで出力が埋まらないよう、検証中は無効にし、結果の表示だけ元の関数で行う
 const printOut = console.log.bind(console);
@@ -88,7 +86,7 @@ const HTML_CANCELLED = FIX("raceresult-cancelled-2026-09-21-03-01.html");
 const HTML_PARTIAL = HTML_A.replaceAll("決まり手", "決まりX");
 
 // ---- 後半の場面（verifyData/scrape-result-job-scenes-b-1.js） ----
-runScrapeResultJobScenesB1({ check, show, same });
+runScrapeResultJobScenesB1({ check, show, same, HTML_A, HTML_B, HTML_NONE, HTML_PARTIAL });
 const URL_TO_HTML = (url) =>
   url.includes("rno=1&jcd=05&hd=20260919")
     ? HTML_A
@@ -96,77 +94,133 @@ const URL_TO_HTML = (url) =>
       ? HTML_B
       : HTML_NONE;
 
-// ---------------------------------------------------------------------------
-// テスト用の道具: インメモリのSupabaseクライアント・fetch・時計
-// ---------------------------------------------------------------------------
-
-// runForRaces の fetchHtml（本文の文字列を返す）。呼び出したURLを calls に残す
-const htmlFetcher = (map = URL_TO_HTML) => {
-  const calls = [];
-  const fn = async (url) => {
-    calls.push(url);
-    const body = map(url);
-    if (body instanceof Error) throw body;
-    return body;
-  };
-  fn.calls = calls;
-  return fn;
-};
-
-// ---------------------------------------------------------------------------
-// (a) 解析・行の組み立て・result_digest
-// ---------------------------------------------------------------------------
-const parsedA = parseRaceResultHtml(HTML_A);
-const parsedB = parseRaceResultHtml(HTML_B);
-const rowA = buildRaceResultRow(RACE_A, parsedA, {
-  resultAt: "2026-09-19T06:00:00Z",
-});
-const timingsA = parsedA.startTimings.map((st) => ({ race_id: RACE_A, ...st }));
-
-check(
-  "解析: 桐生1Rの着順・決まり手・払戻・進入・STが、公式ページの表示と一致（1-6-2-3-5-4・逃げ・単勝160円）",
-  rowA.rank1 === 1 &&
-    rowA.rank2 === 6 &&
-    rowA.rank3 === 2 &&
-    rowA.rank6 === 4 &&
-    rowA.winning_technique === "逃げ" &&
-    rowA.payout_win === 160 &&
-    rowA.payout_trio === 1480 &&
-    parsedA.startTimings.length === 6 &&
-    isResultComplete(rowA),
-  show(rowA),
-);
-check(
-  "解析: 未公開ページ（着順テーブルなし）は null（例外にしない）",
-  parseRaceResultHtml(HTML_NONE) === null,
-);
-check(
-  "解析: 決まり手が未公開なら、行は組み立てられるが完了ではない（payout_winはあるが winning_technique が null）",
-  (() => {
-    const p = parseRaceResultHtml(HTML_PARTIAL);
-    const r = p && buildRaceResultRow(RACE_A, p);
-    return (
-      r &&
-      r.payout_win === 160 &&
-      r.winning_technique === null &&
-      !isResultComplete(r)
-    );
-  })(),
-);
-check(
-  "行の列は、ダイジェスト対象の列＋result_at と一致（列を足しても、ダイジェストから漏れない）",
-  same(
-    Object.keys(rowA).sort(),
-    [...RESULT_DIGEST_COLUMNS, "result_at"].sort(),
-  ),
-  show(Object.keys(rowA).filter((c) => !RESULT_DIGEST_COLUMNS.includes(c))),
-);
-
 // ---- 後半の場面（verifyData/scrape-result-job-scenes-b-1.js・scrape-result-job-scenes-b-2.js・scrape-result-job-scenes-b-3.js・scrape-result-job-scenes-b-4.js） ----
-await runScrapeResultJobScenesB2({ check, show, same, parsedB, rowA, timingsA });
-await runScrapeResultJobScenesB3({ check, show, same, HTML_A, HTML_NONE, HTML_PARTIAL, URL_TO_HTML, htmlFetcher });
-await runScrapeResultJobScenesB4({ check, show, same, HTML_NONE, HTML_PARTIAL });
+runScrapeResultJobScenesB2({ check, show, same, HTML_A, HTML_B, HTML_NONE, HTML_PARTIAL, URL_TO_HTML });
+await runScrapeResultJobScenesB3({ check, show, same, HTML_NONE, HTML_PARTIAL });
+await runScrapeResultJobScenesB4({ check, show, same, HTML_A, HTML_NONE, HTML_PARTIAL, URL_TO_HTML });
 await runScrapeResultJobScenesB5({ check, show, same });
+{
+  // clearCancellationsWithResults（BOA-524）: 結果があるのに中止・順延（暫定・確定）が付いたレースを解除する。
+  // 2026-09-12 は、結果が先に入り、確定が後から付いた（結果の書き込みの時点では解除できない）
+  const mk = (extra = {}) =>
+    createFakeDb(
+      {
+        race_results: [
+          { race_id: "R1" },
+          { race_id: "R3" },
+          { race_id: "R4" },
+          { race_id: "R6" },
+        ],
+        races: [
+          // 確定・結果あり（誤り）
+          {
+            race_id: "R1",
+            race_date: "2026-09-12",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+          // 確定・結果なし（本物の中止）
+          {
+            race_id: "R2",
+            race_date: "2026-09-12",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+          // 暫定・結果あり
+          {
+            race_id: "R3",
+            race_date: "2026-09-12",
+            cancellation_status: "tentative",
+            cancellation_check_streak: 2,
+          },
+          // 中止でない・結果あり
+          {
+            race_id: "R4",
+            race_date: "2026-09-12",
+            cancellation_status: null,
+            cancellation_check_streak: 0,
+          },
+          // 期間の外（2026-08-01）の確定・結果なし
+          {
+            race_id: "R5",
+            race_date: "2026-08-01",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+          // 期間の外の確定・結果あり（範囲の検索では触らない）
+          {
+            race_id: "R6",
+            race_date: "2026-08-01",
+            cancellation_status: "confirmed",
+            cancellation_check_streak: 0,
+          },
+        ],
+      },
+      extra,
+    );
+  const statusOf = (db, id) => db.tables.races.find((x) => x.race_id === id);
+  const db = mk();
+  const r = await clearCancellationsWithResults(db, ["R1", "R2", "R3", "R4"]);
+  check(
+    "解除（BOA-524）: 結果のある確定（R1）・暫定（R3）だけを NULL・streak 0 に戻す。結果の無い確定（R2）と、中止でないレース（R4）は触らない",
+    same(r.cleared.sort(), ["R1", "R3"]) &&
+      statusOf(db, "R1").cancellation_status === null &&
+      statusOf(db, "R3").cancellation_status === null &&
+      statusOf(db, "R3").cancellation_check_streak === 0 &&
+      statusOf(db, "R2").cancellation_status === "confirmed",
+    show(r),
+  );
+  for (const table of ["race_results", "races"]) {
+    const bad = mk({ readError: { [table]: "接続断" } });
+    let err = null;
+    try {
+      await clearCancellationsWithResults(bad, ["R1", "R2"]);
+    } catch (e) {
+      err = e;
+    }
+    check(
+      `解除: ${table} の読み取りに失敗したら例外・書き込みなし（読めなかった集合を空とみなさない。BOA-512 の反転の再発防止）`,
+      err && new RegExp(table).test(err.message) && bad.writes.length === 0,
+    );
+  }
+  const none = mk();
+  const rn = await clearCancellationsWithResults(none, []);
+  check(
+    "解除: 対象0件は読み書きしない",
+    rn.cleared.length === 0 &&
+      none.reads.length === 0 &&
+      none.writes.length === 0,
+  );
+  const dbR = mk();
+  const rr = await clearCancellationsWithResultsInRange(dbR, {
+    from: "2026-09-10",
+    to: "2026-09-12",
+  });
+  check(
+    "範囲の解除: 期間（両端含む）の中止・順延の付いたレースだけを調べ、結果のあるもの（R1・R3）を解除する。期間の外（R6）は触らない",
+    same(rr.cleared.sort(), ["R1", "R3"]) &&
+      statusOf(dbR, "R6").cancellation_status === "confirmed" &&
+      statusOf(dbR, "R2").cancellation_status === "confirmed",
+    show(rr),
+  );
+  const badR = mk({ readError: { races: "接続断" } });
+  let errR = null;
+  try {
+    await clearCancellationsWithResultsInRange(badR, {
+      from: "2026-09-10",
+      to: "2026-09-12",
+    });
+  } catch (e) {
+    errR = e;
+  }
+  check(
+    "範囲の解除: 対象レースの読み取りに失敗したら例外・書き込みなし",
+    errR && badR.writes.length === 0,
+  );
+}
+
+// ---- 後半の場面（verifyData/scrape-result-job-scenes-b-4.js） ----
+await runScrapeResultJobScenesB6({ check, show, same });
 
 // ---------------------------------------------------------------------------
 // (e) Kファイル同期
@@ -177,9 +231,9 @@ const K_TEXT = fs.readFileSync(
 );
 
 // ---- 後半の場面（verifyData/scrape-result-job-scenes-b-4.js・scrape-result-job-scenes-b-5.js・scrape-result-job-scenes-b-6.js） ----
-await runScrapeResultJobScenesB6({ check, show, same, K_TEXT });
 await runScrapeResultJobScenesB7({ check, show, same, K_TEXT });
-await runScrapeResultJobScenesB8({ printOut, check, show, same, HTML_NONE, HTML_CANCELLED, URL_TO_HTML });
+await runScrapeResultJobScenesB8({ check, show, same, K_TEXT });
+await runScrapeResultJobScenesB9({ printOut, check, show, same, HTML_NONE, HTML_CANCELLED, URL_TO_HTML });
 
 // ---------------------------------------------------------------------------
 // (g) 切り替えの仕組み
@@ -398,8 +452,8 @@ await runScrapeResultJobScenesB8({ printOut, check, show, same, HTML_NONE, HTML_
 }
 
 // ---- 後半の場面（verifyData/scrape-result-job-scenes-b-6.js・scrape-result-job-scenes-b-7.js） ----
-runScrapeResultJobScenesB9({ printOut, check, show, same, HTML_NONE, HTML_CANCELLED, URL_TO_HTML });
-runScrapeResultJobScenesB10({ printOut, show });
+runScrapeResultJobScenesB10({ printOut, check, show, same, HTML_NONE, HTML_CANCELLED, URL_TO_HTML });
+runScrapeResultJobScenesB11({ printOut, show });
 
 printOut(
   failures === 0 ? "\nALL PASS" : `\n${failures} 件の検証が失敗しました`,

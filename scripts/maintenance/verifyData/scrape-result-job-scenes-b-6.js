@@ -9,8 +9,9 @@ import { runScrapeJob } from "../../lib/scrapeJobs/cronWrapper.js";
 import { createMemoryStore } from "../../lib/scrapeJobs/testing/memoryStore.js";
 import { createFakeDb } from "./scrape-result-job-fake-db.js";
 import { catchupDb, catchupCtx } from "./scrape-result-job-scenes-b-5.js";
-import { politeFor, slotFor, NOW_TICK } from "./scrape-result-job-scenes-b-2.js";
-import { RACE_B, RACE_A, DATE, KNOWN_GAPS } from "./scrape-result-job-scenes-b-1.js";
+import { politeFor, slotFor, NOW_TICK } from "./scrape-result-job-scenes-b-3.js";
+import { RACE_B, RACE_A, KNOWN_GAPS } from "./scrape-result-job-scenes-b-1.js";
+import { DATE } from "./scrape-result-job-scenes-b-2.js";
 
 let printOut, check, show, same, HTML_NONE, HTML_CANCELLED, URL_TO_HTML;
 
@@ -370,7 +371,7 @@ async function srjb6Scene6() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・same・HTML_NONE・HTML_CANCELLED・URL_TO_HTML） */
-export async function runScrapeResultJobScenesB8(env) {
+export async function runScrapeResultJobScenesB9(env) {
   ({ printOut, check, show, same, HTML_NONE, HTML_CANCELLED, URL_TO_HTML } = env);
   await srjb6Scene6();
 }
@@ -380,7 +381,7 @@ function srjb6Scene7() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（printOut・check・show・same・HTML_NONE・HTML_CANCELLED・URL_TO_HTML） */
-export function runScrapeResultJobScenesB9(env) {
+export function runScrapeResultJobScenesB10(env) {
   ({ printOut, check, show, same, HTML_NONE, HTML_CANCELLED, URL_TO_HTML } = env);
   srjb6Scene7();
 }

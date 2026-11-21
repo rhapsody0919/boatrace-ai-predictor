@@ -20,7 +20,7 @@ function srjb7Scene1() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（printOut・show） */
-export function runScrapeResultJobScenesB10(env) {
+export function runScrapeResultJobScenesB11(env) {
   ({ printOut, show } = env);
   srjb7Scene1();
 }

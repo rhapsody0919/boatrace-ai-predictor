@@ -3,18 +3,22 @@
  * 判定と期待値は分ける前の verify-scrape-result-job.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import { buildRaceResultRow, fetchRaceResultHtml, ResultHttpError } from "../../daily/scrape-results.js";
 import {
+  parseRaceResultHtml,
+  buildRaceResultRow,
+  isResultComplete,
+} from "../../daily/scrape-results.js";
+import {
+  RESULT_DIGEST_COLUMNS,
   pickResultColumns,
   START_TIMING_DIGEST_COLUMNS,
   pickStartTimingColumns,
   computeResultDigest,
 } from "../../lib/scrapeJobs/resultDigest.js";
-import { compareShadowDigests } from "../check-result-shadow.js";
-import { createFakeDb } from "./scrape-result-job-fake-db.js";
 
-let check, show, same, parsedB, rowA, timingsA;
-export let digestA;
+let check, show, same, HTML_A, HTML_B, HTML_NONE, HTML_PARTIAL, URL_TO_HTML;
+let parsedA;
+export let parsedB, rowA, timingsA, digestA;
 
  // 決まり手が未公開の状態を模す
 
@@ -23,6 +27,23 @@ export const RACE_A = "2026-09-19-05-01";
 export const RACE_B = "2026-09-19-17-12";
 
 export const RACE_NONE = "2026-09-19-01-01";
+
+// ---------------------------------------------------------------------------
+// テスト用の道具: インメモリのSupabaseクライアント・fetch・時計
+// ---------------------------------------------------------------------------
+
+// runForRaces の fetchHtml（本文の文字列を返す）。呼び出したURLを calls に残す
+export const htmlFetcher = (map = URL_TO_HTML) => {
+  const calls = [];
+  const fn = async (url) => {
+    calls.push(url);
+    const body = map(url);
+    if (body instanceof Error) throw body;
+    return body;
+  };
+  fn.calls = calls;
+  return fn;
+};
 
 // 未定義の入力は合否に含めず、現在の値だけを表示する。
 export const KNOWN_GAPS = [
@@ -43,49 +64,63 @@ export const KNOWN_GAPS = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// (b) runForRaces
-// ---------------------------------------------------------------------------
-export const racesA = { race_id: RACE_A, venue_code: 5, race_number: 1 };
-
-export const racesB = { race_id: RACE_B, venue_code: 17, race_number: 12 };
-
-export const racesNone = { race_id: RACE_NONE, venue_code: 1, race_number: 1 };
-
-export const DATE = "2026-09-19";
-
-export const NOW_FN = () => new Date("2026-09-19T06:00:00Z");
-
-export const baseDb = () =>
-  createFakeDb({
-    race_results: [],
-    race_start_timings: [],
-    race_conditions: [],
-    races: [
-      { race_id: RACE_A, start_time: "14:30:00" },
-      { race_id: RACE_B, start_time: "15:00:00" },
-    ],
-    predictions: [
-      {
-        prediction_id: 1,
-        race_id: RACE_A,
-        model_id: "unified",
-        top_pick: 1,
-        top_2nd: 6,
-        top_3rd: 2,
-        feature_contributions: null,
-        is_hit_win: null,
-      },
-    ],
-  });
-
-/** verify から呼ぶ入口。env は verify 側の束縛（check・show・same） */
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・HTML_A・HTML_B・HTML_NONE・HTML_PARTIAL） */
 export function runScrapeResultJobScenesB1(env) {
-  ({ check, show, same } = env);
+  ({ check, show, same, HTML_A, HTML_B, HTML_NONE, HTML_PARTIAL } = env);
 
 }
 
 function srjb1Scene1() {
+  // ---------------------------------------------------------------------------
+  // (a) 解析・行の組み立て・result_digest
+  // ---------------------------------------------------------------------------
+  parsedA = parseRaceResultHtml(HTML_A);
+  parsedB = parseRaceResultHtml(HTML_B);
+  rowA = buildRaceResultRow(RACE_A, parsedA, {
+    resultAt: "2026-09-19T06:00:00Z",
+  });
+  timingsA = parsedA.startTimings.map((st) => ({ race_id: RACE_A, ...st }));
+  check(
+    "解析: 桐生1Rの着順・決まり手・払戻・進入・STが、公式ページの表示と一致（1-6-2-3-5-4・逃げ・単勝160円）",
+    rowA.rank1 === 1 &&
+      rowA.rank2 === 6 &&
+      rowA.rank3 === 2 &&
+      rowA.rank6 === 4 &&
+      rowA.winning_technique === "逃げ" &&
+      rowA.payout_win === 160 &&
+      rowA.payout_trio === 1480 &&
+      parsedA.startTimings.length === 6 &&
+      isResultComplete(rowA),
+    show(rowA),
+  );
+  check(
+    "解析: 未公開ページ（着順テーブルなし）は null（例外にしない）",
+    parseRaceResultHtml(HTML_NONE) === null,
+  );
+  check(
+    "解析: 決まり手が未公開なら、行は組み立てられるが完了ではない（payout_winはあるが winning_technique が null）",
+    (() => {
+      const p = parseRaceResultHtml(HTML_PARTIAL);
+      const r = p && buildRaceResultRow(RACE_A, p);
+      return (
+        r &&
+        r.payout_win === 160 &&
+        r.winning_technique === null &&
+        !isResultComplete(r)
+      );
+    })(),
+  );
+  check(
+    "行の列は、ダイジェスト対象の列＋result_at と一致（列を足しても、ダイジェストから漏れない）",
+    same(
+      Object.keys(rowA).sort(),
+      [...RESULT_DIGEST_COLUMNS, "result_at"].sort(),
+    ),
+    show(Object.keys(rowA).filter((c) => !RESULT_DIGEST_COLUMNS.includes(c))),
+  );
+}
+
+function srjb1Scene2() {
   // BOA-1134: 列の取り出しをハッシュとは独立に固定する。
   {
     check("pickResultColumns: null・空行は37列すべてnull",
@@ -167,7 +202,7 @@ function srjb1Scene1() {
   );
 }
 
-async function srjb1Scene2() {
+function srjb1Scene3() {
   {
     // DBから読んだ行（列の順序が違う・実進入コースや的中などの余分な列がある・数値がnumeric由来）でも、解析した行と同じダイジェスト
     const dbRow = {
@@ -226,76 +261,12 @@ async function srjb1Scene2() {
       parsedB.startTimings.map((st) => ({ race_id: RACE_B, ...st })),
     ) !== digestA,
   );
-  // fetchRaceResultHtml: 200以外は ResultHttpError（未公開の解析失敗と区別する）
-  {
-    let err = null;
-    try {
-      await fetchRaceResultHtml(
-        "https://example.invalid/x",
-        async () => new Response("x", { status: 503 }),
-      );
-    } catch (e) {
-      err = e;
-    }
-    check(
-      "fetchRaceResultHtml: 503 は ResultHttpError（status付き）。200は本文を返す",
-      err instanceof ResultHttpError &&
-        err.status === 503 &&
-        (await fetchRaceResultHtml(
-          "https://example.invalid/x",
-          async () => new Response("本文", { status: 200 }),
-        )) === "本文",
-    );
-  }
 }
 
-function srjb1Scene3() {
-  {
-    // shadow の集計スクリプト（check-result-shadow.js）の比較: DBの行から同じ関数で計算したダイジェストと比べる
-    const dbRow = { ...rowA, id: 99, actual_course_1: 1 };
-    const dbTimings = timingsA.map((t) => ({
-      ...t,
-      updated_at: "2026-09-19T06:10:00+00:00",
-    }));
-    const cmp = compareShadowDigests(
-      [
-        { race_id: RACE_A, result_digest: digestA },
-        { race_id: RACE_B, result_digest: "0000000000000000" },
-        { race_id: "2026-09-19-01-01", result_digest: digestA },
-        { race_id: "2026-09-19-01-02", result_digest: null },
-      ],
-      [dbRow, { ...buildRaceResultRow(RACE_B, parsedB) }],
-      [
-        ...dbTimings,
-        ...parsedB.startTimings.map((st) => ({ race_id: RACE_B, ...st })),
-      ],
-    );
-    check(
-      "check-result-shadow: 一致（桐生1R）・不一致（宮島12Rは別のdigest）・DBに行なし・digest未記録を、別々に数える",
-      cmp.matched === 1 &&
-        cmp.mismatched.length === 1 &&
-        cmp.mismatched[0].race_id === RACE_B &&
-        same(cmp.missing, ["2026-09-19-01-01"]) &&
-        same(cmp.noDigest, ["2026-09-19-01-02"]),
-      show(cmp),
-    );
-    const t = JSON.parse(JSON.stringify(dbTimings));
-    t[0].start_timing = 0.99;
-    check(
-      "check-result-shadow: DBのスタート情報が1つ違えば不一致になる（結果の行だけでなくSTも比べている）",
-      compareShadowDigests(
-        [{ race_id: RACE_A, result_digest: digestA }],
-        [dbRow],
-        t,
-      ).mismatched.length === 1,
-    );
-  }
-}
-
-/** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・parsedB・rowA・timingsA） */
-export async function runScrapeResultJobScenesB2(env) {
-  ({ check, show, same, parsedB, rowA, timingsA } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・HTML_A・HTML_B・HTML_NONE・HTML_PARTIAL・URL_TO_HTML） */
+export function runScrapeResultJobScenesB2(env) {
+  ({ check, show, same, HTML_A, HTML_B, HTML_NONE, HTML_PARTIAL, URL_TO_HTML } = env);
   srjb1Scene1();
-  await srjb1Scene2();
+  srjb1Scene2();
   srjb1Scene3();
 }

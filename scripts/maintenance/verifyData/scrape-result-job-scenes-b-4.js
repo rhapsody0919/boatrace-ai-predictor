@@ -3,16 +3,16 @@
  * 判定と期待値は分ける前の verify-scrape-result-job.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import {
-  confirmCancellationsForRaceIds,
-  clearCancellationsWithResults,
-  clearCancellationsWithResultsInRange,
-  syncKFileForDate,
-} from "../../daily/scrape-results.js";
+import { confirmCancellationsForRaceIds, syncKFileForDate } from "../../daily/scrape-results.js";
 import { parseKFileRankings, fetchKFileText } from "../../lib/kfileParser.js";
+import {
+  CANCELLATION_CONFIRM_AFTER_MIN,
+  overdueWindows,
+  createResultOnTick,
+} from "../../lib/scrapeJobs/resultHandlers.js";
+import { SCRAPE_JOBS } from "../../lib/scrapeJobs/registry.js";
 import { createFakeDb } from "./scrape-result-job-fake-db.js";
-import { runResultJob } from "./scrape-result-job-scenes-b-3.js";
-import { slotFor } from "./scrape-result-job-scenes-b-2.js";
+import { NOW_TICK, runResultJob, slotFor } from "./scrape-result-job-scenes-b-3.js";
 import { RACE_A } from "./scrape-result-job-scenes-b-1.js";
 
 let check, show, same, K_TEXT;
@@ -39,130 +39,107 @@ export const kDb = () =>
     })),
   });
 
-/** 元の verify の1つの塊 { } を割った 1/2 */
-async function srjb4Scene1() {
-  // clearCancellationsWithResults（BOA-524）: 結果があるのに中止・順延（暫定・確定）が付いたレースを解除する。
-  // 2026-09-12 は、結果が先に入り、確定が後から付いた（結果の書き込みの時点では解除できない）
-  const mk = (extra = {}) =>
-    createFakeDb(
-      {
-        race_results: [
-          { race_id: "R1" },
-          { race_id: "R3" },
-          { race_id: "R4" },
-          { race_id: "R6" },
-        ],
-        races: [
-          // 確定・結果あり（誤り）
-          {
-            race_id: "R1",
-            race_date: "2026-09-12",
-            cancellation_status: "confirmed",
-            cancellation_check_streak: 0,
-          },
-          // 確定・結果なし（本物の中止）
-          {
-            race_id: "R2",
-            race_date: "2026-09-12",
-            cancellation_status: "confirmed",
-            cancellation_check_streak: 0,
-          },
-          // 暫定・結果あり
-          {
-            race_id: "R3",
-            race_date: "2026-09-12",
-            cancellation_status: "tentative",
-            cancellation_check_streak: 2,
-          },
-          // 中止でない・結果あり
-          {
-            race_id: "R4",
-            race_date: "2026-09-12",
-            cancellation_status: null,
-            cancellation_check_streak: 0,
-          },
-          // 期間の外（2026-08-01）の確定・結果なし
-          {
-            race_id: "R5",
-            race_date: "2026-08-01",
-            cancellation_status: "confirmed",
-            cancellation_check_streak: 0,
-          },
-          // 期間の外の確定・結果あり（範囲の検索では触らない）
-          {
-            race_id: "R6",
-            race_date: "2026-08-01",
-            cancellation_status: "confirmed",
-            cancellation_check_streak: 0,
-          },
-        ],
-      },
-      extra,
-    );
-  const statusOf = (db, id) => db.tables.races.find((x) => x.race_id === id);
-  const db = mk();
-  const r = await clearCancellationsWithResults(db, ["R1", "R2", "R3", "R4"]);
+function srjb4Scene1() {
+  // 中止・順延の確定
   check(
-    "解除（BOA-524）: 結果のある確定（R1）・暫定（R3）だけを NULL・streak 0 に戻す。結果の無い確定（R2）と、中止でないレース（R4）は触らない",
-    same(r.cleared.sort(), ["R1", "R3"]) &&
-      statusOf(db, "R1").cancellation_status === null &&
-      statusOf(db, "R3").cancellation_status === null &&
-      statusOf(db, "R3").cancellation_check_streak === 0 &&
-      statusOf(db, "R2").cancellation_status === "confirmed",
-    show(r),
+    "確定の基準: 結果のスロットの期限+許容幅（発走+10分+80分）が、中止・順延の確定の基準（発走+90分）と一致する",
+    SCRAPE_JOBS.result.offsets[0] + SCRAPE_JOBS.result.graceMin ===
+      CANCELLATION_CONFIRM_AFTER_MIN,
   );
-  for (const table of ["race_results", "races"]) {
-    const bad = mk({ readError: { [table]: "接続断" } });
-    let err = null;
-    try {
-      await clearCancellationsWithResults(bad, ["R1", "R2"]);
-    } catch (e) {
-      err = e;
-    }
+  {
+    // overdueWindows: 発走 < now-90分（排他）、15分の範囲
+    const w = overdueWindows(new Date("2026-09-19T05:40:00Z")); // 14:40 JST → 発走13:10未満・12:55以上
     check(
-      `解除: ${table} の読み取りに失敗したら例外・書き込みなし（読めなかった集合を空とみなさない。BOA-512 の反転の再発防止）`,
-      err && new RegExp(table).test(err.message) && bad.writes.length === 0,
+      "overdueWindows: 14:40 JST → 発走 12:55:00〜13:10:00（未満）の1範囲",
+      same(w, [{ date: "2026-09-19", from: "12:55:00", to: "13:10:00" }]),
+      show(w),
+    );
+    const w2 = overdueWindows(new Date("2026-09-19T15:16:00Z")); // 00:16 JST（翌日）→ 前日22:31〜22:46
+    check(
+      "overdueWindows: 翌 00:16 JST → 前日（2026-09-19）の発走 22:31:00〜22:46:00（未満）。最終レース22:45発走が入る（日付をまたいでも拾う）",
+      same(w2, [{ date: "2026-09-19", from: "22:31:00", to: "22:46:00" }]) &&
+        "22:45:00" >= w2[0].from &&
+        "22:45:00" < w2[0].to,
+      show(w2),
+    );
+    const wExact = overdueWindows(new Date("2026-09-19T15:15:00Z")); // 00:15:00 ちょうど: 22:45発走は「90分ちょうど」で、まだ超えていない
+    check(
+      "overdueWindows: 22:45発走のレースは、翌 00:15:00 ちょうどでは対象外（発走+90分を「超えた」後＝排他）",
+      !("22:45:00" < wExact[0].to),
+      show(wExact),
+    );
+    const wCross = overdueWindows(new Date("2026-09-19T16:40:00Z")); // 01:40 JST → 前日23:55〜（終日）と当日 00:00〜00:10
+    check(
+      "overdueWindows: 日付をまたぐ範囲は、前日の終わりまでと当日の 00:00 からの2つに分ける",
+      same(wCross, [
+        { date: "2026-09-19", from: "23:55:00", to: null },
+        { date: "2026-09-20", from: "00:00:00", to: "00:10:00" },
+      ]),
+      show(wCross),
     );
   }
-  return { mk, statusOf };
 }
 
-/** 元の verify の1つの塊 { } を割った 2/2 */
-async function srjb4Scene2({ mk, statusOf }) {
-  const none = mk();
-  const rn = await clearCancellationsWithResults(none, []);
-  check(
-    "解除: 対象0件は読み書きしない",
-    rn.cleared.length === 0 &&
-      none.reads.length === 0 &&
-      none.writes.length === 0,
-  );
-  const dbR = mk();
-  const rr = await clearCancellationsWithResultsInRange(dbR, {
-    from: "2026-09-10",
-    to: "2026-09-12",
-  });
-  check(
-    "範囲の解除: 期間（両端含む）の中止・順延の付いたレースだけを調べ、結果のあるもの（R1・R3）を解除する。期間の外（R6）は触らない",
-    same(rr.cleared.sort(), ["R1", "R3"]) &&
-      statusOf(dbR, "R6").cancellation_status === "confirmed" &&
-      statusOf(dbR, "R2").cancellation_status === "confirmed",
-    show(rr),
-  );
-  const badR = mk({ readError: { races: "接続断" } });
-  let errR = null;
-  try {
-    await clearCancellationsWithResultsInRange(badR, {
-      from: "2026-09-10",
-      to: "2026-09-12",
+async function srjb4Scene2() {
+  {
+    // onTick: 発走時刻の範囲のレースを問い合わせ、確定の処理へ渡す
+    const db = createFakeDb({
+      races: [
+        {
+          race_id: "A",
+          race_date: "2026-09-19",
+          start_time: "12:56:00",
+          cancellation_status: null,
+        },
+        {
+          race_id: "B",
+          race_date: "2026-09-19",
+          start_time: "13:09:00",
+          cancellation_status: null,
+        },
+        {
+          race_id: "C",
+          race_date: "2026-09-19",
+          start_time: "13:10:00",
+          cancellation_status: null,
+        }, // 上限（排他）
+        {
+          race_id: "D",
+          race_date: "2026-09-19",
+          start_time: "12:50:00",
+          cancellation_status: null,
+        }, // 範囲外（古い）
+        {
+          race_id: "E",
+          race_date: "2026-09-19",
+          start_time: "13:00:00",
+          cancellation_status: "confirmed",
+        }, // 確定済み
+        {
+          race_id: "F",
+          race_date: "2026-09-18",
+          start_time: "13:00:00",
+          cancellation_status: null,
+        }, // 別の日
+      ],
     });
-  } catch (e) {
-    errR = e;
+    const seen = [];
+    const tick = await createResultOnTick({
+      confirm: async (client, ids) => {
+        seen.push(ids);
+        return { checked: ids.length, confirmed: ["A"] };
+      },
+    })({ client: db, now: () => NOW_TICK });
+    check(
+      "onTick: 発走 12:55〜13:10（未満）・未確定・当日のレースだけを、確定の処理に渡す",
+      same(seen, [["A", "B"]]) && same(tick, { overdue: 2, confirmed: 1 }),
+      show({ seen, tick }),
+    );
+    check(
+      "onTick: 書き込みは自分ではしない（確定は confirm 経由）",
+      db.writes.length === 0,
+    );
   }
-  check(
-    "範囲の解除: 対象レースの読み取りに失敗したら例外・書き込みなし",
-    errR && badR.writes.length === 0,
-  );
 }
 
 async function srjb4Scene3() {
@@ -203,10 +180,17 @@ async function srjb4Scene3() {
       err && /race_results/.test(err.message) && bad.writes.length === 0,
     );
   }
-  {
-    const s1 = await srjb4Scene1();
-    await srjb4Scene2(s1);
-  }
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（check・show・same） */
+export async function runScrapeResultJobScenesB5(env) {
+  ({ check, show, same } = env);
+  srjb4Scene1();
+  await srjb4Scene2();
+  await srjb4Scene3();
+}
+
+async function srjb4Scene4() {
   {
     // onTick の失敗: 500・失敗を記録・でもスロットの処理は続ける
     const r = await runResultJob({
@@ -228,12 +212,12 @@ async function srjb4Scene3() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・show・same） */
-export async function runScrapeResultJobScenesB5(env) {
+export async function runScrapeResultJobScenesB6(env) {
   ({ check, show, same } = env);
-  await srjb4Scene3();
+  await srjb4Scene4();
 }
 
-async function srjb4Scene4() {
+async function srjb4Scene5() {
   kRows = parseKFileRankings(K_TEXT, K_DATE).filter((r) => r.valid);
   {
     const db = kDb();
@@ -275,7 +259,7 @@ async function srjb4Scene4() {
   }
 }
 
-async function srjb4Scene5() {
+async function srjb4Scene6() {
   {
     // rank4〜6だけが未同期でも、ダウンロードは1回。dryRun は書かない
     const db = kDb();
@@ -350,8 +334,8 @@ async function srjb4Scene5() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・K_TEXT） */
-export async function runScrapeResultJobScenesB6(env) {
+export async function runScrapeResultJobScenesB7(env) {
   ({ check, show, same, K_TEXT } = env);
-  await srjb4Scene4();
   await srjb4Scene5();
+  await srjb4Scene6();
 }
