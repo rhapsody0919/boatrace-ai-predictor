@@ -1,0 +1,106 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "tailwind-strong-sashi-makuri-by-venue",
+ "kind": "new",
+ "ticket": "OC-20261121T100301-seo-human-1",
+ "paths": [
+  "public/blog/tailwind-strong-sashi-makuri-by-venue.md",
+  "src/data/blog-posts/tailwind-strong-sashi-makuri-by-venue.json"
+ ],
+ "files": {
+  "public/blog/tailwind-strong-sashi-makuri-by-venue.md": "a54ae27ff5f4b1a6c4fd578ae067f0ea3e41784f095865bada3c38667bafae84",
+  "src/data/blog-posts/tailwind-strong-sashi-makuri-by-venue.json": "a600be6c9c96ae81d19da8ec1e44752cc92fdfebc0961451169dcd57eefcb076"
+ },
+ "content_sha256": "309c48e5a23d79fa9e4b2d7afa5b749f34ffb7947dc94017a41429a728a0ef3d",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "309c48e5a23d79fa9e4b2d7afa5b749f34ffb7947dc94017a41429a728a0ef3d",
+   "model": "opus",
+   "at": "2026-11-21T10:06:09+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "309c48e5a23d79fa9e4b2d7afa5b749f34ffb7947dc94017a41429a728a0ef3d",
+   "model": "opus",
+   "at": "2026-11-21T10:06:09+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "309c48e5a23d79fa9e4b2d7afa5b749f34ffb7947dc94017a41429a728a0ef3d",
+   "model": "opus",
+   "at": "2026-11-21T10:06:09+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "309c48e5a23d79fa9e4b2d7afa5b749f34ffb7947dc94017a41429a728a0ef3d",
+   "model": "opus",
+   "at": "2026-11-21T10:06:09+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "全国では追い風4m以上で差しもまくりも増えた",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "差しが増えたのは24場中13場",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "まくりが増えたのは9場、減ったのは江戸川だけ",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "差しとまくりの組み合わせで24場は5つに分かれる",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "2〜3mと比べると、差しが増えた会場は4場になる",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/blog/tailwind-strength-sashi-by-venue.md"
+   ]
+  },
+  {
+   "h2": "今日のレースでは、会場の行から展示へ進む",
+   "evidence": []
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  }
+ ],
+ "sources": "ref の data/analysis/weather-in-escape.json（period 2020-02-01〜2026-09-30、rows 368,332）の wind.venues.<1〜24>.bins.calm_cross と tail_strong の n と techniques.差し・まくり をそのまま写した。全国の回数は24場の和（derived_numbers）、全国の分母は wind.pooled.calm_cross.n（157,904）と wind.pooled.tail_strong.n（45,000）。桐生の追い風2〜3mは bins.tail。検定は二標本の比率の z（pooled）、24場×2決まり手の48組を Bonferroni（線 約3.28）。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-21T10:08:00+09:00",
+ "run": "20261121T100301-seo-human",
+ "engine": "claude"
+}
