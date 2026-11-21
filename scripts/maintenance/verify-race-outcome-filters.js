@@ -7,7 +7,7 @@
  *   (c) 再発防止: scripts/daily・scripts/lib と、日次で動く aggregate-racer-stats.js・保守用の update-venue-stats.js のコードが、旧フラグ is_no_race（全行 false で機能していない）を条件に使わない
  *       （コメントでの言及と、過去分の取り込みの書き込み kbResultsBackfillRows.js は除く）
  *   (d) 置き換えた集計（6本のクエリ）が、共通の条件 NOT_NO_RACE_FILTER を使う。
- *       本文の字は読まず、6本の CLI を偽の DB（verifyData/daily-queries-fake-db.js）に向けてそれぞれの入口で回し、race_results への問い合わせで見る
+ *       本文の字は読まず、6本の CLI を偽の DB（verifyData/aggregate-racer-stats-fake-db.js の runDaily）に向けてそれぞれの入口で回し、race_results への問い合わせで見る
  *   (e) placedRanks: 返還艇（refund_boats）の位置は着順の艇なし（null）。完走した艇の着順は詰めない（BOA-579）
  *   (f) 選手のコース別2連対率・3連対率（aggregate-racer-stats.js）と会場×枠番の2連対率・3連対率
  *       （calculate-venue-grade-stats.js）が、refund_boats を読み、placedRanks を通して数える（BOA-579）。
@@ -31,8 +31,9 @@ import {
   loadVenueGradeStats,
   chainsOf,
   quietly,
+  DAILY,
+  runDaily,
 } from "./verifyData/aggregate-racer-stats-fake-db.js";
-import { DAILY, runDaily } from "./verifyData/daily-queries-fake-db.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 let failures = 0;
@@ -94,7 +95,7 @@ check(
   offenders.join(", "),
 );
 
-// (d) 置き換えた6本が共通の条件を使う。本文の字は読まず、6本の CLI を偽の DB に向けてそれぞれの入口で回し（verifyData/daily-queries-fake-db.js）、
+// (d) 置き換えた6本が共通の条件を使う。本文の字は読まず、6本の CLI を偽の DB に向けてそれぞれの入口で回し（verifyData/aggregate-racer-stats-fake-db.js の runDaily）、
 //     race_results への問い合わせの連なりのすべてに .or(NOT_NO_RACE_FILTER) が入ることを見る。
 //     展示・スタートの2本は先に読む表が空だと race_results を問い合わせずに終わり、決まり手の1本は期間の表で新しい表（race_results）・
 //     長期の表（kb_archive_races）が0件だと止まる（失敗を投げる）ので、1行ずつ置く
