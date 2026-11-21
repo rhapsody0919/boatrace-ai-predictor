@@ -15,7 +15,7 @@ import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
 
 
 import { runSnsSetsuKiryokuXScenes1, runSnsSetsuKiryokuXScenes2 } from "./verifyData/sns-setsu-kiryoku-x-scenes-1.js";
-import { runSnsSetsuKiryokuXScenes3 } from "./verifyData/sns-setsu-kiryoku-x-scenes-2.js";
+import { runSnsSetsuKiryokuXScenes3, makeStoreOf } from "./verifyData/sns-setsu-kiryoku-x-scenes-2.js";
 
 const BASE_FILES = [
   "035_sns_marketing_hub_schema.sql",
@@ -208,107 +208,7 @@ const setClock = async (date) => {
 };
 
 const saved = [];
-const storeOf = (kind, prefix, column) => ({
-  researchItems: (date) =>
-    all(
-      "SELECT id, state, draft_id, race_id, held_reason FROM sns_auto_send_items WHERE kind=$1 AND race_id LIKE $2 ORDER BY created_at DESC",
-      [kind, `${prefix}:${date}:%`],
-    ),
-  controls: async () =>
-    Object.fromEntries(
-      (
-        await all(
-          `SELECT channel, mode, dry_run, auto_approver_id, ${column} FROM sns_auto_send_control`,
-        )
-      ).map((r) => [r.channel, r]),
-    ),
-  sendControl: () =>
-    first(
-      "SELECT daily_limit, daily_limit_x, daily_baseline_date::text, daily_external_count FROM sns_x_send_control",
-    ),
-  jobsAttemptedOn: (day) =>
-    all(
-      "SELECT id, state, attempt_dates::text[] attempt_dates, attempt_channels FROM sns_x_send_jobs WHERE $1::date = ANY(attempt_dates)",
-      [day],
-    ),
-  jobForDraft: (draftId) =>
-    first(
-      "SELECT id, state, error_code, scheduled_at::text, expires_at::text, posted_at, external_post_id, external_post_url FROM sns_x_send_jobs WHERE draft_id=$1",
-      [draftId],
-    ),
-  saveFile: async (p, bytes) => saved.push([p, bytes.byteLength]),
-  insertDraft: (row) =>
-    first(
-      `INSERT INTO sns_drafts(content_group_id,platform,language,status,format,title,caption_text,hashtags,publish_blocked,
-        publication_hold_reasons,send_lane,scheduled_at,cover_image_path,source_data)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-      [
-        row.content_group_id,
-        row.platform,
-        row.language,
-        row.status,
-        row.format,
-        row.title,
-        row.caption_text,
-        row.hashtags,
-        row.publish_blocked,
-        JSON.stringify(row.publication_hold_reasons),
-        row.send_lane,
-        row.scheduled_at,
-        row.cover_image_path,
-        row.source_data,
-      ],
-    ),
-  insertItem: (row) =>
-    first(
-      `INSERT INTO sns_auto_send_items(kind,variant,draft_id,channel,race_id,deadline_at,notify_by,veto_until,state,checks,notified_at,stop_token_hash,held_reason)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
-      [
-        row.kind,
-        row.variant,
-        row.draft_id,
-        row.channel,
-        row.race_id,
-        row.deadline_at,
-        row.notify_by,
-        row.veto_until,
-        row.state,
-        row.checks,
-        row.notified_at ?? null,
-        row.stop_token_hash ?? null,
-        row.held_reason ?? null,
-      ],
-    ),
-  updateItem: async (id, from, patch) => {
-    const row = await first(
-      "UPDATE sns_auto_send_items SET state=$3, stopped_at=$4, stopped_via=$5, held_reason=$6 WHERE id=$1 AND state=$2 RETURNING *",
-      [
-        id,
-        from,
-        patch.state,
-        patch.stopped_at ?? null,
-        patch.stopped_via ?? null,
-        patch.held_reason ?? null,
-      ],
-    );
-    if (!row) throw new Error(`item ${id} を更新できない`);
-    return row;
-  },
-  updateDraft: (id, patch) =>
-    first("UPDATE sns_drafts SET publish_blocked=$2 WHERE id=$1 RETURNING *", [
-      id,
-      patch.publish_blocked,
-    ]),
-  approve: async (a) =>
-    (
-      await first("SELECT public.approve_sns_x_send($1,$2,$3,$4) r", [
-        a.p_draft_id,
-        a.p_approver_id,
-        a.p_snapshot,
-        a.p_scheduled_at,
-      ])
-    ).r,
-});
+const storeOf = makeStoreOf({ all, first, saved });
 const store = storeOf("setsu_kiryoku", "setsu", "setsu_kiryoku_enabled");
 const researchStore = storeOf(
   "research_image",
