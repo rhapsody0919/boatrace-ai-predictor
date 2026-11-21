@@ -14,6 +14,7 @@ import {
   escapeHtml,
   link,
   span,
+  upcomingDeadlineHtml,
 } from "./botPageHtml.js";
 
 // 人のページの HreflangTags と同じ（hreflang の URL は本番のドメインで出す）
@@ -101,6 +102,8 @@ export function renderTopHtml(model, { siteJsonLd = [] } = {}) {
     `<section id="today-venues">`,
     `<h2>${escapeHtml(model.heading)}</h2>`,
     model.updatedText ? `<p>${escapeHtml(model.updatedText)}</p>` : "",
+    // 人の画面と同じく、更新表示の下・案内の帯より上（BOA-1690）
+    model.upcomingDeadline ? upcomingDeadlineHtml(model.upcomingDeadline) : "",
     model.introBanner
       ? `<p>${link(model.introBanner.href, model.introBanner.text)}</p>`
       : "",

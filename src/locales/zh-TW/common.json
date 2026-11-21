@@ -520,7 +520,14 @@
     "disclaimer": "* 本網站提供 AI 產生的預測資訊，不保證任何結果",
     "blogLastUpdated": "部落格最後更新：{{date}}",
     "tbd": "未定",
-    "jstNote": " JST"
+    "jstNote": " JST",
+    "upcomingDeadline": {
+      "title": "即將截止的賽事",
+      "deadline": "預定截止",
+      "more": "顯示更多（{{venues}}）",
+      "moreWithOthers": "顯示更多（{{venues}}等）",
+      "venueSeparator": "、"
+    }
   },
   "cookieConsent": {
     "textBeforeLink": "本網站使用 Cookie 以提升服務品質。詳情請參閱",

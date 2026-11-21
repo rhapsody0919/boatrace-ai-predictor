@@ -77,3 +77,24 @@ export function blogHtml(b) {
     "</section>",
   ].join("\n");
 }
+
+// まもなく締切のレース（BOA-1690）。人の UpcomingDeadlineRaces と同じ並び（会場名 R → 締切予定 → グレード・優勝戦 → 1号艇。注意度の札は入れない）。
+// 人の画面はスマホで4行目以降を隠すが、PC の幅では全部見えるので、ボットは全行を出す。「もっと見る」のボタンは入れない
+export function upcomingDeadlineHtml(u) {
+  const row = (r) =>
+    [
+      `<li><a href="${escapeHtml(r.href)}">`,
+      `<span>${escapeHtml(r.race)}</span>`,
+      ` <span>${escapeHtml(r.deadline.label)}</span> <span>${escapeHtml(r.deadline.value)}</span>`,
+      span(r.gradeLabel),
+      span(r.finalLabel),
+      r.racer ? `${span(r.racer.name)}${span(r.racer.rank)}` : "",
+      "</a></li>",
+    ].join("");
+  return [
+    "<section>",
+    `<h3>${escapeHtml(u.title)}</h3>`,
+    `<ul>\n${u.rows.map(row).join("\n")}\n</ul>`,
+    "</section>",
+  ].join("\n");
+}

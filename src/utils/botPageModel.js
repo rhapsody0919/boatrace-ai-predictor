@@ -14,7 +14,9 @@
  * - 選手一覧・オッズ・払戻・着順・展開予測・荒れ度は入れない（ADR 0089 決定7）。
  *   トップの「本日のイン崩れ注意度ハイライト」（TodaysVolatilityHighlights）も入れない
  * - 時刻で変わる状態（次のレース・締切間近・発売中・全レース終了）は入れない（同 決定3）。
- *   節の日目だけは人のカードに合わせ、次レースが残る会場に限って出す（BOA-1220）
+ *   節の日目だけは人のカードに合わせ、次レースが残る会場に限って出す（BOA-1220）。
+ *   トップの「まもなく締切のレース」の節（PV09 T1、BOA-1690）は票の決定で人と同じ行を同じ並びに出す
+ *   （行の選び方は人の画面と同じ upcomingDeadlineRaces.js。nowHHMM が無ければ出さない）
  * - 形が壊れた入力は例外にする。正しく取れて0件のときだけ「開催なし」のモデルを返す（ADR 0069）
  *
  * Node から import するため、ブラウザ専用の依存を持ち込まない。検証: scripts/maintenance/verify-bot-page-model.js
@@ -47,6 +49,7 @@ import { localizePath } from "../pure/localizePath.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
 import { meetBannerSeriesOf, seriesOfDate } from "./meetPageModel.js";
+import { pickUpcomingDeadlineRaces } from "./upcomingDeadlineRaces.js";
 
 const DEFAULT_LANG = "ja";
 
@@ -223,6 +226,29 @@ function buildBlog(t, lang) {
   };
 }
 
+// まもなく締切のレース（PV09 T1、BOA-1690）。人の UpcomingDeadlineRaces と同じ行・同じ並び・同じキー。残りが0なら null。
+// イン崩れ注意度の札（「崩れやすい」）は入れない。人の画面は機能の公開（featureFlags の isInCautionEnabled）の後か
+// 内部確認の印のときだけ出すが、featureFlags は window を読むのでこの木（Node）に持ち込めない（verify-bot-page-model）。
+// 札を除いても人の画面の部分集合のまま。トップの注意度のハイライト（TodaysVolatilityHighlights）もボットに入れていない
+function buildUpcomingDeadline(t, lang, transformed, nowHHMM) {
+  const rows = pickUpcomingDeadlineRaces(transformed.data, nowHHMM);
+  if (rows.length === 0) return null;
+  return {
+    title: `⏱️ ${t("home.upcomingDeadline.title")}`,
+    rows: rows.map((r) => ({
+      href: localizePath(`/race/${r.raceId}`, lang),
+      race: `${venueNameOf(t, r.venueCode)} ${raceNumberLabel(r.raceNo)}`,
+      deadline: {
+        label: t("home.upcomingDeadline.deadline"),
+        value: deadlineValueText(t, r.startTime),
+      },
+      gradeLabel: r.gradeLabel,
+      finalLabel: r.isFinal ? t("raceStage.final") : null,
+      racer: r.boat1,
+    })),
+  };
+}
+
 // 案内の帯（IntroBanner）。人の ja のトップは初回訪問なら FirstVisitGuideCard（i18n に無い日本語の固定文）を出し、
 // 帯を出さない。クローラーは毎回初回訪問なので、ja は出さない。言語版は常に帯（閉じるボタンは入れない）
 function buildIntroBanner(t, lang) {
@@ -275,6 +301,7 @@ export function buildTopModel(todayJson, { t, today, nowHHMM, lang = DEFAULT_LAN
     meta: getTopPageMeta(t, lang),
     heading: `🏁 ${t("home.todayRaces")} ${formatDateShortLocalized(today, lang)}`,
     updatedText: updatedText(t, transformed.scrapedAt),
+    upcomingDeadline: buildUpcomingDeadline(t, lang, transformed, nowHHMM),
     openVenueCount: venues.filter((v) => v.isOpen).length,
     venues,
     introBanner: buildIntroBanner(t, lang),
