@@ -17,7 +17,7 @@ async function openDigest(page, racerId) {
   await page.route("**/rest/v1/morning_digest_rows*", (route) =>
     route.fulfill({
       json: [{
-        section: "featured", rank: 1, racer_id: racerId,
+        digest_date: DATE, section: "featured", rank: 1, racer_id: racerId,
         racer_name: "池田浩二", venue_code: 16, race_id: RACE_ID,
         race_number: 5, boat_number: 1, grade: "A1", course: 1,
         metric_value: 80, sample_size: 40, metric_venue_baseline: 55,
@@ -47,7 +47,7 @@ test("/today: 注目レースの選手名から選手ページへ移動する", 
 });
 
 test("/today: 注目レースの登録番号がない選手名は文字だけ表示する", async ({ page }) => {
-  const section = await openDigest(page, null);
+  const section = await openDigest(page, 0);
   const name = section.locator(".featured-race__racer-name");
   await expect(name).toHaveText("池田浩二");
   await expect(name).toHaveAttribute("translate", "no");

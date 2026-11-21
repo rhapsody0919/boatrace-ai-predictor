@@ -17,21 +17,21 @@ async function openDigest(page) {
     route.fulfill({
       json: [
         {
-          section: "flying", rank: 1, racer_id: 3941, racer_name: "池田浩二",
+          digest_date: DATE, section: "flying", rank: 1, racer_id: 3941, racer_name: "池田浩二",
           venue_code: 16, race_id: "202609211605", race_number: 5,
           boat_number: 1, detail: { label: "F.01" },
         },
         {
-          section: "flying", rank: 2, racer_id: null, racer_name: "登録番号なしF",
+          digest_date: DATE, section: "flying", rank: 2, racer_id: 0, racer_name: "登録番号なしF",
           venue_code: 16, race_id: "202609211605", race_number: 5,
           boat_number: 2, detail: { label: "F" },
         },
         {
-          section: "returned", rank: 1, racer_id: 4320, racer_name: "峰竜太",
+          digest_date: DATE, section: "returned", rank: 1, racer_id: 4320, racer_name: "峰竜太",
           venue_code: 2, detail: { reason: "帰郷（公傷のため）" },
         },
         {
-          section: "returned", rank: 2, racer_id: null,
+          digest_date: DATE, section: "returned", rank: 2, racer_id: 0,
           racer_name: "登録番号なし帰郷", venue_code: 2,
         },
       ],

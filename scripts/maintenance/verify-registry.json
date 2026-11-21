@@ -880,6 +880,11 @@
       "guards": "src/services/scheduleQueries.js の getMorningDigest が morning_digest_days の行を makeDigestDay に通す（DM1x schedule のつなぎ）。正の行は凍結した day、行なしは null、破れは RangeError で reject（キャッシュしない）すること"
     },
     {
+      "script": "verify-morning-digest-rows-make.js",
+      "tier": "ci",
+      "guards": "src/services/scheduleQueries.js の getMorningDigest が morning_digest_rows の行を makeDigestRow に通す（DM1x schedule のつなぎ、A 群）。正の行は値のまま凍結して節ごと、破れは RangeError で reject（キャッシュしない）、未生成の日は行を使わないこと"
+    },
+    {
       "script": "verify-morning-digest.js",
       "tier": "manual",
       "guards": "「本日のデータ一覧」（BOA-402）の集計",

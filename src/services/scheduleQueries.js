@@ -5,7 +5,7 @@ import { getTodayJST, getDaysAgoJST } from "../utils/dateUtils.js";
 import { supabase } from "./supabaseClient";
 import { seriesCoveringDate } from "../utils/meetPageModel.js";
 import { transformTodayRaces } from "../utils/todayRaces.js";
-import { makeDigestDay } from "../pure/scheduleModel.js";
+import { makeDigestDay, makeDigestRow } from "../pure/scheduleModel.js";
 import { makeMeet } from "../pure/meetModel.js";
 import { makeRace } from "../pure/raceModel.js";
 import {
@@ -303,7 +303,8 @@ export function getMorningDigest(date) {
           flying: [],
           returned: [],
         };
-        for (const row of rows ?? []) {
+        // 行も makeDigestRow に通す。破れの行が1つでもあると reject（day と同じ取得失敗の道）
+        for (const row of (rows ?? []).map(makeDigestRow)) {
           if (!sections[row.section]) sections[row.section] = [];
           sections[row.section].push(row);
         }
