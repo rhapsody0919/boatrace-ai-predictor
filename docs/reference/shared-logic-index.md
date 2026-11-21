@@ -508,7 +508,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getNowHHMMJST, getTodayJST, formatTodayHeadingJST, getYesterdayJST, isRaceBeforeTodayJST ほか5件 |
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか12件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
-| `src/utils/formatters.js` | フォーマット関数 | slashDate, formatCapturedAtJst, formatExhibitionSt, formatPercent, formatDate ほか5件 |
+| `src/utils/formatters.js` | フォーマット関数 | slashDate, formatCapturedAtJst, formatUpdatedAtJstParts, formatExhibitionSt, formatPercent ほか6件 |
 | `src/utils/frontTaking.js` | 「イン屋」の判定（前付けの割合、BOA-1422・BOA-1250。#2169 の作り直し）。純関数で、DB・追加のクエリは持たない。 | frontTakingOfCounts, summarizeFrontTaking, FRONT_TAKING_MIN_RUNS, FRONT_TAKING_MIN_RATE |
 | `src/utils/homeAiIntroFaq.js` | トップの「よくある質問」（HomeAiIntro）の問い・答えと FAQPage の JSON-LD を組む純粋な関数。 | buildFaqItems, toFaqPageLd, isAssistShown |
 | `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれを超えたら「溢れている」とみなす（px）。「›」を出す、右に余白を足す、 | hscrollFadeWidth, horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor ほか3件 |
@@ -645,4 +645,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 603 ファイル / export 3240 件。
+対象 603 ファイル / export 3241 件。
