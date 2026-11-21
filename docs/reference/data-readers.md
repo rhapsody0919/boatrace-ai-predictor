@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2676 |
+| 読んだファイル | 2680 |
 | 読み書きのあるファイル | 319 |
 | 表の読み手（箇所） | 949 |
 | 表の書き手（箇所） | 195 |
@@ -230,7 +230,7 @@
 | entry_course_stats | api/cron/entry-course-stats.js | 34 | scrape_job_state, scrape_slots, venue_entry_course_stats |
 | eve_deadlines | api/cron/eve-deadlines.js | 30 | eve_race_deadlines, scrape_job_state, scrape_slots |
 | eve_deadlines_reconcile | api/cron/eve-deadlines-reconcile.js | 30 | eve_race_deadlines, scrape_job_state, scrape_slots |
-| exhibition | api/cron/exhibition.js | 62 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
+| exhibition | api/cron/exhibition.js | 63 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | fan_period | api/cron/fan-period.js | 33 | raw_snapshots, scrape_job_state, scrape_slots |
 | in_caution_dispatch | api/cron/in-caution-dispatch.js | 23 | scrape_job_state, scrape_slots |
 | in_caution_health | api/cron/in-caution-health.js | 31 | scrape_job_state, scrape_slots |
@@ -246,7 +246,7 @@
 | pit_reports | api/cron/pit-reports.js | 30 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
 | point_rank | api/cron/point-rank.js | 31 | racer_series_points, scrape_job_state, scrape_slots |
 | pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
-| race_info | api/cron/race-info.js | 62 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
+| race_info | api/cron/race-info.js | 63 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | race_notices | api/cron/race-notices.js | 32 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 28 | scrape_job_state, scrape_slots |
 | race_status | api/cron/race-status.js | 32 | races, scrape_job_state, scrape_slots |
@@ -254,7 +254,7 @@
 | racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 26 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
 | racer_news | api/cron/racer-news.js | 28 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
 | racer_profiles | api/cron/racer-profiles.js | 27 | racer_profiles, scrape_job_state, scrape_slots |
-| races_init | api/cron/races-init.js | 63 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
+| races_init | api/cron/races-init.js | 64 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | release_dispatch | api/cron/release-dispatch.js | 26 | scrape_job_state, scrape_slots |
 | result | api/cron/result.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | result_catchup | api/cron/result-catchup.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
@@ -1389,7 +1389,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 取得のジョブ: racer_news
 - 読み手（3）: 
-  - `scripts/generate-sitemap.js:465` select [created_at, racer_id]
+  - `scripts/generate-sitemap.js:333` select [created_at, racer_id]
   - `scripts/lib/racerNews/dedup.js:34` select [id, source_url]
   - `src/services/racerQueries5.js:60` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
 - 書き手（2）: 
@@ -1500,7 +1500,6 @@
   - `scripts/daily/calculate-accuracy.js:85` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:176` select [race_date, race_grade, race_id, venue_code]
   - `scripts/daily/generate-morning-digest.js:130` select [race_date, race_grade, race_id, race_number, start_time, venue_code]
-  - `scripts/daily/generate-predictions.js:279` select(helper:filterUnchangedRows)
   - `scripts/daily/morning-init.js:86` select [race_id, venue_code]
   - `scripts/daily/morning-init.js:173` select [*, race_id]
   - `scripts/daily/morning-init.js:221` select [race_id, updated_at]
@@ -1510,8 +1509,8 @@
   - `scripts/daily/update-moriarty-outcomes.js:59` select [race_id, venue_code]
   - `scripts/daily/update-outcome-frequencies.js:43` select [race_id, venue_code]
   - `scripts/daily/update-race-history-cache.js:112` select(helper:fetchAll)
-  - `scripts/generate-sitemap.js:379` select [race_date, venue_code]
-  - `scripts/generate-sitemap.js:662` select [race_date, venue_code]
+  - `scripts/generate-sitemap.js:247` select [race_date, venue_code]
+  - `scripts/generate-sitemap.js:510` select [race_date, venue_code]
   - `scripts/lib/analogyDispatch.js:75` select [cancellation_status, race_date, race_id, start_time]
   - `scripts/lib/analogyV16Exhibition.js:253` rest(rest) [race_date, race_id, start_time]
   - `scripts/lib/boatcast/oritenJob.js:280` select [race_date, race_id, start_time]
@@ -1525,6 +1524,7 @@
   - `scripts/lib/pointRankRun.js:101` select [cancellation_status, race_grade, race_id]
   - `scripts/lib/predictionRaceFetch.js:154` select(helper:selectByRaceIds)
   - `scripts/lib/predictionWriteRows.js:35` select(helper:upsertChangedRows)
+  - `scripts/lib/predictionWriteSteps.js:187` select(helper:filterUnchangedRows)
   - `scripts/lib/raceCancellation.js:27` select [cancellation_status, race_id]
   - `scripts/lib/raceCancellation.js:91` select [cancellation_status, race_id]
   - `scripts/lib/raceCancellation.js:149` select [cancellation_status, race_date, race_id]
@@ -1680,7 +1680,7 @@
   - `scripts/lib/eveDeadlinesJob.js:362` select [job, last_target_date]
   - `scripts/lib/motorPretestJob.js:176` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:132` select [job, mode]
-  - `scripts/lib/racesInit/predictCodeCheck.js:92` select [job, last_report]
+  - `scripts/lib/racesInit/predictCodeCheck.js:94` select [job, last_report]
   - `scripts/lib/scrapeJobs/ghaSkipGateParts.js:93` rest(rest)
   - `scripts/lib/scrapeJobs/monitorInput.js:36` select [*]
   - `scripts/lib/scrapeJobs/storeBreaker.js:37` select [?, job]
@@ -1692,9 +1692,9 @@
 - 書き手（14）: 
   - `scripts/lib/boatcast/oritenJobParts.js:203` update [last_report]
   - `scripts/lib/racesInit/job.js:364` update [cursor, last_report]
-  - `scripts/lib/racesInit/predictCodeCheck.js:104` upsert [job, last_report, updated_at]
-  - `scripts/lib/racesInit/predictCodeCheck.js:122` update [last_report, updated_at]
-  - `scripts/lib/racesInit/predictCodeCheck.js:144` update [last_report, updated_at]
+  - `scripts/lib/racesInit/predictCodeCheck.js:106` upsert [job, last_report, updated_at]
+  - `scripts/lib/racesInit/predictCodeCheck.js:124` update [last_report, updated_at]
+  - `scripts/lib/racesInit/predictCodeCheck.js:146` update [last_report, updated_at]
   - `scripts/lib/scrapeJobs/storeBreaker.js:78` update [breaker_open_until, updated_at]
   - `scripts/lib/scrapeJobs/storeBreaker.js:130` upsert [?]
   - `scripts/lib/scrapeJobs/storeBreaker.js:166` update [?]
