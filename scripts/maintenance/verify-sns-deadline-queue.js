@@ -25,6 +25,7 @@ import {
   runSnsDeadlineQueueScenes5,
   runSnsDeadlineQueueScenes6,
 } from "./verifyData/sns-deadline-queue-scenes-2.js";
+import { mustReplace } from "./verifyData/must-replace.js";
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
 let approver;
@@ -162,27 +163,28 @@ test("非公開残置の候補IDと手動削除の案内を期限一覧で表示
     ),
     "utf8",
   );
-  source = source
-    .replace(
+  source = [
+    [
       /import \{ useEffect, useRef, useState \} from "react";/,
       `import React, {useEffect,useRef,useState} from '${new URL("../../node_modules/react/index.js", import.meta.url).href}';`,
-    )
-    .replace(
+    ],
+    [
       /import MonthCalendar from ["'][^"'\n]+["'];/,
       "const MonthCalendar=()=>null;",
-    )
-    .replace(
-      /import \{[\s\S]*?\} from ["'][^"'\n]*snsMonthCalendar\.js["'];/,
+    ],
+    [
+      /import \{[^}]*\} from ["'][^"'\n]*snsMonthCalendar\.js["'];/,
       "const calendarMonth=()=>[],calendarRowDay=()=>null,calendarObservations=()=>[];",
-    )
-    .replace(
-      /import \{[\s\S]*?\} from ["'][^"'\n]*snsAutoSendStatus\.js["'];/,
+    ],
+    [
+      /import \{[^}]*\} from ["'][^"'\n]*snsAutoSendStatus\.js["'];/,
       "const attentionRows=()=>[],rowsOfDay=()=>[],todayDay=()=>'';",
-    )
-    .replace(
-      /import \{[\s\S]*?\} from ["'][^"'\n]*snsHubService\.js["'];/,
+    ],
+    [
+      /import \{[^}]*\} from ["'][^"'\n]*snsHubService\.js["'];/,
       "const getDeadlineQueue=async()=>({rows:[],control:null}),stopXSend=async()=>{};",
-    );
+    ],
+  ].reduce((s, [re, to]) => mustReplace(s, re, to), source);
   const code = (await transform(source, { loader: "jsx", format: "esm" })).code;
   const { DeadlineQueueList } = await import(
     "data:text/javascript," + encodeURIComponent(code)

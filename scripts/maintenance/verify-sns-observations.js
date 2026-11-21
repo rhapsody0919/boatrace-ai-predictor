@@ -23,6 +23,7 @@ import {
 } from "./verifyData/sns-observations-scenes-1.js";
 import { runSnsObservationsScenes3 } from "./verifyData/sns-observations-scenes-2.js";
 import { runSnsObservationsScenes4, runSnsObservationsScenes5 } from "./verifyData/sns-observations-scenes-3.js";
+import { mustReplace } from "./verifyData/must-replace.js";
 
 const id = "00000000-0000-4000-8000-000000000001";
 const draft = {
@@ -214,21 +215,22 @@ assert.equal(compare([row({ duration_seconds: null })],
     { window: "48h", metric, now: Date.parse(period.period_end) + 1 });
   let source = await fs.readFile(new URL(
     "../../src/pages/admin/sns-hub/MetricsTab.jsx", import.meta.url), "utf8");
-  source = source
-    .replace(/import \{ useEffect, useState \} from "react";/,
+  source = [
+    [/import \{ useEffect, useState \} from "react";/,
       `import React from "${new URL("../../node_modules/react/index.js", import.meta.url).href}";
        const useEffect = () => {};
        const useState = (initial) => [typeof initial === "object"
          ? ${JSON.stringify({ loading: false, error: null, groups })}
-         : initial === "views" ? "${metric}" : initial, () => {}];`)
-    .replace(/import \{ getMetricObservations \} from [^;]+;/,
-      "const getMetricObservations = () => { throw new Error('取得禁止'); };")
-    .replace(/import \{[\s\S]*?\} from [^;]*snsObservations\.js";/,
+         : initial === "views" ? "${metric}" : initial, () => {}];`],
+    [/import \{ getMetricObservations \} from [^;]+;/,
+      "const getMetricObservations = () => { throw new Error('取得禁止'); };"],
+    [/import \{[^}]*\} from [^;]*snsObservations\.js";/,
       `const OBSERVATION_METRICS = ["${metric}"]; const FULL_PICTURE_FORMAT = "full_picture";
-       const WINDOW_LABELS = ${JSON.stringify(WINDOW_LABELS)};`)
-    .replace(/import "\.\/MetricsTab\.css";/, "")
-    .replace(/import ObservationCsvPanel from [^;]+;/,
-      "const ObservationCsvPanel = () => null;");
+       const WINDOW_LABELS = ${JSON.stringify(WINDOW_LABELS)};`],
+    [/import "\.\/MetricsTab\.css";/, ""],
+    [/import ObservationCsvPanel from [^;]+;/,
+      "const ObservationCsvPanel = () => null;"],
+  ].reduce((s, [re, to]) => mustReplace(s, re, to), source);
   const { code } = await transform(source, { loader: "jsx", format: "esm" });
   const { default: MetricsTab } = await import(
     "data:text/javascript," + encodeURIComponent(code));
@@ -319,11 +321,13 @@ const mockHelpers =
   export const isValidDraftId=()=>true; export const getDraftById=async()=>null;
   export const requireAdminAuth=async(req)=>req.headers.has("x-test-admin")?null:new Response("denied",{status:401});
 `);
-handlerSource = handlerSource.replace(
+handlerSource = mustReplace(
+  handlerSource,
   /"[^"\n]+_lib\/(snsHubHelpers|adminAuth)\.js"/g,
   JSON.stringify(mockHelpers),
 );
-handlerSource = handlerSource.replace(
+handlerSource = mustReplace(
+  handlerSource,
   /from (["'])(\.[^"'\n]+)\1/g,
   (_m, _q, spec) =>
     `from ${JSON.stringify(new URL(spec, new URL("../../api/admin/sns-hub/observations.js", import.meta.url)).href)}`,
