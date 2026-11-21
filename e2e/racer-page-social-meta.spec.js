@@ -14,7 +14,8 @@ const socialSelectors = [
 
 async function openRacer(page) {
   await page.goto("/racer/3941");
-  await expect(page).toHaveTitle(/池田浩二/);
+  // 期別の値が届くと title・description が差し替わる（BOA-1688）。差し替わった後の値で比べる
+  await expect(page).toHaveTitle(/池田浩二.*勝率\d+\.\d{2}/);
 }
 
 test("選手の OGP・X カードを title・description・canonical にそろえる", async ({ page }) => {

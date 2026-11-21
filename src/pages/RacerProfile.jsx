@@ -17,38 +17,16 @@ import {
   useRacerFrontTaking,
 } from "./RacerProfileData.js";
 import {
-  SITE_URL,
   isRacerIdFormat,
   isSnapshotReady,
   buildIndexInput,
   buildSocialMeta,
+  buildRacerMeta,
   pickTodayVenue,
 } from "./RacerProfileMeta.js";
+import { buildRacerSummary } from "../pure/racerOfficialPeriodStats.js";
 import RacerProfileLoaded, { RacerProfileFailed } from "./RacerProfileLoaded.jsx";
 import "./RacerProfile.css";
-
-// title・description は画面に表示されないメタ情報なので「競艇」を含めてよい（code-style.md 例外1の暫定措置。
-// 役所への営業前に外す）。選手名＋成績で検索されるので、成績の語を前に置く（集客レーン、2026-10-02）
-// プロフィールが無い・取得中・失敗のときも登録番号を入れ、選手ごとに別のページにする（同じ中身の重複を避ける）
-function buildRacerMeta(data, racerId) {
-  const displayName = data?.profile?.name?.replace(/\s+/g, "") ?? "選手";
-  const title = data?.profile
-    ? `${displayName}（競艇）選手の成績・勝率・決まり手 | 龍神レーダー`
-    : `選手 登録番号${racerId} | 龍神レーダー`;
-  // description は登録番号・支部・級を入れて選手ごとに変える（全選手が同じ文だった。seo-marketer GS00）
-  const who = [
-    `登録番号${racerId}`,
-    data?.profile?.branch ? `${data.profile.branch}支部` : null,
-    data?.grade ?? null,
-  ]
-    .filter(Boolean)
-    .join("・");
-  const description = data?.profile
-    ? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`
-    : `登録番号${racerId}の選手のページ | 龍神レーダー`;
-  const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
-  return { displayName, title, description, canonicalUrl };
-}
 
 export default function RacerProfile() {
   const { racerId } = useParams();
@@ -79,7 +57,9 @@ export default function RacerProfile() {
   // （race_idの再パース・文字列sliceを重複させない）
   const todayVenueCode = pickTodayVenue(motorStatus, isToday);
 
-  const { displayName, title, description, canonicalUrl } = buildRacerMeta(data, racerId);
+  // 期別の値が届く前は今の文のまま、届いたら勝率等を足した文に差し替える（BOA-1688）
+  const summary = buildRacerSummary(period.periodRows);
+  const { displayName, title, description, canonicalUrl } = buildRacerMeta(data, racerId, summary);
   useSocialMeta(buildSocialMeta({ loading, error, data, title, description, canonicalUrl }));
   const snapshotReady = isSnapshotReady({
     loading, error, data, statsLoading, stats, motorState, historyState,
@@ -91,7 +71,11 @@ export default function RacerProfile() {
       <meta name="description" content={description} />
       <link rel="canonical" href={canonicalUrl} />
       {data?.profile && (
-        <RacerStructuredData profile={data.profile} racerId={racerId} />
+        <RacerStructuredData
+          profile={data.profile}
+          racerId={racerId}
+          dateModified={summary?.dateModified ?? null}
+        />
       )}
 
       <Header />
@@ -120,6 +104,7 @@ export default function RacerProfile() {
             displayName={displayName}
             front={front}
             period={period}
+            summary={summary}
             motorStatus={motorStatus}
             stats={stats}
             statsLoading={statsLoading}

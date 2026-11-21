@@ -44,9 +44,11 @@ test("登録番号・よみ・選手名入りの見出しと、選手ごとの d
     .evaluateAll((nodes) =>
       nodes
         .map((n) => JSON.parse(n.textContent))
-        .find((d) => d["@type"] === "Person"),
+        .find((d) => d["@type"] === "ProfilePage"),
     );
-  expect(jsonLd).toMatchObject({
+  // Person は ProfilePage の mainEntity に入れる（dateModified は ProfilePage の項目、BOA-1688）
+  expect(jsonLd.mainEntity).toMatchObject({
+    "@type": "Person",
     name: "池田浩二",
     identifier: "3941",
     alternateName: "イケダ コウジ",
@@ -164,13 +166,21 @@ test("選手のパンくずを画面と同じ3項目で出し、取得失敗時�
       ],
     },
   ]);
-  const people = await ofType("Person");
-  expect(people).toHaveLength(1);
-  expect(people[0]).toMatchObject({ name: "池田浩二", identifier: "3941" });
+  const pages = await ofType("ProfilePage");
+  expect(pages).toHaveLength(1);
+  expect(pages[0].mainEntity).toMatchObject({
+    "@type": "Person",
+    name: "池田浩二",
+    identifier: "3941",
+  });
+  // dateModified は期別の最新の calc_to（ISO の日付）。期別が届いた後に入る
+  await expect
+    .poll(async () => (await ofType("ProfilePage"))[0]?.dateModified ?? "")
+    .toMatch(/^\d{4}-\d{2}-\d{2}$/);
 
   await page.route("**/rest/v1/racer_profiles*", (route) => route.abort());
   await page.reload();
   await expect(page.locator(".racer-profile-error")).toBeVisible();
   expect(await ofType("BreadcrumbList")).toEqual([]);
-  expect(await ofType("Person")).toEqual([]);
+  expect(await ofType("ProfilePage")).toEqual([]);
 });
