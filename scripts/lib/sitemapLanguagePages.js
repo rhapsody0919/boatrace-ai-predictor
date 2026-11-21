@@ -1,4 +1,9 @@
 // generate-sitemap.js から字のまま移した、言語別ページの表（全言語で翻訳済みのページと、特定の言語にだけあるページ）。読むだけ
+import {
+  SUPPORTED_LANGUAGES,
+  DEFAULT_LANGUAGE,
+  localizePath,
+} from "../../src/config/languages.js";
 import { VENUE_GUIDES_EN } from "../../src/data/venueGuidesEn.js";
 import { VENUE_REGIONS } from "../../src/data/venueRegions.js";
 import { VENUE_GUIDES_ZH_TW } from "../../src/data/venueGuidesZhTw.js";
@@ -136,3 +141,16 @@ export const LANGUAGE_ONLY_PAGES = {
       : []),
   ],
 };
+
+// デフォルト言語以外の言語別ページを生成
+export const localizedPages = SUPPORTED_LANGUAGES.filter(
+  ({ code }) => code !== DEFAULT_LANGUAGE,
+).flatMap(({ code }) =>
+  [...LOCALIZED_PAGES, ...(LANGUAGE_ONLY_PAGES[code] ?? [])].map(
+    ({ basePath, ...rest }) => ({
+      ...rest,
+      loc: localizePath(basePath, code),
+      lang: code,
+    }),
+  ),
+);

@@ -20,161 +20,18 @@ import {
   renderUrlEntry,
 } from "./lib/sitemapLastmod.js";
 import { isDirectRun } from "./lib/isDirectRun.js";
-import {
-  LANGUAGE_ONLY_PAGES,
-  LOCALIZED_PAGES,
-} from "./lib/sitemapLanguagePages.js";
+import { localizedPages } from "./lib/sitemapLanguagePages.js";
 import { racerSitemapEntry } from "./lib/sitemapRacerPages.js";
+import { staticPages } from "./lib/sitemapStaticPages.js";
+import { BLOG_DIR, getBlogPosts } from "./lib/sitemapBlogPages.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SITE_URL = "https://www.boat-ai.jp";
 const PUBLIC_DIR = path.join(__dirname, "../public");
-const BLOG_DIR = path.join(PUBLIC_DIR, "blog");
 
-// 静的ページの定義
-export const staticPages = [
-  {
-    loc: "/",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "1.0",
-  },
-  {
-    loc: "/accuracy",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    loc: "/hit-races",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    loc: "/about",
-    changefreq: "monthly",
-    priority: "0.8",
-  },
-  {
-    loc: "/faq",
-    changefreq: "monthly",
-    priority: "0.8",
-  },
-  {
-    loc: "/how-to-use",
-    changefreq: "monthly",
-    priority: "0.9",
-  },
-  {
-    loc: "/privacy",
-    changefreq: "yearly",
-    priority: "0.3",
-  },
-  {
-    loc: "/terms",
-    changefreq: "yearly",
-    priority: "0.3",
-  },
-  {
-    loc: "/contact",
-    changefreq: "monthly",
-    priority: "0.5",
-  },
-  {
-    loc: "/blog",
-    lastmodFrom: "blogIndex",
-    changefreq: "weekly",
-    priority: "0.7",
-  },
-  {
-    loc: "/races",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
-    loc: "/guide",
-    changefreq: "monthly",
-    priority: "0.8",
-  },
-  {
-    loc: "/responsible-gambling",
-    changefreq: "yearly",
-    priority: "0.5",
-  },
-  {
-    loc: "/profile",
-    changefreq: "monthly",
-    priority: "0.5",
-  },
-  {
-    loc: "/accuracy/history",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "0.8",
-  },
-  {
-    loc: "/winning-technique",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "0.8",
-  },
-  {
-    // 「本日のデータ一覧」（BOA-402）。単一URLで毎日中身を差し替える。
-    // 日付別URL（/today/YYYY-MM-DD）は発行しない（ADR-0070の背景・spec §3）
-    loc: "/today",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "0.8",
-  },
-  {
-    loc: "/racers",
-    changefreq: "weekly",
-    priority: "0.7",
-  },
-  // 会場別レース一覧（本日、/venue/1〜24。venue-list-redesign）
-  ...Array.from({ length: 24 }, (_, i) => ({
-    loc: `/venue/${i + 1}`,
-    lastmodFrom: "venueRaceData",
-    venueCode: i + 1,
-    changefreq: "daily",
-    priority: "0.7",
-  })),
-];
-
-// 翻訳版の JSON（src/data/blog-posts/{lang}/{id}.json）はあるが対応する -{suffix}.md が存在しない場合、sitemapが
-// 実体の無いURLを配信してしまう（code-reviewで発見: エントリ追加と-en.md作成が
-// 別PRになるケースを想定した検知）。生成時に警告のみ出し、処理は止めない
-const BLOG_TRANSLATION_CHECKS = [
-  { label: "blog-posts/en/*.json", posts: blogPostsEn, mdSuffix: "-en" },
-  { label: "blog-posts/zh-TW/*.json", posts: blogPostsZhTw, mdSuffix: "-zh-tw" },
-  { label: "blog-posts/ko/*.json", posts: blogPostsKo, mdSuffix: "-ko" },
-];
-BLOG_TRANSLATION_CHECKS.forEach(({ label, posts, mdSuffix }) => {
-  posts.forEach((post) => {
-    const mdPath = path.join(BLOG_DIR, `${post.id}${mdSuffix}.md`);
-    if (!fs.existsSync(mdPath)) {
-      console.warn(
-        `⚠️ ${label} に "${post.id}" のエントリがありますが public/blog/${post.id}${mdSuffix}.md が見つかりません`,
-      );
-    }
-  });
-});
-
-// デフォルト言語以外の言語別ページを生成
-const localizedPages = SUPPORTED_LANGUAGES.filter(
-  ({ code }) => code !== DEFAULT_LANGUAGE,
-).flatMap(({ code }) =>
-  [...LOCALIZED_PAGES, ...(LANGUAGE_ONLY_PAGES[code] ?? [])].map(
-    ({ basePath, ...rest }) => ({
-      ...rest,
-      loc: localizePath(basePath, code),
-      lang: code,
-    }),
-  ),
-);
+// 静的ページの表（scripts/lib/sitemapStaticPages.js）。verify が同じ名で読むので re-export する
+export { staticPages };
 
 const JA_POST_DATE = new Map(blogPostsJa.map((p) => [p.id, p.date ?? null]));
 const BLOG_MD_SUFFIX = { en: "-en", "zh-TW": "-zh-tw", ko: "-ko" };
@@ -187,42 +44,6 @@ function blogLastmod(id, mdSuffix) {
     gitLastCommitDate(path.join(BLOG_DIR, `${id}${mdSuffix}.md`)),
     JA_POST_DATE.get(id) ?? null,
   );
-}
-
-// ブログ記事のスキャン
-function getBlogPosts() {
-  const blogPosts = [];
-
-  if (!fs.existsSync(BLOG_DIR)) {
-    console.warn("Blog directory not found:", BLOG_DIR);
-    return blogPosts;
-  }
-
-  const files = fs.readdirSync(BLOG_DIR);
-
-  files.forEach((file) => {
-    if (!file.endsWith(".md")) return;
-    // 英語版・zh-TW版等の言語別mdファイルはja版sitemapの対象外（LANGUAGE_ONLY_PAGESで別途登録する）
-    const isTranslatedBlogFile = BLOG_TRANSLATION_CHECKS.some(({ mdSuffix }) =>
-      file.endsWith(`${mdSuffix}.md`),
-    );
-    if (isTranslatedBlogFile) return;
-
-    const slug = file.replace(".md", "");
-    const lastmod = blogLastmod(slug, "");
-    // 週次レポートは優先度を下げる
-    const isWeeklyReport = slug.startsWith("weekly-report-");
-    const priority = isWeeklyReport ? "0.5" : "0.6";
-
-    blogPosts.push({
-      loc: `/blog/${slug}`,
-      lastmod,
-      changefreq: "monthly",
-      priority,
-    });
-  });
-
-  return blogPosts;
 }
 
 // 直近7日分のレースページをSupabaseから取得
@@ -538,7 +359,7 @@ function alternatesFor(loc) {
 
 // sitemap.xmlの生成
 export async function generateSitemap() {
-  const blogPosts = getBlogPosts();
+  const blogPosts = getBlogPosts(blogLastmod);
   const racePages = await getRacePages();
   const raceDetailPages = await getRaceDetailPages();
   const racerPages = await getRacerPages();
