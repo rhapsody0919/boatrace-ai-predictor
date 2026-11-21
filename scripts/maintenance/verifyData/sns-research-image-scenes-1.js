@@ -7,7 +7,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resultLine, researchStatus } from "../../sns/push-research-image.js";
 
-let db, first, DAY, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, push;
+let db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push;
 
 export const transition = (jobId, action, result = {}) =>
   first("SELECT public.transition_sns_x_send($1,$2,$3::jsonb) r", [
@@ -16,20 +16,78 @@ export const transition = (jobId, action, result = {}) =>
     JSON.stringify(result),
   ]).then((row) => row.r);
 
-const counts = async () => ({
+export const counts = async () => ({
   drafts: Number((await first("SELECT count(*) n FROM sns_drafts")).n),
   items: Number((await first("SELECT count(*) n FROM sns_auto_send_items")).n),
   jobs: Number((await first("SELECT count(*) n FROM sns_x_send_jobs")).n),
   saved: saved.length,
 });
 
-const NOTHING = { drafts: 0, items: 0, jobs: 0, saved: 0 };
+export const NOTHING = { drafts: 0, items: 0, jobs: 0, saved: 0 };
 
 export const theJob = () => first("SELECT * FROM sns_x_send_jobs");
 
-/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・OBSERVED・png・setClock・CAPTION・bundle・saved・store・push） */
+/** test("取り置き（180 の v_a_pending）: 通り道 B の claim は、今日まだ送っていない research_ima の中身を割った 1/4 */
+async function sriRsv1() {
+  await push();
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=1");
+  const me = (
+    await first("SELECT id FROM sns_approvers WHERE display_name='本人'")
+  ).id;
+  const queue = {
+    deadline_at: at("17:00:00").toISOString(),
+    expires_at: at("16:30:00").toISOString(),
+    source_revision: "r1",
+    source_observed_at: PUSHED_AT.toISOString(),
+  };
+  return { me, queue };
+}
+
+/** test("取り置き（180 の v_a_pending）: 通り道 B の claim は、今日まだ送っていない research_ima の中身を割った 2/4 */
+async function sriRsv2({ queue }) {
+  const b = await first(
+    `INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,send_lane,publish_blocked,publication_hold_reasons,source_data)
+     VALUES(gen_random_uuid(),'topic','x','ja','企画の投稿','B',false,'[]'::jsonb,jsonb_build_object('deadline_queue',$1::jsonb)) RETURNING *`,
+    [queue],
+  );
+  return { b };
+}
+
+/** test("取り置き（180 の v_a_pending）: 通り道 B の claim は、今日まだ送っていない research_ima の中身を割った 3/4 */
+function sriRsv3({ queue }) {
+  const snapshot = {
+    text: "企画の投稿",
+    media: [],
+    queue,
+    source: {
+      caption_text: "企画の投稿",
+      hashtags: null,
+      video_storage_path: null,
+      cover_image_path: null,
+      language: "ja",
+    },
+  };
+  return { snapshot };
+}
+
+/** test("取り置き（180 の v_a_pending）: 通り道 B の claim は、今日まだ送っていない research_ima の中身を割った 4/4 */
+async function sriRsv4({ b, me, snapshot }) {
+  const bJob = (
+    await first("SELECT approve_sns_x_send($1,$2,$3,$4) r", [
+      b.id,
+      me,
+      snapshot,
+      PUSHED_AT.toISOString(),
+    ])
+  ).r;
+  await assert.rejects(transition(bJob.id, "claim"), /日次全体上限/);
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=2");
+  assert.equal((await transition(bJob.id, "claim")).state, "sending");
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・OBSERVED・setClock・CAPTION・bundle・saved・store・push） */
 export function runSnsResearchImageScenes1(env) {
-  ({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, push } = env);
+  ({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push } = env);
 
 }
 
@@ -192,129 +250,17 @@ function sri1Scene2() {
 
 function sri1Scene3() {
   test("取り置き（180 の v_a_pending）: 通り道 B の claim は、今日まだ送っていない research_image の分を先に枠から引く", async () => {
-    await push();
-    await db.exec("UPDATE sns_x_send_control SET daily_limit_x=1");
-    const me = (
-      await first("SELECT id FROM sns_approvers WHERE display_name='本人'")
-    ).id;
-    const queue = {
-      deadline_at: at("17:00:00").toISOString(),
-      expires_at: at("16:30:00").toISOString(),
-      source_revision: "r1",
-      source_observed_at: PUSHED_AT.toISOString(),
-    };
-    const b = await first(
-      `INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,send_lane,publish_blocked,publication_hold_reasons,source_data)
-     VALUES(gen_random_uuid(),'topic','x','ja','企画の投稿','B',false,'[]'::jsonb,jsonb_build_object('deadline_queue',$1::jsonb)) RETURNING *`,
-      [queue],
-    );
-    const snapshot = {
-      text: "企画の投稿",
-      media: [],
-      queue,
-      source: {
-        caption_text: "企画の投稿",
-        hashtags: null,
-        video_storage_path: null,
-        cover_image_path: null,
-        language: "ja",
-      },
-    };
-    const bJob = (
-      await first("SELECT approve_sns_x_send($1,$2,$3,$4) r", [
-        b.id,
-        me,
-        snapshot,
-        PUSHED_AT.toISOString(),
-      ])
-    ).r;
-    await assert.rejects(transition(bJob.id, "claim"), /日次全体上限/);
-    await db.exec("UPDATE sns_x_send_control SET daily_limit_x=2");
-    assert.equal((await transition(bJob.id, "claim")).state, "sending");
+    const { me, queue } = await sriRsv1();
+    const { b } = await sriRsv2({ queue });
+    const { snapshot } = sriRsv3({ queue });
+    await sriRsv4({ b, me, snapshot });
   });
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・OBSERVED・png・setClock・CAPTION・bundle・saved・store・push） */
+/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・OBSERVED・setClock・CAPTION・bundle・saved・store・push） */
 export function runSnsResearchImageScenes2(env) {
-  ({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, push } = env);
+  ({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push } = env);
   sri1Scene1();
   sri1Scene2();
   sri1Scene3();
-}
-
-function sri1Scene4() {
-  test("検査（時刻・画像）: 今日でない・期限の10分前を過ぎた・集計が未来・期限までに24時間を越える・画像の大きさ。拒否は Slack に知らせて何も書かない", async () => {
-    const reasonsOf = async (b, opts, image) =>
-      (await push(b, opts, image)).reasons?.join() ?? "";
-    assert.match(await reasonsOf(bundle({ date: "2037-10-29" })), /今日/);
-    // 期限 20:00 の10分前（19:50）ちょうどは拒否、その1秒前は受け取る
-    assert.match(
-      await reasonsOf(bundle(), { now: at("19:50:00") }),
-      /10分前を過ぎた/,
-    );
-    assert.match(
-      await reasonsOf(
-        bundle({ source_observed_at: at("15:30:00").toISOString() }),
-      ),
-      /今より後/,
-    );
-    // 期限 20:00 の24時間前ちょうどは古い
-    assert.match(
-      await reasonsOf(
-        bundle({
-          source_observed_at: new Date(
-            at("20:00:00").getTime() - 86400000,
-          ).toISOString(),
-        }),
-      ),
-      /古い/,
-    );
-    // 時差の無い時刻は、Node と DB で別の時刻に読まれるので受け取らない
-    assert.match(
-      await reasonsOf(bundle({ source_observed_at: "2037-10-28T14:30:00" })),
-      /時差/,
-    );
-    assert.match(await reasonsOf(bundle(), {}, png(1200, 1350)), /1080×1350/);
-    assert.match(await reasonsOf(bundle(), {}, null), /無い/);
-    assert.deepEqual(await counts(), NOTHING);
-    const rejected = await push(bundle({ x_text: "儲かる数字" }));
-    assert.match(rejected.notes[0], /検査で拒否/);
-    assert.equal(resultLine(rejected).code, 1);
-    // 19:49:59 は受け取る（送る時刻は今＋2分）
-    const late = await push(bundle(), { now: at("19:49:59") });
-    assert.equal(late.reasons, undefined);
-    assert.equal(
-      late.send_at,
-      new Date(at("19:49:59").getTime() + 120000).toISOString(),
-    );
-  });
-  test("X の日の上限: 受け取る時点でもう1本が入らなければ受け取らない", async () => {
-    await db.exec(
-      "UPDATE sns_x_send_control SET daily_limit_x=1, daily_external_count=1",
-    );
-    const result = await push();
-    assert.match(result.reasons.join(), /日の上限/);
-    assert.deepEqual(await counts(), NOTHING);
-  });
-  test("mode=manual なら held_manual で job を作らない（exit 5）", async () => {
-    await db.exec("UPDATE sns_auto_send_control SET mode='manual'");
-    const result = await push();
-    assert.equal(result.job_id, undefined);
-    assert.equal(
-      (await first("SELECT state FROM sns_auto_send_items")).state,
-      "held_manual",
-    );
-    assert.equal((await counts()).jobs, 0);
-    assert.match(result.notes[0], /送らない/);
-    assert.equal(resultLine(result).code, 5);
-    // held_manual は1日1本から外れるので、自動に戻した後に入れ直せる
-    await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
-    assert.ok((await push()).job_id);
-  });
-}
-
-/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・OBSERVED・png・setClock・CAPTION・bundle・saved・store・push） */
-export function runSnsResearchImageScenes3(env) {
-  ({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, push } = env);
-  sri1Scene4();
 }

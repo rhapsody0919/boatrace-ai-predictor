@@ -17,12 +17,8 @@ import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
 import { createDeadlinePreflight } from "../../api/_lib/snsDeadlineQueue.js";
 
 import { SCREEN_MARKERS } from "../lib/snsScreenMarkers.js";
-import {
-  runSnsResearchImageScenes1,
-  runSnsResearchImageScenes2,
-  runSnsResearchImageScenes3,
-} from "./verifyData/sns-research-image-scenes-1.js";
-import { runSnsResearchImageScenes4 } from "./verifyData/sns-research-image-scenes-2.js";
+import { runSnsResearchImageScenes1, runSnsResearchImageScenes2 } from "./verifyData/sns-research-image-scenes-1.js";
+import { runSnsResearchImageScenes3 } from "./verifyData/sns-research-image-scenes-2.js";
 
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -241,7 +237,7 @@ const push = (b = bundle(), opts = {}, image = IMAGE) => {
 };
 
 // ---- 後半の場面（verifyData/sns-research-image-scenes-1.js） ----
-runSnsResearchImageScenes1({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, push });
+runSnsResearchImageScenes1({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push });
 
 /** 送り手の読み直し（readCurrent）に PGlite の行を渡す（PostgREST の path を読み分ける） */
 const readCurrent = createReadCurrent({
@@ -318,7 +314,7 @@ test("180 の土台: 177 の transition_sns_send_139 の本文の md5 が本番�
 });
 
 // ---- 後半の場面（verifyData/sns-research-image-scenes-1.js） ----
-runSnsResearchImageScenes2({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, push });
+runSnsResearchImageScenes2({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, setClock, CAPTION, bundle, saved, store, push });
 
 test("検査: 禁止表現（各語・本文の「競艇」・risk-rules）・#競艇 のタグは可・加重280・リンク・置き場所・本文のハッシュタグ・画像1枚・P0・時刻", async () => {
   assert.deepEqual(checkResearchBundle(bundle(), riskRules), []);
@@ -414,6 +410,5 @@ test("検査: 禁止表現（各語・本文の「競艇」・risk-rules）・#�
   ]);
 });
 
-// ---- 後半の場面（verifyData/sns-research-image-scenes-1.js・sns-research-image-scenes-2.js） ----
-runSnsResearchImageScenes3({ db, first, DAY, ID, at, PUSHED_AT, OBSERVED, png, setClock, CAPTION, bundle, saved, store, push });
-runSnsResearchImageScenes4({ db, first, DAY, ID, at, PUSHED_AT, setClock, CAPTION, bundle, store, IMAGE, push, readCurrent, preflightAt });
+// ---- 後半の場面（verifyData/sns-research-image-scenes-2.js） ----
+runSnsResearchImageScenes3({ db, first, DAY, ID, at, PUSHED_AT, png, setClock, CAPTION, bundle, store, IMAGE, push, readCurrent, preflightAt });

@@ -9,11 +9,79 @@ import { resultLine, researchStatus, schedule } from "../../sns/push-research-im
 import { createMockHeadless, createDeadlinePreflight } from "../../../api/_lib/snsDeadlineQueue.js";
 import { createMockXAdapter, runXSendJob } from "../../../api/_lib/snsXSend.js";
 import { SCREEN_MARKERS } from "../../lib/snsScreenMarkers.js";
-import { theJob, transition } from "./sns-research-image-scenes-1.js";
+import { counts, NOTHING, theJob, transition } from "./sns-research-image-scenes-1.js";
 
-let db, first, DAY, ID, at, PUSHED_AT, setClock, CAPTION, bundle, store, IMAGE, push, readCurrent, preflightAt;
+let db, first, DAY, ID, at, PUSHED_AT, png, setClock, CAPTION, bundle, store, IMAGE, push, readCurrent, preflightAt;
 
 function sri2Scene1() {
+  test("検査（時刻・画像）: 今日でない・期限の10分前を過ぎた・集計が未来・期限までに24時間を越える・画像の大きさ。拒否は Slack に知らせて何も書かない", async () => {
+    const reasonsOf = async (b, opts, image) =>
+      (await push(b, opts, image)).reasons?.join() ?? "";
+    assert.match(await reasonsOf(bundle({ date: "2037-10-29" })), /今日/);
+    // 期限 20:00 の10分前（19:50）ちょうどは拒否、その1秒前は受け取る
+    assert.match(
+      await reasonsOf(bundle(), { now: at("19:50:00") }),
+      /10分前を過ぎた/,
+    );
+    assert.match(
+      await reasonsOf(
+        bundle({ source_observed_at: at("15:30:00").toISOString() }),
+      ),
+      /今より後/,
+    );
+    // 期限 20:00 の24時間前ちょうどは古い
+    assert.match(
+      await reasonsOf(
+        bundle({
+          source_observed_at: new Date(
+            at("20:00:00").getTime() - 86400000,
+          ).toISOString(),
+        }),
+      ),
+      /古い/,
+    );
+    // 時差の無い時刻は、Node と DB で別の時刻に読まれるので受け取らない
+    assert.match(
+      await reasonsOf(bundle({ source_observed_at: "2037-10-28T14:30:00" })),
+      /時差/,
+    );
+    assert.match(await reasonsOf(bundle(), {}, png(1200, 1350)), /1080×1350/);
+    assert.match(await reasonsOf(bundle(), {}, null), /無い/);
+    assert.deepEqual(await counts(), NOTHING);
+    const rejected = await push(bundle({ x_text: "儲かる数字" }));
+    assert.match(rejected.notes[0], /検査で拒否/);
+    assert.equal(resultLine(rejected).code, 1);
+    // 19:49:59 は受け取る（送る時刻は今＋2分）
+    const late = await push(bundle(), { now: at("19:49:59") });
+    assert.equal(late.reasons, undefined);
+    assert.equal(
+      late.send_at,
+      new Date(at("19:49:59").getTime() + 120000).toISOString(),
+    );
+  });
+  test("X の日の上限: 受け取る時点でもう1本が入らなければ受け取らない", async () => {
+    await db.exec(
+      "UPDATE sns_x_send_control SET daily_limit_x=1, daily_external_count=1",
+    );
+    const result = await push();
+    assert.match(result.reasons.join(), /日の上限/);
+    assert.deepEqual(await counts(), NOTHING);
+  });
+  test("mode=manual なら held_manual で job を作らない（exit 5）", async () => {
+    await db.exec("UPDATE sns_auto_send_control SET mode='manual'");
+    const result = await push();
+    assert.equal(result.job_id, undefined);
+    assert.equal(
+      (await first("SELECT state FROM sns_auto_send_items")).state,
+      "held_manual",
+    );
+    assert.equal((await counts()).jobs, 0);
+    assert.match(result.notes[0], /送らない/);
+    assert.equal(resultLine(result).code, 5);
+    // held_manual は1日1本から外れるので、自動に戻した後に入れ直せる
+    await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
+    assert.ok((await push()).job_id);
+  });
   test("自動の承認に失敗したら item を held_manual にし、結果の1行に失敗の理由を書く（exit 5）", async () => {
     const result = await push(bundle(), {
       store: { ...store, approve: async () => Promise.reject(new Error("承認の関数が拒否")) },
@@ -38,6 +106,9 @@ function sri2Scene1() {
     );
     assert.deepEqual([old.state, old.stopped_via], ["stopped", "superseded"]);
   });
+}
+
+function sri2Scene2() {
   test("送り手の読み直し（readCurrent）: 許可・同じ日に送った research_image・item の kind・本文・画像の数を DB から見る。public_check は none", async () => {
     await push();
     const draft = await first("SELECT * FROM sns_drafts");
@@ -86,9 +157,6 @@ function sri2Scene1() {
     );
     await assert.rejects(readCurrent(draft.id), /research_item_mismatch/);
   });
-}
-
-function sri2Scene2() {
   test("送る直前の検査（createDeadlinePreflight）: research_image はリンク先の表示を開かずに通る。送る文にリンクがあれば link_not_allowed。他の型は今までどおり表示を確かめる", async () => {
     await push();
     const job = await theJob();
@@ -118,6 +186,9 @@ function sri2Scene2() {
     });
     await assert.rejects(other(job), /public_check_unconfigured/);
   });
+}
+
+function sri2Scene3() {
   test("送る: 19:00 に画像1枚と本文を X に渡し、送った後は item が sent・状態に tweet id が出る", async () => {
     await push();
     const job = await theJob();
@@ -180,9 +251,6 @@ function sri2Scene2() {
     assert.equal(broken.precheck_reason, null);
     assert.equal(broken.job_state, "queued");
   });
-}
-
-function sri2Scene3() {
   test("記録: 送る時刻を過ぎて queued のまま（claim が日の上限で投げている）なら blocked_hint に日の上限を出す", async () => {
     await push();
     await db.exec("UPDATE sns_x_send_control SET daily_external_count=9");
@@ -200,9 +268,9 @@ function sri2Scene3() {
   });
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・setClock・CAPTION・bundle・store・IMAGE・push・readCurrent・preflightAt） */
-export function runSnsResearchImageScenes4(env) {
-  ({ db, first, DAY, ID, at, PUSHED_AT, setClock, CAPTION, bundle, store, IMAGE, push, readCurrent, preflightAt } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（db・first・DAY・ID・at・PUSHED_AT・png・setClock・CAPTION・bundle・store・IMAGE・push・readCurrent・preflightAt） */
+export function runSnsResearchImageScenes3(env) {
+  ({ db, first, DAY, ID, at, PUSHED_AT, png, setClock, CAPTION, bundle, store, IMAGE, push, readCurrent, preflightAt } = env);
   sri2Scene1();
   sri2Scene2();
   sri2Scene3();
