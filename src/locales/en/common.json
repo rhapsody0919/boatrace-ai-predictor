@@ -155,8 +155,8 @@
     "assistEntry": {
       "lead": "To check the factors in order"
     },
-    "metaTitle": "{{venue}} Race {{race}} AI data analysis ({{date}}) - Ryujin Radar",
-    "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}} on {{date}}.",
+    "metaTitle": "{{venue}} Race {{race}} Pre-race Info, Exhibition, AI data analysis ({{date}}) - Ryujin Radar",
+    "metaDescription": "Free, no sign-up: race data table, exhibition times, pre-race info, AI data analysis, first-turn prediction and inside-collapse index for {{venue}} Race {{race}} on {{date}}.",
     "metaTitleResult": "{{venue}} Race {{race}} Results & Payouts ({{date}}) - Ryujin Radar",
     "metaDescriptionResult": "Free race results, payouts, race data table and AI predictions for {{venue}} Race {{race}} on {{date}}.",
     "metaTitleCancelled": "{{venue}} Race {{race}} Cancelled ({{date}}) - Ryujin Radar",

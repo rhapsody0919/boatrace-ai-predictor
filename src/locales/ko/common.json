@@ -153,8 +153,8 @@
     "assistEntry": {
       "lead": "자료를 순서대로 보려면"
     },
-    "metaTitle": "{{venue}} {{race}}R AI 데이터 분석 ({{date}}) - 용신 레이더",
-    "metaDescription": "{{date}} {{venue}} {{race}}R의 출주표 데이터, AI 데이터 분석, 전개 예측을 무료로 확인할 수 있습니다.",
+    "metaTitle": "{{venue}} {{race}}R 직전 정보, 전시, AI 데이터 분석 ({{date}}) - 용신 레이더",
+    "metaDescription": "{{date}} {{venue}} {{race}}R의 출주표, 전시 타임, 직전 정보, AI 데이터 분석, 1마크 전개 예측, 인코스 붕괴 지수를 무료·가입 없이 확인할 수 있습니다.",
     "metaTitleResult": "{{venue}} {{race}}R 결과 및 배당금 ({{date}}) - 용신 레이더",
     "metaDescriptionResult": "{{date}} {{venue}} {{race}}R의 레이스 결과와 배당금, 출주표 데이터와 AI 예측을 무료로 확인할 수 있습니다.",
     "metaTitleCancelled": "{{venue}} {{race}}R 중지 ({{date}}) - 용신 레이더",

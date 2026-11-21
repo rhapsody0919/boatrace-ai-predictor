@@ -153,8 +153,8 @@
     "assistEntry": {
       "lead": "材料を順に見るなら"
     },
-    "metaTitle": "{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー",
-    "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表データ・AI予想・1マークの展開予測・イン崩れ指数を無料で確認できます。",
+    "metaTitle": "{{venue}}競艇 {{race}}R 直前情報・展示・AI予想（{{date}}）- 龍神レーダー",
+    "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表・展示タイム・直前情報・AI予想・1マークの展開予測・イン崩れ指数を無料・登録不要で確認できます。",
     "metaTitleResult": "{{venue}}競艇 {{race}}R 結果・払戻（{{date}}）- 龍神レーダー",
     "metaDescriptionResult": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rのレース結果と払戻金、出走表データ・AI予想を無料で確認できます。",
     "metaTitleCancelled": "{{venue}}競艇 {{race}}R 中止（{{date}}）- 龍神レーダー",
