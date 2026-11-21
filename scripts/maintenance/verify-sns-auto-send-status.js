@@ -19,6 +19,7 @@ import {
   rowsOfDay,
   todayDay,
 } from "../../src/utils/snsAutoSendStatus.js";
+import { mustReplace } from "./verifyData/must-replace.js";
 
 // JST 2026-10-18 12:00
 const NOW = Date.parse("2026-10-18T03:00:00Z");
@@ -118,19 +119,20 @@ test("deadline-queue API: 状態が読めなくても待ち行列を返し、読
     "data:text/javascript," + encodeURIComponent(code).replaceAll("'", "%27");
   const load = async (control) => {
     globalThis.__queueTest = { control };
-    const code = source
-      .replace(
+    const code = [
+      [
         /from ['"][^'"]*adminAuth\.js['"]/,
         `from '${stub("export const requireAdminAuth=async()=>null;")}'`,
-      )
-      .replace(
+      ],
+      [
         /from ['"][^'"]*snsHubHelpers\.js['"]/,
         `from '${stub("export const isConfigured=()=>true;export const jsonResponse=(b,s=200)=>new Response(JSON.stringify(b),{status:s});")}'`,
-      )
-      .replace(
+      ],
+      [
         /from ['"][^'"]*snsXSendStore\.js['"]/,
         `from '${stub("export const xSendStore={queue:async()=>[{id:'a'}],sendControl:async()=>{const c=globalThis.__queueTest.control;if(c instanceof Error)throw c;return c;}};")}'`,
-      );
+      ],
+    ].reduce((s, [re, to]) => mustReplace(s, re, to), source);
     const mod = await import(stub(code) + `#${Math.random()}`);
     const res = await mod.default(
       new Request("https://example.test/api/admin/sns-hub/deadline-queue"),
@@ -168,27 +170,28 @@ test("状態の帯: モードの表示と、停止中・取得できないとき
     ),
     "utf8",
   );
-  source = source
-    .replace(
+  source = [
+    [
       /import \{ useEffect, useRef, useState \} from "react";/,
       `import React, {useEffect,useRef,useState} from '${new URL("../../node_modules/react/index.js", import.meta.url).href}';`,
-    )
-    .replace(
+    ],
+    [
       /import MonthCalendar from ["'][^"'\n]+["'];/,
       "const MonthCalendar=()=>null;",
-    )
-    .replace(
-      /import \{[\s\S]*?\} from ["'][^"'\n]*snsMonthCalendar\.js["'];/,
+    ],
+    [
+      /import \{[^}]*\} from ["'][^"'\n]*snsMonthCalendar\.js["'];/,
       "const calendarMonth=()=>[],calendarRowDay=()=>null;",
-    )
-    .replace(
-      /import \{[\s\S]*?\} from ["'][^"'\n]*snsAutoSendStatus\.js["'];/,
+    ],
+    [
+      /import \{[^}]*\} from ["'][^"'\n]*snsAutoSendStatus\.js["'];/,
       "const attentionRows=()=>[],rowsOfDay=()=>[],todayDay=()=>'';",
-    )
-    .replace(
-      /import \{[\s\S]*?\} from ["'][^"'\n]*snsHubService\.js["'];/,
+    ],
+    [
+      /import \{[^}]*\} from ["'][^"'\n]*snsHubService\.js["'];/,
       "const getDeadlineQueue=async()=>({rows:[],control:null}),stopXSend=async()=>{};",
-    );
+    ],
+  ].reduce((s, [re, to]) => mustReplace(s, re, to), source);
   const code = (await transform(source, { loader: "jsx", format: "esm" })).code;
   const { SendControlBand } = await import(
     "data:text/javascript," + encodeURIComponent(code)
