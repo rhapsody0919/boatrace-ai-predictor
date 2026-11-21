@@ -139,6 +139,49 @@ async function botPageLangPart3({ html, json, lang, racerNames, tl }) {
   );
 }
 
+// 説明文の直後の運営・データ・成績の3行（PV09 T2、BOA-1689）。scenes-4 が botPageTopTextPart1 の後に呼ぶ
+export async function botPageTopFacts({ lang, tl, body, has, e }) {
+  const url = lang === "ja" ? "/api/bot-page/top" : `/api/bot-page/${lang}/top`;
+  // 人の HomeAiIntro と同じキー・同じ並び。
+  // 時刻は年つきの JST（フィクスチャの scrapedAt 2026-10-11T12:26:47Z → 2026-10-11 21:26）
+  const updatedLine = `<time datetime="2026-10-11T12:26:47.061Z">${e(
+    tl("home.aiIntro.updated", { year: "2026", month: 10, day: 11, hour: "21", minute: "26" }),
+  )}</time>`;
+  const factsHtml = [
+    `<p>${e(tl("home.aiIntro.lead"))}</p>`,
+    "<ul>",
+    `<li><span>${e(tl("home.aiIntro.operator", { name: "らぷそでぃ" }))}</span> <a href="/profile">${e(tl("home.aiIntro.profileLink"))}</a></li>`,
+    `<li><span>${e(tl("home.aiIntro.data"))}</span> ${updatedLine}</li>`,
+    `<li><span>${e(tl("home.aiIntro.results"))}</span> <a href="/accuracy">${e(tl("home.aiIntro.accuracyLink"))}</a> <a href="/hit-races">${e(tl("home.aiIntro.hitRacesLink"))}</a> <span>${e(tl("home.aiIntro.hitRacesNote"))}</span></li>`,
+    "</ul>",
+    `<p>${e(tl("home.aiIntro.method"))}</p>`,
+  ].join("\n");
+  check(`${lang} トップ: 説明文の直後に運営・データ・成績の3行`, has(factsHtml), true);
+  check(
+    `${lang} トップ: /profile・/accuracy・/hit-races へのリンクは1本ずつ（接頭辞なし）`,
+    ["/profile", "/accuracy", "/hit-races"].map((href) => body.split(`<a href="${href}">`).length - 1),
+    [1, 1, 1],
+  );
+  check(`${lang} トップ: 3行に的中率・回収率・% が無い`, /的中率|回収率|%/.test(factsHtml), false);
+  {
+    // transformTodayRaces は scrapedAt が無いと今の時刻で埋めるので、「読めない」値で時刻の無い場合を作る
+    const noTime = { ...fresh(), scrapedAt: "not-a-date" };
+    const noTimeBody = (
+      await call("top", url, { json: noTime, ...(lang === "ja" ? {} : { langMode: "prefixed" }) })
+    ).res.body.split("<body>")[1];
+    check(
+      `${lang} トップ: scrapedAt が読めないと time 要素だけ無く、3行は残る`,
+      [
+        noTimeBody.includes("<time"),
+        noTimeBody.includes(`<li><span>${e(tl("home.aiIntro.data"))}</span></li>`),
+        noTimeBody.includes(`<a href="/profile">`),
+        noTimeBody.includes(`<span>${e(tl("home.aiIntro.results"))}</span>`),
+      ],
+      [false, true, true, true],
+    );
+  }
+}
+
 // ---- 11. トップの説明の本文・よくある質問・ブログ欄・案内の帯（人のトップの部分集合） ----
 /** for (const lang of ["ja", ...BOT_PAGE_PREFIXED_LANGS]) { の中身を割った 1/2 */
 export async function botPageTopTextPart1({ lang, textOf }) {
@@ -230,44 +273,6 @@ export async function botPageTopTextPart1({ lang, textOf }) {
     ],
     [true, true],
   );
-  // 説明文の直後の運営・データ・成績の3行（PV09 T2、BOA-1689）。人の HomeAiIntro と同じキー・同じ並び。
-  // 時刻は年つきの JST（フィクスチャの scrapedAt 2026-10-11T12:26:47Z → 2026-10-11 21:26）
-  const updatedLine = `<time datetime="2026-10-11T12:26:47.061Z">${e(
-    tl("home.aiIntro.updated", { year: "2026", month: 10, day: 11, hour: "21", minute: "26" }),
-  )}</time>`;
-  const factsHtml = [
-    `<p>${e(tl("home.aiIntro.lead"))}</p>`,
-    "<ul>",
-    `<li><span>${e(tl("home.aiIntro.operator", { name: "らぷそでぃ" }))}</span> <a href="/profile">${e(tl("home.aiIntro.profileLink"))}</a></li>`,
-    `<li><span>${e(tl("home.aiIntro.data"))}</span> ${updatedLine}</li>`,
-    `<li><span>${e(tl("home.aiIntro.results"))}</span> <a href="/accuracy">${e(tl("home.aiIntro.accuracyLink"))}</a> <a href="/hit-races">${e(tl("home.aiIntro.hitRacesLink"))}</a> <span>${e(tl("home.aiIntro.hitRacesNote"))}</span></li>`,
-    "</ul>",
-    `<p>${e(tl("home.aiIntro.method"))}</p>`,
-  ].join("\n");
-  check(`${lang} トップ: 説明文の直後に運営・データ・成績の3行`, has(factsHtml), true);
-  check(
-    `${lang} トップ: /profile・/accuracy・/hit-races へのリンクは1本ずつ（接頭辞なし）`,
-    ["/profile", "/accuracy", "/hit-races"].map((href) => body.split(`<a href="${href}">`).length - 1),
-    [1, 1, 1],
-  );
-  check(`${lang} トップ: 3行に的中率・回収率・% が無い`, /的中率|回収率|%/.test(factsHtml), false);
-  {
-    // transformTodayRaces は scrapedAt が無いと今の時刻で埋めるので、「読めない」値で時刻の無い場合を作る
-    const noTime = { ...fresh(), scrapedAt: "not-a-date" };
-    const noTimeBody = (
-      await call("top", url, { json: noTime, ...(lang === "ja" ? {} : { langMode: "prefixed" }) })
-    ).res.body.split("<body>")[1];
-    check(
-      `${lang} トップ: scrapedAt が読めないと time 要素だけ無く、3行は残る`,
-      [
-        noTimeBody.includes("<time"),
-        noTimeBody.includes(`<li><span>${e(tl("home.aiIntro.data"))}</span></li>`),
-        noTimeBody.includes(`<a href="/profile">`),
-        noTimeBody.includes(`<span>${e(tl("home.aiIntro.results"))}</span>`),
-      ],
-      [false, true, true, true],
-    );
-  }
   const prefix = lang === "ja" ? "" : `/${lang}`;
   return { tl, html, body, has, e, showAssist, popularPosts, newPosts, prefix };
 }

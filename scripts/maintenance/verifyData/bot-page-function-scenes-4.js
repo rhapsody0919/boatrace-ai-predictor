@@ -3,7 +3,7 @@
  * 判定と期待値は分ける前の verify-bot-page-function.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import { botPageTopTextPart1 } from "./bot-page-function-scenes-3.js";
+import { botPageTopFacts, botPageTopTextPart1 } from "./bot-page-function-scenes-3.js";
 
 let read, check, parseJsonLdScripts, BOT_PAGE_PREFIXED_LANGS, getLocaleT, escapeHtml, buildFaqItems, fresh, jsonResponse, call, decode, links, hasRawScript;
 
@@ -110,6 +110,7 @@ async function scene1() {
     for (const lang of ["ja", ...BOT_PAGE_PREFIXED_LANGS]) {
       const { tl, html, body, has, e, showAssist, popularPosts, newPosts, prefix } = await botPageTopTextPart1({ lang, textOf });
       botPageTopTextPart2({ body, e, has, html, lang, newPosts, popularPosts, prefix, racerNames, showAssist, tl });
+      await botPageTopFacts({ lang, tl, body, has, e });
     }
 
     // エスケープ: 文言（t）と記事以外の値が全部 < > & ' " を含んでも、生のタグにならず、FAQPage は元の値に戻る

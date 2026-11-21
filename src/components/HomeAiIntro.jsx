@@ -6,7 +6,7 @@ import {
   toFaqPageLd,
 } from "../utils/homeAiIntroFaq.js";
 import { formatUpdatedAtJstParts } from "../utils/formatters.js";
-import { buildPersonSchema } from "../pages/ProfileSchema.js";
+import { OPERATOR_NAME } from "../constants/index.js";
 import "./HomeAiIntro.css";
 
 /**
@@ -46,8 +46,6 @@ function HomeAiIntro({ lastUpdated = null }) {
   const showAssist = isAssistShown(i18n.resolvedLanguage);
   const faqItems = buildFaqItems(t, showAssist);
   const updated = formatUpdatedAtJstParts(lastUpdated);
-  // 運営者の名は /profile の Person と同じ字（全言語で訳さない）
-  const operatorName = buildPersonSchema().mainEntity.name;
 
   return (
     <section className="home-ai-intro" aria-labelledby="home-ai-intro-title">
@@ -55,7 +53,7 @@ function HomeAiIntro({ lastUpdated = null }) {
       <p>{t("home.aiIntro.lead")}</p>
       <ul className="home-ai-intro__facts">
         <li>
-          <span>{t("home.aiIntro.operator", { name: operatorName })}</span>{" "}
+          <span>{t("home.aiIntro.operator", { name: OPERATOR_NAME })}</span>{" "}
           <Link to="/profile">{t("home.aiIntro.profileLink")}</Link>
         </li>
         <li>

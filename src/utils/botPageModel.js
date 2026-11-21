@@ -19,7 +19,7 @@
  *
  * Node から import するため、ブラウザ専用の依存を持ち込まない。検証: scripts/maintenance/verify-bot-page-model.js
  */
-import { ALL_VENUE_CODES } from "../constants/index.js";
+import { ALL_VENUE_CODES, OPERATOR_NAME } from "../constants/index.js";
 import { transformTodayRaces } from "./todayRaces.js";
 import {
   getTopPageMeta,
@@ -44,7 +44,6 @@ import {
   formatUpdatedAtJstParts,
 } from "./formatters.js";
 import { localizePath } from "../pure/localizePath.js";
-import { buildPersonSchema } from "../pages/ProfileSchema.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
 import { meetBannerSeriesOf, seriesOfDate } from "./meetPageModel.js";
@@ -121,14 +120,12 @@ function updatedText(t, scrapedAt) {
 
 // 説明文の直後の運営・データ・成績の3行（PV09 T2）。人の HomeAiIntro と同じキー・同じ並び・同じ年つき JST の時刻。
 // /profile・/accuracy・/hit-races は ja だけのページなので、人の画面と同じく言語の接頭辞を付けない。
-// 運営者の名は /profile の Person と同じ字（全言語で訳さない）。時刻が読めなければ updated は null（行は残す）
+// 運営者の名は OPERATOR_NAME（/profile と同じ字、全言語で訳さない）。時刻が読めなければ updated は null（行は残す）
 function buildAiIntroFacts(t, scrapedAt) {
   const updated = formatUpdatedAtJstParts(scrapedAt);
   return {
     operator: {
-      text: t("home.aiIntro.operator", {
-        name: buildPersonSchema().mainEntity.name,
-      }),
+      text: t("home.aiIntro.operator", { name: OPERATOR_NAME }),
       link: { text: t("home.aiIntro.profileLink"), href: "/profile" },
     },
     data: {
