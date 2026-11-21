@@ -361,9 +361,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/venueJobSupport.js` | 会場ごとに取得する日次ジョブ（B3 会場別モーター成績・B4 進入コース別選手成績。tasks.md T4b-14・T4b-13）の | updateHealthForDate, isTransientReason, reasonFromError, previouslySettledVenues, driftAlertsToReport |
 | `scripts/lib/scrapeToJson.js` | — | defaultFetchHtml, getTodayVenues, scrapeVenue |
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
-| `scripts/lib/sitemapLanguagePages.js` | — | LOCALIZED_PAGES, LANGUAGE_ONLY_PAGES |
+| `scripts/lib/sitemapBlogPages.js` | — | getBlogPosts, BLOG_DIR |
+| `scripts/lib/sitemapLanguagePages.js` | — | LOCALIZED_PAGES, LANGUAGE_ONLY_PAGES, localizedPages |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/sitemapRacerPages.js` | — | racerSitemapEntry |
+| `scripts/lib/sitemapStaticPages.js` | — | staticPages |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
 | `scripts/lib/sns/bundlePublicationBlocked.js` | — | isBundlePublicationBlocked |
 | `scripts/lib/sns/deadlineIso.js` | — | deadlineIso |
@@ -642,4 +644,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 600 ファイル / export 3233 件。
+対象 602 ファイル / export 3237 件。
