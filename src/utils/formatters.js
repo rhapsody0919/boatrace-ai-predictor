@@ -173,6 +173,46 @@ export function formatCapturedAtJst(capturedAt) {
   return `${month}/${day} ${pick("hour")}:${pick("minute")}`;
 }
 
+// 年まで出す JST の部品（トップの説明の「データ更新」、PV09 T2）。部品で取り出すのは上と同じ理由
+const JST_UPDATED_AT_FORMAT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tokyo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/**
+ * データの更新時刻（ISO文字列）を、年つきの JST の部品にする（トップの説明の②データの行）。
+ * 人の画面（HomeAiIntro）とボット向け（botPageModel の buildAiIntro）が同じ部品から
+ * 同じ i18n の文（home.aiIntro.updated）を組むため、ブラウザのタイムゾーンに左右されない JST で返す。
+ * 読めなければ null（時刻の部分だけ出さない）
+ *
+ * @param {string|null|undefined} isoString scrapedAt
+ * @returns {{datetime: string, year: string, month: number, day: number, hour: string, minute: string}|null}
+ */
+export function formatUpdatedAtJstParts(isoString) {
+  if (!isoString) return null;
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = JST_UPDATED_AT_FORMAT.formatToParts(date);
+  const pick = (type) => parts.find((p) => p.type === type)?.value ?? "";
+  const year = pick("year");
+  const month = Number(pick("month"));
+  const day = Number(pick("day"));
+  if (!/^\d{4}$/.test(year) || !month || !day) return null;
+  return {
+    datetime: date.toISOString(),
+    year,
+    month,
+    day,
+    hour: pick("hour"),
+    minute: pick("minute"),
+  };
+}
+
 /**
  * 展示STを公式の表記で書く（BOA-759）。展示でフライング・出遅れした艇は、公式の直前情報が
  * 「F.01」「L」のように頭に印を付けて出す。DB の start_timing は印を外した正の数（F.01→0.01）
