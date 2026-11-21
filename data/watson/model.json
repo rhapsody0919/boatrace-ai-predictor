@@ -1,28 +1,28 @@
 {
   "model_id": "watson",
   "version": "v1",
-  "trained_at": "2026-11-14T22:17:41.524077+00:00",
-  "n_races": 53523,
+  "trained_at": "2026-11-21T23:04:57.364420+00:00",
+  "n_races": 54461,
   "n_features": 36,
   "metrics": {
-    "top1_hit_rate": 0.5659,
-    "winner_logloss": 0.3283,
-    "auc": 0.8401,
-    "ndcg_at_1": 0.658,
-    "ndcg_at_3": 0.7418
+    "top1_hit_rate": 0.5628,
+    "winner_logloss": 0.3266,
+    "auc": 0.8409,
+    "ndcg_at_1": 0.6543,
+    "ndcg_at_3": 0.74
   },
   "vs_poirot_v2": {
-    "auc": 0.8467219612005248,
-    "winner_logloss_calibrated": 0.3293283969823125,
-    "win_hit_rate": 0.5650765973346619
+    "auc": 0.8455703120201231,
+    "winner_logloss_calibrated": 0.33013983699382266,
+    "win_hit_rate": 0.5642594859241126
   },
-  "delta_r2": 0.0296,
+  "delta_r2": 0.0297,
   "delta_r2_detail": {
     "r2": {
-      "model_only": 0.2727,
-      "odds_only": 0.2566,
-      "combined": 0.2862
+      "model_only": 0.2741,
+      "odds_only": 0.2558,
+      "combined": 0.2855
     },
-    "n_eval_races": 4220
+    "n_eval_races": 4434
   }
 }
