@@ -1,0 +1,32 @@
+/* 進入コース別の1着率の表（BOA-1687）。数字の列が3つなので幅を絞る（ui-layout.md の 720 上限） */
+.venue-course-table {
+  width: 100%;
+  max-width: 36rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: var(--spacing-2);
+}
+
+.venue-course-table th,
+.venue-course-table td {
+  padding: var(--spacing-2);
+  border-bottom: 1px solid var(--border-hairline);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.venue-course-table th:first-child {
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+}
+
+.venue-course-table thead th {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+}
+
+.venue-course-table__own {
+  font-weight: var(--font-weight-bold);
+}

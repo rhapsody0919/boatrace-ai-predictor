@@ -102,16 +102,13 @@
     "jumpToNextRace": "{{race}}R로",
     "nextDeadlineMarker": "{{venue}} 다음 마감 {{race}}R {{time}}",
     "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감",
+    "courseSectionLink": "{{venue}}의 진입 코스별 성적과 특징 (최근 1년) 보기 ↓",
     "todayTitle": "오늘의 경주, AI 예측",
     "metaTitleSeries": "{{venue}} 경정 예측·출주표 ({{series}}) | 오늘의 AI 예측 - 용신 레이더",
     "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 출주표와 전 경주 AI 예측, 이번 시리즈의 득점률 순위를 공개합니다."
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "수질: {{summary}}. 진입 코스별 1착률과 결정수 표 열기",
-    "collapsedTeaserNoSummary": "진입 코스별 1착률과 결정수 표 열기",
-    "title": "이 경정장의 특징 (최근 1년)",
     "note": "1착 비율을 실제 진입 코스별(번호가 아님)로 보여줍니다. 결정수는 전 경주 중 비율입니다.",
-    "nationalAverageTooltip": "전국 {{value}}%",
     "footnote": "{{from}}~{{to}}의 {{count}}경주(중지·불성립 제외)를 집계. 전국 수치는 같은 기간 {{nationalCount}}경주 기준입니다. 4~6코스는 1착 건수가 적어 경정장 순위가 해마다 바뀔 수 있습니다. 과거 집계이며 앞으로의 결과를 나타내지 않습니다.",
     "waterType": {
       "fresh": "담수",
@@ -132,15 +129,21 @@
       "smallSampleNote": "1착 횟수가 적은 정번은 비율이 크게 흔들릴 수 있습니다.",
       "outcomeLink": "이 경기장의 자주 나온 결과 순위 보기 (분석 도구)"
     },
-    "courseHeader": "진입 코스별 1착률",
     "courseLabel": "{{course}}코스",
     "techniqueTitle": "결정수 (전 경주 중 비율)",
     "techniqueName": "결정수",
     "techniqueVenue": "이 경정장",
     "techniqueNational": "전국",
     "megumareNote": "어부지리는 {{races}}경주 중 {{count}}회(전국은 {{nationalRaces}}경주 중 {{nationalCount}}회). 횟수가 적어 비율로 경정장을 비교하지 않습니다.",
-    "winsOfRaces": "{{races}}경주 중 {{count}}회",
-    "nationalLegend": "세로선은 전국 값"
+    "sectionTitle": "{{venue}}의 진입 코스별 성적과 특징 (최근 1년)",
+    "period": "{{from}}~{{to}} · {{races}}경주 (전국 {{nationalRaces}}경주)",
+    "courseColumn": "진입 코스",
+    "winRateColumn": "1착률",
+    "winsColumn": "1착 횟수",
+    "waterTitle": "수면",
+    "waterText": "수질은 {{water}}. 간만차는 {{tidal}} (BOAT RACE 공식 경정장 데이터).",
+    "tidalYes": "있음",
+    "tidalNo": "없음"
   },
   "raceDetailPage": {
     "assistSwitch": {

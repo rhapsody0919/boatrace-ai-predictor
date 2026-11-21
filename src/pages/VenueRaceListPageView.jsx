@@ -1,12 +1,17 @@
 /**
  * VenueRaceListPage の画面本体（head 要素・見出し・会場カード・一覧）。
- * VenueRaceListPage.jsx から移しただけで、DOM は変えない。
+ * 出走表の後に直近1年のコース別の節、要約2行の直下にその節へのリンクを置く（BOA-1687）。
  */
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
-import VenueSummaryLines from "../components/venue/VenueSummaryLines";
 import VenueMeetBanner from "../components/venue/VenueMeetBanner";
-import { PageHeader, RaceListBody, VenueCards } from "./VenueRaceListPageParts";
+import {
+  PageHeader,
+  RaceListBody,
+  VenueCards,
+  VenueCourseSection,
+  VenueSummaryWithLink,
+} from "./VenueRaceListPageParts";
 
 export default function VenueRaceListView({
   t,
@@ -62,8 +67,8 @@ export default function VenueRaceListView({
             t={t}
           />
 
-          {/* 会場の常設の要約2行（直近1年、BOA-1189 GS02-b）。数字は静的な値なので読み込みを待たずに出す */}
-          {isToday && <VenueSummaryLines venueCode={venueCode} />}
+          {/* 会場の常設の要約2行（直近1年、BOA-1189 GS02-b）と、出走表の後の節へのリンク（BOA-1687） */}
+          {isToday && <VenueSummaryWithLink venueCode={venueCode} />}
           {/* SG・G1・G2 の開催中だけ、節のページ（得点率ランキング・勝ち上がり）への帯（BOA-1189） */}
           {isToday && !loading && !error && (
             <VenueMeetBanner
@@ -96,6 +101,8 @@ export default function VenueRaceListView({
             nowHHMM={nowHHMM}
             localize={localize}
           />
+          {/* 直近1年のコース別成績と特徴。一覧の後に開いて出す（BOA-1687） */}
+          {!loading && <VenueCourseSection venueCode={venueCode} />}
         </div>
       </div>
     </>

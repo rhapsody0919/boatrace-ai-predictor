@@ -1,43 +1,77 @@
 /**
- * VenueRaceListPage の表示の部品。VenueRaceListPage.jsx から移しただけで、DOM は変えない。
+ * VenueRaceListPage の表示の部品（見出し・会場カード・一覧・出走表の後のコース別の節）。
  */
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { isInCautionEnabled } from "../config/featureFlags";
 import FavoriteStarButton from "../components/common/FavoriteStarButton.jsx";
 import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
 import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
+import VenueSummaryLines from "../components/venue/VenueSummaryLines";
 import VenueDaySummaryCard from "../components/race/VenueDaySummaryCard";
+import { VENUE_SUMMARY_STATS } from "../data/venueSummaryStats";
+import {
+  VENUE_COURSE_SECTION_ID,
+  venueCourseTableRows,
+} from "../pure/venueCourseTableRows";
 import DataFetchError from "../components/DataFetchError";
 import { FETCH_FAILED_ERROR } from "../hooks/useDatePredictions";
 import { formatDate } from "../utils/formatters";
 import { holdScrollPosition } from "./VenueRaceListPageScroll";
 
-// 次のレースの直上に差し込むときは、見出しと要約1行に折りたたむ（会場カードと次のレースを1画面に入れる。
-// ファン評価3周目を受けたユーザー判断）。最上部に置くときは従来どおり全部を出す
+// 次のレースの直上（または最上部）に置く会場カード。この日の水面傾向だけ。
+// 直近1年の「コース別成績と特徴」は畳まずに出走表の後へ移した（BOA-1687 GS02 V1。VenueCourseSection）
 export function VenueCards({ venueCode, date, showCardsInGrid }) {
   return (
-    <>
-      {/* 会場の特徴は、どの位置でも最初は畳む（見出しと要約1行）。見出しの直下に要約2行があるので、
-          出走表・「開催なし」を1画面目に近づける（BOA-1189 ファン評価 P2、Orchestrate の判断） */}
-      <VenueCharacteristicsCard
-        venueCode={venueCode}
-        collapsible
-      />
+    <VenueDaySummaryCard
+      venueCode={venueCode}
+      date={date}
+      collapsible={showCardsInGrid}
+    />
+  );
+}
 
-      {/* この日の水面傾向（phase a FR-5 / BOA-222）。直上の
-          VenueCharacteristicsCard は直近1年（BOA-1189）で、
-          こちらはこの日1日分。カードの注記で日付とレース数を明示する */}
-      <VenueDaySummaryCard
-        venueCode={venueCode}
-        date={date}
-        collapsible={showCardsInGrid}
-      />
+// 出走表の後の「<会場>のコース別成績と特徴（直近1年）」の節（BOA-1687）。開いた状態で出す
+export function VenueCourseSection({ venueCode }) {
+  return <VenueCharacteristicsCard venueCode={venueCode} />;
+}
+
+// 見出しの直下の常設の要約2行（BOA-1189）と、その直下の節へのページ内リンク（375px では節が出走表12R分
+// 下になるため、BOA-1687）。数字は静的な値なので読み込みを待たずに出す。節を出さない会場ではリンクを出さない
+export function VenueSummaryWithLink({ venueCode }) {
+  const { t } = useTranslation();
+  const hasSection = venueCourseTableRows(
+    VENUE_SUMMARY_STATS.venues[venueCode],
+    VENUE_SUMMARY_STATS.national,
+  );
+  return (
+    <>
+      <VenueSummaryLines venueCode={venueCode} />
+      {hasSection && (
+        <p className="venue-race-list__course-link">
+          <a
+            href={`#${VENUE_COURSE_SECTION_ID}`}
+            data-testid="venue-course-section-link"
+          >
+            {t("venueRaceList.courseSectionLink", {
+              venue: t(`venues.${venueCode}`),
+            })}
+          </a>
+        </p>
+      )}
     </>
   );
 }
 
-export function PageHeader({ venueName, venueCode, isToday, date, backLink, t }) {
+export function PageHeader({
+  venueName,
+  venueCode,
+  isToday,
+  date,
+  backLink,
+  t,
+}) {
   return (
     <header className="page-header">
       <div className="favorite-star-header-row">

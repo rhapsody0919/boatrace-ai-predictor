@@ -102,16 +102,13 @@
     "jumpToNextRace": "{{race}}Rへ",
     "nextDeadlineMarker": "{{venue}}　次の締切 {{race}}R {{time}}",
     "allClosedMarker": "{{venue}}　本日のレースはすべて締切済み",
+    "courseSectionLink": "{{venue}}のコース別成績と特徴（直近1年）を見る ↓",
     "todayTitle": "本日のレース・AI予想",
     "metaTitleSeries": "{{venue}}競艇の予想・出走表 {{series}}｜本日のAI予想 - 龍神レーダー",
     "metaDescriptionSeries": "{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の出走表と全レースのAI予想、節の得点率ランキングを無料・登録不要で公開しています。"
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "水質は{{summary}}。進入コース別の1着率と決まり手の表を開く",
-    "collapsedTeaserNoSummary": "進入コース別の1着率と決まり手の表を開く",
-    "title": "この会場の特徴（直近1年）",
     "note": "1着の割合を、実際に入った進入コース別（枠番ではない）に出しています。決まり手は全レースのうちの割合です。",
-    "nationalAverageTooltip": "全国{{value}}%",
     "footnote": "{{from}}〜{{to}}の{{count}}レース（中止・不成立を除く）を集計。全国の値は同じ期間の{{nationalCount}}レース。4〜6コースは1着の件数が少なく、会場の順位は年によって変わりえます。過去の集計で、今後の結果を示すものではありません。",
     "waterType": {
       "fresh": "淡水",
@@ -132,15 +129,21 @@
       "smallSampleNote": "1着の回数が少ない枠は、割合がぶれやすい点に注意してください。",
       "outcomeLink": "この会場の出目ランキングを見る（分析ツール）"
     },
-    "courseHeader": "進入コース別の1着率",
     "courseLabel": "{{course}}コース",
     "techniqueTitle": "決まり手（全レースのうちの割合）",
     "techniqueName": "決まり手",
     "techniqueVenue": "この会場",
     "techniqueNational": "全国",
     "megumareNote": "恵まれは{{races}}レース中{{count}}回（全国は{{nationalRaces}}レース中{{nationalCount}}回）。回数が少ないので割合で会場を比べません。",
-    "winsOfRaces": "{{races}}レース中{{count}}回",
-    "nationalLegend": "縦の線は全国の値"
+    "sectionTitle": "{{venue}}のコース別成績と特徴（直近1年）",
+    "period": "{{from}}〜{{to}}・{{races}}レース（全国{{nationalRaces}}レース）",
+    "courseColumn": "進入コース",
+    "winRateColumn": "1着率",
+    "winsColumn": "1着の回数",
+    "waterTitle": "水面",
+    "waterText": "水質は{{water}}。干満差は{{tidal}}（BOAT RACE 公式の場データ）。",
+    "tidalYes": "あり",
+    "tidalNo": "なし"
   },
   "raceDetailPage": {
     "assistSwitch": {
