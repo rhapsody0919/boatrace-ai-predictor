@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2680,
+    "sourceFiles": 2682,
     "filesWithAccess": 319,
     "tableReaders": 949,
     "tableWriters": 195,
@@ -6916,7 +6916,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:624",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:428",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8901,7 +8901,7 @@
         "racer_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:171",
-            "scripts/analysis/aggregate-racer-stats.js:624",
+            "scripts/analysis/aggregate-racer-stats.js:428",
             "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
@@ -10617,7 +10617,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:71",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:81",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -13456,7 +13456,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:501",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:384",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -13595,7 +13595,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:501",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:384",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
