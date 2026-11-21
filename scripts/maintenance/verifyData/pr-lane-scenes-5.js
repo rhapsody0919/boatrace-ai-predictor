@@ -63,7 +63,8 @@ function prlExp3({ ex }) {
   ex(["M scripts/sns/post.js"], {}, { human: ["sns scripts/sns/post.js"], noHuman: ["terms scripts/sns/post.js"] });
   ex(["M src/components/Foo.jsx"], { patches: patch("src/components/Foo.jsx", ["<p>回収率</p>"]) }, { human: ["terms src/components/Foo.jsx"], noHuman: ["sns src/components/Foo.jsx"] });
   ex(["M public/robots.txt"], {}, { human: ["seo public/robots.txt"] });
-  ex(["M scripts/maintenance/pr-lane.js"], {}, { human: ["judge scripts/maintenance/pr-lane.js"], noNeeds: ["line-mutation scripts/maintenance/pr-lane.js"] });
+  for (const f of ["pr-lane.js", "prLaneClassify.js", "prLaneHuman.js", "prLaneLines.js"])
+    ex([`M scripts/maintenance/${f}`], {}, { human: [`judge scripts/maintenance/${f}`], noNeeds: [`line-mutation scripts/maintenance/${f}`] });
   ex(["M e2e/fixtures.js"], {}, { human: ["fixture e2e/fixtures.js"], noNeeds: ["base-spec-on-head e2e/fixtures.js"] });
   ex(["M e2e/recordings/x.json.gz"], {}, { human: ["fixture e2e/recordings/x.json.gz"], noNeeds: ["base-spec-on-head e2e/recordings/x.json.gz"] });
   ex(["D scripts/maintenance/verify-foo.js"], {}, { human: ["weaken scripts/maintenance/verify-foo.js"] });

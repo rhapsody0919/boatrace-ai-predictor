@@ -11,7 +11,8 @@
  *       01〜06・F・L1・K1・S1・S2）。成績コードが NULL の行は着欄で判定し、欠場だけを除く
  *   (c) aggregateTopStarts（top_start_stats）: 欠場を参加数に入れない。ST が NULL の行があっても、そのレースの
  *       トップスタートを消さない（Math.min が null を 0 とみなしていた）
- *   (d) 分析・検証のスクリプト（得点率の配点の検証）: 行の有無だけで出走を判定せず、「欠」を除く
+ *   (d) 分析・検証のスクリプト（得点率の配点の検証）: 行の有無だけで出走を判定せず、「欠」を除く。分析の本は偽の DB の行で回して
+ *       出した表で見る（verifyData/series-points-hypotheses-run.js）。verification の2本は字で見る
  *
  * 実行: node scripts/maintenance/verify-absent-start-rows.js
  */
@@ -21,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import { stDeviation } from "../../src/utils/stDeviation.js";
 import { computeRacerStStats, countsAsStart } from "../lib/racerStStats.js";
 import { aggregateTopStarts } from "../daily/update-top-start-stats.js";
+import { runSeriesPointsHypotheses } from "./verifyData/series-points-hypotheses-run.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 let failures = 0;
@@ -162,9 +164,81 @@ check(
 }
 
 // (d) 分析・検証のスクリプト
+// 分析の本（series-points-scoring-hypotheses.mjs）は、本文の字でなく偽の DB の行を渡して回し、出した「物差しA」の表で見る。
+//   R2: 1号艇（1001）は欠場（着順なし・着欄「欠」）＝走数に入れない。2号艇（1002）は失格（着順なし・着欄「転」）＝走ったので入れる
+//   R3: 本番STの記録が1行も無いレース（取得漏れ）＝着順の無い3号艇（1003）も出走に倒す
+// 正しく数えれば 1001 は 20点/2走＝10.00、1002 は 16点/3走＝5.33、1003 は 16点/3走＝5.33 で、公式の得点率と3人とも合う（3/3）
 {
+  const [R1, R2, R3] = ["01", "02", "03"].map((r) => `2026-09-01-11-${r}`);
+  const boats = [1, 2, 3, 4, 5, 6];
+  const ranks = (...order) =>
+    Object.fromEntries(boats.map((n) => [`rank${n}`, order[n - 1] ?? null]));
+  const marks = {
+    [R1]: ["1", "2", "3", "4", "5", "6"],
+    [R2]: ["欠", "転", "1", "2", "3", "4"],
+  };
+  const official = (racer_id, total_points, score_rate) => ({
+    venue_code: 11,
+    meet_start_date: "2026-09-01",
+    racer_id,
+    rank: null,
+    score_rate,
+    total_points,
+    penalty_points: 0,
+    remarks: null,
+  });
+  const { lines, selects } = await runSeriesPointsHypotheses({
+    race_conditions: [R1, R2, R3].map((race_id) => ({
+      race_id,
+      race_stage: "予選",
+      series_day: 1,
+      is_final_day: false,
+    })),
+    race_entries: [R1, R2, R3].flatMap((race_id) =>
+      boats.map((b) => ({
+        race_id,
+        boat_number: b,
+        racer_id: 1000 + b,
+        player_name: `選手${b}`,
+      })),
+    ),
+    race_results: [
+      { race_id: R1, ...ranks(1, 2, 3, 4, 5, 6) },
+      { race_id: R2, ...ranks(3, 4, 5, 6) },
+      { race_id: R3, ...ranks(1, 2, 4, 5, 6) },
+    ],
+    race_start_timings: [R1, R2].flatMap((race_id) =>
+      boats.map((b) => ({
+        race_id,
+        boat_number: b,
+        finish_mark: marks[race_id][b - 1],
+      })),
+    ),
+    racer_series_points: [
+      official(1001, 20, "10.00"),
+      official(1002, 16, "5.33"),
+      official(1003, 16, "5.33"),
+    ],
+  });
+  // 物差しA の見出しから物差しB の見出しまでの、候補ごとの1行（「  H0-legacy  びわこ2026-09-01 2/2」）
+  const head = lines.findIndex((l) => l.includes("物差しA"));
+  const tail = lines.findIndex((l) => l.includes("物差しB"));
+  const tableA = lines.slice(head + 1, tail).filter((l) => /^ {2}H\d/.test(l));
+  check(
+    "(d) 得点率の配点の検証（分析の本）: 欠場（「欠」）は走数に入れず、失格（着順なし・「欠」でない）は入れる。公式の得点率と全候補で 3/3。本番STの記録が無いレースは全艇を出走に倒す",
+    head >= 0 && tableA.length > 0 && tableA.every((l) => / 3\/3$/.test(l)),
+    JSON.stringify(tableA),
+  );
+  check(
+    "(d) 分析の本は本番STの記録（race_start_timings）から finish_mark を読む",
+    selects.some(
+      (q) =>
+        q.table === "race_start_timings" && /\bfinish_mark\b/.test(q.select),
+    ),
+    JSON.stringify(selects.filter((q) => q.table === "race_start_timings")),
+  );
+  // 検証の2本（scripts/verification/verify-series-points-*.mjs、verify の側の本）は字のまま見る
   const files = [
-    "scripts/analysis/series-points-scoring-hypotheses.mjs",
     "scripts/verification/verify-series-points-border.mjs",
     "scripts/verification/verify-series-points-needed.mjs",
   ];
@@ -178,7 +252,7 @@ check(
     );
   });
   check(
-    "(d) 得点率の配点の検証スクリプト3本が、finish_mark を読み、「欠」を出走（startedKeys）から除く",
+    "(d) 得点率の配点の検証スクリプト2本（verification）が、finish_mark を読み、「欠」を出走（startedKeys）から除く",
     bad.length === 0,
     bad.join(", "),
   );

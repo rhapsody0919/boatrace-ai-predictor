@@ -9,7 +9,9 @@
  */
 
 import { readFileSync } from "node:fs";
+import { buildLlmsTxt } from "../generate-llms-txt.js";
 import { renderPage } from "./verifyData/jsx-page-render.js";
+import { socialMetaDefaults } from "./verifyData/social-meta-defaults.js";
 
 const read = (rel) =>
   readFileSync(new URL(`../../${rel}`, import.meta.url), "utf-8");
@@ -24,12 +26,19 @@ const aboutDescription =
   about.document.head.querySelector('meta[name="description"]')?.getAttribute("content") ??
   null;
 await about.unmount();
+// 頁が何も渡さないときに useSocialMeta が meta へ書く既定の文（hook を描いて読む）
+const socialDefaults = Object.values(await socialMetaDefaults());
+// 生成側が作る llms.txt の冒頭（記事の一覧より前）。生成の関数を import して作る
+const builtLlmsHeader = buildLlmsTxt().split("## ブログ記事")[0];
 
 const targets = [
   ["index.html", read("index.html")],
-  ["src/hooks/useSocialMeta.js", read("src/hooks/useSocialMeta.js")],
+  [
+    "src/hooks/useSocialMeta.js の既定の meta",
+    socialDefaults.every((v) => typeof v === "string" && v.length > 0) ? socialDefaults.join("\n") : null,
+  ],
   ["src/pages/About.jsx の DESCRIPTION", aboutDescription],
-  ["scripts/generate-llms-txt.js", read("scripts/generate-llms-txt.js")],
+  ["scripts/generate-llms-txt.js が作る冒頭（ブログ記事より前）", builtLlmsHeader || null],
   ["public/llms.txt（ブログ記事より前）", llmsHeader],
 ];
 

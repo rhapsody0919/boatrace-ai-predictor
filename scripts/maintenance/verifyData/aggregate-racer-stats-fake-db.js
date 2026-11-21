@@ -1,9 +1,10 @@
 /**
  * aggregate-racer-stats-fake-db.js - 日次の集計 CLI（scripts/analysis/aggregate-racer-stats.js・
- * scripts/daily/calculate-unified-volatility-accuracy.js）を、本文の字でなく「偽の DB に何を問い合わせ・何を書いたか」で見るための部品
- * （verify-aggregate-racer-stats.js・verify-volatility-accuracy-heading.js）。
+ * scripts/daily/calculate-unified-volatility-accuracy.js・scripts/daily/calculate-venue-grade-stats.js）を、本文の字でなく
+ * 「偽の DB に何を問い合わせ・何を書いたか」で見るための部品
+ * （verify-aggregate-racer-stats.js・verify-volatility-accuracy-heading.js・verify-race-outcome-filters.js）。
  *
- * 2本が import する scripts/lib/supabaseClient.js だけを、この隣の写し aggregate-racer-stats-fake-supabase.js へ差し替える
+ * 3本が import する scripts/lib/supabaseClient.js だけを、この隣の写し aggregate-racer-stats-fake-supabase.js へ差し替える
  * （module.register の resolve hook。他の import は本物のまま。racerStStats.js・unchangedRows.js は client を引数で受けるので、
  * 本物のまま偽の client に問い合わせる）。DB・鍵には繋がない。
  *
@@ -20,10 +21,11 @@ import { SCENE_KEY } from "./aggregate-racer-stats-fake-supabase.js";
 const PRODUCTS = [
   new URL("../../analysis/aggregate-racer-stats.js", import.meta.url).href,
   new URL("../../daily/calculate-unified-volatility-accuracy.js", import.meta.url).href,
+  new URL("../../daily/calculate-venue-grade-stats.js", import.meta.url).href,
 ];
 const REAL = new URL("../../lib/supabaseClient.js", import.meta.url).href;
 const FAKE = new URL("./aggregate-racer-stats-fake-supabase.js", import.meta.url).href;
-// 解決の hook（module.register が別の thread で動かす）。製品2本からの supabaseClient.js の import だけを写しへ向ける
+// 解決の hook（module.register が別の thread で動かす）。製品3本からの supabaseClient.js の import だけを写しへ向ける
 const HOOKS = `
 const PRODUCTS = new Set(${JSON.stringify(PRODUCTS)});
 export async function resolve(specifier, context, next) {
@@ -59,6 +61,12 @@ export async function loadAggregateRacerStats() {
 export async function loadVolatilityAccuracy() {
   ensureHooks();
   return quietly(() => import(PRODUCTS[1]));
+}
+
+/** calculate-venue-grade-stats.js を、supabaseClient を写しに差し替えて読み込む（import 時に集計は走らない: isDirectRun） */
+export async function loadVenueGradeStats() {
+  ensureHooks();
+  return quietly(() => import(PRODUCTS[2]));
 }
 
 /** 記録のうち、表 table への問い合わせの連なり（from から await まで）を1本ずつにまとめる */

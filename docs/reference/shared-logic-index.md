@@ -199,6 +199,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
 | `scripts/lib/moriartyBetJudge.js` | モリアーティの推奨（bet_recommendations.reasons）の照合のうち、3連単・3連複の部分（純粋関数）。 | judgeThreeBoatBet |
+| `scripts/lib/morningDigestFetch.js` | generate-morning-digest.js から字のまま移した DB の読み（ページング・レース・出走表・モーター・選手の成績・基準・コース別1着率・… | fetchMotorRaceCounts, fetchCourseWin |
 | `scripts/lib/morningDigestParts.js` | generate-morning-digest.js の純粋な部品（DB に触らない）。 | baselineKey, lookupBaseline, buildMetricRow, sectionRow, indexStats ほか6件 |
 | `scripts/lib/morningDigestSummary.js` | generate-morning-digest.js のまとめの部品（DB に触らない）。 | rankRows, motorTargetsOf, logMotorSummary, logSectionSummary, buildDayRow ほか8件 |
 | `scripts/lib/motorPretestCoverage.js` | 前検タイムの定期取得（motorPretestJob.js）の純関数: 取得の窓の日付・会場ごとの充足の引き継ぎと集計・last_report の形。 | fetchWindow, mergeCoverage, coverageSummary, reportCoverage |
@@ -641,4 +642,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 599 ファイル / export 3231 件。
+対象 600 ファイル / export 3233 件。

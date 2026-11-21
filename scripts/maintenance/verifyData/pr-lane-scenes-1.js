@@ -175,10 +175,8 @@ function prl1Scene2() {
     ["H2", "H5"],
   );
   expect("root の lock", ["M package-lock.json"], "heavy", ["H5"]);
-  expect("判定の script 自身", ["M scripts/maintenance/pr-lane.js"], "heavy", [
-    "H1",
-    "H5",
-  ]);
+  for (const f of ["pr-lane", "prLaneClassify", "prLaneHuman", "prLaneLines"])
+    expect(`判定の script 自身 ${f}.js`, [`M scripts/maintenance/${f}.js`], "heavy", ["H1", "H5"]);
   expect("判定の規則", ["M config/pr-path-rules.json"], "heavy", ["H5", "H8"]);
   expect("import の辿り方", ["M scripts/lib/relativeImportGraph.js"], "heavy", [
     "H1",

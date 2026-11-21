@@ -371,13 +371,12 @@ runPrLaneScenes14({ prlCli1, prlCli2, prlCli3, prlCli5, prlCli7, prlCli8, prlCli
 /** { の中身を割った 18/19 */
 function prlCli18({ master, repo, words }) {
 
-  // hq の写し: pr-lane.js・prLaneMoveOnly*.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
+  // hq の写し: pr-lane.js・その部品 prLane(Classify|Human|Lines).js・prLaneMoveOnly*.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
   {
     const copy = mkdtempSync(join(tmpdir(), "pr-lane-hq-"));
     for (const p of [
       "scripts/maintenance/pr-lane.js",
-      "scripts/maintenance/prLaneMoveOnly.js",
-      "scripts/maintenance/prLaneMoveOnlyParse.js",
+      ...["Classify", "Human", "Lines", "MoveOnly", "MoveOnlyParse"].map((n) => `scripts/maintenance/prLane${n}.js`),
       "config/pr-path-rules.json",
       "scripts/lib/relativeImportGraph.js",
     ]) {
@@ -454,6 +453,7 @@ runPrLaneScenes15({ prlCli1, prlCli2, prlCli3, prlCli5, prlCli7, prlCli8, prlCli
 // hq との約束: Node の組み込みと相対の import だけ（npm の部品を使わない）
 for (const p of [
   "scripts/maintenance/pr-lane.js",
+  "scripts/maintenance/prLaneClassify.js",
   "scripts/maintenance/prLaneMoveOnly.js",
   "scripts/lib/relativeImportGraph.js",
 ]) {

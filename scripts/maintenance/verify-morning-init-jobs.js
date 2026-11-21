@@ -23,7 +23,7 @@
  */
 import fs from "node:fs";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
-import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
+
 
 import { createSupabaseStore } from "../lib/scrapeJobs/store.js";
 
@@ -33,12 +33,11 @@ import {
   evaluateJobStates,
   formatDailySummary,
 } from "../lib/scrapeJobs/monitor.js";
-import { createPredictCodeOnTick, runRacesInitJob } from "../lib/racesInit/job.js";
+import { runRacesInitJob } from "../lib/racesInit/job.js";
 
 import {
   PREDICT_CODE_HASH_JOB,
   PREDICT_LOGIC_FILES,
-  checkPredictCodeChange,
   computePredictCodeHash,
   hashFiles,
 } from "../lib/racesInit/predictCodeCheck.js";
@@ -46,14 +45,16 @@ import {
 
 
 
-import { runMorningInitJobsScenes1 } from "./verifyData/morning-init-jobs-scenes-1.js";
-import { runMorningInitJobsScenes2 } from "./verifyData/morning-init-jobs-scenes-2.js";
-import { runMorningInitJobsScenes3 } from "./verifyData/morning-init-jobs-scenes-3.js";
+
+
+
+
+import { runMorningInitJobsScenesB1 } from "./verifyData/morning-init-jobs-scenes-b-1.js";
 import {
-  runMorningInitJobsScenes4,
-  runMorningInitJobsScenes5,
-  runMorningInitJobsScenes6,
-} from "./verifyData/morning-init-jobs-scenes-4.js";
+  runMorningInitJobsScenesB2,
+  runMorningInitJobsScenesB3,
+  runMorningInitJobsScenesB4,
+} from "./verifyData/morning-init-jobs-scenes-b-2.js";
 
 // 検証の対象コードが出すログは捨て、結果の行だけを出す
 const out = { log: console.log, error: console.error };
@@ -182,283 +183,11 @@ function newEnv({
   return { client, store, row, dataWrites, invoke };
 }
 
-/** runRacesInitJob の依存を、呼び出しを数える偽物にする */
-function newDeps({
-  venues = [1, 2, 3],
-  existing = [],
-  failVenues = new Map(),
-  clock = null,
-  venueCost = 0,
-  noProgramVenues = [],
-} = {}) {
-  const calls = {
-    getVenues: 0,
-    dates: [],
-    opts: [],
-    scrape: [],
-    write: [],
-    slots: 0,
-    unified: 0,
-    hook: 0,
-    noProgramChecks: [],
-  };
-  const state = {
-    venues,
-    existing,
-    failVenues,
-    unifiedFails: false,
-    // イン崩れ注意度の表が読めない回数（BOA-822）。Infinity なら毎回
-    inCautionFails: 0,
-  };
-  const deps = {
-    getVenues: async (date) => {
-      calls.getVenues++;
-      calls.dates.push(date);
-      return typeof state.venues === "function"
-        ? state.venues(calls.getVenues)
-        : state.venues;
-    },
-    scrapeVenue: async (date, code, opts) => {
-      calls.scrape.push(code);
-      calls.opts.push(opts);
-      if (clock) clock.advance(venueCost);
-      const failure = state.failVenues.get(code);
-      if (failure)
-        throw failure instanceof Error ? failure : new Error(failure);
-      return fakeVenue(code);
-    },
-    existingVenueCodes: async () => new Set(state.existing),
-    writeVenue: async (venue) => {
-      calls.write.push(venue.placeCd);
-    },
-    ensureSlots: async () => {
-      calls.slots++;
-      return { jobs: ["odds"], created: 5 };
-    },
-    ensureUnified: async () => {
-      calls.unified++;
-      if (state.unifiedFails) throw new Error("unified-down");
-      const inCautionFailed = state.inCautionFails > 0;
-      state.inCautionFails--;
-      return { missing: 0, generated: 0, inCautionFailed };
-    },
-    triggerDeployHook: async () => {
-      calls.hook++;
-      return { triggered: true };
-    },
-    // 番組の無い中止の会場の確認（BOA-721）。既定は「番組なしではない」（従来どおり失敗にする）
-    checkNoProgram: async (date, code) => {
-      calls.noProgramChecks.push(code);
-      return noProgramVenues.includes(code);
-    },
-  };
-  return { deps, calls, state };
-}
+// ---- 後半の場面（verifyData/morning-init-jobs-scenes-b-1.js） ----
+await runMorningInitJobsScenesB1({ check, show, same, jst, clone, GOLDEN_VENUE, DATE, JOB, fakeVenue, newEnv });
 
-const range = (n) => Array.from({ length: n }, (_, i) => i + 1);
-const T0 = jst("2026-09-21 05:00");
-const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
-
-// ---- 後半の場面（verifyData/morning-init-jobs-scenes-1.js・morning-init-jobs-scenes-2.js・morning-init-jobs-scenes-3.js） ----
-await runMorningInitJobsScenes1({ check, show, same, jst, DATE, JOB, newEnv, newDeps, range, T0, at });
-await runMorningInitJobsScenes2({ check, show, same, jst, DATE, fakeVenue, newEnv, newDeps, range, T0, at });
-await runMorningInitJobsScenes3({ check, show, same, jst, clone, GOLDEN_VENUE, DATE, JOB, newEnv, newDeps, T0, at });
-
-// ---------------------------------------------------------------------------
-// (h) 予測ロジックの変更検知
-// ---------------------------------------------------------------------------
-{
-  const stateTable = (hash) =>
-    hash === undefined
-      ? []
-      : [{ job: PREDICT_CODE_HASH_JOB, mode: "off", last_report: { hash } }];
-  const nowAt = jst("2026-09-21 06:30");
-  const schedule = [
-    { race_id: "2026-09-21-01-01", start_time: jst("2026-09-21 06:00") }, // 発走済み
-    { race_id: "2026-09-21-01-02", start_time: jst("2026-09-21 07:00") },
-    { race_id: "2026-09-21-01-03", start_time: jst("2026-09-21 08:00") },
-  ];
-  const refreshCalls = [];
-  const refresh = async (args) => {
-    refreshCalls.push(args);
-  };
-  const getSchedule = async (date) => {
-    if (date !== DATE) throw new Error(`日付が違います: ${date}`);
-    return schedule;
-  };
-  const hashOf = (client) =>
-    client.data.scrape_job_state.find((r) => r.job === PREDICT_CODE_HASH_JOB)
-      ?.last_report?.hash;
-
-  {
-    const client = createFakeSupabaseClient({
-      tables: { scrape_job_state: stateTable("A") },
-    });
-    const r = await checkPredictCodeChange({
-      client,
-      now: () => nowAt,
-      hash: null,
-      refresh,
-      getSchedule,
-    });
-    check(
-      "(h) ハッシュを計算できない: 検知しない（DBにも触れない）",
-      r.status === "hash_unavailable" && client.calls.length === 0,
-    );
-  }
-  {
-    const client = createFakeSupabaseClient({
-      tables: { scrape_job_state: [] },
-    });
-    const r = await checkPredictCodeChange({
-      client,
-      now: () => nowAt,
-      hash: "A",
-      refresh,
-      getSchedule,
-    });
-    check(
-      "(h) 初回（保存済みのハッシュなし）: 基準を保存するのみ。再生成しない",
-      r.status === "baseline" &&
-        hashOf(client) === "A" &&
-        refreshCalls.length === 0,
-    );
-  }
-  {
-    const client = createFakeSupabaseClient({
-      tables: { scrape_job_state: stateTable("A") },
-    });
-    const r = await checkPredictCodeChange({
-      client,
-      now: () => nowAt,
-      hash: "A",
-      refresh,
-      getSchedule,
-    });
-    check(
-      "(h) ハッシュが同じ: 何もしない。DBへの問い合わせは、ハッシュの行の読み取り1回だけ",
-      r.status === "unchanged" &&
-        refreshCalls.length === 0 &&
-        client.calls.length === 1 &&
-        client.writes.length === 0,
-      show(client.calls),
-    );
-  }
-  {
-    const client = createFakeSupabaseClient({
-      tables: { scrape_job_state: stateTable("A") },
-    });
-    const r = await checkPredictCodeChange({
-      client,
-      now: () => nowAt,
-      hash: "B",
-      refresh,
-      getSchedule,
-    });
-    const call = refreshCalls.at(-1);
-    check(
-      "(h) ハッシュが変わった: 発走前の2レースだけ再生成（発走済みは、的中フラグを保つため対象外）。upsert・updated_at を進める・対象日つき",
-      r.status === "regenerated" &&
-        r.races === 2 &&
-        same(call.specificRaceIds, ["2026-09-21-01-02", "2026-09-21-01-03"]) &&
-        call.writeMode === "upsert" &&
-        call.forceTouchRaces === true &&
-        call.isDryRun === false &&
-        call.date === DATE &&
-        hashOf(client) === "B",
-      show({ r, call }),
-    );
-  }
-  {
-    const before = refreshCalls.length;
-    const client = createFakeSupabaseClient({
-      tables: { scrape_job_state: stateTable("A") },
-    });
-    const results = await Promise.all([
-      checkPredictCodeChange({
-        client,
-        now: () => nowAt,
-        hash: "B",
-        refresh,
-        getSchedule,
-      }),
-      checkPredictCodeChange({
-        client,
-        now: () => nowAt,
-        hash: "B",
-        refresh,
-        getSchedule,
-      }),
-    ]);
-    check(
-      "(h) 重なった2つの起動: 先に保存済みのハッシュを更新した1つだけが再生成する（もう1つは claimed_elsewhere）",
-      refreshCalls.length === before + 1 &&
-        results
-          .map((x) => x.status)
-          .sort()
-          .join(",") === "claimed_elsewhere,regenerated",
-      show(results),
-    );
-  }
-  {
-    const client = createFakeSupabaseClient({
-      tables: { scrape_job_state: stateTable("A") },
-    });
-    const failing = async () => {
-      throw new Error("refresh-down");
-    };
-    let error = null;
-    try {
-      await checkPredictCodeChange({
-        client,
-        now: () => nowAt,
-        hash: "B",
-        refresh: failing,
-        getSchedule,
-      });
-    } catch (e) {
-      error = e;
-    }
-    check(
-      "(h) 再生成の失敗: 例外を投げ、保存済みのハッシュを元（A）に戻す（次の起動が再試行できる）",
-      error?.message === "refresh-down" && hashOf(client) === "A",
-      `${error?.message} ${hashOf(client)}`,
-    );
-    const before = refreshCalls.length;
-    const r = await checkPredictCodeChange({
-      client,
-      now: () => nowAt,
-      hash: "B",
-      refresh,
-      getSchedule,
-    });
-    check(
-      "(h) 次の起動で再試行して成功する",
-      r.status === "regenerated" &&
-        refreshCalls.length === before + 1 &&
-        hashOf(client) === "B",
-    );
-  }
-  {
-    const before = refreshCalls.length;
-    const client = createFakeSupabaseClient({
-      tables: { scrape_job_state: stateTable("A") },
-    });
-    const r = await checkPredictCodeChange({
-      client,
-      now: () => nowAt,
-      hash: "B",
-      refresh,
-      getSchedule: async () => schedule.slice(0, 1),
-    });
-    check(
-      "(h) 発走前のレースが無い: 再生成せず、ハッシュだけ更新する",
-      r.status === "regenerated" &&
-        r.races === 0 &&
-        refreshCalls.length === before &&
-        hashOf(client) === "B",
-    );
-  }
+/** { の中身を割った 4/5 */
+function mijPredictCode4() {
   {
     const files = PREDICT_LOGIC_FILES.map((rel) => ({
       name: rel,
@@ -505,75 +234,20 @@ await runMorningInitJobsScenes3({ check, show, same, jst, clone, GOLDEN_VENUE, D
       unreadable === null,
     );
   }
-  {
-    // onTick: 共通ラッパは live のときだけ呼ぶ
-    let ticks = 0;
-    const onTick = createPredictCodeOnTick({
-      check: async (args) => {
-        ticks++;
-        return {
-          status: "unchanged",
-          hasClient: !!args.client,
-          hasNow: typeof args.now === "function",
-          hasRefresh: typeof args.refresh === "function",
-          hasSchedule: typeof args.getSchedule === "function",
-        };
-      },
-    });
-    const shadow = newEnv({ mode: "shadow" });
-    await shadow.invoke(T0, { deps: newDeps({ venues: [] }).deps, onTick });
-    const off = newEnv({ mode: "off" });
-    await off.invoke(T0, { deps: newDeps().deps, onTick });
-    const live = newEnv({ mode: "live" });
-    const res = await live.invoke(T0, {
-      deps: newDeps({ venues: [] }).deps,
-      onTick,
-    });
-    check(
-      "(h) onTick: live のときだけ、起動のたびに呼ばれる（shadow・off では呼ばれない）。client・now・refresh・getSchedule を渡す",
-      ticks === 1 &&
-        res.body.tick?.hasClient &&
-        res.body.tick?.hasNow &&
-        res.body.tick?.hasRefresh &&
-        res.body.tick?.hasSchedule,
-      show(res.body),
-    );
-  }
 }
 
-// ---- 後半の場面（verifyData/morning-init-jobs-scenes-4.js） ----
-await runMorningInitJobsScenes4({ out, check, show, same, PCEXPECT_HTML, PCEXPECT_DIGEST, DATE, newEnv, newDeps, T0, at });
+// ---- 後半の場面（verifyData/morning-init-jobs-scenes-b-2.js） ----
+await runMorningInitJobsScenesB2({ out, check, show, same, PCEXPECT_HTML, PCEXPECT_DIGEST, DATE, JOB, newEnv, mijPredictCode4, mijWiring2, mijWiring3, mijWiring4 });
 
-// ---------------------------------------------------------------------------
-// (j) 配線・監視
-// ---------------------------------------------------------------------------
-{
-  check(
-    "(j) レジストリの整合性（validateRegistry）",
-    same(validateRegistry(), []),
-  );
-  const def = SCRAPE_JOBS[JOB];
-  check(
-    "(j) races_init: 日次・05:00指定・リース=maxDuration=800秒・取得先 boatrace.jp",
-    def.kind === "daily" &&
-      def.targetTimeJst === "05:00" &&
-      def.leaseSec === 800 &&
-      def.maxDurationSec === 800 &&
-      same(def.hosts, ["boatrace.jp"]),
-  );
-  const pc = SCRAPE_JOBS.pcexpect;
-  check(
-    "(j) pcexpect: 窓型・発走12時間前から30分前まで（許容幅690分）・再試行600秒・リース300秒・6件×3並列（設計どおり）",
-    pc.kind === "window" &&
-      same(pc.offsets, [-720]) &&
-      pc.graceMin === 690 &&
-      pc.retrySec === 600 &&
-      pc.leaseSec === 300 &&
-      pc.claimLimit === 6 &&
-      pc.concurrency === 3,
-  );
+/** { の中身を割った 2/4 */
+function mijWiring2() {
   const read = (p) =>
     fs.readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
+  return { read };
+}
+
+/** { の中身を割った 3/4 */
+function mijWiring3({ def, pc, read }) {
   const maxDurationOf = (src) => Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]);
   const racesInitApi = read("api/cron/races-init.js");
   const pcexpectApi = read("api/cron/pcexpect.js");
@@ -662,6 +336,11 @@ await runMorningInitJobsScenes4({ out, check, show, same, PCEXPECT_HTML, PCEXPEC
         .replace(/^\s*\/\/.*$/gm, ""),
     ),
   );
+  return { offenders };
+}
+
+/** { の中身を割った 4/4 */
+function mijWiring4({ offenders }) {
   check(
     "(j) races-init・pcexpect の実装は、fs・execSync・git log・process.exit・races.json に依存しない",
     offenders.length === 0,
@@ -741,8 +420,8 @@ await runMorningInitJobsScenes4({ out, check, show, same, PCEXPECT_HTML, PCEXPEC
   );
 }
 
-// ---- 後半の場面（verifyData/morning-init-jobs-scenes-4.js） ----
-await runMorningInitJobsScenes5({ out, check, show, same, PCEXPECT_HTML, PCEXPECT_DIGEST, DATE, newEnv, newDeps, T0, at });
+// ---- 後半の場面（verifyData/morning-init-jobs-scenes-b-2.js） ----
+await runMorningInitJobsScenesB3({ out, check, show, same, PCEXPECT_HTML, PCEXPECT_DIGEST, DATE, JOB, newEnv, mijPredictCode4, mijWiring2, mijWiring3, mijWiring4 });
 
 completed = true;
 if (failures > 0) {
@@ -750,5 +429,5 @@ if (failures > 0) {
   process.exit(1);
 }
 
-// ---- 後半の場面（verifyData/morning-init-jobs-scenes-4.js） ----
-runMorningInitJobsScenes6({ out, check, show, same, PCEXPECT_HTML, PCEXPECT_DIGEST, DATE, newEnv, newDeps, T0, at });
+// ---- 後半の場面（verifyData/morning-init-jobs-scenes-b-2.js） ----
+runMorningInitJobsScenesB4({ out, check, show, same, PCEXPECT_HTML, PCEXPECT_DIGEST, DATE, JOB, newEnv, mijPredictCode4, mijWiring2, mijWiring3, mijWiring4 });
