@@ -419,6 +419,19 @@ await runPredictionRefreshScenes3({
 //     偽の import で入口を回して見る。verifyData/prediction-refresh-wiring.js）
 // ---------------------------------------------------------------------------
 await checkRefreshWiring({ check, show });
+{
+  const fs = await import("node:fs");
+  const workflow = fs.readFileSync(
+    new URL("../../.github/workflows/scrape-scheduled.yml", import.meta.url),
+    "utf8",
+  );
+  check(
+    "scrape-scheduled.yml: SKIP_ODDS_REFRESH_ON_GHA を、リポジトリ変数（vars）から環境に渡す（未設定なら空＝off）",
+    /SKIP_ODDS_REFRESH_ON_GHA: \$\{\{ vars\.SKIP_ODDS_REFRESH_ON_GHA \}\}/.test(
+      workflow,
+    ),
+  );
+}
 
 // ---- 後半の場面（verifyData/prediction-refresh-scenes-3.js） ----
 await runPredictionRefreshScenes4({

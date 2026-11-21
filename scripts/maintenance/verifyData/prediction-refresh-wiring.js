@@ -5,9 +5,8 @@
  *   - preRaceHandlers.js: cron-entry-probe.js で予測の再計算・従来の展示の本を偽にして読み込み、読まれた偽と export で見る。
  *     runSlotsWithRefresh は偽の runJob（スロットの中で onChanged を呼ぶ）と偽の refresh で回し、呼んだ順と引数で見る
  *   - api/cron/exhibition.js・race-info.js: cron-entry-probe.js の cronEntry で、本体の作り手を呼ぶ本と読まれた偽で見る
- * ワークフロー（.yml）は製品のコードでないので字で見る。DB・公式には繋がない。check・show は呼ぶ verify の物。
+ * ワークフロー（.yml）は製品のコードでないので verify の本が字で見る。DB・公式には繋がない。check・show は呼ぶ verify の物。
  */
-import fs from "node:fs";
 import { raceAt, runScheduled, UPDATED } from "./scrape-scheduled-run.js";
 import { cronEntry, preRaceRefresh } from "./cron-entry-probe.js";
 
@@ -138,16 +137,6 @@ async function cronEntries({ check, show }) {
 /** (h) 配線の確かめ一式 */
 export async function checkRefreshWiring({ check, show }) {
   await scheduledRefresh({ check, show });
-  const workflow = fs.readFileSync(
-    new URL("../../../.github/workflows/scrape-scheduled.yml", import.meta.url),
-    "utf8",
-  );
-  check(
-    "scrape-scheduled.yml: SKIP_ODDS_REFRESH_ON_GHA を、リポジトリ変数（vars）から環境に渡す（未設定なら空＝off）",
-    /SKIP_ODDS_REFRESH_ON_GHA: \$\{\{ vars\.SKIP_ODDS_REFRESH_ON_GHA \}\}/.test(
-      workflow,
-    ),
-  );
   await preRaceWiring({ check, show });
   await cronEntries({ check, show });
 }
