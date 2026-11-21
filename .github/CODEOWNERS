@@ -45,7 +45,6 @@
 /scripts/maintenance/prLaneClassify.js   @rhapsody0919
 /scripts/maintenance/prLaneHuman.js      @rhapsody0919
 /scripts/maintenance/prLaneLines.js      @rhapsody0919
-
 /config/pr-path-rules.json            @rhapsody0919
 
 # 試験の固定データの .gz（v3.3 の H5）
