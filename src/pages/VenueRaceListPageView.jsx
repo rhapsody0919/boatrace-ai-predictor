@@ -1,10 +1,12 @@
 /**
  * VenueRaceListPage の画面本体（head 要素・見出し・会場カード・一覧）。
  * 出走表の後に直近1年のコース別の節、要約2行の直下にその節へのリンクを置く（BOA-1687）。
+ * コース別の節の直後に、その会場の場別攻略の記事（最大3本、ja だけ）を置く（BOA-1692）。
  */
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import VenueMeetBanner from "../components/venue/VenueMeetBanner";
+import VenueGuideArticles from "../components/venue/VenueGuideArticles";
 import {
   PageHeader,
   RaceListBody,
@@ -103,6 +105,8 @@ export default function VenueRaceListView({
           />
           {/* 直近1年のコース別成績と特徴。一覧の後に開いて出す（BOA-1687） */}
           {!loading && <VenueCourseSection venueCode={venueCode} />}
+          {/* その会場の場別攻略の記事（最大3本）。1本も無い会場・ja 以外では出さない（BOA-1692） */}
+          {!loading && <VenueGuideArticles venueCode={venueCode} />}
         </div>
       </div>
     </>
