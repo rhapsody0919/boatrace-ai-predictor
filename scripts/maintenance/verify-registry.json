@@ -406,7 +406,7 @@
     {
       "script": "verify-doc-placement.js",
       "tier": "ci",
-      "guards": "文書をリポジトリの根に置かないこと・docs/ のファイル名が kebab-case であること（ZB03 ②・BOA-1455）。根の一覧（33 個、.git・node_modules と根の .gitignore の1段の型を除く）を凍結して新しい名前を失敗に、docs/（db-migration を除く）の kebab-case でないファイル 188 件を凍結して増えたら失敗。名前だけを見て、中身を読むのは .gitignore だけ"
+      "guards": "全てのファイルの置き場（ZB03 ②・BOA-1455・HR74）。一覧は git ls-files と --others --exclude-standard（fs を歩かない）。根の名前は置き場の表 scripts/maintenance/file-placement.json の track の行の最初の段（旧 ROOT_FROZEN の 34 個）に無ければ失敗、docs/（db-migration を除く）の kebab-case でないファイル 188 件を凍結して増えたら失敗。表の行に当たらない・ignore の行に当たる・ext の外が行の frozen を越えた物は mode=shadow の間は placement-shadow: の行で出すだけ（red で失敗）。base（origin/master）の表より緩める差分は PR 本文の「置き場の表: <理由>」の行を求め、根の名前が増える差分は理由の行が無ければ失敗。判定は共通の試験 file-placement.cases.json（hq の tests/test_placement.py も読む）を自己試験で通す。一覧と base の表は scripts/lib/repoPaths.js（git を読むだけ）。変更の変異検査は doc-placement-mutants.js --old=origin/master（手元の道具）"
     },
     {
       "script": "verify-e2e-blog-tags.js",

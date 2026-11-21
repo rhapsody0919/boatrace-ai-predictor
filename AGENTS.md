@@ -73,6 +73,8 @@ Node 側  api → api/_lib → scripts/lib → scripts/lib/pure → src/pure
 - 向き・大きさは CI の関所（`lint-changed.js --ci`）が見る。既存の違反は基準に凍結され、増えたら赤。下の向きを逆にしない
 - scripts・api から src を import するのは src/pure 等の許可の先だけ（Vite の構文 `import.meta.glob`・`import.meta.env` は Node で落ちる）
 
+置き場の正本は `scripts/maintenance/file-placement.json`（全てのファイルを `verify-doc-placement.js` が CI で照らす。下の表は人向けの要約）。新しい種類の置き場・拡張子は同じ PR で表に行を足し、PR 本文に「置き場の表: <理由>」の行を書く
+
 | 場所 | 中身 |
 |---|---|
 | `api/` | Vercel の関数（`api/cron/` は `vercel.json` の crons）。`middleware.js` は Vercel の middleware |
