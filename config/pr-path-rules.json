@@ -72,6 +72,7 @@
         "^scripts/maintenance/run-verify-registry\\.js$",
         "^scripts/maintenance/e2e-scope\\.js$",
         "^scripts/maintenance/guard-pr-merge\\.js$",
+        "^scripts/maintenance/guardPrMerge(Command|Checks)\\.js$",
         "^scripts/vercel-ignore-build\\.js$",
         "^scripts/watch/"
       ]
