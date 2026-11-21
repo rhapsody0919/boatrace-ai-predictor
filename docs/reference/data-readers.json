@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2691,
+    "sourceFiles": 2700,
     "filesWithAccess": 319,
     "tableReaders": 949,
     "tableWriters": 195,
     "rpcCallers": 56,
-    "nameMentions": 281,
+    "nameMentions": 283,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -23747,19 +23747,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-send-runner.js:508",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "channel",
-            "error_code",
-            "id",
-            "state",
-            "youtube_stage"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:269",
           "op": "rest",
           "via": "rest",
@@ -23793,6 +23780,18 @@
             "external_post_id",
             "id",
             "snapshot",
+            "state",
+            "youtube_stage"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-send-runner-scenes-b-1.js:149",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "channel",
+            "error_code",
+            "id",
             "state",
             "youtube_stage"
           ]
@@ -23952,9 +23951,9 @@
             "scripts/lib/snsSendRunner.js:248",
             "scripts/lib/snsSendRunner.js:255",
             "scripts/lib/snsSendRunner.js:261",
-            "scripts/maintenance/verify-sns-send-runner.js:508",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-3.js:197",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-5.js:273",
+            "scripts/maintenance/verifyData/sns-send-runner-scenes-b-1.js:149",
             "scripts/sns/pushFinalsImageStore.js:104",
             "scripts/sns/pushFinalsImageStore.js:110",
             "scripts/sns/pushFinalsImageStore.js:119",
@@ -24016,9 +24015,9 @@
             "scripts/lib/snsSendRunner.js:248",
             "scripts/lib/snsSendRunner.js:255",
             "scripts/lib/snsSendRunner.js:261",
-            "scripts/maintenance/verify-sns-send-runner.js:508",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-3.js:197",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-5.js:273",
+            "scripts/maintenance/verifyData/sns-send-runner-scenes-b-1.js:149",
             "scripts/sns/pushFinalsImageStore.js:104",
             "scripts/sns/pushFinalsImageStore.js:110",
             "scripts/sns/pushFinalsImageStore.js:119",
@@ -24149,9 +24148,9 @@
             "scripts/lib/snsSendRunner.js:248",
             "scripts/lib/snsSendRunner.js:255",
             "scripts/lib/snsSendRunner.js:261",
-            "scripts/maintenance/verify-sns-send-runner.js:508",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-3.js:197",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-5.js:273",
+            "scripts/maintenance/verifyData/sns-send-runner-scenes-b-1.js:149",
             "scripts/sns/pushFinalsImageStore.js:119",
             "scripts/sns/pushResearchImageStore.js:66",
             "scripts/sns/pushSetsuKiryokuShortStore.js:166"
@@ -24238,9 +24237,9 @@
             "scripts/lib/snsSendRunner.js:248",
             "scripts/lib/snsSendRunner.js:255",
             "scripts/lib/snsSendRunner.js:261",
-            "scripts/maintenance/verify-sns-send-runner.js:508",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-3.js:197",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-5.js:273",
+            "scripts/maintenance/verifyData/sns-send-runner-scenes-b-1.js:149",
             "scripts/sns/pushFinalsImageStore.js:110",
             "scripts/sns/pushSetsuKiryokuShortStore.js:175"
           ],
@@ -24345,9 +24344,9 @@
             "scripts/lib/snsSendRunner.js:248",
             "scripts/lib/snsSendRunner.js:255",
             "scripts/lib/snsSendRunner.js:261",
-            "scripts/maintenance/verify-sns-send-runner.js:508",
             "scripts/maintenance/verifyData/sns-send-runner-scenes-3.js:197",
-            "scripts/maintenance/verifyData/sns-send-runner-scenes-5.js:273"
+            "scripts/maintenance/verifyData/sns-send-runner-scenes-5.js:273",
+            "scripts/maintenance/verifyData/sns-send-runner-scenes-b-1.js:149"
           ],
           "writers": [],
           "sql": [
@@ -28507,7 +28506,9 @@
         "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:204",
         "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:276",
         "scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:278",
-        "scripts/maintenance/verifyData/sns-setsu-kiryoku-x-scenes-2.js:127"
+        "scripts/maintenance/verifyData/sns-setsu-kiryoku-x-scenes-2.js:127",
+        "scripts/maintenance/verifyData/upset-win-scenes-3.js:228",
+        "scripts/maintenance/verifyData/upset-win-scenes-3.js:230"
       ],
       "triggerOn": [],
       "calledByRpc": [

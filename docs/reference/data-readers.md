@@ -10,12 +10,12 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2691 |
+| 読んだファイル | 2700 |
 | 読み書きのあるファイル | 319 |
 | 表の読み手（箇所） | 949 |
 | 表の書き手（箇所） | 195 |
 | RPC の呼び手（箇所） | 56 |
-| 名前の文字列だけの箇所（呼ぶ経路は式） | 281 |
+| 名前の文字列だけの箇所（呼ぶ経路は式） | 283 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
@@ -204,7 +204,7 @@
 | sns_x_slot_room | service だけ |  | scripts/lib/snsXSlots.js:69 / RPC から: transition_sns_send_139 |  | sns_auto_send_items, sns_drafts, sns_x_kind_reserves, sns_x_send_control, sns_x_send_jobs |  |  |
 | stop_sns_auto_item | service だけ |  | なし |  | sns_auto_send_items, sns_drafts, sns_x_send_jobs | sns_auto_send_items, sns_drafts |  |
 | sweep_sns_deadline_queue | service だけ |  | api/_lib/snsXSendStore.js:66 |  |  | sns_x_send_jobs |  |
-| transition_sns_send_139 | service だけ |  | 名前の文字列: scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:187, scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:194, scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:204 ほか3 / RPC から: transition_sns_x_send | sns_bundle_send_allowed, sns_x_slot_room | sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_control, sns_x_send_jobs |  |
+| transition_sns_send_139 | service だけ |  | 名前の文字列: scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:187, scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:194, scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:204 ほか5 / RPC から: transition_sns_x_send | sns_bundle_send_allowed, sns_x_slot_room | sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_control, sns_x_send_jobs |  |
 | transition_sns_x_send | service だけ | yes | api/_lib/snsXSendStore.js:126, scripts/sns/pushFullPictureStore.js:136 / 名前の文字列: scripts/maintenance/verifyData/sns-setsu-kiryoku-short-scenes-1.js:182 | sns_bundle_send_allowed, transition_sns_send_139 | sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs, sns_youtube_quota_attempts, sns_youtube_quota_control, sns_youtube_quota_reads | sns_auto_send_items, sns_drafts, sns_x_send_jobs, sns_youtube_quota_attempts, sns_youtube_quota_reads |  |
 | trg_external_predictions_updated_at | service だけ |  | トリガー: external_predictions |  |  |  |  |
 | update_prediction_results | service だけ |  | トリガー: race_results |  | predictions | bet_recommendations, predictions |  |
@@ -2077,10 +2077,10 @@
   - `scripts/lib/snsSendRunner.js:255` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
   - `scripts/lib/snsSendRunner.js:261` rest(rest) [channel, error_code, id, state, youtube_stage]
   - `scripts/maintenance/verify-sns-month-calendar.js:46` rest(rest) （検査）
-  - `scripts/maintenance/verify-sns-send-runner.js:508` rest(rest) [channel, error_code, id, state, youtube_stage] （検査）
   - `scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:269` rest(rest)
   - `scripts/maintenance/verifyData/sns-send-runner-scenes-3.js:197` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
   - `scripts/maintenance/verifyData/sns-send-runner-scenes-5.js:273` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
+  - `scripts/maintenance/verifyData/sns-send-runner-scenes-b-1.js:149` rest(rest) [channel, error_code, id, state, youtube_stage]
   - `scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:67` rest(rest)
   - `scripts/sns/delete-x-post.js:115` rest(rest) [posted_at]
   - `scripts/sns/pushFinalsImageStore.js:104` rest(rest) [attempt_channels, attempt_dates, id, state]
