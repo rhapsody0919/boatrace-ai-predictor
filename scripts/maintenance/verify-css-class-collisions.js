@@ -42,6 +42,7 @@ import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { collisionCases, allowlistCases } from "./verifyData/css-class-collisions-cases.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
@@ -246,145 +247,43 @@ function gitShow(rev) {
   }
 }
 
+/** 自己テストの場面（#961 の修正前後の実物の CSS を git から読む）。読む先は src の実物なので verify 側に置く */
+const historyCases = (names) => [
+  {
+    // .venue-grid はホーム（race/VenueGrid.css）と同じ詳細度で衝突していた。
+    // .venue-name は HitRaces.css 側が .venue-stats-table でスコープ済み（詳細度で勝つ）なので
+    // 順序依存ではなく、この verify の対象外（ContentHub 側の他プロパティが漏れるのは見逃す。既知の限界）
+    name: "#961 の修正前（ContentHub.css の .venue-grid）を検出し、スコープ済みの .venue-name は検出しない",
+    got: names(
+      [
+        "src/pages/ContentHub.css",
+        "src/components/race/VenueGrid.css",
+        "src/components/HitRaces.css",
+      ].map((f) => ({ file: f, css: gitShow(`2e01fe64^:${f}`) })),
+    )
+      .filter((n) => n === "venue-grid" || n === "venue-name")
+      .sort(),
+    want: ["venue-grid"],
+  },
+  {
+    name: "#961 の修正後は .venue-grid を検出しない",
+    got: names(
+      [
+        "src/pages/ContentHub.css",
+        "src/components/race/VenueGrid.css",
+        "src/components/HitRaces.css",
+      ].map((f) => ({ file: f, css: gitShow(`2e01fe64:${f}`) })),
+    ).filter((n) => n === "venue-grid" || n === "venue-name"),
+    want: [],
+  },
+];
+
 function selfTests() {
   const names = (files) => findCollisions(files).map((c) => c.className);
-  const cases = [
-    {
-      name: "スコープされていない同名 → 検出する",
-      got: names([
-        { file: "a.css", css: ".card { color: red; }" },
-        { file: "b.css", css: ".card:hover { color: blue; }" },
-      ]),
-      want: ["card"],
-    },
-    {
-      name: "親でスコープされている → 検出しない",
-      got: names([
-        { file: "a.css", css: ".page-a .card { color: red; }" },
-        { file: "b.css", css: ".page-b > .card { color: blue; }" },
-      ]),
-      want: [],
-    },
-    {
-      name: "子孫セレクタの先頭クラスは対象（.grid .item と .grid）",
-      got: names([
-        { file: "a.css", css: ".grid .item { color: red; }" },
-        { file: "b.css", css: ".grid { display: grid; }" },
-      ]),
-      want: ["grid"],
-    },
-    {
-      name: "@media の中 → 検出する",
-      got: names([
-        { file: "a.css", css: ".card { color: red; }" },
-        {
-          file: "b.css",
-          css: "@media (max-width: 480px) { .card { color: blue; } }",
-        },
-      ]),
-      want: ["card"],
-    },
-    {
-      name: "[data-theme] や body はスコープにならない → 検出する",
-      got: names([
-        { file: "a.css", css: '[data-theme="dark"] .card { color: red; }' },
-        { file: "b.css", css: "body .card { color: blue; }" },
-      ]),
-      want: ["card"],
-    },
-    {
-      name: "同じファイル内 → 検出しない",
-      got: names([
-        { file: "a.css", css: ".card { color: red; } .card { color: blue; }" },
-      ]),
-      want: [],
-    },
-    {
-      name: "コメント・文字列・:not() の中 → 検出しない",
-      got: names([
-        {
-          file: "a.css",
-          css: "/* .card { color: red; } */ .x { content: '.card'; }",
-        },
-        {
-          file: "b.css",
-          css: ".y:not(.card) { color: blue; } .card { color: blue; }",
-        },
-      ]),
-      want: [],
-    },
-    {
-      name: "@keyframes の中 → 検出しない",
-      got: names([
-        { file: "a.css", css: "@keyframes a { from { opacity: 0; } }" },
-        { file: "b.css", css: "@keyframes b { from { opacity: 1; } }" },
-      ]),
-      want: [],
-    },
-    {
-      // .venue-grid はホーム（race/VenueGrid.css）と同じ詳細度で衝突していた。
-      // .venue-name は HitRaces.css 側が .venue-stats-table でスコープ済み（詳細度で勝つ）なので
-      // 順序依存ではなく、この verify の対象外（ContentHub 側の他プロパティが漏れるのは見逃す。既知の限界）
-      name: "#961 の修正前（ContentHub.css の .venue-grid）を検出し、スコープ済みの .venue-name は検出しない",
-      got: names(
-        [
-          "src/pages/ContentHub.css",
-          "src/components/race/VenueGrid.css",
-          "src/components/HitRaces.css",
-        ].map((f) => ({ file: f, css: gitShow(`2e01fe64^:${f}`) })),
-      )
-        .filter((n) => n === "venue-grid" || n === "venue-name")
-        .sort(),
-      want: ["venue-grid"],
-    },
-    {
-      name: "#961 の修正後は .venue-grid を検出しない",
-      got: names(
-        [
-          "src/pages/ContentHub.css",
-          "src/components/race/VenueGrid.css",
-          "src/components/HitRaces.css",
-        ].map((f) => ({ file: f, css: gitShow(`2e01fe64:${f}`) })),
-      ).filter((n) => n === "venue-grid" || n === "venue-name"),
-      want: [],
-    },
-  ];
+  const cases = [...collisionCases(names), ...historyCases(names)];
 
   const collisions = [{ className: "card", files: ["a.css", "b.css"] }];
-  const allowCases = [
-    {
-      name: "許可リストの腐敗（解消済みのクラス）→ 検出する",
-      got: compareWithAllowlist(collisions, [
-        { class: "card", files: ["a.css", "b.css"] },
-        { class: "gone", files: ["a.css", "b.css"] },
-      ]).stale.map((s) => s.className),
-      want: ["gone"],
-    },
-    {
-      name: "許可リストの腐敗（ファイルが外れた）→ 検出する",
-      got: compareWithAllowlist(collisions, [
-        { class: "card", files: ["a.css", "b.css", "c.css"] },
-      ]).stale.flatMap((s) => s.staleFiles),
-      want: ["c.css"],
-    },
-    {
-      name: "許可済みのクラスに新しいファイルが加わる → 検出する",
-      got: compareWithAllowlist(
-        [{ className: "card", files: ["a.css", "b.css", "c.css"] }],
-        [{ class: "card", files: ["a.css", "b.css"] }],
-      ).added.flatMap((a) => a.newFiles),
-      want: ["c.css"],
-    },
-    {
-      name: "許可リストどおり → 何も出さない",
-      got: Object.values(
-        compareWithAllowlist(collisions, [
-          { class: "card", files: ["a.css", "b.css"] },
-        ]),
-      ).flat(),
-      want: [],
-    },
-  ];
+  const allowCases = allowlistCases(collisions, compareWithAllowlist);
 
   const failures = [...cases, ...allowCases].filter(
     (c) => JSON.stringify(c.got) !== JSON.stringify(c.want),
