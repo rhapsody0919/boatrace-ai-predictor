@@ -239,9 +239,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/predictionRaceFetch.js` | — | fetchVenueWinRates, fetchRacerStats, selectByRaceIds, groupRowsByRaceId, entriesToRacers ほか4件 |
 | `scripts/lib/predictionRefresh.js` | 予測の再計算（predictions のリフレッシュ）を、どこが・いつ起動するかの方針（案1、BOA-353 T4b-03、 | isRefreshOnVercelEnabled, isOddsRefreshSkippedOnGha, isOddsSkippedOnGha, collectGhaRefreshRaceIds, refreshAfterExhibition ほか1件 |
 | `scripts/lib/predictionRefreshSteps.js` | — | resolveRefreshOptions, logRefreshStart, logRefreshDryRun, volatilitySummary, logVolatilityUpdateError ほか11件 |
+| `scripts/lib/predictionRun.js` | 予想の生成と再計算の本体（generateAndWriteFromRacesData・mainRefresh）。scripts/daily/generate-p… | mainRefresh, generateAndWriteFromRacesData |
 | `scripts/lib/predictionScoring.js` | — | turnWinnerBonus, calculateTurnBonus, calculateExhibitionBonus, calculateStandardScoreV2, calculateSafeBetScore ほか3件 |
 | `scripts/lib/predictionVolatility.js` | — | calculateStdDev, volatilityWeights, volatilityFactorWinRate, volatilityFactorAvgST, volatilityFactorNige ほか5件 |
 | `scripts/lib/predictionWriteRows.js` | — | convertWindDirection, upsertRacesRows, buildEntryRow, buildEntryRows, upsertEntryRows ほか10件 |
+| `scripts/lib/predictionWriteSteps.js` | 予想の書き込みの段（writeToSupabase・buildRacesRow）と再計算の荒れ度の更新の計画・dry-run の表示。 | — |
 | `scripts/lib/previewSnapshotPlan.js` | ブログ記事・翻訳記事・ブログ一覧のボット向けスナップショットを、このビルドで作るか（Vercel の費用、2026-11-05、ADR 0032 追記）。 | planBlogSnapshots, PREVIEW_BOT_HTML_MARKER |
 | `scripts/lib/raceCancellation.js` | — | confirmCancellationsForRaceIds, clearCancellationsWithResults, clearCancellationsWithResultsInRange |
 | `scripts/lib/raceConditionsWriter.js` | race_conditions への書き込み（気象列を含む）の共通処理（BOA-358） | isObservedAtColumnMissing, upsertRaceConditions, OBSERVED_AT_COLUMN |
@@ -358,7 +360,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/venueJobSupport.js` | 会場ごとに取得する日次ジョブ（B3 会場別モーター成績・B4 進入コース別選手成績。tasks.md T4b-14・T4b-13）の | updateHealthForDate, isTransientReason, reasonFromError, previouslySettledVenues, driftAlertsToReport |
 | `scripts/lib/scrapeToJson.js` | — | defaultFetchHtml, getTodayVenues, scrapeVenue |
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
+| `scripts/lib/sitemapLanguagePages.js` | — | LOCALIZED_PAGES, LANGUAGE_ONLY_PAGES |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
+| `scripts/lib/sitemapRacerPages.js` | — | racerSitemapEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
 | `scripts/lib/sns/bundlePublicationBlocked.js` | — | isBundlePublicationBlocked |
 | `scripts/lib/sns/deadlineIso.js` | — | deadlineIso |
@@ -637,4 +641,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 595 ファイル / export 3226 件。
+対象 599 ファイル / export 3231 件。

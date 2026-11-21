@@ -2,7 +2,6 @@
 // 本番の画面での確認は手で: node scripts/maintenance/verify-sns-headless.js --live <race_id>（未ログインの Chromium で本番を開く）
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { createChromiumHeadless } from "../../api/_lib/snsHeadless.js";
 import {
   checkPublicDisplay,
@@ -10,6 +9,7 @@ import {
 } from "../../api/_lib/snsDeadlineQueue.js";
 import { SCREEN_MARKERS, SCREEN_TABS } from "../lib/snsScreenMarkers.js";
 import { runSnsHeadlessScenes1 } from "./verifyData/sns-headless-scenes.js";
+import { analogyControlsShape } from "./verifyData/sns-headless-analogy-controls.js";
 
 function fakeBrowser({ visible = [], finalUrl } = {}) {
   const log = {
@@ -124,16 +124,17 @@ test("race-sonar の印は展示の前後どちらでも出る要素だけ（段
   assert.ok(
     !SCREEN_MARKERS["race-sonar"].some((s) => s.includes("analogy-stage-chip")),
   );
-  const controls = await readFile(
-    new URL(
-      "../../src/components/race/analogy/AnalogyControls.jsx",
-      import.meta.url,
-    ),
-    "utf8",
-  );
-  // 箱は展示の有無で分かれる前の外側にある（段の表示とボタンはその中で入れ替わる）
-  const box = controls.indexOf('data-testid="analogy-controls"');
-  assert.ok(box > 0 && box < controls.indexOf("exhibitionReady ?"));
+  // 箱は展示の有無で分かれる前の外側にある（段の表示とボタンはその中で入れ替わる）。部品を展示の前・後で描いて見る
+  assert.deepEqual(await analogyControlsShape(false), {
+    box: true,
+    chip: true,
+    stageButtons: 0,
+  });
+  assert.deepEqual(await analogyControlsShape(true), {
+    box: true,
+    chip: false,
+    stageButtons: 2,
+  });
 });
 
 test("Chromium は開くたびに起動して閉じ、新しい context で開き、解析のタグを止め、見えた印だけを返す（--single-process は context を閉じるとブラウザごと終わる、2026-10-17）", async () => {
@@ -379,22 +380,34 @@ test("screenshot: 撮る前に Cookie の同意を「拒否」で記録し、帯
     /screenshot_overlay_visible/,
   );
   assert.equal(covered.log.screenshots, undefined);
-  // 同意のキーは画面の側（analytics.js）と同じ
-  const analytics = await readFile(
-    new URL("../../src/utils/analytics.js", import.meta.url),
-    "utf8",
-  );
-  assert.match(analytics, new RegExp(`CONSENT_KEY = "${CONSENT_KEY}"`));
+  // 同意のキーは画面の側（analytics.js）と同じ。画面の読み書き（getCookieConsent・setCookieConsent）を偽の localStorage で回して見る
+  const { getCookieConsent, setCookieConsent } =
+    await import("../../src/utils/analytics.js");
+  const store = new Map();
+  const saved = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+    },
+  });
+  try {
+    setCookieConsent("rejected");
+    assert.deepEqual([...store], [[CONSENT_KEY, "rejected"]]);
+    store.set(CONSENT_KEY, "accepted");
+    assert.equal(getCookieConsent(), "accepted");
+  } finally {
+    if (saved) Object.defineProperty(globalThis, "localStorage", saved);
+    else delete globalThis.localStorage;
+  }
 });
 
 // ---- 後半の場面（verifyData/sns-headless-scenes.js） ----
 runSnsHeadlessScenes1({ fakeBrowser });
 
-test("/today の図は外周の色の検査つきで撮る（SONAR_EDGE_COLOR_VAR を headless.screenshot に渡す）", async () => {
+// headless.screenshot に渡すこと自体は verify-sns-today-plan.js が計画を偽の撮影で回して見る（撮った図の要求の edgeColorVar）
+test("/today の図の外周の色の検査は ryujin の紺（SONAR_EDGE_COLOR_VAR）", async () => {
   const planner = await import("../lib/snsTodayPlanner.js");
   assert.equal(planner.SONAR_EDGE_COLOR_VAR, "--ryujin-navy-600");
-  const src = await (
-    await import("node:fs/promises")
-  ).readFile(new URL("../lib/snsTodayPlanner.js", import.meta.url), "utf8");
-  assert.match(src, /edgeColorVar: SONAR_EDGE_COLOR_VAR/);
 });

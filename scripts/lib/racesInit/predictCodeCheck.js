@@ -44,6 +44,8 @@ export const PREDICT_LOGIC_FILES = Object.freeze([
   "../predictionRaceFetch.js",
   "../predictionRefreshSteps.js",
   "../predictionWriteRows.js",
+  "../predictionWriteSteps.js",
+  "../predictionRun.js",
 ]);
 
 /**
