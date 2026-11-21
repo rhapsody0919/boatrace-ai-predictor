@@ -66,7 +66,7 @@ const VIEWPORTS = [
 ];
 
 for (const viewport of VIEWPORTS) {
-  test.describe(`${viewport.width}px`, () => {
+  test.describe(`${viewport.width}px @blog`, () => {
     test.use({ viewport });
 
     for (const { venue, name, ids } of CASES) {

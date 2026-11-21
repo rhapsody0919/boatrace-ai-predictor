@@ -22,9 +22,13 @@
   gap: var(--spacing-2);
 }
 
+/* 本数は会場で1〜3本。上限3列のまま、少ないときは余った列を潰す（DigestCardGrid.css と同じ形） */
 @media (min-width: 768px) {
   .venue-guide-articles__list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - 2 * var(--spacing-2)) / 3), 1fr)
+    );
   }
 }
 
