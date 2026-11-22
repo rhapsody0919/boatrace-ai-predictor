@@ -1,0 +1,59 @@
+name: Growth GSC Daily
+
+# Search Console の query × page × date を直近7日ぶん取り直し、Supabase の growth_gsc_daily へ upsert する
+# （BOA-1706、hq 閉鎖 R2。前は非公開の hq が Mac の launchd で取っていた。docs/db-migration/204_growth_gsc_daily.sql）。
+# 龍神は公開のリポジトリなので、数字をログ・artifact に出さない（スクリプトは日付と行数だけを出す）。
+# 毎回7日を取り直すので、schedule が抜けた日は次の回で埋まる。失敗は job-watch.yml が拾う。
+# 鍵は Environment prod-jobs（ADR-0097。GOOGLE_SERVICE_ACCOUNT_KEY・SEARCH_CONSOLE_SITE_URL・SUPABASE_* は既にある）。
+on:
+  schedule:
+    # JST 10:23（GSC の前日分が届くのは2〜3日後なので、時刻は混まない所を選んだだけ）
+    - cron: "23 1 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: growth-gsc-daily
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  collect:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: prod-jobs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Write service account key
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_ACCOUNT_KEY" ]; then
+            echo "::error::GOOGLE_SERVICE_ACCOUNT_KEY が無い（Environment prod-jobs の secret 未設定）"
+            exit 1
+          fi
+          mkdir -p credentials
+          printf '%s' "$GOOGLE_SERVICE_ACCOUNT_KEY" > credentials/google-service-account.json
+
+      - name: Collect
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ./credentials/google-service-account.json
+          SEARCH_CONSOLE_SITE_URL: ${{ secrets.SEARCH_CONSOLE_SITE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/growth/collect-gsc-daily.js
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f credentials/google-service-account.json

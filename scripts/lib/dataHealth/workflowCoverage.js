@@ -61,6 +61,11 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
     reason:
       "手動の起動だけ（workflow_dispatch）。日次は Vercel の morning_digest（05:30〜 JST）が書き、scrape-monitor の daily_overdue が見る",
   },
+  "growth-gsc-daily.yml": {
+    kind: "watched_elsewhere",
+    reason:
+      "Search Console の日別の取り込み（BOA-1706）。表 growth_gsc_daily は画面が読まず、窓口が読むだけ。毎回7日を取り直すので1日の抜けは次の回で埋まる。失敗は job-watch が見る",
+  },
   "in-caution-nightly.yml": {
     kind: "watched_elsewhere",
     reason:

@@ -38,6 +38,7 @@
     ".github/workflows/generate-moriarty.yml",
     ".github/workflows/generate-morning-digest.yml",
     ".github/workflows/generate-poirot.yml",
+    ".github/workflows/growth-gsc-daily.yml",
     ".github/workflows/in-caution-nightly.yml",
     ".github/workflows/key-canary.yml",
     ".github/workflows/nightly-verify-db.yml",
