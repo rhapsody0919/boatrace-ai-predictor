@@ -1,0 +1,179 @@
+/* トップの「まもなく締切のレース」の節（UpcomingDeadlineRaces.jsx、BOA-1690）。
+   行の高さを固定し、読み込み中の場所取り（--placeholder）と同じ高さにして CLS を出さない。
+   色は意味トークンだけ（グレード・優勝戦の札は既存のバッジと同じ固定色に白字） */
+.upcoming-deadline {
+  margin: 0.75rem 0 1rem;
+}
+
+.upcoming-deadline--placeholder {
+  /* 見出し 34px＋3行（64px×3＋隙間 8px×2）＋隙間 8px＋ボタン 44px */
+  min-height: 302px;
+}
+
+.upcoming-deadline__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.upcoming-deadline__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* スマホは3行まで。4行目以降は「もっと見る」を押すまで隠す */
+.upcoming-deadline__item--more {
+  display: none;
+}
+
+.upcoming-deadline--expanded .upcoming-deadline__item--more {
+  display: block;
+}
+
+.upcoming-deadline__link {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 64px;
+  padding: 0.4rem 0.8rem;
+  overflow: hidden;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-left: 4px solid var(--brand-accent-primary);
+  border-radius: 10px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.upcoming-deadline__link:hover {
+  border-color: var(--brand-accent-primary);
+}
+
+.upcoming-deadline__top,
+.upcoming-deadline__bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.upcoming-deadline__top {
+  justify-content: space-between;
+}
+
+.upcoming-deadline__race {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.upcoming-deadline__time {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.upcoming-deadline__time-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.upcoming-deadline__bottom {
+  overflow: hidden;
+  font-size: 0.85rem;
+}
+
+.upcoming-deadline__badge {
+  flex-shrink: 0;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-white);
+}
+
+.upcoming-deadline__racer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.upcoming-deadline__boat {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1.5px solid var(--text-primary);
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.upcoming-deadline__racer-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-deadline__racer-rank {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.upcoming-deadline__more {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  margin-top: 8px;
+  overflow: hidden;
+  padding: 0 0.8rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  color: var(--brand-accent-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* PC は6行を3列×2段で全部見せ、「もっと見る」は出さない */
+@media (min-width: 768px) {
+  .upcoming-deadline--placeholder {
+    /* 見出し 34px＋2段（64px×2＋隙間 8px） */
+    min-height: 170px;
+  }
+
+  /* 列は3が上限。行が3より少ない日に右へ空の列を残さない（auto-fit、DigestCardGrid.css と同じ calc() 方式） */
+  .upcoming-deadline__list {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - 2 * 8px) / 3), 1fr)
+    );
+  }
+
+  .upcoming-deadline__item--more {
+    display: block;
+  }
+
+  .upcoming-deadline__more {
+    display: none;
+  }
+}

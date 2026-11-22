@@ -525,7 +525,14 @@
     "disclaimer": "* This site provides AI-generated prediction information and does not guarantee results",
     "blogLastUpdated": "Blog last updated: {{date}}",
     "tbd": "TBD",
-    "jstNote": " JST"
+    "jstNote": " JST",
+    "upcomingDeadline": {
+      "title": "Races closing soon",
+      "deadline": "Deadline",
+      "more": "Show more ({{venues}})",
+      "moreWithOthers": "Show more ({{venues}} and others)",
+      "venueSeparator": ", "
+    }
   },
   "cookieConsent": {
     "textBeforeLink": "We use cookies to improve our service. For details, see our ",

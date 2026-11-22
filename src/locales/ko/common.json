@@ -520,7 +520,14 @@
     "disclaimer": "* 본 사이트는 AI가 생성한 예측 정보를 제공하며 결과를 보장하지 않습니다",
     "blogLastUpdated": "블로그 최종 업데이트: {{date}}",
     "tbd": "미정",
-    "jstNote": " JST"
+    "jstNote": " JST",
+    "upcomingDeadline": {
+      "title": "곧 마감되는 경주",
+      "deadline": "마감 예정",
+      "more": "더 보기 ({{venues}})",
+      "moreWithOthers": "더 보기 ({{venues}} 외)",
+      "venueSeparator": ", "
+    }
   },
   "cookieConsent": {
     "textBeforeLink": "이 사이트는 서비스 향상을 위해 쿠키를 사용합니다. 자세한 내용은 ",
