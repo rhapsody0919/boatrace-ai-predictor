@@ -6,7 +6,14 @@ import VenueGridCard from "./VenueGridCard";
 import { ALL_VENUE_CODES } from "../../constants";
 import "./VenueGrid.css";
 
-function VenueGrid({ venuesData, getVenueLink, nowHHMM, nextOpenDates }) {
+// linkClosed（既定 true）: 非開催の会場もリンクにする。過去の日付の一覧は false
+function VenueGrid({
+  venuesData,
+  getVenueLink,
+  nowHHMM,
+  nextOpenDates,
+  linkClosed = true,
+}) {
   const byCode = new Map((venuesData || []).map((v) => [v.placeCd, v]));
 
   return (
@@ -19,6 +26,7 @@ function VenueGrid({ venuesData, getVenueLink, nowHHMM, nextOpenDates }) {
           linkTo={getVenueLink(code)}
           nowHHMM={nowHHMM}
           nextOpenDate={nextOpenDates?.get(code) ?? null}
+          linkClosed={linkClosed}
         />
       ))}
     </div>
