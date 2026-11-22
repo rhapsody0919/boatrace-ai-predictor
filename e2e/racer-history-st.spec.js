@@ -105,12 +105,21 @@ test("選手ページ: STの推移・展示タイムの推移の見出しと横�
   // データの最初の日付: 描いた点の左端に hover して出る Tooltip の見出し
   // （"2025-12-27 桐生 10R"、会場が無い点は race_id）から取る。間引かれる目盛りの字に依らない
   const firstPointYm = async (chart) => {
-    const box = await chart.locator(".recharts-cartesian-grid").boundingBox();
-    expect(box).not.toBeNull();
-    await page.mouse.move(box.x + 1, box.y + box.height / 2);
+    // 画面の外にあると page.mouse.move の座標が図に当たらず、Tooltip の見出しが空のまま
+    // 隠れる（CI で起きた）。先に図を表示の範囲へ入れ、座標は入れた後に取る
+    const grid = chart.locator(".recharts-cartesian-grid");
+    await grid.scrollIntoViewIfNeeded();
     const label = chart.locator(".recharts-tooltip-label");
-    await expect(label).toBeVisible();
-    const m = (await label.textContent()).match(/(\d{4})-(\d{2})-\d{2}/);
+    const dateRe = /(\d{4})-(\d{2})-\d{2}/;
+    // 描画・アニメーションの直後は反応しないことがあるので、見出しに日付が出るまで動かし直す
+    await expect(async () => {
+      const box = await grid.boundingBox();
+      expect(box).not.toBeNull();
+      await page.mouse.move(box.x + 40, box.y + box.height / 2);
+      await page.mouse.move(box.x + 1, box.y + box.height / 2, { steps: 5 });
+      await expect(label).toHaveText(dateRe, { timeout: 1000 });
+    }).toPass({ timeout: 15000 });
+    const m = (await label.textContent()).match(dateRe);
     expect(m).not.toBeNull();
     return `${m[1]}-${m[2]}`;
   };
