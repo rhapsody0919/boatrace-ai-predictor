@@ -1640,6 +1640,11 @@
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
     },
     {
+      "script": "verify-search-index-policy.js",
+      "tier": "ci",
+      "guards": "他言語の /race を検索に出さない決まり（BOA-1701・ADR 0107）が、languages.js の表・sitemap・hreflang・vercel.json の X-Robots-Tag: noindex・robots.txt で食い違わないこと。ja の /race を巻き込まない"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"

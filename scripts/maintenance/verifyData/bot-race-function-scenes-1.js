@@ -128,13 +128,8 @@ async function scene2() {
       },
     );
     check("canonical", meta.canonical, `${SITE}/race/${id}`);
-    check("hreflang（4言語と x-default）", alternatesOf(html), [
-      ["ja", `${SITE}/race/${id}`],
-      ["en", `${SITE}/en/race/${id}`],
-      ["zh-Hant", `${SITE}/zh-TW/race/${id}`],
-      ["ko", `${SITE}/ko/race/${id}`],
-      ["x-default", `${SITE}/race/${id}`],
-    ]);
+    // 他言語の /race は検索に出さないので alternate は0（BOA-1701・ADR 0107）
+    check("hreflang（/race は alternate が0）", alternatesOf(html), []);
     const ld = parseJsonLdScripts(html);
     check(
       "JSON-LD の型",

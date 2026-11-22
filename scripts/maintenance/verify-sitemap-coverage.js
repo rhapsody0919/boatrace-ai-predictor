@@ -91,18 +91,19 @@ async function verifyRaceDetails(gen) {
   const raceLocs = urlEntries(xml)
     .map((e) => e.loc)
     .filter((loc) => /\/race\//.test(loc));
-  // ja 3件 + 言語版（en・zh-TW・ko）3件×3言語
-  assert.equal(raceLocs.length, 3 + 3 * 3);
+  // ja 3件だけ。言語版（en・zh-TW・ko）の /race は検索に出さないので loc も xhtml:link も0（BOA-1701・ADR 0107）
+  assert.equal(raceLocs.length, 3);
   for (const page of pages) {
     assert.ok(xml.includes(`<loc>https://www.boat-ai.jp${page.loc}</loc>`));
     for (const { code } of SUPPORTED_LANGUAGES) {
       if (code === DEFAULT_LANGUAGE) continue;
-      assert.ok(
-        xml.includes(
-          `<loc>https://www.boat-ai.jp${localizePath(page.loc, code)}</loc>`,
-        ),
-      );
+      const localized = `https://www.boat-ai.jp${localizePath(page.loc, code)}`;
+      assert.ok(!xml.includes(`<loc>${localized}</loc>`), `loc に ${localized}`);
+      assert.ok(!xml.includes(`href="${localized}"`), `xhtml:link に ${localized}`);
     }
+  }
+  for (const code of ["en", "zh-TW", "ko"]) {
+    assert.ok(!xml.includes(`https://www.boat-ai.jp/${code}/race/`), `/${code}/race/ が sitemap に在る`);
   }
   // 思考アシスト（/race/{id}/assist）は足さない（記事の名前の assist は別物なので /race の URL だけを見る）
   assert.ok(!raceLocs.some((loc) => loc.includes("/assist")));
