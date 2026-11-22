@@ -23,7 +23,9 @@ for (const viewport of VIEWPORTS) {
         await cta.click();
         await expect(page).toHaveURL(new RegExp(`/${lang}/venue/4$`));
         await expect(
-          page.getByRole("heading", { name: /Heiwajima|平和島/ }).first(),
+          page
+            .getByRole("heading", { name: /Heiwajima|헤이와지마|平和島/ })
+            .first(),
         ).toBeVisible();
       });
     }
