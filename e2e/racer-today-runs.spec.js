@@ -6,16 +6,16 @@ import { buildRacerTodayRuns, finishLabelOf, splitTodayRaceId, todayRunsMeetLabe
  * - 当日2走: /race/ への a が2つ、節は racer-summary より DOM の上、節の下端が viewport の内
  * - 発走済みは「n着」（締切の時刻を出さない）、発走前は「HH:MM締切」。前日の走は出ない
  * - 当日0走・取得の失敗: 節を DOM に置かない。失敗でもページの他の節が出て noindex にならない
- * 3941（A1・index）、2878（B1）。純関数の単体試験も CI が回すこの spec に置く
+ * 3941（A1・index）、2878（B1）。純関数の単体試験も CI が回すこの spec に置く。録画の時刻は試験の中で読む（`--list` は録画無し）
  */
 
-const TODAY = e2eTodayJST();
-const YESTERDAY = new Date(Date.parse(`${TODAY}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
-const [DONE, NEXT, OLD] = [`${TODAY}-12-03`, `${TODAY}-12-09`, `${YESTERDAY}-12-11`];
+const dayBefore = (d) => new Date(Date.parse(`${d}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
+const runIds = (d = e2eTodayJST()) => ({ DONE: `${d}-12-03`, NEXT: `${d}-12-09`, OLD: `${dayBefore(d)}-12-11` });
 const TODAY_QUERY = /\/rest\/v1\/race_entries\?.*race_id=like\./;
 
 // 当日の走の取得（race_id=like.<今日>）と、その race_id を含む問い合わせだけを差し替える（9R は結果の行が無い）
 async function stubTodayRuns(page, entries, { fail = false } = {}) {
+  const { DONE, NEXT } = runIds();
   await page.route(TODAY_QUERY, (route) =>
     fail ? route.fulfill({ status: 500, json: { message: "stub" } }) : route.fulfill({ json: entries }),
   );
@@ -31,14 +31,14 @@ async function stubTodayRuns(page, entries, { fail = false } = {}) {
   }
 }
 
-const robotsOf = (page) =>
-  page.evaluate(() => document.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "");
+const robotsOf = (page) => page.evaluate(() => document.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "");
 
 for (const viewport of [{ width: 375, height: 812 }, { width: 1280, height: 800 }]) {
   test.describe(`${viewport.width}px`, () => {
     test.use({ viewport });
 
     test("当日2走: 行が2つで /race へ、着順と締切、前日の走は出ない、要約より上で最初の画面の内", async ({ page }) => {
+      const { DONE, NEXT, OLD } = runIds();
       // 並びの確かめのため、後の走・前日の走を先に返す
       await stubTodayRuns(page, [
         { race_id: NEXT, boat_number: 4 }, { race_id: OLD, boat_number: 1 }, { race_id: DONE, boat_number: 2 },
@@ -80,7 +80,7 @@ test.describe("節を置かない", () => {
   }
 
   test("当日0走（前日の走だけ）の選手では節が DOM に無い", async ({ page }) => {
-    await stubTodayRuns(page, [{ race_id: OLD, boat_number: 1 }]);
+    await stubTodayRuns(page, [{ race_id: runIds().OLD, boat_number: 1 }]);
     await openAfterTodayQuery(page, 2878);
     await expect(page.getByTestId("racer-today-runs")).toHaveCount(0);
   });
