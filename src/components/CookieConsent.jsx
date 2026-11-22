@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -33,7 +34,8 @@ export default function CookieConsent() {
   // プライバシーポリシーは ja 専用（TRANSLATED_PATHS 未登録）のため、どの言語でも
   // プレフィックス無しの /privacy を指す。/en/privacy は LocalizedLayout が
   // /privacy へ location.replace するので、その往復を避けて直接リンクする
-  return (
+  // #root の最初の子にならないよう body の末尾へ出す（position: fixed なので見た目は変わらない）
+  return createPortal(
     <div className="cookie-consent">
       <div className="cookie-consent__inner">
         <p className="cookie-consent__text">
@@ -52,6 +54,7 @@ export default function CookieConsent() {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
