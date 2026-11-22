@@ -1,7 +1,8 @@
 /**
  * VenueGridCard - 開催場一覧グリッドの1会場分カード
  * 開催中: 大会名・節の日目（BOA-1199）・グレードバッジ・時間帯アイコン・次レース時刻を表示しリンク化
- * 非開催: 次開催日（BOA-225）が分かれば「次開催 M/D」、無ければ「本日開催なし」（リンクなし）
+ * 非開催: 次開催日（BOA-225）が分かれば「次開催 M/D」、無ければ「本日開催なし」。
+ *   linkClosed（既定 true）なら開催中と同じリンク先の Link（BOA-1694）、false ならリンクなしの div
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -43,16 +44,23 @@ function findHighlightedStageRace(races) {
   );
 }
 
-function ClosedVenueCard({ t, venueName, nextOpenDate }) {
-  return (
-    <div className="venue-grid-card venue-grid-card--closed">
+function ClosedVenueCard({ t, venueName, nextOpenDate, linkTo }) {
+  const className = "venue-grid-card venue-grid-card--closed";
+  const body = (
+    <>
       <div className="venue-grid-card__name">{venueName}</div>
       <div className="venue-grid-card__closed-label">
         {nextOpenDate
           ? t("venueGrid.nextOpen", { date: formatMonthDay(nextOpenDate) })
           : t("venueGrid.noRacesToday")}
       </div>
-    </div>
+    </>
+  );
+  if (!linkTo) return <div className={className}>{body}</div>;
+  return (
+    <Link to={linkTo} className={className}>
+      {body}
+    </Link>
   );
 }
 
@@ -178,6 +186,7 @@ function VenueGridCard({
   linkTo,
   nowHHMM,
   nextOpenDate,
+  linkClosed = true,
 }) {
   const { t } = useTranslation();
   const venueName = venueNameOf(t, venueCode);
@@ -191,6 +200,7 @@ function VenueGridCard({
         t={t}
         venueName={venueName}
         nextOpenDate={nextOpenDate}
+        linkTo={linkClosed ? linkTo : null}
       />
     );
   }
