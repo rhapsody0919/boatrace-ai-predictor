@@ -69,6 +69,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/snsObservationWindows.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。窓・取得元・指標・時刻の判定（src/utils/snsObservations.js から移し… | windowsFor, displayWindowFor, observationPeriod, OBSERVATION_WINDOWS, FULL_PICTURE_FORMAT ほか10件 |
 | `src/pure/snsPostText.js` | — | buildPostText |
 | `src/pure/techniqueNames.js` | 決まり手の英語キー → 日本語の名前。展開予測（src/utils/turnPrediction.js）をやめた後も、データ出走表などの | TECHNIQUE_NAMES |
+| `src/pure/upcomingDeadlineRaces.js` | トップの「まもなく締切のレース」の節（PV09 T1・案 B、BOA-1690）の行を選ぶ純関数。 | selectUpcomingDeadlineRaces, moreButtonVenues, UPCOMING_MAX_ROWS, UPCOMING_MOBILE_VISIBLE, UPCOMING_MORE_VENUE_NAMES |
 | `src/pure/venueCourseTableRows.js` | 会場ページの「コース別成績と特徴（直近1年）」の表の行を組む（BOA-1687 GS02 V1）。 | venueCourseTableRows, VENUE_COURSE_SECTION_ID |
 | `src/pure/venueGuideArticles.js` | 会場ページの「<会場>の攻略記事」に出す記事を選ぶ（BOA-1692 GS02 V2）。 | venueGuideTitle, selectVenueGuideArticles, VENUE_GUIDE_CATEGORY, MAX_VENUE_GUIDE_ARTICLES |
 | `src/pure/venueModel.js` | — | makeVenue |
@@ -541,7 +542,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceDetailHeading.js` | レース詳細（/race/:raceId）の見出し・title・description・canonical・パンくずの組み方。 | getStageChip, getRaceDetailHeading, getRaceDetailMeta, getRaceListLink, getRaceDetailBreadcrumbItems |
 | `src/utils/raceEntrants.js` | レース詳細のタブの上の出走6艇（BOA-1189 GS01-c）の行。艇番順、選手名は空白を詰める。 | entrantRowsOf |
 | `src/utils/raceId.js` | 再 export だけのファイル。本体は `src/pure/raceId.js`。 | — |
-| `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText ほか1件 |
+| `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText ほか2件 |
 | `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか11件 |
 | `src/utils/raceResultUsable.js` | — | isUsableRaceResult, isNoRaceResult |
 | `src/utils/raceSeriesText.js` | SNS の本文・題に入れる「何日目」と「大会名（SG・G1 だけ）」（BOA-1309、オーナー 2026-11-04「全ての SNS に日付・何日目・レース名… | jaSeriesT, seriesDayTextOf, seriesTitleOf, JA_SERIES_DAY, SERIES_TITLE_GRADES |
@@ -647,4 +648,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 605 ファイル / export 3247 件。
+対象 606 ファイル / export 3253 件。
