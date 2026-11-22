@@ -39,6 +39,10 @@ jobs:
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: |
+          if [ -z "$GOOGLE_SERVICE_ACCOUNT_KEY" ]; then
+            echo "::error::GOOGLE_SERVICE_ACCOUNT_KEY が無い（Environment prod-jobs の secret 未設定）"
+            exit 1
+          fi
           mkdir -p credentials
           printf '%s' "$GOOGLE_SERVICE_ACCOUNT_KEY" > credentials/google-service-account.json
 

@@ -68,19 +68,26 @@ async function main() {
     { auth: { persistSession: false } },
   );
   const fetchedAt = new Date().toISOString();
+  // 1日が落ちても他の日は取る。落ちた日は最後にまとめて失敗にする（job-watch が拾う）
+  const failed = [];
   for (const date of windowDates(new Date())) {
-    let apiRows;
     try {
-      apiRows = await fetchDay(
+      const apiRows = await fetchDay(
         searchconsole,
         process.env.SEARCH_CONSOLE_SITE_URL,
         date,
-      );
+      ).catch((err) => {
+        throw new Error(`Search Console の取得の失敗: ${safeError(err)}`);
+      });
+      const pruned = await writeDay(db, date, toRows(apiRows, fetchedAt), fetchedAt);
+      console.log(logLine(date, apiRows.length, pruned));
     } catch (err) {
-      throw new Error(`Search Console の取得の失敗（${date}）: ${safeError(err)}`);
+      failed.push(date);
+      console.error(`${date}: ${err.message}`);
     }
-    const pruned = await writeDay(db, date, toRows(apiRows, fetchedAt), fetchedAt);
-    console.log(logLine(date, apiRows.length, pruned));
+  }
+  if (failed.length > 0) {
+    throw new Error(`${failed.length}日が落ちた（${failed.join("・")}）`);
   }
 }
 
