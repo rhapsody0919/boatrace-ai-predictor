@@ -31,7 +31,7 @@ LLM の審査（ryujin-reviewer の APPROVED、review.yml）は v3.3（2026-11-0
 node scripts/maintenance/ryujin-maker-token.js -- gh pr merge {pr} --squash --match-head-commit <手順1の headRefOid>
 ```
 
-`--match-head-commit` は、確かめた head の後に push が入っていたらマージしない（hq の codex-pr.py と同じ）。SHA は手順1で読んだ40桁を文字で書く。`.github/workflows/` を変える PR は `--workflows -- gh pr merge …` にする（トークンに workflows の権限を足す）。
+`--match-head-commit` は、確かめた head の後に push が入っていたらマージしない。SHA は手順1で読んだ40桁を文字で書く。`.github/workflows/` を変える PR は `--workflows -- gh pr merge …` にする（トークンに workflows の権限を足す）。
 
 `scripts/maintenance/ryujin-maker-token.js` が作成の App（ryujin-maker）の1時間のトークンを作り、`GH_TOKEN` に入れて gh を動かす（鍵の置き場・使い方は script の冒頭）。`--admin` は付けない（ryujin-maker は admin でなく、付けても通らない。オーナーの gh で bypass を使う道を残さないため）。PR 番号は文字で書く（guard-pr-merge.js が `gh pr merge {pr}` を読んで、必須の check・マージ順を先に見る）。鍵がまだ置かれていない間（`秘密鍵が無い` で止まる。`docs/operation/identity-separation-owner-steps.md` の 9-2 の前）は、今までどおり素の gh で `--squash --admin` を付けてマージする（必須の3つの check が全部緑であることを先に確かめる。`--admin` は失敗している check も素通りする）。鍵が置かれた後は、`.claude/hooks/guard-deploy-approval.sh` が `--admin` を止める。名義を変えるのは書き込み（push・PR の作成・マージ）だけで、このコマンドの読み取り（手順1の `gh pr view`・`gh pr checks`、手順3の本番の状態の確認）は今までの `gh` のまま。
 
