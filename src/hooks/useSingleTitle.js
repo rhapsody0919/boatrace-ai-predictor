@@ -16,6 +16,11 @@ function headTitles() {
   );
 }
 
+// index.html から来た静的な title は、React の描画より前（このモジュールの評価時）に掴む。
+// React 19 は部品の title を静的な title の前へ挿入するので、マウント後に先頭を取ると React 管理の title を掴んでしまう
+const STATIC_TITLE =
+  typeof document !== "undefined" ? (headTitles()[0] ?? null) : null;
+
 export function syncSingleTitle(staticTitle) {
   const others = headTitles().filter((el) => el !== staticTitle);
   if (others.length > 0) {
@@ -27,7 +32,7 @@ export function syncSingleTitle(staticTitle) {
 
 export default function useSingleTitle() {
   useEffect(() => {
-    const staticTitle = headTitles()[0];
+    const staticTitle = STATIC_TITLE;
     if (!staticTitle) return undefined;
 
     const observer = new MutationObserver(() => syncSingleTitle(staticTitle));
