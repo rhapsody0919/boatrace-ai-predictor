@@ -4,6 +4,7 @@ import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
 import FavoriteRunsSection from "../components/favorites/FavoriteRunsSection";
 import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
+import UpcomingDeadlineRaces from "../components/UpcomingDeadlineRaces";
 import {
   VenueGrid,
   VenueGridSkeleton,
@@ -50,6 +51,8 @@ function TodayVenuesSection({
               onRefresh={handleRefresh}
               isRefreshing={isRefreshing}
             />
+            {/* まもなく締切のレース（PV09 T1、BOA-1690）。案内より上。取得の失敗時は出さない */}
+            {!error && <UpcomingDeadlineRaces {...{ venuesData, nowHHMM, loading }} />}
             {isFirstVisit && i18n.language === "ja" ? (
               <FirstVisitGuideCard />
             ) : (

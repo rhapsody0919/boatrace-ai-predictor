@@ -2387,7 +2387,14 @@
     "disclaimer": "※本サイトはAIによる予測情報を提供するものであり、結果を保証するものではありません",
     "blogLastUpdated": "ブログ最終更新: {{date}}",
     "tbd": "未定",
-    "jstNote": ""
+    "jstNote": "",
+    "upcomingDeadline": {
+      "title": "まもなく締切のレース",
+      "deadline": "締切予定",
+      "more": "もっと見る（{{venues}}）",
+      "moreWithOthers": "もっと見る（{{venues}}ほか）",
+      "venueSeparator": "・"
+    }
   },
   "cookieConsent": {
     "textBeforeLink": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくは",

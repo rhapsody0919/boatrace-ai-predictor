@@ -203,6 +203,8 @@ export async function botPageTopTextPart1({ lang, textOf }) {
   const { popularPosts, newPosts } = getHomeBlogPosts(lang);
   check(`${lang} トップ: 見出しの並び`, headings, [
     `h2 🏁 ${tl("home.todayRaces")} ${(await import("../../../src/utils/formatters.js")).formatDateShortLocalized("2026-10-11", lang)}`,
+    // まもなく締切のレース（BOA-1690）。人の画面と同じく本日開催中の欄の中、更新表示の下
+    `h3 ⏱️ ${tl("home.upcomingDeadline.title")}`,
     `h2 ${tl("home.aiIntro.title")}`,
     `h3 ${tl("home.aiIntro.checkTitle")}`,
     `h3 ${tl("home.aiIntro.faqTitle")}`,
