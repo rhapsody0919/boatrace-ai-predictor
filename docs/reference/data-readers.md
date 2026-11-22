@@ -1396,7 +1396,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 取得のジョブ: racer_news
 - 読み手（3）: 
-  - `scripts/generate-sitemap.js:154` select [created_at, racer_id]
+  - `scripts/generate-sitemap.js:155` select [created_at, racer_id]
   - `scripts/lib/racerNews/dedup.js:34` select [id, source_url]
   - `src/services/racerQueries5.js:60` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
 - 書き手（2）: 
@@ -1515,8 +1515,8 @@
   - `scripts/daily/update-moriarty-outcomes.js:59` select [race_id, venue_code]
   - `scripts/daily/update-outcome-frequencies.js:43` select [race_id, venue_code]
   - `scripts/daily/update-race-history-cache.js:112` select(helper:fetchAll)
-  - `scripts/generate-sitemap.js:68` select [race_date, venue_code]
-  - `scripts/generate-sitemap.js:331` select [race_date, venue_code]
+  - `scripts/generate-sitemap.js:69` select [race_date, venue_code]
+  - `scripts/generate-sitemap.js:332` select [race_date, venue_code]
   - `scripts/lib/analogyDispatch.js:75` select [cancellation_status, race_date, race_id, start_time]
   - `scripts/lib/analogyV16Exhibition.js:253` rest(rest) [race_date, race_id, start_time]
   - `scripts/lib/boatcast/oritenJob.js:280` select [race_date, race_id, start_time]

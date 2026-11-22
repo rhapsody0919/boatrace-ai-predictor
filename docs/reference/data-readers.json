@@ -14102,7 +14102,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/generate-sitemap.js:154",
+          "ref": "scripts/generate-sitemap.js:155",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14177,7 +14177,7 @@
         },
         "racer_id": {
           "readers": [
-            "scripts/generate-sitemap.js:154",
+            "scripts/generate-sitemap.js:155",
             "src/services/racerQueries5.js:60"
           ],
           "writers": [
@@ -14239,7 +14239,7 @@
         },
         "created_at": {
           "readers": [
-            "scripts/generate-sitemap.js:154",
+            "scripts/generate-sitemap.js:155",
             "src/services/racerQueries5.js:60"
           ],
           "writers": [],
@@ -16183,7 +16183,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/generate-sitemap.js:68",
+          "ref": "scripts/generate-sitemap.js:69",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16192,7 +16192,7 @@
           ]
         },
         {
-          "ref": "scripts/generate-sitemap.js:331",
+          "ref": "scripts/generate-sitemap.js:332",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17597,8 +17597,8 @@
             "scripts/daily/calculate-venue-grade-stats.js:177",
             "scripts/daily/scrape-results.js:293",
             "scripts/daily/todays-volatility-digest.js:148",
-            "scripts/generate-sitemap.js:331",
-            "scripts/generate-sitemap.js:68",
+            "scripts/generate-sitemap.js:332",
+            "scripts/generate-sitemap.js:69",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:280",
@@ -17696,8 +17696,8 @@
             "scripts/daily/scrape-results.js:293",
             "scripts/daily/update-moriarty-outcomes.js:59",
             "scripts/daily/update-outcome-frequencies.js:43",
-            "scripts/generate-sitemap.js:331",
-            "scripts/generate-sitemap.js:68",
+            "scripts/generate-sitemap.js:332",
+            "scripts/generate-sitemap.js:69",
             "scripts/lib/morningDigestFetch.js:57",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/raceSeriesLookup.js:174",
