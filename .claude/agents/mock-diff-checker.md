@@ -1,6 +1,6 @@
 ---
 name: mock-diff-checker
-description: ユーザーが承認したモック画像と実画面（Preview か、claude/* では手元の dev サーバー）を並べ、違いだけを列挙する。画面の PR を段階0（オーケストレーターの自動マージ）に回せるかの判定材料。読み取り専用で、修正も好みの評価もしない。
+description: ユーザーが承認したモック画像と実画面（Preview か、claude/* では手元の dev サーバー）を並べ、違いだけを列挙する。画面の PR を段階0（窓口の自己マージ）に回せるかの判定材料。読み取り専用で、修正も好みの評価もしない。
 tools: Read, Glob, Grep, Bash
 model: sonnet
 ---

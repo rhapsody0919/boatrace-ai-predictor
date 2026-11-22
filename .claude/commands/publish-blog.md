@@ -54,7 +54,7 @@ cat src/data/blog-posts/$ARGUMENTS.json
 3. ファンのレビュー（`boatrace-fan-reviewer` か `discussion-panel`）で P0・P1 が0
 4. `seo-marketer` で P0・P1 が0
 
-4つとも通れば、オーケストレーターがユーザーの承認なしでマージしてよい（`.claude/skills/orchestrate/SKILL.md` 4節の段階0 F）。事業・法務・ブランドの表記、「競艇」の例外、誇大・的中率・回収率の表現、原稿の主張を変える改稿はユーザーに回す。
+4つとも通れば、窓口がユーザーの承認なしでマージしてよい（`.claude/skills/owner-session/SKILL.md`「マージしてよい範囲」の段階0 F）。事業・法務・ブランドの表記、「競艇」の例外、誇大・的中率・回収率の表現、原稿の主張を変える改稿はユーザーに回す。
 
 ### 3. featured記事の場合: 英語版作成
 
