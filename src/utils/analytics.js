@@ -90,7 +90,7 @@ export const trackPageView = (pathWithSearch) => {
   lastPageLocation = pageLocation;
 };
 
-// 再訪の計測（GS03）。その日の最初の来訪で1回、直近7日に来た日数と☆の有無を送る。
+// 再訪の計測（GS03）。その日の最初の来訪で1回、直近7日・今の ISO 週に来た日数と☆の有無を送る。
 // gtag は Cookie に同意した後にしか無いので、同意していない人の来訪日は保存も送信もしない
 export const trackVisitDay = (now = new Date()) => {
   try {
@@ -100,6 +100,7 @@ export const trackVisitDay = (now = new Date()) => {
     localStorage.setItem(VISIT_DAYS_KEY, JSON.stringify(next.days));
     trackEvent("visit_day", {
       active_days_7d: next.activeDays7d,
+      active_days_iso_week: next.activeDaysIsoWeek,
       fav_holder: favHolder(localStorage.getItem(FAVORITES_KEY)),
     });
   } catch {
