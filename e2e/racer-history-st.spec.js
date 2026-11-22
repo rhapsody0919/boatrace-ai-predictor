@@ -110,7 +110,8 @@ test("選手ページ: STの推移・展示タイムの推移の見出しと横�
     const grid = chart.locator(".recharts-cartesian-grid");
     await grid.scrollIntoViewIfNeeded();
     const label = chart.locator(".recharts-tooltip-label");
-    const dateRe = /(\d{4})-(\d{2})-\d{2}/;
+    // 見出しの年は2桁（"25-12-25 福岡 2R"）。4桁の形も受ける
+    const dateRe = /(?<![\d-])(\d{4}|\d{2})-(\d{2})-\d{2}/;
     // 描画・アニメーションの直後は反応しないことがあるので、見出しに日付が出るまで動かし直す
     await expect(async () => {
       const box = await grid.boundingBox();
@@ -121,7 +122,8 @@ test("選手ページ: STの推移・展示タイムの推移の見出しと横�
     }).toPass({ timeout: 15000 });
     const m = (await label.textContent()).match(dateRe);
     expect(m).not.toBeNull();
-    return `${m[1]}-${m[2]}`;
+    const year = m[1].length === 2 ? `20${m[1]}` : m[1];
+    return `${year}-${m[2]}`;
   };
   // 見出しの「2025年12月以降」から年月を読む
   const headingYm = async (chart) => {
