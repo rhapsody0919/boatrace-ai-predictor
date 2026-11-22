@@ -21,12 +21,13 @@ const LOCALIZED = [
     path: "/zh-TW/venue/16/meet/2026-09-28",
     expected: "/zh-TW/venue/16/meet/2026-09-28",
   },
-  { path: `/race/${RACE}`, expected: `/race/${RACE}` },
-  { path: `/en/race/${RACE}`, expected: `/en/race/${RACE}` },
+  // /race は他言語版を検索に出さないので hreflang を出さない（BOA-1701・ADR 0107）。canonical は今のまま自分の言語
+  { path: `/race/${RACE}`, expected: `/race/${RACE}`, noAlternates: true },
+  { path: `/en/race/${RACE}`, expected: `/en/race/${RACE}`, noAlternates: true },
 ];
 
-for (const { path, expected } of LOCALIZED) {
-  test(`${path}: canonical は表示中の言語の URL で、hreflang の自分の行と一致する`, async ({
+for (const { path, expected, noAlternates } of LOCALIZED) {
+  test(`${path}: canonical は表示中の言語の URL で、hreflang の自分の行と一致する（/race は hreflang 無し）`, async ({
     page,
   }) => {
     await page.goto(path, { waitUntil: "domcontentloaded" });
@@ -38,7 +39,8 @@ for (const { path, expected } of LOCALIZED) {
     const alternates = await page
       .locator('link[rel="alternate"][hreflang]')
       .evaluateAll((els) => els.map((el) => el.getAttribute("href")));
-    expect(alternates).toContain(canonical);
+    if (noAlternates) expect(alternates).toEqual([]);
+    else expect(alternates).toContain(canonical);
   });
 }
 

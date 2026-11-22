@@ -54,6 +54,8 @@ const INDEXED_SAMPLES = [
   "/en",
   "/en/venue/1",
   "/en/blog/some-post",
+  "/en/race",
+  "/en/races/2026-10-31",
   "/racer/1234",
   "/today",
 ];
