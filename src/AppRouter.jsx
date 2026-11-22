@@ -15,6 +15,7 @@ import {
 } from "./config/languages";
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import { pageViewPath } from "./utils/raceUrlState";
+import useSingleTitle from "./hooks/useSingleTitle";
 import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
@@ -394,6 +395,7 @@ function LocalizedLayout({ lng }) {
 }
 
 export default function AppRouter() {
+  useSingleTitle();
   return (
     <>
       <HashRedirect />
