@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2786,
-    "filesWithAccess": 322,
-    "tableReaders": 952,
+    "sourceFiles": 2788,
+    "filesWithAccess": 323,
+    "tableReaders": 956,
     "tableWriters": 195,
     "rpcCallers": 57,
     "nameMentions": 283,
@@ -6567,6 +6567,12 @@
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
+        },
+        {
+          "ref": "src/services/racerQueries6.js:36",
+          "op": "select",
+          "via": "helper:selectByRaceIds",
+          "columns": []
         }
       ],
       "writers": [
@@ -8216,6 +8222,16 @@
           ]
         },
         {
+          "ref": "src/services/racerQueries6.js:29",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
           "ref": "src/services/sherlockService.js:70",
           "op": "select",
           "via": "client",
@@ -8505,6 +8521,7 @@
             "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerQueries5.js:45",
+            "src/services/racerQueries6.js:29",
             "src/services/sherlockService.js:70",
             "src/services/watsonService.js:76"
           ],
@@ -8601,6 +8618,7 @@
             "src/services/racerQueries3.js:182",
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:99",
+            "src/services/racerQueries6.js:29",
             "src/services/sherlockService.js:70",
             "src/services/watsonService.js:76"
           ],
@@ -8979,7 +8997,8 @@
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
-            "src/services/racerQueries5.js:45"
+            "src/services/racerQueries5.js:45",
+            "src/services/racerQueries6.js:29"
           ],
           "writers": [
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
@@ -11590,6 +11609,12 @@
           "ref": "src/services/racerQueries3.js:37",
           "op": "select",
           "via": "helper:fetchAllByIn",
+          "columns": []
+        },
+        {
+          "ref": "src/services/racerQueries6.js:35",
+          "op": "select",
+          "via": "helper:selectByRaceIds",
           "columns": []
         },
         {
@@ -17152,6 +17177,12 @@
             "race_number",
             "venue_code"
           ]
+        },
+        {
+          "ref": "src/services/racerQueries6.js:34",
+          "op": "select",
+          "via": "helper:selectByRaceIds",
+          "columns": []
         },
         {
           "ref": "src/services/ruleMatchService.js:158",
