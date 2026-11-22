@@ -19,6 +19,7 @@ on:
     types: [completed]
     branches: [master]
     workflows:
+      - AI Readability
       - Aggregate Course Baseline Stats
       - Aggregate Racer Course Technique Stats
       - Aggregate Racer Stats
