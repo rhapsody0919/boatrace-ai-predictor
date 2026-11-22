@@ -73,6 +73,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/venueCourseTableRows.js` | 会場ページの「コース別成績と特徴（直近1年）」の表の行を組む（BOA-1687 GS02 V1）。 | venueCourseTableRows, VENUE_COURSE_SECTION_ID |
 | `src/pure/venueGuideArticles.js` | 会場ページの「<会場>の攻略記事」に出す記事を選ぶ（BOA-1692 GS02 V2）。 | venueGuideTitle, selectVenueGuideArticles, VENUE_GUIDE_CATEGORY, MAX_VENUE_GUIDE_ARTICLES |
 | `src/pure/venueModel.js` | — | makeVenue |
+| `src/pure/visitDays.js` | — | VISIT_DAYS_KEY, VISIT_WINDOW_DAYS, nextVisitDays, favHolder |
 | `src/pure/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonInterval, wilsonLowerBoundFromRate, isSmallSample |
 | `src/pure/winningTechniques.js` | — | COURSE_DEFAULT_DISTRIBUTION, COURSE_DEFAULT_DEFENSE |
 
@@ -486,7 +487,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogySonar.js` | 龍神ソナーの図の輪（承認モック sonar-tab v3）。外周＝今の件数で、内側の輪は決まった番目（5・10・25・50・100・200・400 のうち間が空… | sonarRings |
 | `src/utils/analogyTips.js` | アナロジー・ファインダー v16 の吹き出しの文（spec B-8）。純粋関数 | boatTip |
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
-| `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか10件 |
+| `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか11件 |
 | `src/utils/assistEvents.js` | — | assistEventOf |
 | `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, boardModel |
 | `src/utils/assistSession.js` | 思考アシストの買い目などを、同じタブの中でレースごとに残す（sessionStorage）。 | parseAssistSession, loadAssistSession, saveAssistSession, ASSIST_SESSION_PREFIX, ASSIST_SESSION_MAX ほか1件 |
@@ -648,4 +649,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 606 ファイル / export 3253 件。
+対象 607 ファイル / export 3258 件。
