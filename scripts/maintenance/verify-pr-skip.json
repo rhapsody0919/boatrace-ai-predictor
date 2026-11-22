@@ -1,6 +1,7 @@
 {
   "$comment": ["run-verify-pr.js（npm run verify:pr）が push の前に回さない verify（tier=ci のまま CI の Quality Gates が回す）。", "選び方: CI の Quality Gates の緑の run 44966362411（master、2026-11-22）の verify の所要が2秒を越えた物。2秒は目安（根拠なし）。verify-no-undef.js は遅いが赤の最大の型なので入れない。", "ここに無い ci 層の verify（新しく足した物を含む）は手元で回る。遅い物を足すときは ciSec に CI の実測を書く。名の順に置く。"],
   "measuredRun": 44966362411,
+  "alwaysRun": ["verify-no-undef.js"],
   "entries": [
     {"script": "verify-accident-rate.js", "ciSec": 4.4},
     {"script": "verify-analogy-feedback-migration.js", "ciSec": 14.2},
