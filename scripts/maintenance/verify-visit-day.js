@@ -29,6 +29,9 @@ const { FAVORITES_KEY } = await import("../../src/pure/favorites.js");
 
 const at = (iso) => new Date(iso);
 
+// 保存の名前を変えると全員の来訪日が消えて1から数え直す。boatai-user: はキャッシュ全削除（boatai: 接頭辞）で消えない
+assert.equal(VISIT_DAYS_KEY, "boatai-user:visit-days", "来訪日の保存の名前が変わっている");
+
 // 1. 同じ日は送らない
 let r = nextVisitDays(null, at("2026-11-22T00:00:00Z"));
 assert.deepEqual(r, { send: true, activeDays7d: 1, activeDaysIsoWeek: 1, days: ["2026-11-22"] });
@@ -57,6 +60,8 @@ for (const raw of ["{", '{"a":1}', '["x", 3, null]', '"2026-11-22"']) {
   r = nextVisitDays(raw, at("2026-11-22T03:00:00Z"));
   assert.deepEqual(r, { send: true, activeDays7d: 1, activeDaysIsoWeek: 1, days: ["2026-11-22"] }, `壊れた保存 ${raw} を空として扱っていない`);
 }
+r = nextVisitDays(JSON.stringify(["2026-11-21x", "2026-11-2"]), at("2026-11-22T03:00:00Z"));
+assert.equal(r.activeDays7d, 1, "YYYY-MM-DD でない文字列（2026-11-21x）を来訪日に数えている");
 r = nextVisitDays(JSON.stringify(["2026-11-21", "2026-11-21"]), at("2026-11-22T03:00:00Z"));
 assert.equal(r.activeDays7d, 2, "重なった日を2回数えている");
 
@@ -72,10 +77,17 @@ trackPageView("/");
 assert.equal(store.has(VISIT_DAYS_KEY), false, "gtag が無い（同意していない）のに来訪日を保存している");
 window.gtag = (...args) => sent.push(args);
 store.set(FAVORITES_KEY, JSON.stringify({ racers: [4320], venues: [] }));
+const errors = [];
+const consoleError = console.error;
+console.error = (...args) => errors.push(args);
 trackPageView("/");
+console.error = consoleError;
+assert.equal(sent.filter((a) => a[1] === "visit_day").length, 1, "最初の trackPageView で visit_day を送っていない");
+assert.deepEqual(errors, [], "visit_day の送信で trackEvent がエラーを出している（予約名の判定が崩れた）");
 trackPageView("/race/2026-11-22-01-01");
 const visits = sent.filter((a) => a[1] === "visit_day");
 assert.equal(visits.length, 1, "1回の来訪で visit_day を2回以上送っている");
+assert.equal(visits[0][0], "event", "visit_day を gtag の event として送っていない");
 assert.deepEqual(Object.keys(visits[0][2]).sort(), ["active_days_7d", "active_days_iso_week", "fav_holder"], "visit_day に決めた3つ以外の引数がある");
 assert.equal(visits[0][2].active_days_7d, 1);
 assert.equal(visits[0][2].active_days_iso_week, 1);
