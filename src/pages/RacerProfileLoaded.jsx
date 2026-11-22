@@ -8,6 +8,7 @@ import {
 } from "../components/racer";
 import RacerFrontTaking from "../components/racer/RacerFrontTaking";
 import RacerSummaryBlock from "../components/racer/RacerSummaryBlock";
+import RacerTodayRuns from "../components/racer/RacerTodayRuns";
 import { Link } from "react-router-dom";
 import DataFetchError from "../components/DataFetchError";
 import InlineFetchError from "../components/InlineFetchError";
@@ -39,6 +40,7 @@ export default function RacerProfileLoaded({
         racerId={racerId}
         isInya={front.frontTaking?.isInya === true}
       />
+      {data.profile && <RacerTodayRuns racerId={racerId} />}
       {data.profile && !period.periodFailed && (
         <RacerSummaryBlock
           grade={data.grade}

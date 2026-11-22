@@ -9,6 +9,34 @@ import {
   summarizeFrontTaking,
 } from "../utils/frontTaking.js";
 import { racerHistoryCutoff } from "../utils/racerVenueBoatStats.js";
+import { buildRacerTodayRuns } from "../pure/racerTodayRuns.js";
+import { VENUE_NAMES } from "../config/venueRules.js";
+
+// 1表の読み。失敗は throwOnError で throw（「データなし」にしない）
+async function selectByRaceIds(table, columns, raceIds) {
+  const { data } = await supabase.from(table).select(columns).in("race_id", raceIds);
+  return data ?? [];
+}
+
+/**
+ * 選手の JST の今日（today、YYYY-MM-DD）の出走（BOA-1691 R2）。1日の走は十数行までで1000行の切りに当たらない。
+ * 今節のモーターの取得（getRacerCurrentMotorStatus）は直近1走の会場・モーターから節の走を引く別の形で、重ねない
+ * @returns {Promise<ReturnType<typeof buildRacerTodayRuns>>} race_id の昇順の行。走が無ければ []
+ */
+export async function getRacerTodayRuns(racerId, today) {
+  if (!supabase) throw new Error("Supabase client not initialized");
+  const { data: entries } = await supabase
+    .from("race_entries").select("race_id, boat_number").eq("racer_id", racerId).like("race_id", `${today}-%`);
+  if (!entries?.length) return [];
+  const ids = entries.map((e) => e.race_id);
+  const ranks = [1, 2, 3, 4, 5, 6].map((n) => `rank${n}`).join(", ");
+  const [races, results, conditions] = await Promise.all([
+    selectByRaceIds("races", "race_id, start_time", ids),
+    selectByRaceIds("race_results", `race_id, ${ranks}, race_status, refund_boats`, ids),
+    selectByRaceIds("race_conditions", "race_id, series_day", ids),
+  ]);
+  return buildRacerTodayRuns({ today, entries, races, results, conditions, venueNames: VENUE_NAMES });
+}
 
 // 203 が本番に当たるまでの読み: 選手ごとの全走（getRacerScopedRaceStats）から数える。
 // 1人の取得の失敗は、その選手だけ外す（札なし。今までの札と同じ）
