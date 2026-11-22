@@ -76,6 +76,10 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
     reason:
       "prod-jobs の鍵で読み取りを1回だけ試すカナリア（PR #1679）。表を書かない",
   },
+  "linear-close-merged.yml": {
+    kind: "no_table",
+    reason: "マージした PR の Linear の票を閉じる（BOA-1711）。表を書かない",
+  },
   "nightly-verify-db.yml": {
     kind: "no_table",
     reason:

@@ -1,0 +1,41 @@
+name: Linear Close Merged
+
+# master に入った commit の PR に紐づく Linear の票を Done にしてアーカイブする（BOA-1711、hq 閉鎖 R7）。
+# 前は非公開の hq の deploy-guard・maker-merge が閉じていた。Linear の無料枠（未アーカイブ 250）が埋まらないように。
+# 判定は scripts/lib/linearCloseMerged.js（枝の BOA-N 1枚。開いた子・同じ票の開いた PR・「続き」等の語があれば閉じない）。
+# PR のイベントでなく master への push で動かす: Environment prod-jobs は master にだけ鍵を渡すため。
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: linear-close-merged
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  close:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod-jobs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # 依存のパッケージを使わない（fetch だけ）ので npm ci はしない
+      - name: Close tickets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          SHA: ${{ github.sha }}
+        run: node scripts/linear/close-merged-ticket.js "$SHA"
