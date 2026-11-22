@@ -315,6 +315,13 @@ function VenueLanguageSection({ copy, venue }) {
   );
 }
 
+// CTA の行き先: 言語版の会場ページ。code が整数の 1〜24 でなければ壊れたデータとして言語版のトップへ
+function venueCtaPath(base, code) {
+  return Number.isInteger(code) && code >= 1 && code <= 24
+    ? `${base}/venue/${code}`
+    : `${base}/`;
+}
+
 // 会場詳細ページ（/{lang}/venues/:slug）
 export function VenueGuideDetail({ lang, guides, copy }) {
   const { slug } = useParams();
@@ -378,7 +385,7 @@ export function VenueGuideDetail({ lang, guides, copy }) {
 
         <section className="eg-cta">
           <h2>{copy.seeTodaysPredictions(venue)}</h2>
-          <Link to={`${base}/`} className="eg-cta-button">
+          <Link to={venueCtaPath(base, venue.code)} className="eg-cta-button">
             {copy.ctaButton}
           </Link>
         </section>
