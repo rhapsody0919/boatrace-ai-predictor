@@ -36,6 +36,7 @@ on:
       - Generate Moriarty Recommendations
       - Generate Morning Digest
       - Generate Poirot Predictions
+      - Growth GSC Daily
       - In-Caution Nightly
       - Key Canary
       - Nightly DB Verify

@@ -639,6 +639,11 @@
       "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
     },
     {
+      "script": "verify-growth-gsc-daily.js",
+      "tier": "ci",
+      "guards": "Search Console の日別の取り込み（scripts/lib/growth/gscDaily.js、BOA-1706）。取り直す窓が PT の今日を除く直近7日であること・行の列の集合が全行で同じで欠けた値が NULL で上書きされないこと・上限に当たった日と0行の日は古い行を消さないこと・公開のリポジトリの Actions のログと失敗の文に数字の値や DB の行の中身を出さないこと"
+    },
+    {
       "script": "verify-guard-deploy-approval.js",
       "tier": "ci",
       "guards": ".claude/hooks/guard-deploy-approval.sh。本番 DB の適用の起動・承認・Environments の変更（2026-10-02）に加え、Claude の素の gh（オーナー、admin）での PR の承認・--admin のマージ・ruleset とブランチ保護の書き換えを止め、読み取りと ryujin-maker の名義のマージを通すこと。--admin は作成の App の鍵が置かれた後だけ止める。このリポジトリへの claude/ でない枝の push を止める（2026-11-06、ADR-0097 の追記）"
