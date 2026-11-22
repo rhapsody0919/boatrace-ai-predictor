@@ -12,10 +12,9 @@ import { racerHistoryCutoff } from "../utils/racerVenueBoatStats.js";
 import { buildRacerTodayRuns } from "../pure/racerTodayRuns.js";
 import { VENUE_NAMES } from "../config/venueRules.js";
 
-// 1表の読み。失敗は throw（「データなし」にしない）
+// 1表の読み。失敗は throwOnError で throw（「データなし」にしない）
 async function selectByRaceIds(table, columns, raceIds) {
-  const { data, error } = await supabase.from(table).select(columns).in("race_id", raceIds);
-  if (error) throw new Error(`${table} の取得に失敗: ${error.message}`);
+  const { data } = await supabase.from(table).select(columns).in("race_id", raceIds);
   return data ?? [];
 }
 
@@ -26,9 +25,8 @@ async function selectByRaceIds(table, columns, raceIds) {
  */
 export async function getRacerTodayRuns(racerId, today) {
   if (!supabase) throw new Error("Supabase client not initialized");
-  const { data: entries, error } = await supabase
+  const { data: entries } = await supabase
     .from("race_entries").select("race_id, boat_number").eq("racer_id", racerId).like("race_id", `${today}-%`);
-  if (error) throw new Error(`race_entries の取得に失敗: ${error.message}`);
   if (!entries?.length) return [];
   const ids = entries.map((e) => e.race_id);
   const ranks = [1, 2, 3, 4, 5, 6].map((n) => `rank${n}`).join(", ");
