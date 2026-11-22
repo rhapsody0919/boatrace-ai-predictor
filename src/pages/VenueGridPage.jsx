@@ -261,6 +261,7 @@ function PastVenueGridPage({ date }) {
               venuesData={venuesData}
               getVenueLink={(code) => `/races/${date}/${code}`}
               nowHHMM={nowHHMM}
+              linkClosed={false}
             />
           )}
         </div>
