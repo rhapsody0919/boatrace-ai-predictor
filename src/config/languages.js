@@ -151,7 +151,28 @@ export function getLanguage(code) {
 }
 
 /**
- * ページの言語版の組（hreflang）。1言語しか無いページは空配列。デフォルト言語の版があれば x-default も足す。
+ * ページは出すが検索に出さない言語版（BOA-1701、docs/adr/0107-noindex-localized-race-pages.md）。
+ * 言語の接頭を外したパスの前方一致。ja（既定の言語）には当てない。
+ * 応答のヘッダ（vercel.json の X-Robots-Tag）・sitemap・hreflang はこの表に従う（verify-search-index-policy.js が照合）
+ */
+export const NOINDEX_LOCALIZED_PREFIXES = ["/race/"];
+
+/**
+ * その言語版を検索に出すか（純粋）。ja は常に出す。他言語は NOINDEX_LOCALIZED_PREFIXES の配下なら出さない
+ *
+ * @param {string} basePath - 言語プレフィックスを除いたパス
+ * @param {string} lang - 言語コード
+ * @returns {boolean}
+ */
+export function isSearchIndexed(basePath, lang) {
+  if (lang === DEFAULT_LANGUAGE) return true;
+  return !NOINDEX_LOCALIZED_PREFIXES.some((prefix) =>
+    basePath.startsWith(prefix),
+  );
+}
+
+/**
+ * ページの言語版の組（hreflang）。検索に出す言語版だけで組み、1言語しか無いページは空配列。デフォルト言語の版があれば x-default も足す。
  * 画面の HreflangTags・sitemap・ボット向け HTML（ADR 0089）が同じ値を出すよう、ここで1回だけ組む
  *
  * @param {string} basePath - 言語プレフィックスを除いたパス
@@ -159,7 +180,10 @@ export function getLanguage(code) {
  * @returns {{hreflang: string, href: string}[]}
  */
 export function getHreflangAlternates(basePath, siteUrl) {
-  const languages = getAvailableLanguages(basePath);
+  // 検索に出さない言語版は組に入れない（/race/<id> は ja だけになり空配列）
+  const languages = getAvailableLanguages(basePath).filter(({ code }) =>
+    isSearchIndexed(basePath, code),
+  );
   if (languages.length < 2) return [];
   const urlFor = (code) => `${siteUrl}${localizePath(basePath, code)}`;
   return [

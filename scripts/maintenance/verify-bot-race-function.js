@@ -6,7 +6,7 @@
  *
  * 守るもの:
  * 1. 200・Cache-Control（第1段と同じ）。head の title・description・canonical・robots・lang が人のレース詳細と同じ関数の値
- *    （src/utils/raceDetailHeading.js）。hreflang は4言語と x-default、JSON-LD は共通の3つとパンくず
+ *    （src/utils/raceDetailHeading.js）。hreflang は0（他言語の /race は検索に出さない、BOA-1701）、JSON-LD は共通の3つとパンくず
  * 2. 本文: パンくず・グレードと節タイトル・h1（会場名と NR・種別・日目。日目は同じ会場の他レースで補う）・「← レース一覧に戻る」・
  *    「データ分析結果 - 会場 NR（締切 HH:MM）」。締切は結果が出たら消す（人と同じ）
  * 3. 決定7の除外: 出走表の勝率・モーター、オッズ、払戻、着順・タイム・決まり手が本文に入らない。選手名は出走6艇の一覧の中だけ

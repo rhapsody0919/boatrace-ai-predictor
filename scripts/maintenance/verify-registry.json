@@ -1590,6 +1590,11 @@
       "command": "node scripts/maintenance/verify-search-bot-ip-ranges.js"
     },
     {
+      "script": "verify-search-index-policy.js",
+      "tier": "ci",
+      "guards": "他言語の /race を検索に出さない決まり（BOA-1701・ADR 0107）が、languages.js の表・sitemap・hreflang・vercel.json の X-Robots-Tag: noindex・robots.txt で食い違わないこと。ja の /race を巻き込まない"
+    },
+    {
       "script": "verify-seo-keyword-kpi.js",
       "tier": "ci",
       "guards": "SEOワード戦略のKPI集計（scripts/lib/seoKeywordKpi.js）のクラスタ分け・週の丸め・着地ページ分類。崩れると旧名系とAI予想一般が混ざり施策の効果を取り違える"

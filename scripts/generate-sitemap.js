@@ -7,6 +7,7 @@ import {
   localizePath,
   parseLangFromPath,
   getHreflangAlternates,
+  isSearchIndexed,
 } from "../src/config/languages.js";
 import { RACER_INDEX_ACTIVE_DAYS } from "../src/utils/racerIndexPolicy.js";
 import { getDaysAgoJST } from "../src/utils/dateUtils.js";
@@ -357,6 +358,22 @@ function alternatesFor(loc) {
   return getHreflangAlternates(parseLangFromPath(loc).basePath, SITE_URL);
 }
 
+// 検索に出さない URL（isSearchIndexed）が混じっていたら黙って落とさず止める（BOA-1701）
+function assertSearchIndexed(pages) {
+  const bad = pages.filter(({ loc }) => {
+    const { lng, basePath } = parseLangFromPath(loc);
+    return !isSearchIndexed(basePath, lng);
+  });
+  if (bad.length > 0) {
+    throw new Error(
+      `sitemap に検索に出さない URL が混じった（${bad.length}件、先頭: ${bad
+        .slice(0, 3)
+        .map((p) => p.loc)
+        .join(", ")}）。src/config/languages.js の NOINDEX_LOCALIZED_PREFIXES を見る`,
+    );
+  }
+}
+
 // sitemap.xmlの生成
 export async function generateSitemap() {
   const blogPosts = getBlogPosts(blogLastmod);
@@ -395,27 +412,18 @@ export async function generateSitemap() {
     }
   };
 
-  // レース詳細の言語版。ja の行（loc /race/<id>）を同じ lastmod・changefreq・priority で展開する
-  // （思考アシストは ja 専用なので足さない）
-  const localizedRaceDetailPages = SUPPORTED_LANGUAGES.filter(
-    ({ code }) => code !== DEFAULT_LANGUAGE,
-  ).flatMap(({ code }) =>
-    raceDetailPages.map((page) => ({
-      ...page,
-      loc: localizePath(page.loc, code),
-    })),
-  );
-
+  // レース詳細の言語版は載せない（検索に出さない、BOA-1701・ADR 0107）。ja の /race/<id> だけ
   const allPages = [
     ...staticPages,
     ...localizedPages,
     ...blogPosts,
     ...racePages,
     ...raceDetailPages,
-    ...localizedRaceDetailPages,
     ...racerPages,
     ...meetPages,
   ];
+
+  assertSearchIndexed(allPages);
 
   // 単一 sitemap の上限。超過した XML は書き出さない。
   if (allPages.length > 50000) {
