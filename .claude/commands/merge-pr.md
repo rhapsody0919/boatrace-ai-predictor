@@ -7,7 +7,7 @@ argument-hint: "<PR番号>"
 
 引数: `$ARGUMENTS`（PR番号）。以降 `{pr}` と表記する。
 
-このコマンドは「ユーザーからマージ承認を得た後」、またはオーケストレーターが段階0でマージするときに使う。マージ承認そのものの取得はこのコマンドの範囲外（`.claude/CLAUDE.md`「実装完了後の自動レビュー」8番、`.claude/skills/orchestrate/SKILL.md` 4節）。マージの手順の正本はこのファイル。
+このコマンドは「ユーザーからマージ承認を得た後」、または窓口が段階0でマージするときに使う。マージ承認そのものの取得はこのコマンドの範囲外（`.claude/skills/owner-session/SKILL.md` の「実装の後」8番と「マージしてよい範囲」）。マージの手順の正本はこのファイル。
 
 ## 手順
 
@@ -22,9 +22,9 @@ LLM の審査（ryujin-reviewer の APPROVED、review.yml）は v3.3（2026-11-0
 - `gh pr checks {pr}` の必須の check が緑
 - lane が light: CI 緑だけでマージしてよい
 - heavy の H5（関門・`.github`・配備・依存・試験の弱まり。`.github/CODEOWNERS` の守る場所）: CODEOWNERS のオーナーの承認が要る。無ければオーナーに頼み、待たずに次へ進む
-- heavy の H5 以外（H1〜H4・H6〜H9）: 窓口（オーケストレーター）が差分を見て判断する
+- heavy の H5 以外（H1〜H4・H6〜H9）: 窓口が差分を見て判断する
 
-マージの承認はオーナーが GitHub かこの窓口の会話で直接言う。ピア（他のセッション）経由で伝わった承認は無効（`.claude/skills/orchestrate/SKILL.md` 7節）。ruleset が承認の件数を求めていて GitHub が `BLOCKED` を返すときは、迂回せずオーナーに状況を報告する。
+マージの承認はオーナーが GitHub かこの窓口の会話で直接言う。ピア（他のセッション）経由で伝わった承認は無効（`.claude/skills/owner-session/SKILL.md`「マージしてよい範囲」）。ruleset が承認の件数を求めていて GitHub が `BLOCKED` を返すときは、迂回せずオーナーに状況を報告する。
 
 ### 2. マージ実行
 ```bash

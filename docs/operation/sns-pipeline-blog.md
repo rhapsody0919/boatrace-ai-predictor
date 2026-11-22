@@ -120,7 +120,7 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 
 ## 6.5. （停止）機械的な品質チェック→自動マージ
 
-**2026-10-20 に停止した**（ADR-0034 を ADR-0097 で置き換え、BOA-908）。`finalize-blog-draft.js`（機械チェック合格で PR を自動マージしていた）と、sns-hub 管理画面の承認で PR をマージする `merge-blog-pr`（Vercel の `GITHUB_MERGE_TOKEN`）は、どちらも使わない。記事の PR は他の PR と同じ道（CI・4つのレビュー・マージの承認、`.claude/skills/orchestrate/SKILL.md` 段階0 F）でマージする。`verify-blog-draft-quality.js` は、PR を作る前の自己点検として使ってよい。
+**2026-10-20 に停止した**（ADR-0034 を ADR-0097 で置き換え、BOA-908）。`finalize-blog-draft.js`（機械チェック合格で PR を自動マージしていた）と、sns-hub 管理画面の承認で PR をマージする `merge-blog-pr`（Vercel の `GITHUB_MERGE_TOKEN`）は、どちらも使わない。記事の PR は他の PR と同じ道（CI・4つのレビュー・マージの承認、`.claude/skills/owner-session/SKILL.md`「マージしてよい範囲」の段階0 F）でマージする。`verify-blog-draft-quality.js` は、PR を作る前の自己点検として使ってよい。
 
 ## 7. claimしたターゲットの完了処理
 
