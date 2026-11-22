@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2789,
-    "filesWithAccess": 323,
+    "sourceFiles": 2792,
+    "filesWithAccess": 324,
     "tableReaders": 956,
-    "tableWriters": 195,
+    "tableWriters": 197,
     "rpcCallers": 57,
     "nameMentions": 283,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 9,
+    "notInSnapshot": 10,
     "unresolved": 35,
     "parseErrors": 0,
     "uncoveredFiles": 56
@@ -30123,6 +30123,14 @@
         "scripts/lib/eveDeadlinesJob.js:80",
         "scripts/lib/eveDeadlinesJob.js:274",
         "scripts/lib/eveDeadlinesJob.js:399"
+      ]
+    },
+    {
+      "kind": "table",
+      "name": "growth_gsc_daily",
+      "refs": [
+        "scripts/growth/collect-gsc-daily.js:39",
+        "scripts/growth/collect-gsc-daily.js:45"
       ]
     },
     {
