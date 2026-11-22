@@ -109,7 +109,7 @@
     "sns:push-full-picture": "node --env-file=.env.local scripts/sns/push-full-picture.js",
     "verify": "npm run verify:ci && node scripts/maintenance/lint-changed.js",
     "verify:ci": "node scripts/maintenance/run-verify-registry.js",
-    "verify:pr": "node scripts/maintenance/lint-changed.js --ci && node scripts/maintenance/verify-no-undef.js",
+    "verify:pr": "node scripts/maintenance/lint-changed.js --ci && node scripts/maintenance/run-verify-pr.js",
     "verify:registry": "node scripts/maintenance/run-verify-registry.js --check",
     "verify:list": "node scripts/maintenance/run-verify-registry.js --list",
     "test:e2e": "bash scripts/maintenance/run-heavy.sh playwright test",
