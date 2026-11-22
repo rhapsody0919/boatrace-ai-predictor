@@ -95,9 +95,13 @@ test.describe("節を置かない", () => {
 });
 
 test.describe("純関数 racerTodayRuns", () => {
+  // pure は src/config を読めないので、場名の表は呼び手（racerQueries6.js は VENUE_NAMES）が渡す
+  const venueNames = { 12: "住之江" };
+
   test("race_id から場と R を取り出す", () => {
-    expect(splitTodayRaceId("2026-11-22-12-03")).toMatchObject({ date: "2026-11-22", venueName: "住之江", raceNo: 3 });
-    expect(splitTodayRaceId("bad")).toBeNull();
+    expect(splitTodayRaceId("2026-11-22-12-03", venueNames)).toMatchObject({ date: "2026-11-22", venueName: "住之江", raceNo: 3 });
+    expect(splitTodayRaceId("2026-11-22-05-01", venueNames)).toMatchObject({ venueName: "会場5", raceNo: 1 });
+    expect(splitTodayRaceId("bad", venueNames)).toBeNull();
   });
 
   test("着順: rank に艇番があれば n着、不成立・返還・どの rank にも無い時", () => {
@@ -116,6 +120,7 @@ test.describe("純関数 racerTodayRuns", () => {
       races: [{ race_id: a, start_time: "16:42:00" }],
       results: [{ race_id: b, rank1: 2 }],
       conditions: [{ race_id: a, series_day: 4 }],
+      venueNames,
     });
     expect(runs.map((r) => r.raceId)).toEqual([b, a]);
     expect(runs[0]).toMatchObject({ finish: "1着", deadline: null, boatNumber: 2 });

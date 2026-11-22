@@ -1,13 +1,13 @@
 // 選手ページの「今日の出走」の行を組む（BOA-1691 R2）。取得は racerQueries6.js の getRacerTodayRuns
-import { VENUE_NAMES } from "../config/venueRules.js";
+// pure の根は src/config を読めないので、場名の表（venueNames、"01"〜"24" → 場名）は呼び手から渡す
 import { parseRaceId } from "./raceId.js";
 
 /** race_id（YYYY-MM-DD-VV-RR）から日付・場名・R。形式が違えば null */
-export function splitTodayRaceId(raceId) {
+export function splitTodayRaceId(raceId, venueNames = {}) {
   const parsed = parseRaceId(raceId);
   if (!parsed) return null;
   const code = String(parsed.venueCode).padStart(2, "0");
-  return { ...parsed, venueName: VENUE_NAMES[code] ?? `会場${parsed.venueCode}` };
+  return { ...parsed, venueName: venueNames[code] ?? `会場${parsed.venueCode}` };
 }
 
 /**
@@ -27,11 +27,11 @@ export function finishLabelOf(result, boatNumber) {
 }
 
 /** 当日（today、JST の YYYY-MM-DD）の走だけを race_id の昇順で返す。各行は {raceId, venueName, raceNo, boatNumber, deadline, finish, seriesDay} */
-export function buildRacerTodayRuns({ today, entries, races, results, conditions }) {
+export function buildRacerTodayRuns({ today, entries, races, results, conditions, venueNames }) {
   const byId = (rows) => new Map((rows ?? []).map((r) => [r.race_id, r]));
   const [raceMap, resultMap, conditionMap] = [byId(races), byId(results), byId(conditions)];
   return (entries ?? [])
-    .map((entry) => ({ entry, id: splitTodayRaceId(entry.race_id) }))
+    .map((entry) => ({ entry, id: splitTodayRaceId(entry.race_id, venueNames) }))
     .filter(({ id }) => id && id.date === today)
     .sort((a, b) => a.entry.race_id.localeCompare(b.entry.race_id))
     .map(({ entry, id }) => ({
