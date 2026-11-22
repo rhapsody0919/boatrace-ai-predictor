@@ -2077,6 +2077,11 @@
       "guards": "vercel.json の ignoreCommand（scripts/lib/vercelIgnoreBuild.js、BOA-908）。docs・台帳・機械の再生成・ワークフローだけの変更ではビルドせず、public/blog/*.md・run-heavy.sh・src・api・ルートの data/*・risk-rules.json・作り直し（差分なし）ではビルドすること"
     },
     {
+      "script": "verify-visit-day.js",
+      "tier": "ci",
+      "guards": "再訪の計測 visit_day（GS03）。同じ JST の日に2回送らない・直近7日だけ数える・壊れた保存は空・☆の有無は5つの値だけ・Cookie に同意していない（gtag が無い）ときは保存も送信もしない。崩れると hq の「7日の窓で2日以上来た端末」の数が化ける"
+    },
+    {
       "script": "verify-volatility-accuracy-heading.js",
       "tier": "ci",
       "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"

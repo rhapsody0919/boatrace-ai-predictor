@@ -1,3 +1,6 @@
+import { VISIT_DAYS_KEY, nextVisitDays, favHolder } from "../pure/visitDays.js";
+import { FAVORITES_KEY } from "../pure/favorites.js";
+
 // Cookie同意管理
 const CONSENT_KEY = "boatai:cookie-consent";
 
@@ -83,7 +86,25 @@ export const trackPageView = (pathWithSearch) => {
     // 初回は document.referrer（外部の流入元）をそのまま使わせる
     ...(lastPageLocation ? { page_referrer: lastPageLocation } : {}),
   });
+  if (lastPageLocation === null) trackVisitDay();
   lastPageLocation = pageLocation;
+};
+
+// 再訪の計測（GS03）。その日の最初の来訪で1回、直近7日に来た日数と☆の有無を送る。
+// gtag は Cookie に同意した後にしか無いので、同意していない人の来訪日は保存も送信もしない
+export const trackVisitDay = (now = new Date()) => {
+  try {
+    const next = nextVisitDays(localStorage.getItem(VISIT_DAYS_KEY), now);
+    if (!next.send) return;
+    // 保存できなければ同じ日に何度も送るので、送らない
+    localStorage.setItem(VISIT_DAYS_KEY, JSON.stringify(next.days));
+    trackEvent("visit_day", {
+      active_days_7d: next.activeDays7d,
+      fav_holder: favHolder(localStorage.getItem(FAVORITES_KEY)),
+    });
+  } catch {
+    // ストレージが使えない環境では送らない
+  }
 };
 
 // GA4 がセッションの流入元（source / medium / campaign 等）として読むパラメータ名。
