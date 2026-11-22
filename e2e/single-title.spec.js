@@ -28,7 +28,7 @@ const titleTexts = (page) =>
       .map((el) => el.textContent),
   );
 
-test.describe("head の title は1つ", () => {
+test.describe("head の title は1つ @blog", () => {
   for (const path of PAGES) {
     test(`${path} を直接開くと title が1つで document.title と一致する`, async ({
       page,
