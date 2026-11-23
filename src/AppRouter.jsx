@@ -26,6 +26,7 @@ import BlogPost from "./pages/BlogPost";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import HowToUse from "./pages/HowToUse";
+import SiteUpdates from "./pages/SiteUpdates";
 import RaceHistory from "./pages/RaceHistory";
 import RacerProfile from "./pages/RacerProfile";
 import RacersPage from "./pages/RacersPage";
@@ -232,6 +233,8 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="about" element={<About />} />
       <Route path="faq" element={<FAQ />} />
       <Route path="how-to-use" element={<HowToUse />} />
+      {/* 更新のお知らせ（ja 専用、docs/design/site-updates/） */}
+      <Route path="updates" element={<SiteUpdates />} />
       <Route path="profile" element={<Profile />} />
       {/* 言語別: 初心者向け入門ガイド（対応言語は GUIDE_BY_LANG）、日本語はコンテンツハブ */}
       <Route path="guide" element={<Guide />} />

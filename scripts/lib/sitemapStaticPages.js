@@ -37,6 +37,11 @@ export const staticPages = [
     priority: "0.9",
   },
   {
+    loc: "/updates",
+    changefreq: "weekly",
+    priority: "0.6",
+  },
+  {
     loc: "/privacy",
     changefreq: "yearly",
     priority: "0.3",
