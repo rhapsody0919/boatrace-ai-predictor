@@ -2,7 +2,6 @@ import { test, expect } from "./fixtures.js";
 
 /**
  * 会場ページのレースの塊（公式スマホの形、docs/design/venue-race-card-redesign/approved.md）。
- * 帯に R・種別・締切、終わったら結果1行、表、詳細・AI予想・直前情報（結果）、「↑ レース一覧」。会場名とグレードの札は出さない。
  * Edge API を差し替えて固定する（venue-next-race.spec.js と同じ並び。14:00 で 1〜6R は結果あり、9R が次）。
  */
 
@@ -14,13 +13,8 @@ const startOf = (n) => {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 };
 const entry = (i) => ({ number: i, name: `選手${i}`, grade: "B1" });
-const result = {
-  rank1: 4,
-  rank2: 2,
-  rank3: 1,
-  winningTechnique: "まくり",
-  payoutTrio: 8450,
-};
+const result = { rank1: 4, rank2: 2, rank3: 1, payoutTrio: 8450 };
+result.winningTechnique = "まくり";
 
 const edgeData = () => ({
   generatedAt: `${DATE}T00:00:00Z`,
@@ -76,7 +70,6 @@ for (const width of [375, 768, 1024, 1440]) {
       "href",
       `/race/${idOf(1)}?tab=result`,
     );
-    // これからのレースは結果の行が無く、3つ目は直前情報。準優勝戦は種別の字で出す
     const next = cards.nth(9);
     await expect(next.getByTestId("venue-race-result")).toHaveCount(0);
     await expect(next.locator(".race-card-header")).toContainText("準優勝戦");

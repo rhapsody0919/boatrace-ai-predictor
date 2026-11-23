@@ -1,8 +1,6 @@
 /**
- * 会場ページのレースの塊（公式スマホの形、docs/design/venue-race-card-redesign/approved.md）。
- * 帯「7R 一般戦 締切予定時刻 13:28」→（終わったら結果1行）→ 6艇の表 → 詳細・AI予想・直前情報（結果）→「↑ レース一覧」。
- * 会場名・グレードの札（見出しに出る）と締切の2段を消した。終わったレースも畳まず同じ形（オーナー 2026-11-23）。
- * 試験とクリックの計測が頼る `.race-card`・`.race-card-header`・`.predict-btn` は RaceCard と同じに残す
+ * 会場ページのレースの塊（公式スマホの形、docs/design/venue-race-card-redesign/approved.md）。会場名・グレードの札・締切の2段を消し、
+ * 終わったレースも同じ形に結果1行。試験と計測が頼る .race-card・.race-card-header・.predict-btn は RaceCard と同じに残す
  */
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -45,7 +43,6 @@ export default function VenueRaceBlock({ race, raceHref, nowHHMM }) {
   const finished = Boolean(s.result?.finished);
   const onDetail = s.inCaution
     ? () => {
-        // 注意度の札のあるレースから詳細へ（BOA-822 task 27。RaceCard と同じ計測）
         const ev = cautionClickEvent({
           surface: "race_list",
           target: "race",
@@ -100,7 +97,6 @@ export default function VenueRaceBlock({ race, raceHref, nowHHMM }) {
           {t(finished ? "raceTabs.result" : "raceTabs.beforeInfo")}
         </Link>
       </nav>
-      {/* 公式の「レース選択へ」。見出しの 1R〜12R へ戻る */}
       <button
         type="button"
         className="venue-race-block__back"

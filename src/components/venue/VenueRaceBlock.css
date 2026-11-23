@@ -3,7 +3,6 @@
 .race-list-section .race-card.venue-race-block {
   padding: 1rem;
 }
-
 .race-list-section .venue-race-block .race-card-header {
   flex-wrap: wrap;
   align-items: baseline;
@@ -12,13 +11,10 @@
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
 }
-
 .venue-race-block__rn {
   font-size: 1.5rem;
   font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
 }
-
 .venue-race-block__time {
   display: flex;
   flex-wrap: wrap;
@@ -28,33 +24,24 @@
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
-
-/* 札は帯の2段目（空なら高さを取らない） */
+/* 札は帯の2段目 */
 .race-list-section .venue-race-block .race-card-badges {
   flex-basis: 100%;
   order: 3;
   margin-left: 0;
 }
-
-.race-list-section .venue-race-block .race-card-badges:empty {
-  display: none;
-}
-
 .venue-race-block__result {
   display: flex;
   flex-wrap: wrap;
   gap: 0 0.75rem;
   margin: 0 0 0.75rem;
-  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
-
 .venue-race-block__links {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.75rem;
 }
-
 .venue-race-block__links a {
   flex: 1 1 0;
   display: flex;
@@ -66,19 +53,15 @@
   color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: var(--font-weight-bold);
-  text-align: center;
   text-decoration: none;
 }
-
 /* 詳細だけは今の色のボタン（ホームのカードと同じ見た目を小さく） */
 .race-list-section .venue-race-block a.predict-btn {
   width: auto;
   padding: 0.5rem;
-  min-height: 44px;
   border: none;
   font-size: 0.875rem;
 }
-
 .venue-race-block__back {
   display: block;
   margin: 0.5rem 0 0 auto;
