@@ -28,7 +28,7 @@
 | AI の読み取り | `claude_ro` には読ませない。読むのは service_role だけ | 自由記述に名前・連絡先が書かれうる（オーナー 2026-11-23） |
 | 保存の期限 | 置かない（行が1,000を超えたら見直す。名前・連絡先を見つけたらその都度消す） | 龍神ソナーの声と同じ（オーナー 2026-11-23） |
 | プライバシーポリシー | 文案を作って別の PR で出す。画面の公開より先に入れる | オーナー 2026-11-23 |
-| 入口 | 右下の浮かぶボタン。`links` を渡すフッター（ホーム・お問い合わせ等の `App` のページ・ContentHub・会場ガイド・ガイド）にも同じパネルを開く入口 | どの画面でも同じ場所にあり、思いついた画面でそのまま書ける |
+| 入口 | 右下の浮かぶボタン。`links` を渡すフッター（ホーム・お問い合わせ等の `App` のページ・ContentHub・データ分析・会場ガイド・ガイド）にも同じパネルを開く入口。レース詳細・ブログ記事・選手・/today はフッターを描かないので、右下のボタンだけ | どの画面でも同じ場所にあり、思いついた画面でそのまま書ける |
 | 形 | 押すと入力パネル（600px 以下は下からのシート、それより広いと右下の小窓） | チャットの形（返事を待たせる）にしない。開発者が1人で即答できない |
 | 評価 | 星 1〜5 を任意で1つ | 依頼の「1から5の星」 |
 | 種類 | 送る人が選ぶ（任意）。自動の分類はしない。4つは仮で、集まった声を見て見直す | |
@@ -44,8 +44,8 @@
 | R4 | 出さない画面 | `/admin/*`・`/share/*`・`/race/:id/assist`（言語の接頭辞つきも）。ボタンもフッターの入口も出さない |
 | R5 | パネルの中身 | 上から、見出し・説明・内容（必須、500字まで、文字数の表示）・種類（任意の1つ: 欲しい機能／使いにくいところ／データの誤り／その他）・満足度（任意の星 1〜5）・送る・保存する物の注記 |
 | R6 | 送る | 内容の前後の空白を除いて1〜500字なら送る。空で押したら送らずに「内容を書いてください」を出し、入力欄へフォーカスを移す。送っている間は「送っています…」で、もう一度押しても送らない（ボタンは `aria-disabled`。`disabled` にするとフォーカスがパネルの外へ落ちる）。種類・星のラジオの上の Enter では送らない（選んだつもりの Enter で誤って送らない） |
-| R7 | 送った後 | 見出しが「受け取りました」に替わり、お礼・返信できない断り・「もう1件書く」「閉じる」。閉じて開き直すと空から始まる（画面を移って閉じた場合も） |
-| R8 | 送れなかったとき | 「送れませんでした。時間をおいてもう一度押してください」を出し、書いた内容・選んだ物は残す。GA4 に `site_feedback_send_failed`（`error_code` だけ。本文は送らない）を送る |
+| R7 | 送った後 | 見出しが「受け取りました」に替わり、お礼・返信できない断りとお問い合わせページ（`/contact`、ja 専用なので接頭辞なし）へのリンク・「もう1件書く」「閉じる」。閉じて開き直すと空から始まる（画面を移って閉じた場合も） |
+| R8 | 送れなかったとき | 「送れませんでした。時間をおいてもう一度押してください」を出し、書いた内容・選んだ物は残す。書き直し始めたら消す。GA4 に `site_feedback_send_failed`（`error_code` だけ。本文は送らない）を送る |
 | R9 | 閉じ方 | ×・Esc・背景のクリック。書きかけは残る。別の画面へ移ったら閉じる（戻る→進むで開き直さない）。利用者が閉じたら開いた入口へフォーカスを戻す（画面を移って閉じたときは戻さない）。日本語の変換を取り消す Esc では閉じない |
 | R10 | キーボード・読み上げ | `role="dialog"`。Tab はパネルの外へ出ない。種類・星は本物のラジオ（Tab は1か所、矢印キーで動く。選んだ物をもう一度押すか Space で外れる）。パネルの中の押せる部品は 44px 以上（フッターの入口は並びのリンクと同じ大きさ） |
 | R11 | スマホ | 指で触る端末は、開いた瞬間に入力欄へフォーカスしない（キーボードで全体が隠れない）。キーボードが出たら、その高さだけシートを持ち上げる（指で拡大している間は持ち上げない）。入力欄は 16px（iOS が拡大しない）。シートを開いている間は後ろをスクロールさせない（広い幅の小窓では止めない。スクロールバーが消えて本文が横にずれるため） |
@@ -58,8 +58,8 @@ db-apply は master にあるファイルしか当てず、本番の配備は1�
 
 1. **表の PR**（`claude/site-feedback-db`）: `205_site_feedback.sql`・台帳の行・`verify-site-feedback-migration.js`・この spec。オーナーがマージする
 2. **db-apply**: オーナーが Actions で起動して承認する。成功すると台帳（APPLIED.md）が「適用済み」になる
-3. **プライバシーポリシーの PR**: 文案をオーナーが確かめてマージする
-4. **画面の PR**（`claude/site-feedback-box`）: `verify-site-feedback.js` が、台帳で `205_site_feedback.sql` が適用済みでなければ赤になる。2 の後に master を取り込むと緑になる
+3. **プライバシーポリシーの PR**（`claude/privacy-feedback-storage`）: 文案をオーナーが確かめてマージする
+4. **画面の PR**（`claude/site-feedback-box`）: `verify-site-feedback.js` が、台帳で `205_site_feedback.sql` が適用済みでない、またはポリシーに保存の記載が無いと赤になる。2・3 の後に master から作り直す（1 と同じ所に `verify-registry.json` の行を足すので、取り込むと衝突する。AGENTS.md の決まりどおり、衝突は解かずに新しい枝で作り直す）
 
 ## スコープ
 
@@ -77,6 +77,7 @@ db-apply は master にあるファイルしか当てず、本番の配備は1�
 
 - 実機（iPhone Safari・Android Chrome）でのキーボードとシートの動き。Playwright では画面のキーボードが出ない
 - AdSense の画面下の帯（アンカー広告）が下に出た回の重なり
+- 予想の画面（/picks・/holmes・/poirot）は、ページの種類が `other` になる。分けるなら CHECK を広げるマイグレーションを先に当てる
 - 集まる件数。ソナーの声の実績（17日で14行）より多いか少ないかは、出してみないと分からない。連投の上限（24時間10行・10分30行）もその実績からの目安
 
 ## 関係するファイル
@@ -87,10 +88,11 @@ db-apply は master にあるファイルしか当てず、本番の配備は1�
 | `scripts/maintenance/verify-site-feedback-migration.js` | 表を PGlite に当てる検査 |
 | `src/pure/siteFeedback.js` | 列挙値・上限・ページの種類・出さない画面・送る1行 |
 | `src/pure/clientKey.js` | ブラウザごとの匿名の識別番号（龍神ソナーの声と共通。`AnalogyFeedback.jsx` の中にあった物を出した） |
-| `src/components/siteFeedback/` | ボタン（`SiteFeedback.jsx`）・パネル（`SiteFeedbackPanel.jsx`）・入力と送信（`useSiteFeedbackForm.js`）・見た目（`SiteFeedback.css`） |
+| `src/components/siteFeedback/` | ボタン（`SiteFeedback.jsx`）・パネル（`SiteFeedbackPanel.jsx`）・入力と送信（`useSiteFeedbackForm.js`）・見た目（`SiteFeedback.css`）・フッターから開くイベントの名前（`openEvent.js`） |
 | `src/services/analogyFeedback.js` | `sendSiteFeedback`（`site_feedback` への INSERT）。匿名の声を送る既存のファイルに足した（`src/services/` に `<領域>Queries*.js` でない新しいファイルは足せない決まり） |
 | `src/components/Footer.jsx` | フッターの入口 |
 | `src/AppRouter.jsx` | 全画面への組み込み |
 | `src/locales/{ja,en,zh-TW,ko}/common.json` | `siteFeedback.*` |
-| `scripts/maintenance/verify-site-feedback.js` | 画面の決まりと表の列挙の突き合わせ、台帳の関門 |
-| `e2e/site-feedback.spec.js`・`e2e/site-feedback-mobile.spec.js` | 画面の動き |
+| `scripts/maintenance/verify-site-feedback.js` | 画面の決まりと表の列挙の突き合わせ、台帳とポリシーの関門 |
+| `e2e/site-feedback.spec.js`・`e2e/site-feedback-placement.spec.js`・`e2e/site-feedback-helpers.js` | 画面の動き（入力と送信・置き場所とスマホ・共通の部品） |
+| `src/components/privacy/` | プライバシーポリシーの追記（別の PR） |
