@@ -10,9 +10,10 @@
 .six-boat-course .is-muted .six-boat-course-rate,
 .six-boat-course .is-muted td > span[title] { color: var(--text-secondary); }
 .six-boat-course .six-boat-course-diff { color: inherit; }
+/* 選んだ艇の行。金は最良だけなので本文の色の線と薄い地（2026-11-23 visual-designer 判定 B） */
 .six-boat-course tbody tr.is-focused {
-  box-shadow: inset 4px 0 var(--brand-accent-primary);
-  background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
+  box-shadow: inset 4px 0 var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 .six-boat-course-period { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2, 0.5rem); margin: 0.5rem 0; }
 .six-boat-course-range { font-size: var(--font-size-sm, 0.875rem); color: var(--text-secondary); }
