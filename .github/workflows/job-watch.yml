@@ -26,6 +26,7 @@ on:
       - Bot HTML Parity (日中の照合)
       - Calculate Accuracy Daily
       - Collect Racer News
+      - Content Auto Merge
       - Content Ops Nightly Check
       - DB Apply (production)
       - E2E Live (本番データ)

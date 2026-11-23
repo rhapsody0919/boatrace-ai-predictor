@@ -287,6 +287,11 @@
       "guards": "codex/・claude/ のブランチで Vercel が Preview を作らない設定（vercel.json の git.deploymentEnabled[\"codex/**\"]・[\"claude/**\"]=false。claude/ は 2026-11-06 オーナー決定）。Preview 環境に載る本番 DB の管理者キーを、レビュー・マージの前の AI のコードに渡さないため。全体の false（本番デプロイまで止まる）と、AI の枝に当たりうる true の規則も検知する"
     },
     {
+      "script": "verify-content-auto-merge.js",
+      "tier": "ci",
+      "guards": "記事の PR を人の手なしでマージしてよいかの判定（scripts/lib/contentAutoMerge.js、オーナー 2026-11-23）。段階0 F の条件（置き場・削除・4つの審査・P0・content-qa と言葉の P1・判断の要る語・必須の check・pr-lane）を1つでも欠く PR はマージしないこと"
+    },
+    {
       "script": "verify-content-index-coverage.js",
       "tier": "ci",
       "guards": "docs/design/{slug}/content-index.json の形式（フローA-2のトレーサビリティ索引）"
