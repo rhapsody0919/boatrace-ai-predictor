@@ -191,7 +191,7 @@ export async function section15(ctx) {
         rid(-9, 3),
         rid(-8, 1),
         rid(-30, 1),
-        rid(-9, 2).replace("-15-", "-16-"),
+        rid(-9, 2, 16), // 他会場（日付が15日の日に置換が日付へ当たらないよう、会場を引数で変える）
       ].map(race),
     };
     const target = rid(-9, 2);
