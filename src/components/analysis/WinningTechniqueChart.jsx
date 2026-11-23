@@ -218,7 +218,7 @@ function TechniqueBarChart({ chartData, allTechniques, techniqueLabel, t }) {
       >
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} unit="%" />
-        <YAxis type="category" dataKey="boat_number" width={64} interval={0} />
+        <YAxis type="category" dataKey="boat_number" width="auto" interval={0} />
         <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
         <Legend
           // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
