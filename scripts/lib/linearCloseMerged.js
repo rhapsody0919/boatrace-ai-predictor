@@ -37,33 +37,27 @@ const closed = (state) => ["completed", "canceled"].includes(state?.type);
  * @param {Array<{number: number, title?: string, head?: {ref?: string}}>} openPrs 今開いている PR
  * @param {{title?: string, body?: string, head?: {ref?: string}}} pr マージした PR
  */
-export function decide(ident, issue, openPrs, pr) {
-  if (closed(issue?.state))
-    return issue?.archivedAt
-      ? { action: "skip", reason: "票はもう閉じてアーカイブ済み" }
-      : { action: "archive", reason: "票は閉じているがアーカイブされていない" };
+function closedAction(issue) {
+  return issue?.archivedAt
+    ? { action: "skip", reason: "票はもう閉じてアーカイブ済み" }
+    : { action: "archive", reason: "票は閉じているがアーカイブされていない" };
+}
+
+/** 閉じない訳（無ければ null）。迷う物は閉じない */
+function keepReason(ident, issue, openPrs, pr) {
   const kids = (issue?.children?.nodes ?? []).filter((k) => !closed(k.state));
-  if (kids.length > 0)
-    return {
-      action: "keep",
-      reason: `開いた子の票がある（${kids.map((k) => k.identifier).join(", ")}）`,
-    };
-  const mine = openPrs.filter((p) =>
-    ticketsFor(p.title, p.head?.ref).includes(ident),
-  );
-  if (mine.length > 0)
-    return {
-      action: "keep",
-      reason: `同じ票の開いた PR がある（#${mine.map((p) => p.number).join(", #")}）`,
-    };
+  if (kids.length > 0) return `開いた子の票がある（${kids.map((k) => k.identifier).join(", ")}）`;
+  const mine = openPrs.filter((p) => ticketsFor(p.title, p.head?.ref).includes(ident));
+  if (mine.length > 0) return `同じ票の開いた PR がある（#${mine.map((p) => p.number).join(", #")}）`;
   const m = PARTIAL_RE.exec(`${pr?.title ?? ""}\n${pr?.body ?? ""}`);
-  if (m)
-    return {
-      action: "keep",
-      reason: `題・本文に続きを示す語「${m[0]}」がある`,
-    };
+  if (m) return `題・本文に続きを示す語「${m[0]}」がある`;
   const n = countTickets(pr?.title, pr?.head?.ref);
-  if (n > MANY)
-    return { action: "keep", reason: `題・枝に票が ${n} 件ある` };
-  return { action: "close", reason: "条件を満たす" };
+  if (n > MANY) return `題・枝に票が ${n} 件ある`;
+  return null;
+}
+
+export function decide(ident, issue, openPrs, pr) {
+  if (closed(issue?.state)) return closedAction(issue);
+  const reason = keepReason(ident, issue, openPrs, pr);
+  return reason ? { action: "keep", reason } : { action: "close", reason: "条件を満たす" };
 }
