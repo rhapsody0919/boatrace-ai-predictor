@@ -6,6 +6,7 @@ import {
   RacerNewsList,
   RacerOfficialStats,
 } from "../components/racer";
+import { RacerPageToc } from "../components/racer/RacerPageToc";
 import RacerFrontTaking from "../components/racer/RacerFrontTaking";
 import RacerSummaryBlock from "../components/racer/RacerSummaryBlock";
 import RacerTodayRuns from "../components/racer/RacerTodayRuns";
@@ -49,21 +50,28 @@ export default function RacerProfileLoaded({
           front={front.frontTaking}
         />
       )}
-      <RacerProfileCard profile={data.profile} racerId={racerId} />
-      {data.profile && (
-        <RacerFrontTaking
-          summary={front.frontTaking}
-          failed={front.frontTakingFailed}
-          onRetry={front.retryFrontTaking}
+      {data.profile && <RacerPageToc />}
+      <div id="racer-profile">
+        <RacerProfileCard profile={data.profile} racerId={racerId} />
+        {data.profile && (
+          <RacerFrontTaking
+            summary={front.frontTaking}
+            failed={front.frontTakingFailed}
+            onRetry={front.retryFrontTaking}
+          />
+        )}
+      </div>
+      <div id="racer-official">
+        <PeriodSection
+          periodFailed={period.periodFailed}
+          periodRows={period.periodRows}
+          onRetry={period.retryPeriod}
+          racerName={data.profile ? displayName : null}
         />
-      )}
-      <PeriodSection
-        periodFailed={period.periodFailed}
-        periodRows={period.periodRows}
-        onRetry={period.retryPeriod}
-        racerName={data.profile ? displayName : null}
-      />
-      <RacerMotorStatusCard status={motorStatus} />
+      </div>
+      <div id="racer-motor">
+        <RacerMotorStatusCard status={motorStatus} />
+      </div>
       <RacerPerformanceStats
         racerId={racerId}
         racerName={data.profile ? displayName : null}
@@ -72,7 +80,9 @@ export default function RacerProfileLoaded({
         todayVenueCode={todayVenueCode}
         onHistoryStateChange={onHistoryStateChange}
       />
-      <RacerNewsList news={data.news} />
+      <div id="racer-news">
+        <RacerNewsList news={data.news} />
+      </div>
     </>
   );
 }

@@ -1,0 +1,60 @@
+/* 選手ページ内の目次（1行の横スクロール、上に貼り付く）。top はヘッダーの高さ（JS で測る） */
+.racer-toc {
+  position: sticky;
+  z-index: var(--z-index-sticky);
+  margin: var(--spacing-3) 0;
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.racer-toc__list {
+  display: flex;
+  gap: var(--spacing-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.racer-toc__list a {
+  display: block;
+  padding: var(--spacing-3) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.racer-toc__list a:hover,
+.racer-toc__list a:focus-visible {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+/* 絞り込みが効く節の枠。色は青の線（ライトは primary-700、ダークは背景に合わせて primary-400） */
+.racer-filter-scope {
+  --racer-scope-line: var(--color-primary-700);
+  margin: var(--spacing-6) 0 var(--spacing-4);
+  padding: var(--spacing-3);
+  border: 2px solid var(--racer-scope-line);
+  border-radius: var(--radius-md);
+}
+
+[data-theme="dark"] .racer-filter-scope {
+  --racer-scope-line: var(--color-primary-400);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .racer-filter-scope {
+    --racer-scope-line: var(--color-primary-400);
+  }
+}
+
+.racer-filter-scope__title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--racer-scope-line);
+}
