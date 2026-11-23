@@ -332,6 +332,11 @@
       "guards": "日次の照合（N29、daily_reconcile）"
     },
     {
+      "script": "verify-data-format.js",
+      "tier": "ci",
+      "guards": "表とグラフの数字の書き方（src/pure/dataFormat.js、design-system.md「表とグラフ」決まり5・6）。勝率2桁・率1桁で % を数字と分ける、件数の桁区切り、空は —、-0.0 を出さない、差の符号、上下の向きは表示の桁で、少ない母数は6件未満"
+    },
+    {
       "script": "verify-data-health-job.js",
       "tier": "ci",
       "guards": "汎用の日次監視 data_health（完了の定義C、マイグレーション089）。PGliteでDB関数の意味論まで検証する",
