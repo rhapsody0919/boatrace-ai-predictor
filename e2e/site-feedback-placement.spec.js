@@ -96,6 +96,20 @@ test.describe("パソコンの幅（1280px）", () => {
     await expect(page.getByTestId("site-feedback-footer")).toBeVisible();
   });
 
+  // 出す順番の関門: プライバシーポリシーに、ご意見で保存する物が書かれている（ポリシーの PR を画面より先に入れる）
+  test("プライバシーポリシーに、ご意見・ご要望の送信で保存する内容が書かれている", async ({
+    page,
+  }) => {
+    await page.goto("/privacy");
+    const main = page.locator("main, #root").first();
+    await expect(main.getByText(/ご意見・ご要望の送信/).first()).toBeVisible({
+      timeout: 25000,
+    });
+    await expect(
+      main.getByText(/ブラウザのローカルストレージに識別番号を保存します/),
+    ).toBeVisible();
+  });
+
   test("英語のページでは英語で出て、lang は en で送る", async ({ page }) => {
     const rows = await captureFeedbackPosts(page);
     await page.goto("/en/");

@@ -7,13 +7,10 @@
  *    （ずれると、その値の送信が全部「送れませんでした」になり、どこにも残らない）
  * 4. 出す順番の関門: 台帳（docs/db-migration/APPLIED.md）で表が「適用済み」でなければ赤にする
  *    （表が本番に無いまま画面を出すと、全員の送信が失敗する。db-apply が成功すると台帳が適用済みになる）
- * 5. 出す順番の関門: プライバシーポリシーに保存の記載が無ければ赤にする（ポリシーを画面より先に入れる）
+ * （ポリシーを画面より先に入れる順番は、E2E の site-feedback-placement.spec.js が /privacy の表示で見る）
  *
  * 実行: node scripts/maintenance/verify-site-feedback.js
  */
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { webcrypto } from "node:crypto";
 import {
   FEEDBACK_KINDS,
@@ -28,12 +25,7 @@ import {
 } from "../../src/pure/siteFeedback.js";
 import { newUuidV4, readOrCreateClientKey } from "../../src/pure/clientKey.js";
 import { isAppliedInLedger } from "../lib/dbApplySql.js";
-
-const ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
-const MIGRATION_DIR = path.join(ROOT, "docs/db-migration");
+import { readSiteFeedbackTable } from "./verifyData/site-feedback-ledger.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -220,16 +212,13 @@ check("識別番号: uuid v4 の形", UUID_V4.test(newUuidV4(webcrypto)));
 }
 
 // ---- 3. 画面の列挙と表の CHECK ----
-const migrationFile = fs
-  .readdirSync(MIGRATION_DIR)
-  .find((f) => /^\d+_site_feedback\.sql$/.test(f));
+const { file: migrationFile, sql, ledger } = readSiteFeedbackTable();
 check(
   "表のマイグレーション（NNN_site_feedback.sql）がある",
   !!migrationFile,
   "表の PR（claude/site-feedback-db）が master に入っていない",
 );
 if (migrationFile) {
-  const sql = fs.readFileSync(path.join(MIGRATION_DIR, migrationFile), "utf8");
   // 名前つきの制約の IN (...) の中の文字列を取り出す
   const listOf = (name) => {
     const m = sql.match(
@@ -260,28 +249,10 @@ if (migrationFile) {
   );
 
   // ---- 4. 出す順番の関門 ----
-  const ledger = fs.readFileSync(
-    path.join(MIGRATION_DIR, "APPLIED.md"),
-    "utf8",
-  );
   check(
     `出す順番: 台帳で ${migrationFile} が適用済み`,
     isAppliedInLedger(ledger, migrationFile),
     "表が本番に無いまま画面を出すと、全員の送信が失敗する。オーナーが db-apply で当てた後に master を取り込む",
-  );
-}
-
-// ---- 5. 出す順番の関門: プライバシーポリシーに保存の記載がある ----
-// （画面より先にポリシーの PR claude/privacy-feedback-storage を入れる。spec の「出す順番」）
-{
-  const policy = fs.readFileSync(
-    path.join(ROOT, "src/components/privacy/PrivacySectionsA.jsx"),
-    "utf8",
-  );
-  check(
-    "出す順番: プライバシーポリシーに、ご意見・ご要望の送信で保存する内容の記載がある",
-    policy.includes("ご意見・ご要望の送信"),
-    "ポリシーの PR（claude/privacy-feedback-storage）が master に入っていない",
   );
 }
 
