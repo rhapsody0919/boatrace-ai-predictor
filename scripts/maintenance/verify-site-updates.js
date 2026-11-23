@@ -12,6 +12,7 @@ import {
   pickBannerItem,
   visibleUpdates,
 } from "../../src/pure/siteUpdates.js";
+import { parseLog, pickCandidates } from "./site-updates-candidates.js";
 
 const KINDS = ["feature", "improvement", "minor"];
 const TITLE_MAX = 40;
@@ -129,3 +130,17 @@ assert.deepEqual(months.map((m) => [m.label, m.main.length, m.minor.length]), [
   ["2026年10月", 1, 0],
 ]);
 console.log("OK 月の束ね");
+
+// 4. 候補の機械（git log の形の固定の文字列で）
+const log = [
+  "2026-11-22\u0002トップ: まもなく締切のレースの節 (#10)\nsrc/pages/VenueGridPage.jsx",
+  "2026-11-22\u0002refactor: 部品を分ける (#11)\nsrc/components/A.jsx",
+  "2026-11-21\u0002fix: E2E の揺れ (#12)\nsrc/components/B.jsx",
+  "2026-11-21\u0002RA40: 呼び手を移す（振る舞いは変えない） (#13)\nsrc/pages/C.jsx",
+  "2026-11-20\u0002feat: 集計の cron (#14)\napi/cron/x.js",
+  "2026-11-20\u0002fix: 既出の改善 (#15)\nsrc/pages/D.jsx",
+  "2026-11-19\u0002fix: 帯の揺れを直す（見た目は変えない） (#16)\nsrc/components/E.jsx",
+].map((c) => `\u0001${c}`).join("\n");
+const picked = pickCandidates(parseLog(log), new Set([15])).map((c) => c.pr);
+assert.deepEqual(picked, [10, 16], "画面に触れ、内部の変更でなく、既出でない PR だけ");
+console.log("OK 候補の機械の残す・外す");
