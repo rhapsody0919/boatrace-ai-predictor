@@ -10,8 +10,13 @@ import { bestOf } from "./bestOf.js";
 import * as dataFormat from "./dataFormat.js";
 import { MOTOR_INDICATORS } from "./indicatorMotor.js";
 import { RACER_POWER_INDICATORS } from "./indicatorRacerPower.js";
+import { START_INDICATORS } from "./indicatorStart.js";
 
-export const INDICATORS = [...RACER_POWER_INDICATORS, ...MOTOR_INDICATORS];
+export const INDICATORS = [
+  ...RACER_POWER_INDICATORS,
+  ...MOTOR_INDICATORS,
+  ...START_INDICATORS,
+];
 
 /** 改名した id の読み替え（旧 id → 新 id）。保存された並べ方の中の id を消さないため */
 export const ALIASES = {};
@@ -43,7 +48,9 @@ export function bestOfIndicator(def, values) {
 export function formatIndicatorParts(def, value) {
   const format = dataFormat[def.format];
   if (typeof format !== "function") {
-    throw new Error(`指標 ${def.id} の書き方 ${def.format} が dataFormat に無い`);
+    throw new Error(
+      `指標 ${def.id} の書き方 ${def.format} が dataFormat に無い`,
+    );
   }
   const out = format(value, def.compare?.digits);
   return typeof out === "string" ? { text: out, unit: "" } : out;
