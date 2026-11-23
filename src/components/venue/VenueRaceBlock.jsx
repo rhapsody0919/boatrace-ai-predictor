@@ -1,7 +1,5 @@
-/**
- * 会場ページのレースの塊（公式スマホの形、docs/design/venue-race-card-redesign/approved.md）。会場名・グレードの札・締切の2段を消し、
- * 終わったレースも同じ形に結果1行。試験と計測が頼る .race-card・.race-card-header・.predict-btn は RaceCard と同じに残す
- */
+// 会場ページのレースの塊（公式スマホの形、docs/design/venue-race-card-redesign/approved.md）。終わったレースも同じ形に結果1行。
+// 試験・計測・ボット向け HTML の照合が頼る class（.race-card・.race-number・.race-info・.predict-btn）は RaceCard と同じ
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { DEADLINE_STATUS } from "../../utils/raceDeadlineStatus";
