@@ -6,6 +6,7 @@
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import VenueMeetBanner from "../components/venue/VenueMeetBanner";
+import VenueMeetHeading from "../components/venue/VenueMeetHeading";
 import VenueGuideArticles from "../components/venue/VenueGuideArticles";
 import {
   PageHeader,
@@ -68,6 +69,17 @@ export default function VenueRaceListView({
             backLink={backLink}
             t={t}
           />
+
+          {/* 節と日目の行と「1R〜12R」のボタン（公式の形、オーナー 2026-11-23 承認） */}
+          {!loading && !error && venueRaces.length > 0 && (
+            <VenueMeetHeading
+              venueRaces={venueRaces}
+              date={date}
+              isToday={isToday}
+              liveNextIndex={liveNextIndex}
+              gridRef={gridRef}
+            />
+          )}
 
           {/* 会場の常設の要約2行（直近1年、BOA-1189 GS02-b）と、出走表の後の節へのリンク（BOA-1687） */}
           {isToday && <VenueSummaryWithLink venueCode={venueCode} />}
