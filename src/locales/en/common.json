@@ -2822,7 +2822,15 @@
       "description": "Based on race results from the past 90 days, this shows which winning techniques (Nige, Sashi, Makuri, etc.) first-place boats use at each venue, broken down by lane.",
       "summary": "Winning technique breakdown over the past 90 days",
       "note": "💡 The share is the breakdown within races won by that lane.",
-      "empty": "No winning technique data found"
+      "empty": "No winning technique data found",
+      "base": "Past 90 days, {{total}} races (excluding cancelled, void and races without a winning technique)",
+      "headline": "At {{venue}} over the past 90 days, Boat 1 won {{wins}} of {{total}} races ({{pct}}%). Of those {{wins}} wins, {{nige}} were by Nige",
+      "boatWins": "{{count}} wins",
+      "rateNote": "Boats 2–6 win few races, so venue rankings can shift from period to period",
+      "breakdownTitle": "Winning technique when the boat won (breakdown within that boat's wins)",
+      "smallNote": "For boats with fewer than 30 wins, the bars show counts instead of percentages",
+      "tableToggle": "Show the count table ({{rows}} rows)",
+      "countLabel": "{{count}}"
     },
     "lt": {
       "title": "💔 Losing Technique Analysis",
@@ -3122,7 +3130,8 @@
       "raceWideHeader": "Whole race",
       "empty": "No venue × grade stats are available for this venue yet",
       "note": "※ Cells with fewer than {{minRaceCount}} races show \"-\". SG/G2 are held at only a few venues, so many cells will show \"-\" for those grades."
-    }
+    },
+    "todayOpen": " (racing today)"
   },
   "analysisPage": {
     "meta": {
@@ -3130,7 +3139,7 @@
       "description": "15 analysis tools — outcome distribution, winning technique, motor condition, racer form, exhibition vs actual ST gap, top start by lane, losing technique, outcome distribution after a Nige win, fastest exhibition time to win conversion, racer exhibition time trend, racer winning technique profile, today's hot & cold racers, racer x boat number ROI, advanced race data, and race card data — let you check tendencies by venue and race. Use them as evidence to back up the AI's predictions."
     },
     "h1": "📊 Analysis Tools",
-    "subtitle": "Reference data for picking or excluding boats, drawn from tendencies in outcome distribution, winning technique, motor condition, racer form, exhibition vs actual ST gap, top start by lane, losing technique, outcome distribution after a Nige win, fastest exhibition time to win conversion, racer exhibition time trend, racer winning technique profile, today's hot & cold racers, racer x boat number ROI, advanced race data, and race card data",
+    "subtitle": "Venue, motor, racer and start trends across 20 data views",
     "breadcrumbHome": "Home",
     "itemListName": "Analysis Tools",
     "itemListDescription": "15 analysis features to check tendencies by venue and race",
@@ -3610,7 +3619,15 @@
     "dataViewHeading": "📈 What the Data Shows",
     "tipsHeading": "💡 How to Use This",
     "articleHeading": "📖 Related Article",
-    "noticeHeading": "⚠️ Notes"
+    "noticeHeading": "⚠️ Notes",
+    "groups": {
+      "venue": "Venue trends",
+      "motor": "Motors",
+      "racer": "Racers",
+      "start": "Start & exhibition",
+      "race": "Races & results"
+    },
+    "groupsLabel": "Analysis type"
   },
   "flyingBadge": {
     "title": "{{n}} false start(s) this term, as printed on the race card. Resets when the term changes (May 1 / Nov 1)",
