@@ -2825,12 +2825,12 @@
       "empty": "No winning technique data found",
       "base": "Past 90 days, {{total}} races (excluding cancelled, void and races without a winning technique)",
       "headline": "At {{venue}} over the past 90 days, Boat 1 won {{wins}} of {{total}} races ({{pct}}%). Of those {{wins}} wins, {{nige}} were by Nige",
-      "boatWins": "{{count}} wins",
+      "boatWins": "Wins: {{count}}",
       "rateNote": "Boats 2–6 win few races, so venue rankings can shift from period to period",
       "breakdownTitle": "Winning technique when the boat won (breakdown within that boat's wins)",
       "smallNote": "For boats with fewer than 30 wins, the bars show counts instead of percentages",
       "tableToggle": "Show the count table ({{rows}} rows)",
-      "countLabel": "{{count}}"
+      "countLabel": "{{count}}×"
     },
     "lt": {
       "title": "💔 Losing Technique Analysis",
