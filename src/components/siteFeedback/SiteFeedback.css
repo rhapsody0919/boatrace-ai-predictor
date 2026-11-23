@@ -1,0 +1,441 @@
+/*
+ * サイト全体のご意見ボックス（SiteFeedback.jsx）。
+ *
+ * 置き場所の決まり（既存の固定表示と重ねない）:
+ * - ふだんは右下。z-index は 800 で、重なり表示（ヘッダーのメニュー 999・思考アシストのシート 1000・
+ *   選手検索の候補 1001・レースの下部ナビ 1500・トースト 1600）より下に置く。数字を上げて解かない
+ * - Cookie の確認（.cookie-consent、下端の全幅）が出ている間は出さない
+ * - スマホ幅のレース詳細（.race-bottom-nav が出ている間）は、下部ナビ（高さ 100px）の上にアイコンだけで置き、
+ *   下へ読み進めている間は隠す（出走表・結果表の右端の数字の列を隠さない）。上へ戻すと出る
+ * - ブログ記事の「先頭へ戻る」（.back-to-top-button、右下 48px）があるときは、その上に置く
+ * - 入力パネルは 1700（トーストより上、Cookie の確認 9999 より下）
+ */
+.site-fb-btn {
+  position: fixed;
+  right: calc(var(--spacing-4) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 48px;
+  padding: 0 var(--spacing-4) 0 var(--spacing-3);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--brand-accent-primary);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition:
+    padding 0.2s ease,
+    bottom 0.2s ease,
+    opacity 0.2s ease,
+    visibility 0.2s;
+}
+
+.site-fb-btn svg {
+  flex: none;
+}
+
+.site-fb-btn-label {
+  max-width: 8em;
+  margin-left: var(--spacing-2);
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.2s ease,
+    margin-left 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.site-fb-btn.is-mini {
+  padding: 0;
+}
+
+.site-fb-btn.is-mini .site-fb-btn-label {
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+}
+
+/* ラジオ（見た目は隠してある）は、キーボードで来たときだけ隣の見た目に枠を出す */
+.site-fb-btn:focus-visible,
+.site-fb-panel button:focus-visible,
+.site-fb-text:focus-visible,
+.site-fb-chip input:focus-visible + .site-fb-chip-face,
+.site-fb-star input:focus-visible + .site-fb-star-icon {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+body:has(> .cookie-consent) .site-fb-btn {
+  display: none;
+}
+
+body:has(.back-to-top-button) .site-fb-btn {
+  /* 「先頭へ戻る」（下 1.25rem・高さ 48px）の上に 12px 空けて置く */
+  bottom: calc(
+    1.25rem + 48px + var(--spacing-3) + env(safe-area-inset-bottom, 0px)
+  );
+  right: calc(1.25rem + env(safe-area-inset-right, 0px));
+}
+
+@media (max-width: 768px) {
+  /* 下部ナビは height: 100px で、safe-area の分は伸びない（RaceBottomNav.css） */
+  body:has(.race-bottom-nav) .site-fb-btn {
+    bottom: calc(100px + var(--spacing-3));
+    padding: 0;
+  }
+
+  body:has(.race-bottom-nav) .site-fb-btn-label {
+    display: none;
+  }
+
+  body:has(.race-bottom-nav) .site-fb-btn.is-mini {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media print {
+  .site-fb {
+    display: none;
+  }
+}
+
+/* ---- 入力パネル ---- */
+.site-fb-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1690;
+  background: color-mix(in srgb, var(--color-gray-900) 45%, transparent);
+  animation: site-fb-fade 0.2s ease;
+}
+
+.site-fb-panel {
+  position: fixed;
+  right: calc(var(--spacing-4) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 1700;
+  display: grid;
+  gap: var(--spacing-3-5);
+  width: min(400px, calc(100vw - 32px));
+  /* dvh を知らないブラウザ（Safari 15.4 未満）は vh の行を使う */
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: var(--spacing-4-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  text-align: left;
+  box-shadow: var(--shadow-2xl);
+  animation: site-fb-rise 0.2s ease;
+}
+
+.site-fb-panel:focus {
+  outline: none;
+}
+
+@media (max-width: 600px) {
+  .site-fb-scrim {
+    background: color-mix(in srgb, var(--color-gray-900) 55%, transparent);
+  }
+
+  /* 下からのシート。キーボードが出たらその高さ（--site-fb-kb）だけ持ち上げる */
+  .site-fb-panel {
+    left: 0;
+    right: 0;
+    bottom: var(--site-fb-kb, 0px);
+    width: auto;
+    max-height: calc(100vh - var(--site-fb-kb, 0px) - var(--spacing-6));
+    max-height: calc(100dvh - var(--site-fb-kb, 0px) - var(--spacing-6));
+    padding: var(--spacing-4)
+      max(var(--spacing-4), env(safe-area-inset-right, 0px))
+      calc(var(--spacing-4-5) + env(safe-area-inset-bottom, 0px))
+      max(var(--spacing-4), env(safe-area-inset-left, 0px));
+    border-bottom: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+}
+
+@keyframes site-fb-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes site-fb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-fb-btn,
+  .site-fb-btn-label {
+    transition: none;
+  }
+
+  .site-fb-scrim,
+  .site-fb-panel {
+    animation: none;
+  }
+}
+
+.site-fb-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+}
+
+.site-fb-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.site-fb-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.site-fb-lead {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.site-fb-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: calc(-1 * var(--spacing-2)) calc(-1 * var(--spacing-2)) 0 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-circle);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.site-fb-form,
+.site-fb-thanks {
+  display: grid;
+  gap: var(--spacing-3-5);
+}
+
+.site-fb-field {
+  display: grid;
+  gap: var(--spacing-1-5);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.site-fb-q {
+  padding: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.site-fb-opt {
+  margin-left: var(--spacing-1-5);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.site-fb-text {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 104px;
+  padding: var(--spacing-2-5) var(--spacing-3);
+  resize: vertical;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font: inherit;
+  /* 16px 未満だと iOS Safari がフォーカスで画面を拡大する */
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.site-fb-text::placeholder {
+  color: var(--text-secondary);
+}
+
+.site-fb-text[aria-invalid="true"] {
+  border-color: var(--color-error-text);
+}
+
+.site-fb-under {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.site-fb-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.site-fb-error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-error-text);
+}
+
+.site-fb-under .site-fb-error {
+  font-size: var(--font-size-xs);
+}
+
+/* 本物のラジオを見た目だけ隠す（キーボードと読み上げはラジオのまま） */
+.site-fb-chip input,
+.site-fb-star input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.site-fb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.site-fb-chip {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.site-fb-chip-face {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--spacing-3-5);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.site-fb-chip input:checked + .site-fb-chip-face {
+  border-color: var(--brand-accent-primary);
+  background: color-mix(in srgb, var(--brand-accent-primary) 10%, transparent);
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.site-fb-stars {
+  display: flex;
+  align-items: center;
+}
+
+.site-fb-star {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.site-fb-star-icon {
+  fill: none;
+}
+
+.site-fb-star.is-on {
+  color: var(--brand-accent-primary);
+}
+
+.site-fb-star.is-on .site-fb-star-icon {
+  fill: currentColor;
+}
+
+.site-fb-star-cap {
+  min-width: 6em;
+  margin-left: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.site-fb-send,
+.site-fb-ghost {
+  min-height: 48px;
+  padding: 0 var(--spacing-5);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.site-fb-send {
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  background: var(--brand-accent-primary);
+  color: var(--surface-card);
+}
+
+.site-fb-send[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.site-fb-ghost {
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: none;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-normal);
+}
+
+.site-fb-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.site-fb-thanks-body {
+  margin: 0;
+}
+
+.site-fb-btnrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.site-fb-btnrow .site-fb-send {
+  flex: 1;
+}

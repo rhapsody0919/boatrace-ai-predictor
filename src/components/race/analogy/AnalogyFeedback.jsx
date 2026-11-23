@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sendAnalogyFeedback } from "../../../services/analogyFeedback";
 import { trackEvent } from "../../../utils/analytics";
+import { readOrCreateClientKey } from "../../../pure/clientKey";
 
 /**
  * 画面の中の声（龍神ソナーの反応の計測、モック承認 2026-10-08、docs/design/analogy-reaction-measurement/mock/）。
@@ -21,29 +22,6 @@ const LANGS = ["ja", "en", "zh-TW", "ko"];
 const CLIENT_KEY = "boatai-user:analogy-feedback-client";
 const DONE_KEY = "boatai-user:analogy-feedback-done";
 const DONE_LIMIT = 300;
-
-// crypto.randomUUID が無い古いブラウザでも、DB の uuid 型に合う v4 の形で作る
-const newUuid = () => {
-  if (crypto.randomUUID) return crypto.randomUUID();
-  const b = crypto.getRandomValues(new Uint8Array(16));
-  b[6] = (b[6] & 0x0f) | 0x40;
-  b[8] = (b[8] & 0x3f) | 0x80;
-  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
-};
-
-/** ブラウザごとの乱数。保存できない環境では表示中だけの値になる（連投の制限が効きにくくなるだけ） */
-function clientKey() {
-  try {
-    const saved = localStorage.getItem(CLIENT_KEY);
-    if (saved) return saved;
-    const key = newUuid();
-    localStorage.setItem(CLIENT_KEY, key);
-    return key;
-  } catch {
-    return newUuid();
-  }
-}
 
 function readDone() {
   try {
@@ -100,7 +78,7 @@ function useAnalogyFeedback({ raceId, stage, tab, i18n }) {
   const boxRef = useViewTracking(raceId, status);
 
   const base = () => {
-    key.current ??= clientKey();
+    key.current ??= readOrCreateClientKey(CLIENT_KEY);
     return {
       race_id: raceId,
       analogy_stage: stage,

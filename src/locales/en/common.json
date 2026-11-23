@@ -549,6 +549,43 @@
     "facebook": "Share on Facebook",
     "line": "Share on LINE"
   },
+  "siteFeedback": {
+    "open": "Feedback",
+    "openAria": "Send feedback or a request",
+    "footer": "Send feedback",
+    "title": "Tell us what you think",
+    "lead": "Tell us about features you want or anything that is hard to use. No sign-up or login needed.",
+    "commentLabel": "Your message",
+    "placeholder": "e.g. Show each motor's recent results on the race card",
+    "empty": "Please write your message",
+    "count": "{{n}} / {{max}}",
+    "kindLabel": "What is it about?",
+    "optional": "Optional",
+    "kinds": {
+      "feature": "Feature request",
+      "usability": "Hard to use",
+      "data": "Wrong data",
+      "other": "Other"
+    },
+    "ratingLabel": "How satisfied are you with Ryujin Radar?",
+    "ratingAria": "{{n}} of {{max}} ({{label}})",
+    "ratings": {
+      "1": "Very dissatisfied",
+      "2": "Dissatisfied",
+      "3": "Neutral",
+      "4": "Satisfied",
+      "5": "Very satisfied"
+    },
+    "send": "Send",
+    "sending": "Sending…",
+    "note": "Your name is not sent. We store what you wrote, the options you chose, the type of page you sent it from, your display language, and an anonymous ID for this browser. It is not published. Please do not include your name or contact details.",
+    "error": "Could not send. Please try again in a little while.",
+    "thanksTitle": "Received",
+    "thanksBody": "Thank you. We will use it as a reference for future improvements.",
+    "thanksReply": "We cannot reply individually. If you need a reply, please use \"Contact\" in the footer (the form is in Japanese).",
+    "more": "Write another",
+    "close": "Close"
+  },
   "footer": {
     "blog": "Blog",
     "operator": "Operator",

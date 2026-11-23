@@ -1655,6 +1655,11 @@
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
     },
     {
+      "script": "verify-site-feedback.js",
+      "tier": "ci",
+      "guards": "サイト全体のご意見ボックス。画面の決まり（src/pure/siteFeedback.js: ページの種類・出さない画面・送る1行の形）と、表の案（docs/design/site-feedback-box/db-draft.md の SQL）を PGlite に当てて RLS 有効・anon は INSERT のみ・画面の列挙値が全部入る・列挙の外と501文字と満足度の外は入らない・created_at の上書き・同じブラウザ24時間10行と全体10分30行の連投制限・冪等・戻しを確かめる"
+    },
+    {
       "script": "verify-site-updates.js",
       "tier": "ci",
       "guards": "更新のお知らせ（src/data/siteUpdates.js）の形（id・日付の新しい順・種別・字数・リンク・記事の実在・禁止語・今つくっている物は3件まで）と、帯と NEW の判定（src/pure/siteUpdates.js。JST の暦日の境目・minor を出さない・閉じた件）。docs/design/site-updates/"
