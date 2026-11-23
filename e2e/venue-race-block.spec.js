@@ -52,7 +52,7 @@ for (const width of [375, 768, 1024, 1440]) {
     const done = cards.nth(0);
     const bar = done.locator(".race-card-header");
     // 会場名・グレードの札は出さない（見出しにある）
-    await expect(bar).toHaveText("1R一般戦締切予定時刻 10:30");
+    await expect(bar).toHaveText("1R一般戦締切予定時刻10:30");
     await expect(done.getByTestId("venue-race-result")).toHaveText(
       "結果4-2-1まくり3連単 ¥8,450",
     );
