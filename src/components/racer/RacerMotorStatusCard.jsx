@@ -112,8 +112,9 @@ function TrendSection({ chartData, captionHead, isPrevMeet, venueName }) {
             isPrevMeet ? `${venueName} ` : ""
           }${chartData[0].day}〜${
             chartData[chartData.length - 1].day
-          }）、この選手がこのモーターで出走してからの展示タイム。下ほど速い`}
+          }）、この選手がこのモーターで出走してからの展示タイム`}
         </p>
+        <p className="racer-motor-status-note">縦軸は展示タイム。下ほど速い</p>
         <TrendLineChart
           data={chartData}
           yAxisLabel="展示タイム (秒)"
