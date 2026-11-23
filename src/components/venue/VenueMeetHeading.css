@@ -1,6 +1,7 @@
 /* 会場ページの節と日目の行と「1R〜12R」のボタン（公式スマホの形。docs/design/venue-race-card-redesign/approved.md） */
 .venue-meet-heading {
   flex-basis: 100%;
+  margin-bottom: 0.75rem;
 }
 
 .venue-meet-heading__meet {
