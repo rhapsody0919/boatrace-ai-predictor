@@ -10,6 +10,7 @@
  *   - 見立て（judgement）は材料を持ち、材料の id は登録簿にあって輪にならない
  *   - select は6艇の艇番ごとに { value, n, hidden } を返す
  *   - 最良は表示の桁で比べ、hidden の艇は返さない。書き方は勝率2桁・率は % を分ける
+ *   - モーターは自社の再計算を先に、取れないとき公式の値。調子は上がった艇の中の最良だけ
  */
 import * as dataFormat from "../../src/pure/dataFormat.js";
 import {
@@ -94,6 +95,22 @@ expectEq("空は —", formatIndicatorParts(win, null), { text: "—", unit: "" 
 const two = getIndicator("racer.twoRate.official");
 expectEq("2連率は % を分ける", formatIndicatorParts(two, 58.26), { text: "58.3", unit: "%" });
 expectEq("2連率の最良", sorted(bestOfIndicator(two, two.select({ players }))), [1]);
+
+const motor = getIndicator("motor.twoRate.last90d");
+const motorValues = motor.select({
+  players: [{ number: 1, motor2Rate: "30.0" }, { number: 2, motor2Rate: "40.0" }],
+  analysis: { motor: [{ boat_number: 1, motor_2rate: 45.04 }] },
+});
+expectEq("モーターは自社の再計算を先に使う", motorValues.get(1).value, 45.04);
+expectEq("モーターは取れないとき公式の値", motorValues.get(2).value, 40);
+expectEq("モーターの最良", sorted(bestOfIndicator(motor, motorValues)), [1]);
+
+const form = getIndicator("racer.form.winRateDelta90d");
+const formOf = (...deltas) =>
+  form.select({ analysis: { racerForm: deltas.map((delta, i) => ({ boat_number: i + 1, delta })) } });
+expectEq("調子は上がった艇の最良", sorted(bestOfIndicator(form, formOf(0.3, 0.5, -0.1))), [2]);
+expectEq("調子は全員が下がっていれば強調しない", sorted(bestOfIndicator(form, formOf(-0.3, -0.05, -0.1))), []);
+expectEq("調子の書き方は2桁", formatIndicatorParts(form, 0.5), { text: "0.50", unit: "" });
 
 const hidden = new Map([[1, { value: 9, hidden: true }], [2, { value: 5, hidden: false }], [3, { value: 3 }]]);
 expectEq("hidden の艇は最良に返さない（繰り下げない）", sorted(bestOfIndicator(win, hidden)), []);
