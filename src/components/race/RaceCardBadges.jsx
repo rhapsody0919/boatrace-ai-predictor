@@ -115,7 +115,12 @@ function StageGradeBadges({ raceStage, raceGrade }) {
   );
 }
 
-export default function RaceCardBadges({ s, racePrediction }) {
+// showStageGrade=false は会場ページのレースの塊（グレードは見出し、種別は帯の字に出す）
+export default function RaceCardBadges({
+  s,
+  racePrediction,
+  showStageGrade = true,
+}) {
   return (
     <div
       className="race-card-badges"
@@ -132,10 +137,12 @@ export default function RaceCardBadges({ s, racePrediction }) {
       )}
       <OutcomeBadges s={s} />
       <StatusBadges s={s} />
-      <StageGradeBadges
-        raceStage={racePrediction?.raceStage}
-        raceGrade={racePrediction?.raceGrade}
-      />
+      {showStageGrade && (
+        <StageGradeBadges
+          raceStage={racePrediction?.raceStage}
+          raceGrade={racePrediction?.raceGrade}
+        />
+      )}
     </div>
   );
 }

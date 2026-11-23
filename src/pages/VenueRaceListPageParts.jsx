@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { isInCautionEnabled } from "../config/featureFlags";
 import FavoriteStarButton from "../components/common/FavoriteStarButton.jsx";
 import LoadingScreen from "../components/LoadingScreen";
-import { RaceCard } from "../components/race";
+import VenueRaceBlock from "../components/venue/VenueRaceBlock";
 import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
 import VenueSummaryLines from "../components/venue/VenueSummaryLines";
 import VenueDaySummaryCard from "../components/race/VenueDaySummaryCard";
@@ -181,12 +181,11 @@ function RaceGrid({
             />
           </div>
         ),
-        <RaceCard
+        <VenueRaceBlock
           key={race.id}
           race={race}
           nowHHMM={nowHHMM}
           raceHref={localize(`/race/${race.id}`)}
-          linkRacerNames
         />,
       ])}
     </div>
