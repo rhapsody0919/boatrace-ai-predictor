@@ -29,20 +29,15 @@
   font-size: 0.9rem;
 }
 
-/* 375px は公式スマホと同じ6列×2段。768px 以上は1段 */
+/* 375px は公式スマホと同じ1段6個（12R で2段）。768px 以上は幅を決めて1段。レース数が12未満の日も折り返すだけ */
 .venue-meet-heading__races {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.375rem;
 }
 
-@media (min-width: 768px) {
-  .venue-meet-heading__races {
-    grid-template-columns: repeat(12, minmax(0, 4rem));
-  }
-}
-
 .venue-meet-heading__race {
+  flex: 0 0 calc((100% - 5 * 0.375rem) / 6);
   appearance: none;
   min-height: 2.5rem;
   padding: 0;
@@ -61,6 +56,12 @@
   background: var(--surface-page);
   color: var(--text-secondary);
   font-weight: normal;
+}
+
+@media (min-width: 768px) {
+  .venue-meet-heading__race {
+    flex-basis: 4rem;
+  }
 }
 
 .venue-meet-heading__race.is-next {
