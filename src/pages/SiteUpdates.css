@@ -113,22 +113,21 @@
 .site-updates-links {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-4);
-  margin: var(--spacing-1) 0 0;
+  column-gap: var(--spacing-4);
+  margin: 0;
   font-size: var(--font-size-sm);
 }
 
-/* リンクの色は既存（.result-volatility-caveat a）と同じ意味トークン。下線は残す */
+/* リンクの色は既存（.result-volatility-caveat a）と同じ意味トークン。下線は残す。押せる高さ44px（ui-layout.md） */
 .site-updates-links a {
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .site-updates-minor {
   margin-left: calc(3.2em + var(--spacing-3));
-}
-
-.site-updates-minor summary {
-  cursor: pointer;
 }
 
 .site-updates-disclaimer {

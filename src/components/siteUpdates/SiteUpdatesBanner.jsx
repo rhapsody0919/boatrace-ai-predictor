@@ -28,7 +28,8 @@ const writeDismissed = (id) => {
   }
 };
 
-const shortDate = (date) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
+// /updates と同じ「MM/DD」
+const shortDate = (date) => `${date.slice(5, 7)}/${date.slice(8, 10)}`;
 
 export default function SiteUpdatesBanner() {
   // 言語は Header と同じく URL から決める（i18n の切り替えは描画の後なので、/en の初回に一瞬出さない）
