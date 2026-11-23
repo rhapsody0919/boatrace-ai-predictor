@@ -10,14 +10,17 @@ import { getTodayJST } from "../../utils/dateUtils";
  * 期の名前はデータから組む。枠番別の回収率は出さない。
  * summary が undefined の間は取得中（高さを確保し、届いた後に下の要素をずらさない）
  */
-function Stat({ label, period, value, testId }) {
+// dim: 上に最新の出走表の1行があるとき、前の期の値を小さくする（前の期の大きな値を今の値と読まないように。ファン評価 1周 P1）
+const DIM_VALUE = { fontSize: "var(--font-size-base)", fontWeight: 600 };
+
+function Stat({ label, period, value, testId, dim = false }) {
   return (
     <div className="racer-summary__stat">
       <dt>
         {label}
         {period && <span className="racer-summary__period">{period}</span>}
       </dt>
-      <dd data-testid={testId}>{value}</dd>
+      <dd data-testid={testId} style={dim ? DIM_VALUE : undefined}>{value}</dd>
     </div>
   );
 }
@@ -59,7 +62,7 @@ function LatestEntryLine({ line }) {
       }}
     >
       <span className="racer-summary__period">{line.dateLabel} の出走表</span>{" "}
-      勝率 <strong>{line.winRate.toFixed(2)}</strong>
+      勝率 <strong style={{ fontSize: "var(--font-size-3xl)" }}>{line.winRate.toFixed(2)}</strong>
       {line.top2Rate != null && `・2連率 ${line.top2Rate.toFixed(1)}%`}
       {line.fCount != null && `・F${line.fCount}`}
     </p>
@@ -89,7 +92,8 @@ export default function RacerSummaryBlock({ racerId, grade, summary, front }) {
         {summary?.winRate != null && (
           <Stat
             label="勝率"
-            period={summary.label}
+            period={`前の期 ${summary.label}`}
+            dim={latest != null}
             value={summary.winRate.toFixed(2)}
             testId="racer-summary-win-rate"
           />
@@ -97,19 +101,20 @@ export default function RacerSummaryBlock({ racerId, grade, summary, front }) {
         {summary?.top2Rate != null && (
           <Stat
             label="2連対率"
-            period={summary.label}
+            period={`前の期 ${summary.label}`}
+            dim={latest != null}
             value={`${summary.top2Rate.toFixed(1)}%`}
             testId="racer-summary-top2-rate"
           />
         )}
         {summary?.fCount != null && (
-          <Stat label="F" period={summary.label} value={summary.fCount} testId="racer-summary-f" />
+          <Stat label="F" period={`前の期 ${summary.label}`} value={summary.fCount} testId="racer-summary-f" dim={latest != null} />
         )}
       </dl>
       {summary && (
         <>
           <p className="racer-summary__note">
-            前の期の公式成績（{summary.label}・{summary.starts}走）
+            前の期の公式成績（{summary.label}・{summary.dateModified ? `〜${summary.dateModified.replaceAll("-", "/")} 集計・` : ""}{summary.starts}走）
             {/* 1行目（出走表）が出ないとき「上の」が何も指さないので、そのときは書かない */}
             {latest && "。上の出走表の値とは集計の期間が違います"}
           </p>

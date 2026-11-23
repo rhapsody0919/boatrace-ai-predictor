@@ -192,7 +192,12 @@ test("冒頭の1行目は最新の出走表の値に日付を付け、前の期�
   await expect(latest).not.toContainText("今期");
   // 2行目は前の期の公式成績のまま（値・期の名前は上の試験と同じ）
   await expect(page.getByTestId("racer-summary-win-rate")).toHaveText("7.38");
-  await expect(page.getByTestId("racer-summary")).toContainText("前の期の公式成績（2026年後期・146走）");
+  await expect(page.getByTestId("racer-summary")).toContainText("前の期の公式成績（2026年後期・〜2026/04/30 集計・146走）");
+  // 前の期の値を最新の出走表の値より小さく出す（前の期の大きな「F 0」を今の F と読まない。ファン評価 1周 P1）
+  const size = (loc) => loc.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(await size(latest.locator("strong"))).toBeGreaterThan(await size(page.getByTestId("racer-summary-win-rate")));
+  await expect(page.getByTestId("racer-summary-f")).toBeVisible();
+  await expect(page.getByTestId("racer-summary").locator(".racer-summary__stat", { has: page.getByTestId("racer-summary-f") })).toContainText("前の期 2026年後期");
   for (const id of ["racer-summary-latest", "racer-summary-win-rate"]) {
     expect(await inViewport(page, page.getByTestId(id)), id).toBe(true);
   }
@@ -212,7 +217,7 @@ test("出走表の1行が出ないとき（勝率 0.00 の新人など）、注�
   await stubPeriods(page, 2878);
   await stubLatestEntry(page, { race_id: `${e2eTodayJST()}-02-01`, win_rate: 0, global_2rate: 0, f_count: 0 });
   await page.goto("/racer/2878");
-  await expect(page.getByTestId("racer-summary")).toContainText("前の期の公式成績（2026年後期・98走）");
+  await expect(page.getByTestId("racer-summary")).toContainText("前の期の公式成績（2026年後期・〜2026/04/30 集計・98走）");
   await expect(page.getByTestId("racer-summary-latest")).toHaveCount(0);
   await expect(page.getByTestId("racer-summary")).not.toContainText("上の出走表");
 });
