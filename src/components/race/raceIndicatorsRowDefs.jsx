@@ -4,6 +4,12 @@
  */
 import { Link } from "react-router-dom";
 import { bestOf } from "../../utils/bestOf";
+import { EMPTY } from "../../pure/dataFormat.js";
+import {
+  bestOfIndicator,
+  formatIndicatorParts,
+  getIndicator,
+} from "../../pure/indicatorRegistry.js";
 import { isUnusedMotor, motorUsageCount } from "../../utils/motorUsage";
 import {
   byBoat,
@@ -63,6 +69,7 @@ export function buildRowContext({
 
   const c = {
     t,
+    players,
     ph,
     localizedTechnique,
     motorDeepLink,
@@ -91,18 +98,7 @@ function buildCandidates(players, c, analysis) {
   const { stPredictability, exhibitionTime, returnRate } = analysis;
   const { motorByBoat, officialStByBoat, st30ByBoat, statsByBoat } = c;
   const cand = {
-    winRate: players.map((p) => ({
-      boat: p.number,
-      value: toNumber(p.winRate),
-    })),
-    localWinRate: players.map((p) => ({
-      boat: p.number,
-      value: toNumber(p.localWinRate),
-    })),
-    twoRate: players.map((p) => ({
-      boat: p.number,
-      value: toNumber(p.global2Rate),
-    })),
+    // 勝率・当地勝率・2連率は登録簿の定義へ移した（src/pure/indicatorRacerPower.js、ADR-0108）
     // 詳細分析データ(analysis.motor)が無い場合はentries(players)のmotor2Rateに
     // フォールバックする（一覧カードでの常時表示など、analysisを取得しない文脈でも
     // 最良艇ハイライトが機能するようにするため）
@@ -148,57 +144,65 @@ function buildCandidates(players, c, analysis) {
   return cand;
 }
 
+// 登録簿の定義（ADR-0108）から、出走表の行の見出し・詳しいタブ・最良を作る。
+// key は今までの行の key（用語の説明 TermHintButton のキーを兼ねる）
+function rowFromIndicator(t, players, id, key) {
+  const def = getIndicator(id);
+  const values = def.select({ players });
+  return {
+    key,
+    label: t(def.text.label),
+    shortLabel: t(def.text.short),
+    tab: def.detailTab,
+    best: bestOfIndicator(def, values),
+    text: (p) => formatIndicatorParts(def, values.get(p.number)?.value ?? null),
+  };
+}
+
 export function buildBasicRatioRows(c) {
-  const { t, cand, gradeBadge } = c;
+  const { t, players, gradeBadge } = c;
+  const winRate = rowFromIndicator(t, players, "racer.winRate.official", "winRate");
+  const localWinRate = rowFromIndicator(
+    t,
+    players,
+    "racer.localWinRate.official",
+    "localWinRate",
+  );
+  const twoRate = rowFromIndicator(t, players, "racer.twoRate.official", "twoRate");
   return [
     {
-      key: "winRate",
-      label: t("dataTable.rowWinRate"),
-      shortLabel: t("review.cols.winRate"),
-      tab: null,
-      best: bestOf(cand.winRate, "max", { digits: 2 }),
+      ...winRate,
+      // 札（adornment: gradeBadge）: 級別と F・L の印
       render: (p) => (
         <span className="drt-value">
           <span className="drt-grade">
             {p.grade}
             {gradeBadge?.(p)}
           </span>
-          {toNumber(p.winRate)?.toFixed(2) ?? "—"}
+          {winRate.text(p).text}
         </span>
       ),
     },
     {
-      key: "localWinRate",
-      label: t("dataTable.rowLocalWinRate"),
-      shortLabel: t("review.cols.localWinRate"),
-      tab: "racecard",
-      best: bestOf(cand.localWinRate, "max", { digits: 2 }),
+      ...localWinRate,
       render: (p) => {
-        const rate = toNumber(p.localWinRate);
-        return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
-        ) : (
-          "—"
-        );
+        const { text } = localWinRate.text(p);
+        return text === EMPTY ? text : <span className="drt-value">{text}</span>;
       },
     },
     {
-      key: "twoRate",
-      label: t("dataTable.rowTwoRate"),
-      shortLabel: t("review.cols.twoRate"),
-      tab: "racecard",
-      best: bestOf(cand.twoRate, "max", { digits: 1 }),
+      ...twoRate,
       render: (p) => {
-        const rate = toNumber(p.global2Rate);
-        return rate !== null ? (
+        const { text, unit } = twoRate.text(p);
+        return text === EMPTY ? (
+          text
+        ) : (
           <span className="drt-value">
             <span>
-              {rate.toFixed(1)}
-              <span className="drt-unit">%</span>
+              {text}
+              <span className="drt-unit">{unit}</span>
             </span>
           </span>
-        ) : (
-          "—"
         );
       },
     },
