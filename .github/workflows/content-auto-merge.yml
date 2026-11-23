@@ -51,7 +51,8 @@ jobs:
           private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-      # 依存のパッケージを使わない（gh・git・pr-lane.js だけ）ので npm ci はしない
+      # 契約の関門（check-content-pr.js）が依存のパッケージを使うので npm ci をする
+      - run: npm ci
       - name: Merge passing article PRs
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
