@@ -73,7 +73,7 @@ const jumpStateOf = (i, liveNextIndex, isToday) => {
 };
 
 // 見出しの下の節と日目の行と「1R〜12R」のボタン。押したらそのレースの塊へ（目印の近道と同じ移り方）
-export function MeetHeading({
+function MeetHeading({
   loading,
   error,
   venueRaces,
@@ -103,6 +103,7 @@ export function PageHeader({
   date,
   backLink,
   t,
+  heading,
 }) {
   return (
     <header className="page-header">
@@ -124,6 +125,8 @@ export function PageHeader({
       <Link to={backLink} className="back-link">
         {t("venueRaceList.backToVenues")}
       </Link>
+      {/* 節と日目の行と「1R〜12R」（公式の形、オーナー 2026-11-23 承認）。header の2段目に全幅で置く */}
+      <MeetHeading {...heading} isToday={isToday} date={date} />
     </header>
   );
 }
