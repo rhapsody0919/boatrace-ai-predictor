@@ -707,7 +707,7 @@
     "deadlineCountdown": "距截止 {{time}}",
     "badgePlace": "✅ 複勝命中",
     "badgeTurn": "✅ 展開命中",
-    "missBadge": "❌ 未命中",
+    "missBadge": "❌ 展開未命中",
     "view": "查看詳情",
     "dataTableExpand": "查看調子、展示、回收率",
     "noRace": "不成立"

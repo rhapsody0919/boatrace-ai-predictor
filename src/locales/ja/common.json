@@ -2574,7 +2574,7 @@
     "deadlineCountdown": "締切まで {{time}}",
     "badgePlace": "✅ 複勝的中",
     "badgeTurn": "✅ 展開的中",
-    "missBadge": "❌ 外れ",
+    "missBadge": "❌ 展開外れ",
     "view": "詳細を見る",
     "dataTableExpand": "調子・展示・回収率まで見る",
     "noRace": "不成立"

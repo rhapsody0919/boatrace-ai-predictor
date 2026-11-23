@@ -713,7 +713,7 @@
     "deadlineCountdown": "Closes in {{time}}",
     "badgePlace": "✅ Place hit",
     "badgeTurn": "✅ Turn hit",
-    "missBadge": "❌ Missed",
+    "missBadge": "❌ Turn missed",
     "view": "View details",
     "dataTableExpand": "See form, exhibition, return rate",
     "noRace": "Void"

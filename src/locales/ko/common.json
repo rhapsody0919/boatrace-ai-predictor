@@ -707,7 +707,7 @@
     "deadlineCountdown": "마감까지 {{time}}",
     "badgePlace": "✅ 복승 적중",
     "badgeTurn": "✅ 전개 적중",
-    "missBadge": "❌ 미적중",
+    "missBadge": "❌ 전개 미적중",
     "view": "상세 보기",
     "dataTableExpand": "컨디션, 전시, 회수율까지 보기",
     "noRace": "불성립"
