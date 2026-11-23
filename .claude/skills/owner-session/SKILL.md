@@ -29,6 +29,8 @@ node scripts/maintenance/session-start-check.js
 | `contentIndexCoverage` / `missingContentIndex` | トレーサビリティ索引の欠落・形式エラー |
 | `schemaSnapshot` | 本番スキーマの写し `docs/reference/schema-snapshot.json` が7日以上古い（または本番と食い違う）か。食い違いは台帳 `APPLIED.md` で写しの後に適用済みになったファイルで見る（本番には接続しない） |
 
+窓口はあわせて、記事の定時の作業（routine `seo-article`、毎日 JST 06:00）の前の回を見る。RemoteTrigger の `list_runs` で最新の回の状態を見て、24時間以内に記事の PR（枝が `claude/content-`、manifest の `author.lane` が `routine:seo-article`）が出たかを `gh pr list` で確かめる。出ていなければ、`get_run_log` で止まった理由を読み、最初の応答に1行で書く（クラウドの回は終わっても窓口に知らせが来ないため。2026-11-24 オーナー）。同じ止まり方が2回続いたら、GitHub の側の見張りに上げる案をオーナーに出す
+
 **該当が1件以上あれば、ユーザーから話しかけられるのを待たずに最初の応答で提示する。**
 「いいえ」または反応が無ければその日はスキップし、催促しない。
 
