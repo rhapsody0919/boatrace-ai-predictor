@@ -15,7 +15,7 @@
 
 .analysis-group-chip {
   flex: none;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 1rem;
   border-radius: 999px;
   border: 1px solid var(--border-hairline);

@@ -32,28 +32,18 @@ import {
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
 
-const TAB_KEYS = [
-  "outcome",
-  "technique",
-  "motor",
-  "motorranking",
-  "racer",
-  "st",
-  "topstart",
-  "losing",
-  "nige",
-  "extime",
-  "extrend",
-  "techprofile",
-  "formranking",
-  "returnrate",
-  "attackdefense",
-  "racecard",
-  "venueranking",
-  "venuegrade",
-  "volatility",
-  "weather",
+// タブの組（#3258 の #4）。2段目は20個すべてを組の順に1行で並べ、選んだ組へ横にスクロールする。
+// 組の外の項目も DOM と押せる状態に残す（?tab= のリンクと既存の E2E がどのタブも直接押せるように）
+const TAB_GROUPS = [
+  { key: "venue", tabs: ["outcome", "technique", "losing", "nige", "venueranking", "venuegrade", "weather"] },
+  { key: "motor", tabs: ["motor", "motorranking"] },
+  { key: "racer", tabs: ["racer", "formranking", "techprofile", "returnrate"] },
+  { key: "start", tabs: ["st", "topstart", "extime", "extrend"] },
+  { key: "race", tabs: ["attackdefense", "racecard", "volatility"] },
 ];
+
+// タブの一覧の正本は TAB_GROUPS（組の順）。組に入れ忘れたタブがボタンに出なくなるのを防ぐ
+const TAB_KEYS = TAB_GROUPS.flatMap((group) => group.tabs);
 
 // BOA-822（機能フラグの側）: volatility タブのラベルは新しいキー。analysisPage.tabs.volatility を上書きすると
 // ボット向けの静的ページ（generate-ai-snapshots.js）が公開前に変わる（plan「URL」、design-reviewer 指摘9）
@@ -130,36 +120,32 @@ function AnalysisHead({ t, i18n, canonicalUrl, homeUrl }) {
   );
 }
 
-// タブの組（#3258 の #4）。2段目は20個すべてを組の順に1行で並べ、選んだ組へ横にスクロールする。
-// 組の外の項目も DOM と押せる状態に残す（?tab= のリンクと既存の E2E がどのタブも直接押せるように）
-const TAB_GROUPS = [
-  { key: "venue", tabs: ["outcome", "technique", "losing", "nige", "venueranking", "venuegrade", "weather"] },
-  { key: "motor", tabs: ["motor", "motorranking"] },
-  { key: "racer", tabs: ["racer", "formranking", "techprofile", "returnrate"] },
-  { key: "start", tabs: ["st", "topstart", "extime", "extrend"] },
-  { key: "race", tabs: ["attackdefense", "racecard", "volatility"] },
-];
-
 const groupOfTab = (key) =>
   TAB_GROUPS.find((group) => group.tabs.includes(key))?.key ?? TAB_GROUPS[0].key;
 
-// 選んだタブが横の行の真ん中に来るように行だけを動かす（scrollIntoView はページも縦に動かすので使わない）
-function useCenterActiveTab(rowRef, activeTab) {
+// 選んだ項目が横の行の真ん中に来るように行だけを動かす（scrollIntoView はページも縦に動かすので使わない）。
+// 位置は行からの差で測る（offsetLeft は行が position を持たないとページの左端からになる）
+function centerIn(row, item) {
+  if (!row || !item) return;
+  const offset = item.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft;
+  row.scrollLeft = offset - (row.clientWidth - item.offsetWidth) / 2;
+}
+
+function useCenterActive(chipsRef, rowRef, activeTab) {
   useEffect(() => {
-    const row = rowRef.current;
-    const active = row?.querySelector(".analysis-tab-btn.active");
-    if (!row || !active) return;
-    row.scrollLeft = active.offsetLeft - (row.clientWidth - active.offsetWidth) / 2;
-  }, [rowRef, activeTab]);
+    centerIn(rowRef.current, rowRef.current?.querySelector(".analysis-tab-btn.active"));
+    centerIn(chipsRef.current, chipsRef.current?.querySelector(".analysis-group-chip.active"));
+  }, [chipsRef, rowRef, activeTab]);
 }
 
 function AnalysisTabs({ t, activeTab, setActiveTab }) {
   const rowRef = useRef(null);
+  const chipsRef = useRef(null);
   const activeGroup = groupOfTab(activeTab);
-  useCenterActiveTab(rowRef, activeTab);
+  useCenterActive(chipsRef, rowRef, activeTab);
   return (
     <nav className="analysis-tab-nav" aria-label={t("analysisPage.groupsLabel")}>
-      <div className="analysis-group-chips">
+      <div className="analysis-group-chips" ref={chipsRef}>
         {TAB_GROUPS.map((group) => (
           <button
             key={group.key}

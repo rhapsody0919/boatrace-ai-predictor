@@ -14,9 +14,6 @@ test.describe("分析ツールのタブの組", () => {
     await expect(page).toHaveURL(/[?&]tab=motor(&|$)/);
     await expect(page.locator(".analysis-tab-btn.active")).toContainText("モーター調子");
     await expect(chips.filter({ hasText: "モーター" })).toHaveAttribute("aria-pressed", "true");
-    // 組の外の項目も押せる（?tab= のリンクと同じく、どのタブへも直接移れる）
-    await expect(page.locator(".analysis-tab-btn.is-other-group").first()).toBeEnabled();
-
     // 組の外のタブを直接押すと、チップもその組に移る
     await page.locator(".analysis-tab-btn", { hasText: "STのズレ" }).click();
     await expect(chips.filter({ hasText: "スタート・展示" })).toHaveAttribute("aria-pressed", "true");
@@ -33,5 +30,19 @@ test.describe("分析ツールのタブの組", () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test("375px で ?tab= の組が右端でも、選んだ組のチップとタブが行の中に見える", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/winning-technique?tab=volatility");
+    for (const sel of [".analysis-group-chip.active", ".analysis-tab-btn.active"]) {
+      const row = await page.locator(sel).evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const p = el.parentElement.getBoundingClientRect();
+        return { left: r.left - p.left, right: p.right - r.right };
+      });
+      expect(row.left, sel).toBeGreaterThanOrEqual(-1);
+      expect(row.right, sel).toBeGreaterThanOrEqual(-1);
+    }
   });
 });
