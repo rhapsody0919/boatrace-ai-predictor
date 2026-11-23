@@ -10,7 +10,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 
 「止める」は、変更を加えず、PR（Draft を含む）も作らず、起動した経路への最終の応答に理由と分け方の案を書いて終えること。
 
-1. **`.env` の無い複製で作業する**。作業場所に `.env`・`.env.local`・`.env.*` があれば止める（vite・`node --env-file` が自動で読み、手元の検証が本番の管理者キーで本番 DB に繋がる）。鍵・認証情報のファイルは読まない・書かない・出力しない。値を diff・コミット・PR 本文・ログに入れない
+1. **`.env` の無い複製で作業する**。作業場所に `.env`・`.env.local`・`.env.*` があれば止める（repo に入った見本の `.env.example` は除く。vite・`node --env-file` が自動で読み、手元の検証が本番の管理者キーで本番 DB に繋がる）。鍵・認証情報のファイルは読まない・書かない・出力しない。値を diff・コミット・PR 本文・ログに入れない
 2. **本番 Supabase に接続しない**（読み取りも含む）。データの確かめはコードのロジック・既存の試験データ・手元の PGlite 等で代える。本番の接続が要るなら PR 本文にそう書いて人に委ねる
 3. **マイグレーションを作らない**（`docs/db-migration/`・`supabase/migrations/`）。本番 DB への適用・本番データを書くバッチの実行もしない。DB の変更が要る票では、SQL の案・試験・適用と戻しの手順を `docs/design/<slug>/db-draft.md` に出し、頭に「未審査の案。適用の根拠にしない」と書く
 4. **変えてはならない物**（要ると思っても変えず、PR 本文に指摘として書く）
@@ -21,7 +21,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
    - 例外: 既存の `verify-*.js` を振る舞いの試験へ置き換える変更は、機械の変異検査（`scripts/maintenance/guard_weakening/`: 旧の verify が落とす変異 ⊆ 新の試験が落とす変異）を通したときだけ可
    - `vercel.json`（AI の枝の Preview を止める設定。`verify-codex-no-preview.js` が固定）
    - `docs/operation/codex-backlog.md`「回すもの・回さないもの」の (a)（`scripts/db/**`・`scripts/watch/**`・`scripts/lib/dbApplySql.js` 等の守りの本体）
-5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない。`node scripts/maintenance/split-data-layer.mjs` の出力そのままの PR（pr-lane が移すだけと判定する物、config/pr-path-rules.json の moveOnly）は300行5ファイルの線の外
+5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない。`node scripts/maintenance/split-data-layer.mjs` の出力そのままの PR（pr-lane が移すだけと判定する物、config/pr-path-rules.json の moveOnly）は300行5ファイルの線の外。記事の PR で `docs/operation/content-pr-contract.md` の「PR に入れてよいもの」だけを変える物（記事の本文・メタ・manifest・図の JSON・画像）は、300行5ファイルと `src/`・`docs/` を混ぜない線の外（代わりに契約の関門 `check-content-pr.js` が見る）
 6. **マージしない**。`gh pr merge`・承認（approve）・自動マージの設定（`--auto`）をしない。force push をしない
 
 ## 作業の進め方
