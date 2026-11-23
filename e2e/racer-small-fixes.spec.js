@@ -45,13 +45,14 @@ test("今節のモーターの展示タイムのグラフに「下ほど速い�
   const card = page.locator(".racer-motor-status-card");
   await expect(card.locator("h2")).toBeVisible({ timeout: 30000 });
   const caption = card.locator(".racer-motor-status-chart-caption");
-  // 推移が描ける（2走以上）ときだけキャプションが出る。出るなら一言が付く
-  if ((await caption.count()) > 0) {
-    await expect(caption).toContainText("展示タイム。下ほど速い");
-  }
+  // 4586 は録画で推移（2走以上）と機力指数の評価の両方が出る選手。出ない録画になったら落ちて気づく
+  await expect(
+    card.locator(".racer-motor-status-chart-caption"),
+  ).toContainText("展示タイム。下ほど速い");
   const verdict = card.locator(".racer-motor-status-index");
-  if ((await verdict.count()) > 0) {
-    await expect(verdict).not.toContainText(/ — 選手の実力/);
-    await expect(verdict).toContainText(/ — (モーターは乗る選手の実力|走数が少ない)/);
-  }
+  await expect(verdict).toHaveCount(1);
+  await expect(verdict).not.toContainText(/ — 選手の実力/);
+  await expect(verdict).toContainText(
+    / — (モーターは乗る選手の実力|走数が少ない)/,
+  );
 });
