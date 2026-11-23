@@ -197,3 +197,76 @@
     margin-top: 0.75rem;
   }
 }
+
+/* 結論の一言と枠ごとの1着率（#3258 の #5） */
+.wt-win-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.wt-base,
+.wt-rate-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.wt-headline {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.wt-boat-rates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-width: 720px;
+}
+
+/* 375px は3つずつ2段、768px 以上は1段。枠の数はデータで変わるので grid の固定列にしない */
+.wt-boat-rate {
+  flex: 1 1 calc((100% - 0.8rem) / 3);
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  background: var(--surface-page);
+}
+
+.wt-boat-rate-label,
+.wt-boat-rate-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.wt-boat-rate-pct {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.wt-breakdown-title {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.wt-table-details > summary {
+  cursor: pointer;
+  padding: 0.65rem 0;
+  color: var(--brand-accent-primary);
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .wt-boat-rate {
+    flex: 1 1 0;
+  }
+}
