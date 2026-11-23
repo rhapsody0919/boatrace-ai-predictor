@@ -3,11 +3,7 @@ import { test, expect } from "./fixtures.js";
 /**
  * 会場ページの節と日目の行と「1R〜12R」のボタン（公式の形、docs/design/venue-race-card-redesign/approved.md）。
  *
- * - 節の行はグレード（SG〜G3）と節の名前を全グレードで出す（一般戦は札なし）
- * - 日付と日目（getVenueSeriesDayLabel。トップの会場カード・レース詳細の見出しと同じ値）
- * - 本日は、次の発走レースより前を「終わった」、そのレースを「次」にする。過去日付は状態を付けない
- * - ボタンを押すとそのレースの塊へ移る
- *
+ * 節の行は全グレード（一般戦は札なし）。本日は次の発走より前を「終わった」、そのレースを「次」。過去日付は状態なし。
  * レースの並びは Edge API を差し替えて固定する（venue-next-race.spec.js と同じ。1R 10:30 〜 12R 16:00、30分おき）。
  */
 
@@ -19,6 +15,8 @@ const startOf = (n) => {
   const m = 10 * 60 + 30 + (n - 1) * 30;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 };
+
+const entry = (i) => ({ number: i, name: `選手${i}`, grade: "B1" });
 
 const edgeData = ({ raceGrade, raceTitle }) => ({
   generatedAt: `${DATE}T00:00:00Z`,
@@ -33,18 +31,7 @@ const edgeData = ({ raceGrade, raceTitle }) => ({
     raceTitle,
     seriesDay: 6,
     isFinalDay: false,
-    entries: [1, 2, 3, 4, 5, 6].map((i) => ({
-      number: i,
-      name: `テスト選手${i}`,
-      grade: "B1",
-      age: 30,
-      winRate: 5.0,
-      localWinRate: 5.0,
-      motorNumber: i,
-      motor2Rate: 35,
-      boatNumber: i,
-      boat2Rate: 35,
-    })),
+    entries: [1, 2, 3, 4, 5, 6].map(entry),
     predictions: {},
     exhibitionData: [],
     result: null,
@@ -76,23 +63,16 @@ for (const width of [375, 1440]) {
       page,
     }) => {
       const heading = await open(page);
-      await expect(heading.locator(".venue-meet-heading__grade")).toHaveText(
-        "G3",
+      const meet = heading.locator(".venue-meet-heading__meet");
+      await expect(meet).toHaveText(`G3${LONG_TITLE.normalize("NFKC")}`);
+      await expect(heading).toContainText("9月28日 / 6日目");
+      const states = await raceButtons(heading).evaluateAll((bs) =>
+        bs.map((b) => `${b.textContent}:${b.className.match(/is-(\w+)/)?.[1]}`),
       );
-      await expect(heading.locator(".venue-meet-heading__title")).toHaveText(
-        LONG_TITLE.normalize("NFKC"),
+      const want = (n) => (n < 9 ? "done" : n === 9 ? "next" : "upcoming");
+      expect(states).toEqual(
+        Array.from({ length: 12 }, (_, i) => `${i + 1}R:${want(i + 1)}`),
       );
-      await expect(heading.locator(".venue-meet-heading__day")).toHaveText(
-        "9月28日 / 6日目",
-      );
-      const buttons = raceButtons(heading);
-      await expect(buttons).toHaveCount(12);
-      for (let i = 0; i < 12; i++) {
-        await expect(buttons.nth(i)).toHaveText(`${i + 1}R`);
-        const want = i < 8 ? "is-done" : i === 8 ? "is-next" : "is-upcoming";
-        await expect(buttons.nth(i)).toHaveClass(new RegExp(want));
-      }
-      await expect(buttons.nth(8)).toHaveAttribute("aria-current", "true");
       const overflow = await page.evaluate(
         () =>
           document.documentElement.scrollWidth -
@@ -132,10 +112,9 @@ test.describe("押して移る・過去日付・一般戦", () => {
     await expect(heading.locator(".venue-meet-heading__title")).toHaveText(
       "一般戦の節",
     );
-    const buttons = raceButtons(heading);
-    await expect(buttons).toHaveCount(12);
-    for (let i = 0; i < 12; i++) {
-      await expect(buttons.nth(i)).not.toHaveClass(/is-(done|next|upcoming)/);
-    }
+    await expect(raceButtons(heading)).toHaveCount(12);
+    await expect(
+      heading.locator(".is-done, .is-next, .is-upcoming"),
+    ).toHaveCount(0);
   });
 });

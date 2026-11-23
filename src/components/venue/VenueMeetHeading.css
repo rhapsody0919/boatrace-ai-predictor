@@ -11,20 +11,16 @@
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
+/* 地はグレードの色（gradeConfig、会場カードの札と同じ）なので文字は白 */
 .venue-meet-heading__grade {
   flex: none;
   padding: 0 0.4em;
   border-radius: var(--radius-sm);
-  /* 地はグレードの色（gradeConfig）。会場カードの札と同じ */
   color: #fff;
   font-size: 0.8rem;
-}
-
-.venue-meet-heading__title {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 .venue-meet-heading__day {
@@ -33,7 +29,7 @@
   font-size: 0.9rem;
 }
 
-/* 375px は公式スマホと同じ6列×2段。広い画面は12個を1段に並べる */
+/* 375px は公式スマホと同じ6列×2段。768px 以上は1段 */
 .venue-meet-heading__races {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -60,14 +56,13 @@
   cursor: pointer;
 }
 
-/* 終わったレースは灰（公式の「発売終了」）。文字は残す（押せば結果の塊へ移る） */
+/* 終わったレースは灰（公式の「発売終了」）。次の発走レースは金の線 */
 .venue-meet-heading__race.is-done {
   background: var(--surface-page);
   color: var(--text-secondary);
   font-weight: normal;
 }
 
-/* 次の発走レースは金の線（目印・1200px 以上の表の「次」と同じ） */
 .venue-meet-heading__race.is-next {
   border: var(--border-width-2) solid var(--brand-accent-primary);
 }

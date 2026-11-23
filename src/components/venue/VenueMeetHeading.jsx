@@ -1,11 +1,6 @@
 /**
- * 会場ページの見出しの下の、節と日目の行と「1R〜12R」のボタン（公式の形に寄せる。オーナー 2026-11-23 承認、
- * docs/design/venue-race-card-redesign/approved.md）。
- *
- * - 節の行: グレード（SG〜G3。一般戦は札なし）と節の名前。全グレードで出す（節のページへの帯 VenueMeetBanner は SG・G1・G2 だけ）
- *   グレードと名前は先頭レースの値を会場の代表値にする（会場カード venueCardHeadline と同じ）
- * - 日付と日目: 日目はトップの会場カード・レース詳細の見出しと同じ getVenueSeriesDayLabel（丸一日中止の日は出さない）
- * - 1R〜12R: 押すとそのレースの塊へ移る（目印の近道と同じ holdScrollPosition）
+ * 会場ページの節と日目の行と「1R〜12R」のボタン（公式の形、docs/design/venue-race-card-redesign/approved.md）。節の行は全グレード、
+ * 値は先頭レース（会場カードと同じ）。日目は会場カード・レース詳細と同じ getVenueSeriesDayLabel。移り方は目印の近道と同じ
  */
 import { useTranslation } from "react-i18next";
 import { gradeConfigOf } from "../../utils/raceListDisplay";
