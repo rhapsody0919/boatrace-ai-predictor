@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
@@ -129,19 +130,70 @@ function AnalysisHead({ t, i18n, canonicalUrl, homeUrl }) {
   );
 }
 
+// タブの組（#3258 の #4）。2段目は20個すべてを組の順に1行で並べ、選んだ組へ横にスクロールする。
+// 組の外の項目も DOM と押せる状態に残す（?tab= のリンクと既存の E2E がどのタブも直接押せるように）
+const TAB_GROUPS = [
+  { key: "venue", tabs: ["outcome", "technique", "losing", "nige", "venueranking", "venuegrade", "weather"] },
+  { key: "motor", tabs: ["motor", "motorranking"] },
+  { key: "racer", tabs: ["racer", "formranking", "techprofile", "returnrate"] },
+  { key: "start", tabs: ["st", "topstart", "extime", "extrend"] },
+  { key: "race", tabs: ["attackdefense", "racecard", "volatility"] },
+];
+
+const groupOfTab = (key) =>
+  TAB_GROUPS.find((group) => group.tabs.includes(key))?.key ?? TAB_GROUPS[0].key;
+
+// 選んだタブが横の行の真ん中に来るように行だけを動かす（scrollIntoView はページも縦に動かすので使わない）
+function useCenterActiveTab(rowRef, activeTab) {
+  useEffect(() => {
+    const row = rowRef.current;
+    const active = row?.querySelector(".analysis-tab-btn.active");
+    if (!row || !active) return;
+    row.scrollLeft = active.offsetLeft - (row.clientWidth - active.offsetWidth) / 2;
+  }, [rowRef, activeTab]);
+}
+
 function AnalysisTabs({ t, activeTab, setActiveTab }) {
+  const rowRef = useRef(null);
+  const activeGroup = groupOfTab(activeTab);
+  useCenterActiveTab(rowRef, activeTab);
   return (
-    <div className="analysis-tabs">
-      {TAB_KEYS.map((key) => (
-        <button
-          key={key}
-          className={`analysis-tab-btn ${activeTab === key ? "active" : ""}`}
-          onClick={() => setActiveTab(key)}
-        >
-          {t(`analysisPage.tabs.${tabLabelKey(key)}`)}
-        </button>
-      ))}
-    </div>
+    <nav className="analysis-tab-nav" aria-label={t("analysisPage.groupsLabel")}>
+      <div className="analysis-group-chips">
+        {TAB_GROUPS.map((group) => (
+          <button
+            key={group.key}
+            type="button"
+            className={`analysis-group-chip ${group.key === activeGroup ? "active" : ""}`}
+            aria-pressed={group.key === activeGroup}
+            onClick={() => {
+              if (group.key !== activeGroup) setActiveTab(group.tabs[0]);
+            }}
+          >
+            {t(`analysisPage.groups.${group.key}`)}
+          </button>
+        ))}
+      </div>
+      <div className="analysis-tabs" ref={rowRef}>
+        {TAB_GROUPS.flatMap((group) =>
+          group.tabs.map((key, index) => (
+            <button
+              key={key}
+              type="button"
+              className={[
+                "analysis-tab-btn",
+                activeTab === key ? "active" : "",
+                group.key === activeGroup ? "" : "is-other-group",
+                index === 0 ? "is-group-start" : "",
+              ].join(" ")}
+              onClick={() => setActiveTab(key)}
+            >
+              {t(`analysisPage.tabs.${tabLabelKey(key)}`)}
+            </button>
+          )),
+        )}
+      </div>
+    </nav>
   );
 }
 
