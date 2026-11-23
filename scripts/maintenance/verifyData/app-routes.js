@@ -3,7 +3,7 @@
  * （verify-sitemap-coverage.js。verify ではない）。本文の字は読まない。
  *
  * renderJsx（scripts/lib/renderJsx.js）で AppRouter を jsdom に描く。AppRouter.jsx からの react-router-dom・react-i18next・
- * CookieConsent・HreflangTags の import だけを隣の偽へ向け、属性の無い .json の import を JSON として読む
+ * CookieConsent・HreflangTags・SiteFeedback（本物の useLocation を呼ぶ）の import だけを隣の偽へ向け、属性の無い .json の import を JSON として読む
  * （Vite 専用の import.meta.glob・仮想モジュールは jsx-page-stubs.js の写し）（module.register の resolve hook。ページの部品は import されるが描かない）。
  * 偽の Route は path を記録し、子の Routes を持つ入れ物（/{lang}/*・/*）だけを描くので、全言語の LocalizedRoutes の path が並ぶ。
  */
@@ -22,6 +22,7 @@ const SWAPS = {
   "react-i18next": OTHERS,
   "./components/CookieConsent": OTHERS,
   "./components/HreflangTags": OTHERS,
+  "./components/siteFeedback/SiteFeedback": OTHERS,
 };
 const HOOKS = `
 const SWAPS = ${JSON.stringify(SWAPS)};
