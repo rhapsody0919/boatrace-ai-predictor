@@ -230,28 +230,28 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   background: var(--ind-best-bg);
 }
 
-/* 選んだ艇（?boat=）の列（オーナー 2026-11-23 承認の5）。縦の2本線と薄い地。最良と重なるセルは両方を描く。
-   偶数行の縞に負けないよう tr td から書く */
+/* 選んだ艇（?boat=）の列（承認の5）。金は最良だけなので本文の色の縦線と薄い地（visual-designer 判定 B）。
+   最良と重なるセルは両方を描く。偶数行の縞に負けないよう tr td から書く */
 .drt-table tr th.drt-boat-th.drt-selected {
-  box-shadow: inset 0 -4px 0 var(--brand-accent-primary);
+  box-shadow: inset 0 -4px 0 currentColor;
 }
 
 .drt-table tr th.drt-name-th.drt-selected {
-  background: color-mix(in srgb, var(--brand-accent-primary) 14%, var(--surface-card));
+  background: color-mix(in srgb, var(--text-primary) 10%, var(--surface-card));
   font-weight: var(--font-weight-bold);
-  box-shadow: inset 2px 0 0 var(--brand-accent-primary), inset -2px 0 0 var(--brand-accent-primary);
+  box-shadow: inset 2px 0 0 var(--text-primary), inset -2px 0 0 var(--text-primary);
 }
 
 .drt-table tbody tr td.drt-cell.drt-selected {
-  background: color-mix(in srgb, var(--brand-accent-primary) 8%, var(--surface-card));
-  box-shadow: inset 2px 0 0 var(--brand-accent-primary), inset -2px 0 0 var(--brand-accent-primary);
+  background: color-mix(in srgb, var(--text-primary) 6%, var(--surface-card));
+  box-shadow: inset 2px 0 0 var(--text-primary), inset -2px 0 0 var(--text-primary);
 }
 
 .drt-table tbody tr td.drt-cell.drt-best.drt-selected {
   background: var(--ind-best-bg);
   box-shadow:
-    inset 2px 0 0 var(--brand-accent-primary),
-    inset -2px 0 0 var(--brand-accent-primary),
+    inset 2px 0 0 var(--text-primary),
+    inset -2px 0 0 var(--text-primary),
     inset 0 0 0 1px var(--ind-best-ring);
 }
 
