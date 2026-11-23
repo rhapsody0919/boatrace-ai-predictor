@@ -13,9 +13,11 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
-import BandWrapAxisTick from "../BandWrapAxisTick";
 import { getWinningTechniqueStats } from "../../services/venueQueries.js";
+import { getVenuesWithTodaysRaces } from "../../services/scheduleQueries.js";
+import { winningTechniqueSummary } from "../../pure/winningTechniqueSummary.js";
 import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
 import { techniqueColor, sortTechniquesOfficial } from "../../utils/techniqueColors";
@@ -75,6 +77,27 @@ function useWinningTechniqueStats(selectedVenue, t) {
   return { statsData, loading, error };
 }
 
+// 本日開催の場（会場の選択肢に印を付ける）。既定の会場は江戸川のまま
+// （e2e/winning-technique-official-order.spec.js が既定 "03" を見ている。#3258 の #4 の既定の変更は見送り）
+function useTodayVenueCodes() {
+  const [codes, setCodes] = useState(() => new Set());
+  useEffect(() => {
+    let alive = true;
+    getVenuesWithTodaysRaces()
+      .then((list) => {
+        if (alive) setCodes(new Set(list));
+      })
+      .catch((err) => {
+        // 印だけの補助なので画面は止めない。失敗は握りつぶさず記録する
+        console.error("Failed to load today's venues:", err);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return codes;
+}
+
 function StateMessage({ className, children }) {
   return (
     <div className="winning-technique-container">
@@ -96,22 +119,28 @@ function collectTechniques(data) {
 
 // recharts用データ: 枠番ごとに { boat_number, 逃げ: 62.3, 差し: 20.1, ... }
 // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
-function buildChartData(data, allTechniques, t) {
+// small: 1着が30回未満の枠（棒の文字を割合でなく回数にする）
+function buildChartData(data, allTechniques, smallBoats, t) {
   return [1, 2, 3, 4, 5, 6]
     .filter((boatNumber) => data[boatNumber])
     .map((boatNumber) => {
-      const row = { boat_number: t("analysis.boatN", { n: boatNumber }) };
+      const row = {
+        boat_number: t("analysis.boatN", { n: boatNumber }),
+        small: smallBoats.has(boatNumber),
+        counts: {},
+      };
       allTechniques.forEach((technique) => {
         const match = data[boatNumber].techniques.find(
           (tech) => tech.technique === technique,
         );
         row[technique] = match ? match.percentage : 0;
+        row.counts[technique] = match ? match.count : 0;
       });
       return row;
     });
 }
 
-function VenueSelect({ selectedVenue, onChange, t }) {
+function VenueSelect({ selectedVenue, onChange, todayCodes, t }) {
   return (
     <div className="controls-section">
       <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
@@ -124,6 +153,7 @@ function VenueSelect({ selectedVenue, onChange, t }) {
         {VENUES.map((venue) => (
           <option key={venue.code} value={venue.code}>
             {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
+            {todayCodes.has(parseInt(venue.code, 10)) ? t("analysis.todayOpen") : ""}
           </option>
         ))}
       </select>
@@ -146,28 +176,49 @@ function SummaryInfo({ venueLabel, last_updated, t }) {
   );
 }
 
+// 棒の中の文字: 1着が30回未満の枠は回数、それ以外は10%以上の段だけ割合（細い段は書かない）
+function segmentLabel(chartData, technique, t) {
+  // 積み上げの棒では LabelList の value が積み上げた端の値になるので、行の値から書く
+  function SegmentLabel({ x, y, width, height, index }) {
+    const row = chartData[index];
+    if (!row || width < 26) return null;
+    const value = row[technique];
+    const text = row.small
+      ? row.counts[technique] > 0
+        ? t("analysis.wt.countLabel", { count: row.counts[technique] })
+        : ""
+      : value >= 10
+        ? `${Math.round(value)}%`
+        : "";
+    if (!text) return null;
+    return (
+      <text
+        x={x + width / 2}
+        y={y + height / 2}
+        fill="#fff"
+        fontSize={11}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
+        {text}
+      </text>
+    );
+  }
+  return SegmentLabel;
+}
+
+// 行＝艇の横の100%積み上げ（#3258 の #5）。系列の順・色・凡例は以前のまま
 function TechniqueBarChart({ chartData, allTechniques, techniqueLabel, t }) {
   return (
-    <ResponsiveContainer width="100%" height={360}>
+    <ResponsiveContainer width="100%" height={chartData.length * 40 + 70}>
       <BarChart
         data={chartData}
-        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        layout="vertical"
+        margin={{ top: 5, right: 16, left: 0, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis
-          dataKey="boat_number"
-          interval={0}
-          tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
-        />
-        <YAxis
-          label={{
-            value: t("analysis.sharePctHeader"),
-            angle: -90,
-            position: "insideLeft",
-          }}
-          domain={[0, 100]}
-          ticks={[0, 20, 40, 60, 80, 100]}
-        />
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+        <XAxis type="number" domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} unit="%" />
+        <YAxis type="category" dataKey="boat_number" width={56} />
         <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
         <Legend
           // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
@@ -185,10 +236,43 @@ function TechniqueBarChart({ chartData, allTechniques, techniqueLabel, t }) {
             name={techniqueLabel(technique)}
             stackId="technique"
             fill={techniqueColor(technique, idx)}
-          />
+          >
+            <LabelList content={segmentLabel(chartData, technique, t)} />
+          </Bar>
         ))}
       </BarChart>
     </ResponsiveContainer>
+  );
+}
+
+// 結論の一言と枠ごとの1着率（#3258 の #5）。会場の差を言えるのは1号艇の1着率だけ（number-scope.md）
+function WinSummary({ summary, venueLabel, t }) {
+  const boat1 = summary.boats.find((b) => b.boat === 1);
+  return (
+    <div className="wt-win-summary">
+      <p className="wt-base">{t("analysis.wt.base", { total: summary.total })}</p>
+      {boat1 && summary.boat1Nige !== null && (
+        <p className="wt-headline">
+          {t("analysis.wt.headline", {
+            venue: venueLabel,
+            total: summary.total,
+            wins: boat1.wins,
+            pct: boat1.pct,
+            nige: summary.boat1Nige,
+          })}
+        </p>
+      )}
+      <ul className="wt-boat-rates">
+        {summary.boats.map((b) => (
+          <li key={b.boat} className="wt-boat-rate">
+            <span className="wt-boat-rate-label">{t("analysis.boatN", { n: b.boat })}</span>
+            <strong className="wt-boat-rate-pct">{b.pct}%</strong>
+            <span className="wt-boat-rate-count">{t("analysis.wt.boatWins", { count: b.wins })}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="wt-rate-note">{t("analysis.wt.rateNote")}</p>
+    </div>
   );
 }
 
@@ -243,6 +327,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
     selectedVenue,
     t,
   );
+  const todayCodes = useTodayVenueCodes();
 
   if (loading) {
     return (
@@ -278,7 +363,10 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
   // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
   const techniqueLabel = (name) => translateTechnique(t, name);
   const allTechniques = collectTechniques(data);
-  const chartData = buildChartData(data, allTechniques, t);
+  const summary = winningTechniqueSummary(data);
+  const smallBoats = new Set(summary.boats.filter((b) => b.small).map((b) => b.boat));
+  const chartData = buildChartData(data, allTechniques, smallBoats, t);
+  const tableRows = Object.values(data).reduce((n, boat) => n + boat.techniques.length, 0);
 
   return (
     <div className="winning-technique-container">
@@ -288,6 +376,7 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
       <VenueSelect
         selectedVenue={selectedVenue}
         onChange={setSelectedVenue}
+        todayCodes={todayCodes}
         t={t}
       />
 
@@ -299,16 +388,22 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
         />
       )}
 
+      <WinSummary summary={summary} venueLabel={venueLabel} t={t} />
+
+      <h3 className="wt-breakdown-title">{t("analysis.wt.breakdownTitle")}</h3>
       <TechniqueBarChart
         chartData={chartData}
         allTechniques={allTechniques}
         techniqueLabel={techniqueLabel}
         t={t}
       />
+      {smallBoats.size > 0 && <p className="table-note">{t("analysis.wt.smallNote")}</p>}
 
-      <TechniqueTable data={data} techniqueLabel={techniqueLabel} t={t} />
-
-      <p className="table-note">{t("analysis.wt.note")}</p>
+      <details className="wt-table-details">
+        <summary>{t("analysis.wt.tableToggle", { rows: tableRows })}</summary>
+        <TechniqueTable data={data} techniqueLabel={techniqueLabel} t={t} />
+        <p className="table-note">{t("analysis.wt.note")}</p>
+      </details>
     </div>
   );
 }

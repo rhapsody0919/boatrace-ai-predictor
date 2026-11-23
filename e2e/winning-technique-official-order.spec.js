@@ -62,3 +62,46 @@ test("決まり手と負け決まり手の棒・凡例は公式順、色と表�
       .toHaveText(rows.map((row) => row[1]));
   }
 });
+
+// 結論の一言と枠ごとの1着率（#3258 の #5）。棒は枠ごとに100%へそろえた内訳なので、枠どうしの1着の多さは
+// 別に回数と1着率で出す。1着が30回未満の枠は棒の中を割合でなく回数で書く
+test("決まり手は結論の一言・枠ごとの1着率を上に出し、件数の表は畳む", async ({ page }) => {
+  const rows = [
+    [1, "逃げ", 239, 263, 90.87],
+    [1, "抜き", 24, 263, 9.13],
+    [2, "差し", 50, 83, 60.24],
+    [2, "まくり", 33, 83, 39.76],
+    [6, "まくり差し", 15, 25, 60],
+    [6, "まくり", 10, 25, 40],
+  ];
+  await page.route("**/rest/v1/winning_technique_stats?*", (route) =>
+    route.fulfill({
+      json: rows.map(([boat_number, winning_technique, count_90days, total_races, percentage]) => ({
+        venue_code: 3,
+        boat_number,
+        winning_technique,
+        count_90days,
+        total_races,
+        percentage,
+        last_updated: "2026-11-23",
+      })),
+    }),
+  );
+  await page.goto("/winning-technique?tab=technique");
+  const chart = page.locator(".winning-technique-container");
+  // 母数 263+83+25=371。1号艇 263/371=70.9%、そのうち逃げ239回
+  await expect(chart.locator(".wt-headline")).toHaveText(
+    "江戸川の過去90日では、1号艇の1着は371レース中263回（70.9%）。その263回のうち239回が逃げ",
+  );
+  await expect(chart.locator(".wt-boat-rate-pct")).toHaveText(["70.9%", "22.4%", "6.7%"]);
+  await expect(chart.locator(".wt-boat-rate-count")).toHaveText(["263回", "83回", "25回"]);
+  // 6号艇（25回）は棒の中が回数、1号艇は割合
+  await expect(chart.locator(".recharts-label-list text", { hasText: "15回" })).toHaveCount(1);
+  await expect(chart.locator(".recharts-label-list text", { hasText: "91%" })).toHaveCount(1);
+  // 積み上げの端の値（2号艇はまくり40%の上に差しが積まれて100%）でなく、その段の割合を書く
+  await expect(chart.locator(".recharts-label-list text", { hasText: "60%" })).toHaveCount(1);
+  await expect(chart.locator(".recharts-label-list text", { hasText: "100%" })).toHaveCount(0);
+  // 件数の表は畳んである
+  await expect(chart.locator("details.wt-table-details")).not.toHaveAttribute("open", "");
+  await expect(chart.locator(".winning-technique-table")).toBeHidden();
+});
