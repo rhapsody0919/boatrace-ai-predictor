@@ -17,22 +17,10 @@
  *
  * 実行: node scripts/maintenance/verify-site-feedback-migration.js（@electric-sql/pglite は devDependency）
  */
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
+import { readSiteFeedbackMigration } from "./verifyData/site-feedback-migration.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MIGRATION = path.join(
-  __dirname,
-  "../../docs/db-migration/205_site_feedback.sql",
-);
-const sql = fs.readFileSync(MIGRATION, "utf8");
-const rollbackSql = sql
-  .match(/-- ROLLBACK-BEGIN\n([\s\S]*?)-- ROLLBACK-END/)?.[1]
-  .split("\n")
-  .map((l) => l.replace(/^-- ?/, ""))
-  .join("\n");
+const { sql, rollbackSql } = readSiteFeedbackMigration();
 
 // 画面の決まり（src/pure/siteFeedback.js）の写し
 const KINDS = ["feature", "usability", "data", "other"];
