@@ -11,10 +11,8 @@
  *   - select は6艇の艇番ごとに { value, n, hidden } を返す
  *   - 最良は表示の桁で比べ、hidden の艇は返さない。書き方は勝率2桁・率は % を分ける
  */
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import * as dataFormat from "../../src/pure/dataFormat.js";
+import ja from "../../src/locales/ja/common.json" with { type: "json" };
 import {
   ALIASES,
   INDICATORS,
@@ -23,10 +21,6 @@ import {
   getIndicator,
 } from "../../src/pure/indicatorRegistry.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ja = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "../../src/locales/ja/common.json"), "utf8"),
-);
 const hasKey = (key) =>
   key.split(".").reduce((node, part) => node?.[part], ja) !== undefined;
 
