@@ -99,10 +99,12 @@ const isProductionRun = (r) =>
   r.head_branch === "master" &&
   r.head_repository?.full_name === repo &&
   // push は master へのマージ・自動コミットで動くもの（Post-merge Checks・Regenerate Generated Docs 等）。
-  // rerun の許可の一覧には入っていないので、知らせるだけになる
+  // rerun の許可の一覧には入っていないので、知らせるだけになる。
+  // workflow_run は Key Canary の完了で起きる物（schedule が来ない workflow の主の起動、11/23）
   (r.event === "schedule" ||
     r.event === "workflow_dispatch" ||
-    r.event === "push");
+    r.event === "push" ||
+    r.event === "workflow_run");
 
 const runJobs = (runId) =>
   listAll(`/repos/${repo}/actions/runs/${runId}/jobs?filter=latest`, "jobs");

@@ -7,8 +7,12 @@ name: Growth GSC Daily
 # 鍵は Environment prod-jobs（ADR-0097。GOOGLE_SERVICE_ACCOUNT_KEY・SEARCH_CONSOLE_SITE_URL・SUPABASE_* は既にある）。
 on:
   schedule:
-    # JST 10:23（GSC の前日分が届くのは2〜3日後なので、時刻は混まない所を選んだだけ）
+    # 予備。新設の日から GitHub の schedule が来なかった（11/23、key-canary の BOA-917 と同じ型）
     - cron: "23 1 * * *"
+  # 主の起動: Vercel Cron から30分ごとに確実に起きる Key Canary の完了。JST 10時台の最初の1回だけ取る（下の if）
+  workflow_run:
+    workflows: [Key Canary]
+    types: [completed]
   workflow_dispatch:
 
 concurrency:
@@ -22,8 +26,28 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  collect:
+  # workflow_run（Key Canary の30分ごとの完了）で来たときは、JST 10:00〜10:29 の回だけ取る（1日1回）
+  gate:
     if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      go: ${{ steps.t.outputs.go }}
+    steps:
+      - id: t
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          hm=$(TZ=Asia/Tokyo date +%H%M)
+          if [ "$EVENT" != "workflow_run" ] || { [ "$hm" -ge 1000 ] && [ "$hm" -lt 1030 ]; }; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"; echo "JST $hm は取り込みの時刻でないので何もしない"
+          fi
+
+  collect:
+    needs: gate
+    if: needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: prod-jobs
