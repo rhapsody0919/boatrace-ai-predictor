@@ -47,6 +47,13 @@ const ISSUE_Q = `query($id: String!) { issue(id: $id) {
 const DONE_STATE_Q = `query($team: ID!) { workflowStates(filter: { team: { id: { eq: $team } }, type: { eq: "completed" } }) {
   nodes { id name position } } }`;
 
+async function archiveIssue(issue) {
+  await linear(
+    `mutation($id: String!) { issueArchive(id: $id) { success } }`,
+    { id: issue.id },
+  );
+}
+
 async function closeIssue(issue, pr) {
   const { workflowStates } = await linear(DONE_STATE_Q, { team: issue.team.id });
   const done = [...workflowStates.nodes].sort((a, b) => a.position - b.position)[0];
@@ -92,6 +99,7 @@ async function main() {
       }
       const { action, reason } = decide(ident, issue, openPrs, pr);
       if (action === "close") await closeIssue(issue, pr);
+      if (action === "archive") await archiveIssue(issue);
       console.log(`#${pr.number} ${ident}: ${action}（${reason}）`);
     }
   }
