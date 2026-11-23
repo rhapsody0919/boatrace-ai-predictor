@@ -18,6 +18,11 @@ test("枠番別回収率は畳んで参考・N走、30走未満の枠番は「-�
     /^枠番別回収率（過去180日）参考・\d+走$/,
   );
 
+  // タップ領域は44px以上で、▶ の印（list-item）が残る
+  const box = await fold.locator("summary").boundingBox();
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  await expect(fold.locator("summary")).toHaveCSS("display", "list-item");
+
   await fold.locator("summary").click();
   const rows = fold.locator("tbody tr");
   const count = await rows.count();
