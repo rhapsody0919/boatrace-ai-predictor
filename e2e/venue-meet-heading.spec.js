@@ -23,17 +23,14 @@ const edgeData = ({ raceGrade, raceTitle }) => ({
   races: Array.from({ length: 12 }, (_, i) => i + 1).map((n) => ({
     raceId: `${DATE}-${String(VENUE).padStart(2, "0")}-${String(n).padStart(2, "0")}`,
     venueCode: VENUE,
-    venue: "多摩川",
     raceNumber: n,
     startTime: startOf(n),
     raceGrade,
     raceTitle,
     seriesDay: 6,
-    isFinalDay: false,
     entries: [1, 2, 3, 4, 5, 6].map(entry),
     predictions: {},
     exhibitionData: [],
-    result: null,
   })),
 });
 
@@ -41,8 +38,7 @@ async function open(
   page,
   { path = `/venue/${VENUE}`, raceGrade = "G3", raceTitle = LONG_TITLE } = {},
 ) {
-  // 8R 14:00 は締切、9R 14:30 が次
-  await page.clock.setFixedTime(new Date(`${DATE}T14:00:00+09:00`));
+  await page.clock.setFixedTime(new Date(`${DATE}T14:00:00+09:00`)); // 9R 14:30 が次
   await page.route("**/api/predictions/**", (route) =>
     route.fulfill({ json: edgeData({ raceGrade, raceTitle }) }),
   );
@@ -54,7 +50,7 @@ async function open(
 const raceButtons = (heading) =>
   heading.getByRole("navigation").getByRole("button");
 
-for (const width of [375, 1440]) {
+for (const width of [375, 768, 1440]) {
   test.describe(`${width}px`, () => {
     test.use({ viewport: { width, height: 800 } });
 
@@ -70,8 +66,18 @@ for (const width of [375, 1440]) {
       );
       const want = (n) => (n < 9 ? "done" : n === 9 ? "next" : "upcoming");
       expect(states).toEqual(
-        Array.from({ length: 12 }, (_, i) => `${i + 1}R:${want(i + 1)}`),
+        Array.from(
+          { length: 12 },
+          (_, i) => `${i + 1}R${i === 8 ? "14:30" : ""}:${want(i + 1)}`,
+        ),
       );
+      const boxes = await raceButtons(heading).evaluateAll((bs) =>
+        bs.map((b) => b.getBoundingClientRect()),
+      );
+      expect(Math.min(...boxes.map((b) => b.height))).toBeGreaterThanOrEqual(
+        44,
+      );
+      if (width >= 768) expect(new Set(boxes.map((b) => b.top)).size).toBe(1);
       const overflow = await page.evaluate(
         () =>
           document.documentElement.scrollWidth -

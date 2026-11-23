@@ -91,6 +91,7 @@ function MeetHeading({
   const items = venueRaces.map((r, i) => ({
     id: r.id,
     raceNumber: r.raceNumber,
+    startTime: r.startTime,
     state: jumpStateOf(i, liveNextIndex, isToday),
   }));
   return <VenueMeetHeading {...{ venueRaces, date, items, onJump }} />;

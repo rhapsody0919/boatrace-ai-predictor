@@ -60,6 +60,8 @@ export default function VenueMeetHeading({ venueRaces, date, items, onJump }) {
             onClick={() => onJump(index)}
           >
             {item.raceNumber}R
+            {/* 金の線だけだと「選んでいるレース」に読めるので締切の時刻を添える（ファン評価 P2） */}
+            {item.state === "next" && <small>{item.startTime}</small>}
           </button>
         ))}
       </nav>
