@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
             </h1>
 
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-                最終更新日: 2025年12月9日
+                最終更新日: 2026年11月23日
             </p>
 
             <Section1 />
