@@ -60,12 +60,11 @@ export function displayTechniquesOf(vcData, techniqueProfile) {
       }));
 }
 
-/** 全国勝率・当地勝率の推移と、展示タイムの推移（日次の集計） */
+/** 全国勝率の推移と、展示タイムの推移（日次の集計） */
 export function trendChartsOf(formTrend, exhibitionTimeTrend) {
   const chartData = (formTrend?.trend ?? []).map((row) => ({
     date: row.date.slice(5),
     national_win_rate: row.win_rate,
-    local_win_rate: row.local_win_rate,
   }));
   const exhibitionChartData = (exhibitionTimeTrend?.trend ?? []).map((row) => ({
     date: row.date.slice(5),

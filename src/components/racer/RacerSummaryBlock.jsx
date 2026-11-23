@@ -5,7 +5,7 @@ import { latestEntryLine } from "../../pure/racerLatestEntry.js";
 import { getTodayJST } from "../../utils/dateUtils";
 
 /**
- * 選手ページの名前の直下の要約（BOA-1688 R1）。級・最新の期の勝率・2連率（期の名前と走数つき）・F 数・
+ * 選手ページの名前の直下の要約（BOA-1688 R1）。級・最新の期の勝率・2連対率（期の名前と走数つき）・F 数・
  * 優出と優勝の和・前付けの割合を1ブロックで出す。値は公式の期別成績（buildRacerSummary）から。
  * 期の名前はデータから組む。枠番別の回収率は出さない。
  * summary が undefined の間は取得中（高さを確保し、届いた後に下の要素をずらさない）
@@ -96,7 +96,7 @@ export default function RacerSummaryBlock({ racerId, grade, summary, front }) {
         )}
         {summary?.top2Rate != null && (
           <Stat
-            label="2連率"
+            label="2連対率"
             period={summary.label}
             value={`${summary.top2Rate.toFixed(1)}%`}
             testId="racer-summary-top2-rate"
