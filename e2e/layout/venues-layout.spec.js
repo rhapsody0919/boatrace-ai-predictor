@@ -134,3 +134,54 @@ test.describe("レイアウト: 会場のレース一覧カード（出走表の
     }
   });
 });
+
+// 「調子・展示・回収率まで見る」を開いた行が、上の艇番の列とずれない（2026-11-23 ファン評価 P0）。
+// 以前は開いた行を別の表に置いたため列の幅が中身で決まり、375px で展示ST が隣の艇の列の下に出て、6号艇の列が枠の外へ切れた
+test("会場のレースカード: 開いた行の列が艇番の列とそろい、6号艇の列が枠の中にある（375px）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/races/2026-09-24/1", { waitUntil: "domcontentloaded" });
+  const card = page.locator(".race-list-section .race-card").first();
+  await expect(card.locator(".rcdt-table")).toBeVisible({ timeout: 30000 });
+  await card.locator(".rcdt-expand-btn").click();
+  // 開いた行（展示ST）が出るまで待つ。表の組み方（1つか2つか）に依らない形で待つ
+  await expect(
+    card.locator("tbody tr", { hasText: "展示ST" }).first(),
+  ).toBeVisible({ timeout: 30000 });
+
+  const m = await card.evaluate((el) => {
+    const heads = [...el.querySelectorAll("thead tr:first-child th")].map(
+      (th) => th.getBoundingClientRect(),
+    );
+    const rows = [...el.querySelectorAll(".rcdt tbody tr")].map((tr) =>
+      [...tr.children].map((td) => td.getBoundingClientRect()),
+    );
+    const wrap = el.querySelector(".rcdt-table-wrapper");
+    return {
+      overflow: wrap.scrollWidth - wrap.clientWidth,
+      heads: heads.map((r) => ({ left: r.left, right: r.right })),
+      rows: rows.map((cells) =>
+        cells.map((r) => ({ left: r.left, right: r.right })),
+      ),
+    };
+  });
+
+  // 常時の3行（勝率・当地・モーター）より多い＝開いた行も照らしている
+  expect(m.rows.length).toBeGreaterThan(3);
+  // 開いた後も6号艇の列が枠の中（横スクロールに隠れない）
+  expect(m.overflow, "開いた後の出走表の横スクロール").toBeLessThanOrEqual(1);
+  for (const [i, cells] of m.rows.entries()) {
+    expect(cells.length, `${i + 1}行目: 列の数`).toBe(m.heads.length);
+    for (const [j, cell] of cells.entries()) {
+      expect(
+        Math.abs(cell.left - m.heads[j].left),
+        `${i + 1}行目の${j}列目: 左端が見出しとずれる`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(cell.right - m.heads[j].right),
+        `${i + 1}行目の${j}列目: 右端が見出しとずれる`,
+      ).toBeLessThanOrEqual(1);
+    }
+  }
+});
