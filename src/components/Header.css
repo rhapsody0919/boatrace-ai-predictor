@@ -349,3 +349,32 @@
     font-size: 0.85rem;
   }
 }
+
+/* メニューの「更新のお知らせ」の NEW（docs/design/site-updates/。帯の NEW は SiteUpdatesBanner.css） */
+.site-updates-menu-new {
+  display: inline-block;
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--brand-accent-primary);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-1);
+  line-height: 1.5;
+  margin-left: var(--spacing-1-5);
+}
+
+/* 7日以内の更新があるときの ☰ の点 */
+.menu-btn {
+  position: relative;
+}
+
+.site-updates-menu-dot {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-accent-primary);
+}
