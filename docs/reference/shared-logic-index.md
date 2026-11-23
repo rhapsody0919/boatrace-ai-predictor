@@ -60,6 +60,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか4件 |
 | `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
+| `src/pure/racerTodayContext.js` | 選手ページの「今日の出走」の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地成績・今節の着順。 | pickContextRun, courseCell, venueCell, meetFinishes, SMALL_RUNS |
 | `src/pure/racerTodayRuns.js` | — | splitTodayRaceId, finishLabelOf, buildRacerTodayRuns, todayRunsMeetLabel |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
@@ -654,4 +655,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 612 ファイル / export 3289 件。
+対象 613 ファイル / export 3294 件。
