@@ -199,6 +199,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/kfileSyncCourse.js` | — | syncActualCourseFromKFile, syncRank456FromKFile |
 | `scripts/lib/latestByRaceId.js` | 行の配列から、IDフィールド（既定はrace_id）ごとにタイムスタンプフィールド | latestByRaceId |
 | `scripts/lib/launchChromium.js` | Chromium の起動（ビルド時の AI スナップショット scripts/generate-ai-snapshots.js と、 | installJapaneseFont, reapChromium, cleanTmpLeftovers, launchChromium, JAPANESE_FONT ほか1件 |
+| `scripts/lib/linearCloseMerged.js` | マージした PR に紐づく Linear の票を閉じてよいかの判定（純関数、BOA-1711、hq 閉鎖 R7）。 | ticketsFor, countTickets, decide, PARTIAL_RE, MANY |
 | `scripts/lib/linearIssueGate.js` | Linear の起票の前に、未アーカイブのチケット数を数えて上限の手前で止める（hq 台帳 PL48、2026-10-20）。 | countActiveIssues, issueGateDecision, gateBlockedMessage, assertCanCreateIssue, slackNotifierFromEnv ほか5件 |
 | `scripts/lib/liveOdds.js` | オッズのライブ取得（BOA-487）の純粋部分。api/odds/live.js から使う。 | validateLiveOddsQuery, isCanonicalLiveOddsSearch, liveOddsUrl, parseLiveOddsPage, badRequestResponse ほか11件 |
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
@@ -651,4 +652,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 609 ファイル / export 3274 件。
+対象 610 ファイル / export 3279 件。
