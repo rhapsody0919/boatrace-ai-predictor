@@ -369,20 +369,20 @@
   background-color: color-mix(in srgb, var(--brand-accent-primary) 24%, transparent);
 }
 
-/* 他のタブで選んでいる艇（BOA-494）。最良モーターの背景色と重なっても区別できる
+/* 他のタブで選んでいる艇（BOA-494）。金は最良だけなので本文の色の線（2026-11-23 visual-designer 判定 B）。最良モーターの背景色と重なっても区別できる
    よう、背景ではなく線で示す。375pxで表を横に送ると1列目が見えなくなるので、
    左の帯だけでなく全セルの上下にも線を引く（ファン評価） */
 .motor-ranking-row.is-focused > td {
   box-shadow:
-    inset 0 2px 0 var(--brand-accent-primary),
-    inset 0 -2px 0 var(--brand-accent-primary);
+    inset 0 2px 0 var(--text-primary),
+    inset 0 -2px 0 var(--text-primary);
 }
 
 .motor-ranking-row.is-focused > td:first-child {
   box-shadow:
-    inset 3px 0 0 var(--brand-accent-primary),
-    inset 0 2px 0 var(--brand-accent-primary),
-    inset 0 -2px 0 var(--brand-accent-primary);
+    inset 3px 0 0 var(--text-primary),
+    inset 0 2px 0 var(--text-primary),
+    inset 0 -2px 0 var(--text-primary);
 }
 
 /* モーター一覧の枠と選手名の列は、横に送っても残す。送ると右端に枠も選手名も1つも残らず、
@@ -434,8 +434,8 @@
   > td:nth-child(2) {
   box-shadow:
     inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline)),
-    inset 0 2px 0 var(--brand-accent-primary),
-    inset 0 -2px 0 var(--brand-accent-primary);
+    inset 0 2px 0 var(--text-primary),
+    inset 0 -2px 0 var(--text-primary);
 }
 
 /* 優出数・優勝数・1着率の1位のセル強調（同値は全部。2位の薄い金はやめた。R1） */
