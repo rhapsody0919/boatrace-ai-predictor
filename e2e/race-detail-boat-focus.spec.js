@@ -169,6 +169,16 @@ test("モータ情報タブも艇の選択を共有する（一覧のまま行�
       .evaluateAll((tds) => tds.map((td) => getComputedStyle(td).boxShadow));
     expect(shadows.length).toBeGreaterThan(3);
     expect(shadows.every((sh) => sh !== "none")).toBe(true);
+    // 選んだ艇の線は金を使わない（金は最良だけ。2026-11-23 visual-designer 判定 B、design-system.md 決まり3）
+    const ring = await page.evaluate(() => {
+      const probe = document.createElement("i");
+      probe.style.color = "var(--ind-best-ring)";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    });
+    expect(shadows.some((sh) => sh.includes(ring))).toBe(false);
     // 線の意味を注記に書く
     await expect(
       page.locator(".table-note", { hasText: "線で囲んだ行は" }),
