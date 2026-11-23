@@ -356,3 +356,22 @@ tr.racer-vc-row-highlight td:first-child {
 .racer-st-trend {
   scroll-margin-top: 80px;
 }
+
+/* 枠番別回収率は参考の値なので畳む（見出しの「参考・N走」で中身を予告する） */
+.racer-return-fold > summary {
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.racer-return-fold-hint {
+  margin-left: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.racer-return-fold[open] > summary {
+  margin-bottom: var(--spacing-2);
+}
