@@ -3276,12 +3276,12 @@
         "dataView": "Based on race results from the past 90 days, this statistically analyzes which winning technique the 1st-place boat (by lane) used at each venue.",
         "tips": [
           {
-            "strong": "Lanes with a high Nige rate",
-            "text": " = venues/waters where an inside escape tends to succeed"
+            "strong": "Reading the bars",
+            "text": " = each bar is the breakdown within the races that lane won. The bars cannot compare how often lanes win; compare the total counts in the table"
           },
           {
-            "strong": "Lanes with a high Makuri/Makuri-zashi rate",
-            "text": " = outer lanes tend to win, an upset-prone tendency"
+            "strong": "Boats 2–6",
+            "text": " = they win few races, so the breakdown can shift from period to period; read it together with the counts"
           },
           {
             "text": "Each venue has different characteristics, so the tendency changes significantly depending on the venue you select"
