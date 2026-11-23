@@ -1,5 +1,4 @@
-/* 会場ページのレースの塊（公式スマホの形、docs/design/venue-race-card-redesign/approved.md）。
-   App.css の .race-list-section .race-card（ホームのカード）より強く当てるため article 要素から書く（class の衝突の検査） */
+/* 会場ページのレースの塊（approved.md）。App.css のホームのカードより強く当てるため article から書く（class の衝突の検査） */
 article.venue-race-block.race-card {
   padding: 1rem;
 }
@@ -24,11 +23,15 @@ article.venue-race-block .race-card-header {
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
-/* 札は帯の2段目 */
+/* 札は帯の2段目。ホームの「2段ぶんの高さを取る」はせず、札が無ければ段ごと消す */
 article.venue-race-block .race-card-badges {
   flex-basis: 100%;
   order: 3;
   margin-left: 0;
+  min-height: 0;
+}
+article.venue-race-block .race-card-badges:empty {
+  display: none;
 }
 .venue-race-block__result {
   display: flex;
@@ -55,7 +58,6 @@ article.venue-race-block .race-card-badges {
   font-weight: var(--font-weight-bold);
   text-decoration: none;
 }
-/* 詳細だけは今の色のボタン（ホームのカードと同じ見た目を小さく） */
 article.venue-race-block a.predict-btn {
   width: auto;
   padding: 0.5rem;
@@ -66,7 +68,6 @@ article.venue-race-block a.predict-btn {
   display: block;
   margin: 0.5rem 0 0 auto;
   min-height: 44px;
-  padding: 0 0.25rem;
   border: none;
   background: none;
   color: var(--text-secondary);
