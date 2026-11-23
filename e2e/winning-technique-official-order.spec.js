@@ -62,3 +62,16 @@ test("決まり手と負け決まり手の棒・凡例は公式順、色と表�
       .toHaveText(rows.map((row) => row[1]));
   }
 });
+
+// 棒は枠ごとに100%へそろえた「その枠の1着の中の内訳」。説明が「まくりの割合が高い枠番 = 外枠が決まりやすい」と
+// 読ませると、どの会場でも4〜6号艇が当てはまり、外枠の1着の多さと取り違える（2026-11-23、#3258 の #1）
+test("決まり手の説明は、棒を枠の1着の中の内訳として読ませる", async ({ page }) => {
+  await page.route("**/rest/v1/winning_technique_stats?*", (route) =>
+    route.fulfill({ json: statsRows(winningRows, "winning_technique") }),
+  );
+  await page.goto("/winning-technique?tab=technique");
+  const info = page.locator(".info-section");
+  await expect(info).toContainText("その枠が1着になったレースの中の内訳");
+  await expect(info).not.toContainText("外枠が決まりやすい");
+  await expect(info).not.toContainText("イン逃げが決まりやすい");
+});
