@@ -47,8 +47,10 @@
 
 .site-updates-banner-close {
   flex: none;
-  min-width: 32px;
-  min-height: 32px;
+  /* 押せる大きさ44px（ui-layout.md）。左のリンクとの押し損ねを減らす */
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc(-1 * var(--spacing-2)) 0;
   border: 0;
   background: none;
   color: var(--text-secondary);
