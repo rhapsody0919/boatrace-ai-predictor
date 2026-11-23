@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
 import "./RacerSummaryBlock.css";
+import { getRacerLatestEntry } from "../../services/racerQueries6.js";
+import { latestEntryLine } from "../../pure/racerLatestEntry.js";
+import { getTodayJST } from "../../utils/dateUtils";
 
 /**
  * 選手ページの名前の直下の要約（BOA-1688 R1）。級・最新の期の勝率・2連率（期の名前と走数つき）・F 数・
@@ -18,6 +22,50 @@ function Stat({ label, period, value, testId }) {
   );
 }
 
+// 最新の出走表の行（#3258 の #2）。失敗はページを失敗にせず、この1行だけ出さない（今日の出走 BOA-1691 と同じ扱い）
+function useLatestEntry(racerId) {
+  const [load, setLoad] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    getRacerLatestEntry(racerId)
+      .then((row) => {
+        if (!cancelled) setLoad({ racerId, line: latestEntryLine(row, getTodayJST()) });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("最新の出走表の取得エラー:", err?.message);
+        setLoad({ racerId, line: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerId]);
+  return load?.racerId === racerId ? load.line : null;
+}
+
+// 1行目: 最新の出走表の値（直近6か月の窓なので「今期」とは書かず、出走表の日付を付ける）
+function LatestEntryLine({ line }) {
+  if (!line) return null;
+  return (
+    // 1PR 5ファイルの線に収めるため CSS ファイルを足さず、2行目との区切りを design-tokens の変数で書く
+    <p
+      className="racer-summary__line"
+      data-testid="racer-summary-latest"
+      style={{
+        margin: "0 0 var(--spacing-2)",
+        paddingBottom: "var(--spacing-2)",
+        borderBottom: "1px solid var(--border-hairline)",
+        fontSize: "var(--font-size-base)",
+      }}
+    >
+      <span className="racer-summary__period">{line.dateLabel} の出走表</span>{" "}
+      勝率 <strong>{line.winRate.toFixed(2)}</strong>
+      {line.top2Rate != null && `・2連率 ${line.top2Rate.toFixed(1)}%`}
+      {line.fCount != null && `・F${line.fCount}`}
+    </p>
+  );
+}
+
 function FrontLine({ front }) {
   // 前付けの走が0の選手では出さない（DOM に置かない）
   if (!front || !(front.taken > 0) || front.rate == null) return null;
@@ -28,12 +76,14 @@ function FrontLine({ front }) {
   );
 }
 
-export default function RacerSummaryBlock({ grade, summary, front }) {
+export default function RacerSummaryBlock({ racerId, grade, summary, front }) {
+  const latest = useLatestEntry(racerId);
   if (summary === undefined) {
     return <div className="racer-summary racer-summary--loading" aria-hidden="true" />;
   }
   return (
     <section className="racer-summary" data-testid="racer-summary" aria-label="成績の要約">
+      <LatestEntryLine line={latest} />
       <dl className="racer-summary__stats">
         {grade && <Stat label="級" value={grade} testId="racer-summary-grade" />}
         {summary?.winRate != null && (
@@ -59,7 +109,7 @@ export default function RacerSummaryBlock({ grade, summary, front }) {
       {summary && (
         <>
           <p className="racer-summary__note">
-            {summary.label}の公式の期別成績（{summary.starts}走）
+            前の期の公式成績（{summary.label}・{summary.starts}走）。上の出走表の値とは集計の期間が違います
           </p>
           <p className="racer-summary__line" data-testid="racer-summary-finals">
             優出 {summary.finals}・優勝 {summary.wins}（{summary.sinceLabel}からの和）
