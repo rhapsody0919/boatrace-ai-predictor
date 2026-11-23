@@ -104,8 +104,7 @@ function RowLabel({ row, deepLink }) {
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
   const { t, i18n } = useTranslation();
-  // 選んだ艇（?boat=）はほかのタブと同じ URL の値を読み書きする（BOA-492、オーナー 2026-11-23 承認の5）。
-  // 艇番の見出しを押すと選び、もう一度押すと外す
+  // 選んだ艇（?boat=）はほかのタブと同じ URL の値（BOA-492、オーナー 2026-11-23 承認の5）
   const { focusedBoat, handleFocusBoat } = useRaceUrlState();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
   // 級別の後ろの F・L バッジ。基本情報タブの勝率バー・ST考察カードと同じ出所

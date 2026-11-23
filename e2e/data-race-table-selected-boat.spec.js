@@ -26,11 +26,9 @@ test("出走表で選んだ艇の列を強調し、ほかのタブと選択を�
   await tab(page, "基本情報").click();
   const table = page.locator(".data-race-table .drt-table");
   await expect(table).toBeVisible({ timeout: 60000 });
-
   await test.step("URL の艇の列だけが強調される", async () => {
-    const rowCount = await table.locator("tbody tr").count();
-    expect(rowCount).toBeGreaterThan(0);
-    await expect(table.locator("td.drt-selected")).toHaveCount(rowCount);
+    const rows = await table.locator("tbody tr").count();
+    await expect(table.locator("td.drt-selected")).toHaveCount(rows);
     await expect(columnCells(table, 3).first()).toHaveClass(/drt-selected/);
     await expect(columnCells(table, 2).first()).not.toHaveClass(/drt-selected/);
     await expect(boatButton(table, 3)).toHaveAttribute("aria-pressed", "true");
@@ -44,7 +42,6 @@ test("出走表で選んだ艇の列を強調し、ほかのタブと選択を�
     await expect(columnCells(table, 3).first()).not.toHaveClass(/drt-selected/);
     await expect(boatButton(table, 3)).toHaveAttribute("aria-pressed", "false");
   });
-
   // 他のタブへの引き継ぎは同じ URL の値（useRaceUrlState）なので race-detail-boat-focus.spec.js が見る
   await test.step("同じ艇をもう一度押すと選択を外す", async () => {
     await boatButton(table, 5).click();
