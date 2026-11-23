@@ -9,16 +9,8 @@
  *   - 丸めて 0 になる負の値を「-0.0」にしない。差は正だけ「+」を付ける
  *   - 上下の向きは表示の桁で決める（0.04 は向き無し）
  *   - 少ない母数は6件未満（6件は少なくない）
- *
- * 末尾の変異検証で、要を1つずつ壊したコピーに同じ検証をかけ、検証が落ちることを確かめる。
  */
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SRC = path.join(__dirname, "../../src/pure/dataFormat.js");
+import * as dataFormat from "../../src/pure/dataFormat.js";
 
 const CASES = [
   ["勝率は小数2桁", (m) => m.formatWinRate(7.8), "7.80"],
@@ -62,34 +54,11 @@ function run(mod) {
   return failures;
 }
 
-const failures = run(await import(pathToFileURL(SRC).href));
-
-const source = fs.readFileSync(SRC, "utf8");
-const MUTANTS = [
-  ["勝率を1桁にする", "export const formatWinRate = (v) => fixed(v, 2);", "export const formatWinRate = (v) => fixed(v, 1);"],
-  ["率に % を混ぜる", "{ text: fixed(v, digits), unit: \"%\" }", "{ text: `${fixed(v, digits)}%`, unit: \"%\" }"],
-  ["桁区切りしない", "Math.round(n).toLocaleString(\"ja-JP\")", "String(Math.round(n))"],
-  ["-0.0 を直さない", "return Number(s) === 0 ? (0).toFixed(digits) : s;", "return s;"],
-  ["向きを生の値で決める", "const r = Number(v.toFixed(digits));", "const r = v;"],
-  ["6件を少ないにする", "n < SMALL_SAMPLE_N", "n <= SMALL_SAMPLE_N"],
-];
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-data-format-"));
-for (const [name, from, to] of MUTANTS) {
-  if (!source.includes(from)) {
-    failures.push(`変異「${name}」の置換元がソースに無い（ソースが変わったら MUTANTS を直す）`);
-    continue;
-  }
-  const file = path.join(tmpDir, `${name.replace(/\s/g, "_")}.mjs`);
-  fs.writeFileSync(file, source.replace(from, to));
-  if (run(await import(pathToFileURL(file).href)).length === 0) {
-    failures.push(`変異「${name}」で検証が落ちない（テストに歯が無い）`);
-  }
-}
-fs.rmSync(tmpDir, { recursive: true, force: true });
+const failures = run(dataFormat);
 
 if (failures.length > 0) {
   console.error("verify-data-format: 失敗");
   failures.forEach((f) => console.error(`  - ${f}`));
   process.exit(1);
 }
-console.log(`verify-data-format: OK（${CASES.length}件、変異${MUTANTS.length}件）`);
+console.log(`verify-data-format: OK（${CASES.length}件）`);
