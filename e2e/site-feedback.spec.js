@@ -1,46 +1,15 @@
 import { test, expect } from "./fixtures.js";
+import {
+  button,
+  panel,
+  captureFeedbackPosts,
+  captureGaEvents,
+} from "./site-feedback-helpers.js";
 
 /**
- * サイト全体のご意見ボックス（src/components/siteFeedback/、設計 docs/design/site-feedback-box/spec.md）。
- * 右下のボタン → 入力パネル → site_feedback への送信までと、既存の固定表示（Cookie の確認・
- * レースの下部ナビ・ブログの「先頭へ戻る」）と重ならないことを固定する。
- *
- * 送信は必ずここで受け止める（録画に無い /rest/v1/* は本番へ素通しされるので、本番の表に書かないため）。
+ * サイト全体のご意見ボックス（src/components/siteFeedback/、設計 docs/design/site-feedback-box/spec.md）の
+ * 入力・送信・閉じ方・キーボード。置き場所・出さない画面・スマホは site-feedback-placement.spec.js。
  */
-const RACE_PATH = "/race/2026-09-24-01-03";
-const BLOG_PATH = "/blog/odds-expected-value-guide";
-
-/** site_feedback への POST を受け止め、送られた行を集める。status を変えると失敗を再現できる */
-async function captureFeedbackPosts(page, { status = 201 } = {}) {
-  const rows = [];
-  await page.route("**/rest/v1/site_feedback*", async (route) => {
-    rows.push(route.request().postDataJSON());
-    if (status >= 400)
-      return route.fulfill({
-        status,
-        contentType: "application/json",
-        body: JSON.stringify({ code: "P0001", message: "too many overall" }),
-      });
-    return route.fulfill({ status, body: "" });
-  });
-  return rows;
-}
-
-const button = (page) => page.getByTestId("site-feedback-button");
-const panel = (page) => page.getByTestId("site-feedback-panel");
-
-/** 2つの要素の箱が重なっていないこと */
-async function expectNoOverlap(a, b) {
-  const [x, y] = [await a.boundingBox(), await b.boundingBox()];
-  expect(x && y, "両方の要素が画面にある").toBeTruthy();
-  const apart =
-    x.x + x.width <= y.x ||
-    y.x + y.width <= x.x ||
-    x.y + x.height <= y.y ||
-    y.y + y.height <= x.y;
-  expect(apart, `重なっている: ${JSON.stringify({ x, y })}`).toBe(true);
-}
-
 test.describe("パソコンの幅（1280px）", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
@@ -48,6 +17,7 @@ test.describe("パソコンの幅（1280px）", () => {
     page,
   }) => {
     const rows = await captureFeedbackPosts(page);
+    const events = await captureGaEvents(page);
     await page.goto("/");
     await expect(button(page)).toBeVisible({ timeout: 25000 });
     await expect(button(page)).toHaveText("ご意見");
@@ -59,6 +29,14 @@ test.describe("パソコンの幅（1280px）", () => {
     await button(page).click();
     await expect(panel(page)).toBeVisible();
     await expect(panel(page)).toHaveAttribute("role", "dialog");
+    expect(
+      (await events()).filter((e) => e.name === "site_feedback_open"),
+    ).toEqual([
+      {
+        name: "site_feedback_open",
+        params: { feedback_entry: "button", feedback_page_type: "home" },
+      },
+    ]);
     await expect(button(page)).toHaveCount(0);
     // 開いたら入力欄にフォーカスがある
     const text = panel(page).locator("textarea");
@@ -92,6 +70,20 @@ test.describe("パソコンの幅（1280px）", () => {
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
       ),
     });
+    // 送った計測は種類・満足度の有無・ページの種類だけ。書いた内容は送らない
+    expect(
+      (await events()).filter((e) => e.name === "site_feedback_send"),
+    ).toEqual([
+      {
+        name: "site_feedback_send",
+        params: {
+          feedback_kind: "feature",
+          feedback_rated: true,
+          feedback_page_type: "home",
+        },
+      },
+    ]);
+    expect(JSON.stringify(await events())).not.toContain("モーターの直近");
 
     // 閉じるとボタンが戻り、フォーカスもボタンに戻る。次に開くと空から始まる
     await panel(page).getByRole("button", { name: "閉じる" }).last().click();
@@ -128,9 +120,10 @@ test.describe("パソコンの幅（1280px）", () => {
     });
   });
 
-  test("送れなかったら理由を出し、書いた内容は残る。もう一度押すと送れる", async ({
+  test("送れなかったら理由を出し、書いた内容は残る。失敗の種類だけを計測に送る。もう一度押すと送れる", async ({
     page,
   }) => {
+    const events = await captureGaEvents(page);
     let fail = true;
     const rows = [];
     await page.route("**/rest/v1/site_feedback*", async (route) => {
@@ -155,6 +148,17 @@ test.describe("パソコンの幅（1280px）", () => {
     await expect(panel(page).locator("textarea")).toHaveValue(
       "レース一覧が見づらい",
     );
+    // 失敗の種類（DB のエラーのコード）とページの種類だけ。書いた内容は送らない
+    const failed = (await events()).filter(
+      (e) => e.name === "site_feedback_send_failed",
+    );
+    expect(failed).toEqual([
+      {
+        name: "site_feedback_send_failed",
+        params: { error_code: "P0001", feedback_page_type: "home" },
+      },
+    ]);
+    expect(JSON.stringify(await events())).not.toContain("レース一覧");
     fail = false;
     await panel(page).getByRole("button", { name: "送る" }).click();
     await expect(panel(page).getByText("受け取りました")).toBeVisible();
@@ -293,6 +297,7 @@ test.describe("パソコンの幅（1280px）", () => {
   test("種類と満足度はキーボードで選べる（選んだ組の Tab は1か所、矢印で動き、Space で外れる）", async ({
     page,
   }) => {
+    const rows = await captureFeedbackPosts(page);
     await page.goto("/");
     await button(page).click();
     await expect(panel(page).locator("textarea")).toBeFocused();
@@ -326,6 +331,16 @@ test.describe("パソコンの幅（1280px）", () => {
     await expect(
       panel(page).locator(".site-fb-chip input:checked"),
     ).toHaveCount(0);
+
+    // 内容を書いた後でも、ラジオの上の Enter では送らない（選んだつもりの Enter で誤って送らない）
+    await panel(page).locator("textarea").fill("Enter で送られないこと");
+    await kinds.first().focus();
+    await page.keyboard.press("Enter");
+    await stars.first().focus();
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(300);
+    expect(rows).toHaveLength(0);
+    await expect(panel(page).getByText("受け取りました")).toHaveCount(0);
   });
 
   test("空のまま「送る」を押すと、入力欄へフォーカスが移る", async ({
@@ -341,202 +356,5 @@ test.describe("パソコンの幅（1280px）", () => {
       "aria-invalid",
       "true",
     );
-  });
-
-  test("フッターの入口からも同じパネルが開き、閉じるとフッターの入口へフォーカスが戻る", async ({
-    page,
-  }) => {
-    await page.goto("/contact");
-    const entry = page.getByTestId("site-feedback-footer");
-    await expect(entry).toHaveText("ご意見・ご要望を送る");
-    await entry.click();
-    await expect(panel(page)).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(entry).toBeFocused();
-  });
-
-  test("ブログ記事では「先頭へ戻る」と重ならず、その上に置く", async ({
-    page,
-  }) => {
-    await page.goto(BLOG_PATH);
-    await expect(button(page)).toBeVisible({ timeout: 25000 });
-    // 「先頭へ戻る」は 600px を超えてスクロールすると出る
-    await page.mouse.wheel(0, 900);
-    const top = page.locator(".back-to-top-button");
-    await expect(top).toBeVisible();
-    // 上へずれる動き（0.2秒）の途中で測らない
-    await button(page).evaluate((el) =>
-      Promise.all(el.getAnimations().map((a) => a.finished)),
-    );
-    await expectNoOverlap(button(page), top);
-    const [b, t] = [await button(page).boundingBox(), await top.boundingBox()];
-    expect(Math.round(t.y - (b.y + b.height))).toBe(12);
-  });
-
-  test("下へスクロールするとアイコンだけになり、上へ戻すと文字が戻る（名前は読み上げに残る）", async ({
-    page,
-  }) => {
-    await page.goto(BLOG_PATH);
-    await expect(button(page)).toBeVisible({ timeout: 25000 });
-    await page.mouse.wheel(0, 600);
-    await expect(button(page)).toHaveClass(/is-mini/);
-    await expect(button(page)).toHaveAttribute(
-      "aria-label",
-      "ご意見・ご要望を送る",
-    );
-    await expect
-      .poll(async () => (await button(page).boundingBox()).width)
-      .toBeLessThanOrEqual(50);
-    // 読み込みの揺れ（数px の上下）では戻さず、はっきり上へ戻したときだけ戻す
-    await page.mouse.wheel(0, -10);
-    await expect(button(page)).toHaveClass(/is-mini/);
-    await page.mouse.wheel(0, -300);
-    await expect(button(page)).not.toHaveClass(/is-mini/);
-  });
-
-  test("英語のページでは英語で出て、lang は en で送る", async ({ page }) => {
-    const rows = await captureFeedbackPosts(page);
-    await page.goto("/en/");
-    await expect(button(page)).toHaveText("Feedback", { timeout: 25000 });
-    await button(page).click();
-    await panel(page).locator("textarea").fill("Great site");
-    await panel(page).getByRole("button", { name: "Send" }).click();
-    await expect(panel(page).getByText("Received")).toBeVisible();
-    expect(rows[0]).toMatchObject({ lang: "en", page_type: "home" });
-  });
-
-  // 出さない画面。先にその画面に固有の物が見えるのを待つ（白い画面のまま「無い」で通さない）
-  for (const [path, own] of [
-    [`${RACE_PATH}/assist`, ".ta-header-row"],
-    ["/share/today-sheet", "[class^='today-sheet']"],
-  ]) {
-    test(`${path} ではボタンもフッターの入口も出さない`, async ({ page }) => {
-      await page.goto(path);
-      await expect(page.locator(own).first()).toBeVisible({ timeout: 25000 });
-      expect(new URL(page.url()).pathname).toBe(path);
-      await expect(button(page)).toHaveCount(0);
-      await expect(page.getByTestId("site-feedback-footer")).toHaveCount(0);
-      await expect(page.locator(".site-fb")).toHaveCount(0);
-    });
-  }
-});
-
-test.describe("Cookie の確認が出ている間（未回答）", () => {
-  test.use({ cookieConsent: null, viewport: { width: 1280, height: 800 } });
-
-  test("確認に答えるまでボタンを出さず、答えたら出す", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.locator(".cookie-consent")).toBeVisible({
-      timeout: 25000,
-    });
-    await expect(button(page)).toBeHidden();
-    await page.locator(".cookie-consent__reject").click();
-    await expect(button(page)).toBeVisible();
-  });
-
-  test("確認が出ている間はフッターの入口も出さない（開いたパネルの「送る」が帯に隠れる）", async ({
-    page,
-  }) => {
-    await page.goto("/contact");
-    await expect(page.locator(".cookie-consent")).toBeVisible({
-      timeout: 25000,
-    });
-    const entry = page.getByTestId("site-feedback-footer");
-    await expect(entry).toBeHidden();
-    await page.locator(".cookie-consent__reject").click();
-    await expect(entry).toBeVisible();
-  });
-});
-
-test.describe("スマホの幅（375px）", () => {
-  test.use({
-    viewport: { width: 375, height: 812 },
-    isMobile: true,
-    hasTouch: true,
-  });
-
-  test("レース詳細では下部ナビの上にアイコンだけで置き、下へ読み進めている間は隠す（出走表の右端の数字を隠さない）", async ({
-    page,
-  }) => {
-    await page.goto(RACE_PATH);
-    const nav = page.locator(".race-bottom-nav");
-    await expect(nav).toBeVisible({ timeout: 25000 });
-    await expect(button(page)).toBeVisible();
-    await expect(button(page).locator(".site-fb-btn-label")).toBeHidden();
-    const [b, n] = [await button(page).boundingBox(), await nav.boundingBox()];
-    expect(Math.round(b.width)).toBe(48);
-    expect(Math.round(b.height)).toBe(48);
-    // 下部ナビの上に 12px 空けて置く
-    expect(Math.round(n.y - (b.y + b.height))).toBe(12);
-
-    await page.evaluate(() => window.scrollTo(0, 400));
-    await expect(button(page)).toBeHidden();
-    await page.evaluate(() => window.scrollTo(0, 300));
-    await expect(button(page)).toBeVisible();
-  });
-
-  test("パネルは下からのシートで画面の幅に収まり、「送る」まで画面の中にある", async ({
-    page,
-  }) => {
-    const rows = await captureFeedbackPosts(page);
-    await page.goto("/");
-    await expect(button(page)).toBeVisible({ timeout: 25000 });
-    await button(page).tap();
-    await expect(panel(page)).toBeVisible();
-    // 指で触る端末は、開いた瞬間にキーボードを出さない（入力欄にフォーカスしない）
-    await expect(panel(page).locator("textarea")).not.toBeFocused();
-    // せり上がり（0.2秒）の途中で測らない
-    await panel(page).evaluate((el) =>
-      Promise.all(el.getAnimations().map((a) => a.finished)),
-    );
-    const box = await panel(page).boundingBox();
-    expect(box.x).toBe(0);
-    expect(Math.round(box.width)).toBe(375);
-    expect(Math.round(box.y + box.height)).toBe(812);
-    expect(box.y).toBeGreaterThanOrEqual(0);
-    await expect(
-      panel(page).getByRole("button", { name: "送る" }),
-    ).toBeInViewport({ ratio: 1 });
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(0);
-
-    await panel(page).locator("textarea").fill("スマホから送る");
-    await panel(page).getByRole("button", { name: "送る" }).tap();
-    await expect(panel(page).getByText("受け取りました")).toBeVisible();
-    expect(rows).toHaveLength(1);
-  });
-
-  test("シートを開いている間は後ろのページをスクロールさせず、閉じたら元に戻す", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    const overflow = () => page.evaluate(() => document.body.style.overflow);
-    const before = await overflow();
-    await button(page).tap();
-    await expect(panel(page)).toBeVisible();
-    expect(await overflow()).toBe("hidden");
-    await panel(page).locator(".site-fb-x").tap();
-    await expect(panel(page)).toHaveCount(0);
-    expect(await overflow()).toBe(before);
-  });
-
-  test("押せる部品は高さ 44px 以上", async ({ page }) => {
-    await page.goto("/");
-    await button(page).tap();
-    const sizes = await panel(page)
-      .locator(".site-fb-x, .site-fb-chip-face, .site-fb-star, .site-fb-send")
-      .evaluateAll((els) =>
-        els.map((el) => {
-          const r = el.getBoundingClientRect();
-          return { cls: el.className, h: r.height, w: r.width };
-        }),
-      );
-    expect(sizes.length).toBe(11);
-    for (const s of sizes) {
-      expect(s.h, JSON.stringify(s)).toBeGreaterThanOrEqual(44);
-      expect(s.w, JSON.stringify(s)).toBeGreaterThanOrEqual(44);
-    }
   });
 });

@@ -48,7 +48,11 @@ export function useSiteFeedbackForm({ pathname, lang }) {
     setStatus("sending");
     setFailed(false);
     try {
-      key.current ??= readOrCreateClientKey(CLIENT_KEY);
+      key.current ??= readOrCreateClientKey(
+        CLIENT_KEY,
+        () => localStorage,
+        crypto,
+      );
       await sendSiteFeedback(
         buildSiteFeedbackRow({
           kind,
@@ -69,6 +73,12 @@ export function useSiteFeedbackForm({ pathname, lang }) {
       // 入力は残す（もう一度押せば同じ内容で送れる）
       setStatus("idle");
       setFailed(true);
+      // 失敗はどこにも残らない（連投の制限は INSERT ごと戻る）ので、種類だけを計測に送る。本文は送らない。
+      // 表がまだ無い（PGRST205）・CHECK のずれ（23514）・制限（P0001）・通信の失敗（コードなし）を見分ける
+      trackEvent("site_feedback_send_failed", {
+        error_code: String(err?.code ?? "unknown").slice(0, 32),
+        feedback_page_type: feedbackPageType(pathname),
+      });
       console.error("ご意見を送れなかった", err);
     }
   };

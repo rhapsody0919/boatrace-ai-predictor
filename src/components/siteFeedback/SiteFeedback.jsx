@@ -94,6 +94,7 @@ export default function SiteFeedback() {
   const openPanel = (opener) => {
     // 送った後に ×・閉じる 以外で閉じていた（画面を移った・送っている間に閉じた）なら、空の入力から始める
     if (form.status === "sent") form.reset();
+    restoreFocus.current = false;
     openerRef.current = opener ?? null;
     setOpenAt(pathname);
     trackEvent("site_feedback_open", {

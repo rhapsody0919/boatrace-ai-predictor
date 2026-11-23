@@ -48,10 +48,15 @@ function StarIcon() {
 }
 
 /**
- * 選んであるラジオで Space を押したら外す。ブラウザは選んであるラジオの Space で click を出さないので、
- * マウス・指の「もう一度押すと外れる」（onClick）とそろえるためにここで受ける。
+ * ラジオのキー。選んであるラジオで Space を押したら外す（ブラウザは選んであるラジオの Space で click を出さないので、
+ * マウス・指の「もう一度押すと外れる」（onClick）とそろえるためにここで受ける）。Enter では送らない。
  */
-const clearOnSpace = (checked, clear) => (e) => {
+const radioKeys = (checked, clear) => (e) => {
+  // 選んだつもりの Enter で、書いた内容を誤って送らない（ブラウザはラジオの上の Enter でもフォームを送る）
+  if (e.key === "Enter") {
+    e.preventDefault();
+    return;
+  }
   if (e.key !== " " || !checked) return;
   e.preventDefault();
   clear();
@@ -69,7 +74,7 @@ function KindChips({ t, name, kind, setKind }) {
             checked={kind === k}
             onChange={() => setKind(k)}
             onClick={() => kind === k && setKind(null)}
-            onKeyDown={clearOnSpace(kind === k, () => setKind(null))}
+            onKeyDown={radioKeys(kind === k, () => setKind(null))}
           />
           <span className="site-fb-chip-face">{t(`${K}.kinds.${k}`)}</span>
         </label>
@@ -97,7 +102,7 @@ function RatingStars({ t, name, rating, setRating }) {
             })}
             onChange={() => setRating(n)}
             onClick={() => rating === n && setRating(null)}
-            onKeyDown={clearOnSpace(rating === n, () => setRating(null))}
+            onKeyDown={radioKeys(rating === n, () => setRating(null))}
           />
           <StarIcon />
         </label>

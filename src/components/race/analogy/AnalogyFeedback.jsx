@@ -78,7 +78,11 @@ function useAnalogyFeedback({ raceId, stage, tab, i18n }) {
   const boxRef = useViewTracking(raceId, status);
 
   const base = () => {
-    key.current ??= readOrCreateClientKey(CLIENT_KEY);
+    key.current ??= readOrCreateClientKey(
+      CLIENT_KEY,
+      () => localStorage,
+      crypto,
+    );
     return {
       race_id: raceId,
       analogy_stage: stage,
