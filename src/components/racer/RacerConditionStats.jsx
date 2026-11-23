@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { aggregateRacerConditionStats } from "../../utils/racerConditionStats";
 import { formatPercent } from "../../utils/formatters";
+import {
+  COND_RATE_MIN_RUNS,
+  isConditionDiffSignificant,
+} from "../../pure/racerConditionDiff.js";
 import "./RacerConditionStats.css";
 
 // 全体との差（pt、小数第1位）。全角のマイナス記号（−）を使う（レース詳細の前期欄と同じ）
@@ -16,6 +20,7 @@ function DiffLabel({ rate, base }) {
   );
 }
 
+// showDiff は呼び出し側が「条件の走対それ以外の走で |z|≥1.96」を通したときだけ true にする
 function RateCell({ rate, base, showDiff }) {
   return (
     <td>
@@ -25,9 +30,46 @@ function RateCell({ rate, base, showDiff }) {
   );
 }
 
+// 30走未満は率を出さず、件数だけ（3列にまたがる）
+function FewRunsCell({ row }) {
+  return (
+    <td colSpan={3} className="racer-cond-few">
+      {row.n}走中1着{row.win}回
+    </td>
+  );
+}
+
+function ConditionRateCells({ row, overall }) {
+  if (row.n < COND_RATE_MIN_RUNS) return <FewRunsCell row={row} />;
+  const significant = (key) =>
+    isConditionDiffSignificant(
+      { n: row.n, hits: row[key] },
+      { n: overall.n, hits: overall[key] },
+    );
+  return (
+    <>
+      <RateCell
+        rate={row.winRate}
+        base={overall.winRate}
+        showDiff={significant("win")}
+      />
+      <RateCell
+        rate={row.top2Rate}
+        base={overall.top2Rate}
+        showDiff={significant("top2")}
+      />
+      <RateCell
+        rate={row.top3Rate}
+        base={overall.top3Rate}
+        showDiff={significant("top3")}
+      />
+    </>
+  );
+}
+
 /**
  * 選手ページの「レース条件別の成績」（BOA-336）。天候・風速・波高ごとの成績を行に並べ、
- * 本人の全体との差を緑／赤＋↑↓で出す。会場・枠番などのフィルタには連動しない。
+ * 本人の全体との差を緑／赤＋↑↓で出す（30走以上で、その条件対それ以外の差が |z|≥1.96 の率だけ）。会場・枠番などのフィルタには連動しない。
  *
  * @param {{history: Array|null}} props getRacerRaceHistory() の戻り値。読み込み中・失敗は null
  */
@@ -55,9 +97,7 @@ export default function RacerConditionStats({ history }) {
       <tr key={row.key}>
         <td>{row.label}</td>
         <td>{row.n}</td>
-        <RateCell rate={row.winRate} base={overall.winRate} showDiff />
-        <RateCell rate={row.top2Rate} base={overall.top2Rate} showDiff />
-        <RateCell rate={row.top3Rate} base={overall.top3Rate} showDiff />
+        <ConditionRateCells row={row} overall={overall} />
       </tr>,
     );
   }
@@ -67,7 +107,7 @@ export default function RacerConditionStats({ history }) {
       <h3>レース条件別の成績</h3>
       <p className="racer-vc-note">
         2025年12月以降・{overall.n}
-        走。天候・風速・波高はレース直前の発表値。矢印は全体との差（pt）。5走未満の条件は出していません。波高は江戸川を除きます（5cm刻みで記録されるため）
+        走。天候・風速・波高はレース直前の発表値。矢印は全体との差（pt）で、その条件の走とそれ以外の走の差が偶然と言えない（95%）ときだけ付けます。30走未満は率を出さず件数だけ、5走未満の条件は出していません。波高は江戸川を除きます（5cm刻みで記録されるため）
       </p>
       <div className="table-wrapper">
         <table className="racer-return-rate-table racer-cond-table">
@@ -84,9 +124,15 @@ export default function RacerConditionStats({ history }) {
             <tr className="racer-cond-overall">
               <td>全体</td>
               <td>{overall.n}</td>
-              <RateCell rate={overall.winRate} />
-              <RateCell rate={overall.top2Rate} />
-              <RateCell rate={overall.top3Rate} />
+              {overall.n < COND_RATE_MIN_RUNS ? (
+                <FewRunsCell row={overall} />
+              ) : (
+                <>
+                  <RateCell rate={overall.winRate} />
+                  <RateCell rate={overall.top2Rate} />
+                  <RateCell rate={overall.top3Rate} />
+                </>
+              )}
             </tr>
             {body}
           </tbody>
