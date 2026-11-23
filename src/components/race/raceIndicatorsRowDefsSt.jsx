@@ -3,26 +3,33 @@
  */
 import { bestOf } from "../../utils/bestOf";
 import { formatExhibitionSt, slashDate } from "../../utils/formatters";
-import { toNumber } from "./raceIndicatorsHelpers";
+import { EMPTY } from "../../pure/dataFormat.js";
+import { rowFromIndicator } from "./raceIndicatorsRowDefs";
 
 export function buildStRows(c) {
-  const {
-    t,
-    ph,
-    cand,
-    stByBoat,
-    officialStByBoat,
-    st30ByBoat,
-    officialPeriod,
-  } = c;
+  const { t, ph, cand, players, analysis, stByBoat, officialPeriod } = c;
+  const data = { players, analysis };
+  const avgSt = rowFromIndicator(t, data, "racer.avgSt.official", "avgSt");
+  const avgSt30 = rowFromIndicator(t, data, "racer.avgSt.last30", "avgSt30");
+  const st = rowFromIndicator(t, data, "racer.exStGap.past", "st");
+  // 値が無ければ取得中の骨組みか「—」（出所ごとの pending、ph）
+  const valueOr = (row, p, source, prefix = "") => {
+    const { text } = row.text(p);
+    return text === EMPTY ? (
+      ph(source)
+    ) : (
+      <span className="drt-value">
+        {prefix}
+        {text}
+      </span>
+    );
+  };
   return [
     // 平均ST は2行で出す（BOA-815、2026-10-10 ユーザー承認）。
     // 1行目は公式の出走表と同じ値（2桁、公式が2桁のため）。最良は表示桁で比べるので同じ値が並ぶことがある。
     // 2026-10-02 に3桁にした理由（2桁だと最良が5艇同時に光る）は、3桁の2行目で補う
     {
-      key: "avgSt",
-      label: t("dataTable.rowAvgSt"),
-      shortLabel: t("review.cols.avgSt"),
+      ...avgSt,
       note: t("dataTable.rowAvgStOfficialNote"),
       // 期間は名前に入れず「?」に出す（「前期」と書くと5〜6月・11〜12月に意味がずれる。2026-10-10 ユーザー判断）
       ...(officialPeriod
@@ -34,46 +41,10 @@ export function buildStRows(c) {
             },
           }
         : {}),
-      tab: "racecard",
-      best: bestOf(cand.avgSt, "min", { digits: 2 }),
-      render: (p) => {
-        const rate = toNumber(officialStByBoat.get(p.number));
-        return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
-        ) : (
-          ph("officialAvgSt")
-        );
-      },
+      render: (p) => valueOr(avgSt, p, "officialAvgSt"),
     },
-    {
-      key: "avgSt30",
-      label: t("dataTable.rowAvgSt30"),
-      shortLabel: t("review.cols.avgSt30"),
-      tab: "racecard",
-      best: bestOf(cand.avgSt30, "min", { digits: 3 }),
-      render: (p) => {
-        const rate = toNumber(st30ByBoat.get(p.number));
-        return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(3)}</span>
-        ) : (
-          ph("st30")
-        );
-      },
-    },
-    {
-      key: "st",
-      label: t("dataTable.rowSt"),
-      shortLabel: t("review.cols.st"),
-      tab: "st",
-      best: bestOf(cand.st, "min", { digits: 2 }),
-      render: (p) => {
-        const row = stByBoat.get(p.number);
-        if (!row || !row.sample_count) return ph("stPredictability");
-        return (
-          <span className="drt-value">±{row.avg_deviation.toFixed(2)}</span>
-        );
-      },
-    },
+    { ...avgSt30, render: (p) => valueOr(avgSt30, p, "st30") },
+    { ...st, render: (p) => valueOr(st, p, "stPredictability", "±") },
     {
       key: "exSt",
       label: t("dataTable.rowExSt"),

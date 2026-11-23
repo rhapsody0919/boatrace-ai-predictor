@@ -11,6 +11,7 @@
  *   - select は6艇の艇番ごとに { value, n, hidden } を返す
  *   - 最良は表示の桁で比べ、hidden の艇は返さない。書き方は勝率2桁・率は % を分ける
  *   - モーターは自社の再計算を先に、取れないとき公式の値。調子は上がった艇の中の最良だけ
+ *   - 平均ST は小さいほど良く、表示の桁（公式2桁・30走3桁）で比べる。ST のズレは走数0の艇を比べない
  */
 import * as dataFormat from "../../src/pure/dataFormat.js";
 import {
@@ -111,6 +112,17 @@ const formOf = (...deltas) =>
 expectEq("調子は上がった艇の最良", sorted(bestOfIndicator(form, formOf(0.3, 0.5, -0.1))), [2]);
 expectEq("調子は全員が下がっていれば強調しない", sorted(bestOfIndicator(form, formOf(-0.3, -0.05, -0.1))), []);
 expectEq("調子の書き方は2桁", formatIndicatorParts(form, 0.5), { text: "0.50", unit: "" });
+
+const avgSt = getIndicator("racer.avgSt.official");
+const avgStRows = [{ boatNumber: 1, avgSt: 0.15 }, { boatNumber: 2, avgSt: 0.13 }];
+expectEq("平均ST は小さいほど良い", sorted(bestOfIndicator(avgSt, avgSt.select({ analysis: { officialAvgSt: { rows: avgStRows } } }))), [2]);
+const st30 = getIndicator("racer.avgSt.last30");
+const st30Rows = [{ boatNumber: 1, st30: 0.131 }, { boatNumber: 2, st30: 0.1314 }, { boatNumber: 3, st30: 0.2 }];
+expectEq("直近30走の ST は3桁", formatIndicatorParts(st30, 0.131), { text: "0.131", unit: "" });
+expectEq("直近30走の ST は3桁で比べる", sorted(bestOfIndicator(st30, st30.select({ analysis: { st30: st30Rows } }))), [1, 2]);
+const gap = getIndicator("racer.exStGap.past");
+const gapRows = [[1, 0, 0.01], [2, 5, 0.04], [3, 3, 0.06]].map(([b, n, d]) => ({ boat_number: b, sample_count: n, avg_deviation: d }));
+expectEq("ST のズレは走数0の艇を比べない", sorted(bestOfIndicator(gap, gap.select({ analysis: { stPredictability: gapRows } }))), [2]);
 
 const hidden = new Map([[1, { value: 9, hidden: true }], [2, { value: 5, hidden: false }], [3, { value: 3 }]]);
 expectEq("hidden の艇は最良に返さない（繰り下げない）", sorted(bestOfIndicator(win, hidden)), []);
