@@ -8,6 +8,7 @@ import FavoriteStarButton from "../components/common/FavoriteStarButton.jsx";
 import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
 import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
+import VenueMeetHeading from "../components/venue/VenueMeetHeading";
 import VenueSummaryLines from "../components/venue/VenueSummaryLines";
 import VenueDaySummaryCard from "../components/race/VenueDaySummaryCard";
 import { VENUE_SUMMARY_STATS } from "../data/venueSummaryStats";
@@ -62,6 +63,37 @@ export function VenueSummaryWithLink({ venueCode }) {
       )}
     </>
   );
+}
+
+// 「1R〜12R」の状態。本日は次の発走より前を done（次が無ければ全部）、次を next。過去日付は状態なし（approved.md）
+const jumpStateOf = (i, liveNextIndex, isToday) => {
+  if (!isToday) return null;
+  if (liveNextIndex < 0 || i < liveNextIndex) return "done";
+  return i === liveNextIndex ? "next" : "upcoming";
+};
+
+// 見出しの下の節と日目の行と「1R〜12R」のボタン。押したらそのレースの塊へ（目印の近道と同じ移り方）
+export function MeetHeading({
+  loading,
+  error,
+  venueRaces,
+  gridRef,
+  liveNextIndex,
+  isToday,
+  date,
+}) {
+  if (loading || error || venueRaces.length === 0) return null;
+  const onJump = (index) =>
+    holdScrollPosition(
+      () => gridRef.current?.querySelectorAll(":scope > .race-card")[index],
+      gridRef.current,
+    );
+  const items = venueRaces.map((r, i) => ({
+    id: r.id,
+    raceNumber: r.raceNumber,
+    state: jumpStateOf(i, liveNextIndex, isToday),
+  }));
+  return <VenueMeetHeading {...{ venueRaces, date, items, onJump }} />;
 }
 
 export function PageHeader({

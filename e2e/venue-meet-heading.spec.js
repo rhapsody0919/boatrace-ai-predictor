@@ -2,7 +2,6 @@ import { test, expect } from "./fixtures.js";
 
 /**
  * 会場ページの節と日目の行と「1R〜12R」のボタン（公式の形、docs/design/venue-race-card-redesign/approved.md）。
- *
  * 節の行は全グレード（一般戦は札なし）。本日は次の発走より前を「終わった」、そのレースを「次」。過去日付は状態なし。
  * レースの並びは Edge API を差し替えて固定する（venue-next-race.spec.js と同じ。1R 10:30 〜 12R 16:00、30分おき）。
  */

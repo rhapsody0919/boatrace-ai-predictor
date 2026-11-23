@@ -5,8 +5,6 @@
 import { useTranslation } from "react-i18next";
 import { gradeConfigOf } from "../../utils/raceListDisplay";
 import { getVenueSeriesDayLabel } from "../../utils/raceDetailHeading";
-import { venueRaceJumpItems } from "../../pure/venueRaceJump";
-import { holdScrollPosition } from "../../pages/VenueRaceListPageScroll";
 import "./VenueMeetHeading.css";
 
 function monthDayText(date, lang) {
@@ -17,13 +15,7 @@ function monthDayText(date, lang) {
   }).format(new Date(`${date}T00:00:00+09:00`));
 }
 
-export default function VenueMeetHeading({
-  venueRaces,
-  date,
-  isToday,
-  liveNextIndex,
-  gridRef,
-}) {
+export default function VenueMeetHeading({ venueRaces, date, items, onJump }) {
   const { t, i18n } = useTranslation();
   const raws = venueRaces.map((r) => r.rawData);
   const first = raws[0];
@@ -31,13 +23,6 @@ export default function VenueMeetHeading({
   const title = first?.raceTitle?.normalize("NFKC").trim() || null;
   const dayLabel = getVenueSeriesDayLabel(raws, t);
   const dateText = monthDayText(date, i18n.resolvedLanguage);
-  const items = venueRaceJumpItems(venueRaces, liveNextIndex, isToday);
-
-  const jumpTo = (index) =>
-    holdScrollPosition(
-      () => gridRef.current?.querySelectorAll(":scope > .race-card")[index],
-      gridRef.current,
-    );
 
   return (
     <div className="venue-meet-heading" data-testid="venue-meet-heading">
@@ -72,7 +57,7 @@ export default function VenueMeetHeading({
             type="button"
             className={`venue-meet-heading__race${item.state ? ` is-${item.state}` : ""}`}
             aria-current={item.state === "next" ? "true" : undefined}
-            onClick={() => jumpTo(index)}
+            onClick={() => onJump(index)}
           >
             {item.raceNumber}R
           </button>
