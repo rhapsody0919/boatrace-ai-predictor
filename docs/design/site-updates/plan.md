@@ -102,7 +102,7 @@ export const SITE_MAKING = [
 
 | # | 中身 | tasks |
 |---|---|---|
-| D1 | 設計: spec・screens・fan-panel・mock/APPROVED.md・mock.html | — |
+| D1 | 設計: spec・screens・fan-panel・mock/approved.md・mock.html | — |
 | D2 | 設計: plan・tasks・mock の画像2枚 | — |
 | 1 | データと計算と検査: `src/data/siteUpdates.js`（10月下旬以降の10件）・`src/pure/siteUpdates.js`・`verify-site-updates.js`・`verify-registry.json` | T1 |
 | 2 | ページ: `SiteUpdates.jsx`・`.css`・`AppRouter.jsx`・`sitemapStaticPages.js`・`e2e/site-updates.spec.js`（ルートと sitemap は verify-sitemap-coverage が同じ PR を求める） | T2 |
