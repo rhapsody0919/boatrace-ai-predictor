@@ -30,15 +30,18 @@ export function countTickets(title, ref) {
 const closed = (state) => ["completed", "canceled"].includes(state?.type);
 
 /**
- * 判定。返す: { action: "close" | "skip" | "keep", reason }
- *   skip: もう閉じている。keep: 閉じない（理由をログと票のコメントに残す側の判断は呼び手）
+ * 判定。返す: { action: "close" | "archive" | "skip" | "keep", reason }
+ *   archive: もう閉じている（Linear の GitHub 連携が先に Done にした等）がアーカイブされていない。skip: 閉じてアーカイブ済み。keep: 閉じない（理由をログと票のコメントに残す側の判断は呼び手）
  * @param {string} ident 票の番号（BOA-N）
- * @param {{state?: {type?: string}, children?: {nodes?: Array<{identifier: string, state?: {type?: string}}>}}} issue
+ * @param {{state?: {type?: string}, archivedAt?: string|null, children?: {nodes?: Array<{identifier: string, state?: {type?: string}}>}}} issue
  * @param {Array<{number: number, title?: string, head?: {ref?: string}}>} openPrs 今開いている PR
  * @param {{title?: string, body?: string, head?: {ref?: string}}} pr マージした PR
  */
 export function decide(ident, issue, openPrs, pr) {
-  if (closed(issue?.state)) return { action: "skip", reason: "票はもう閉じている" };
+  if (closed(issue?.state))
+    return issue?.archivedAt
+      ? { action: "skip", reason: "票はもう閉じてアーカイブ済み" }
+      : { action: "archive", reason: "票は閉じているがアーカイブされていない" };
   const kids = (issue?.children?.nodes ?? []).filter((k) => !closed(k.state));
   if (kids.length > 0)
     return {

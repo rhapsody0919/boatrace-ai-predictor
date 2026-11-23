@@ -17,8 +17,10 @@ assert.equal(countTickets("BOA-1 BOA-2 BOA-3 BOA-4", "claude/boa-1"), 4);
 const open = { state: { type: "backlog" }, children: { nodes: [] } };
 const pr = { title: "claude: BOA-7 直す", body: "", head: { ref: "claude/boa-7-x" } };
 assert.equal(decide("BOA-7", open, [], pr).action, "close");
-assert.equal(decide("BOA-7", { ...open, state: { type: "completed" } }, [], pr).action, "skip");
-assert.equal(decide("BOA-7", { ...open, state: { type: "canceled" } }, [], pr).action, "skip");
+// 11/23: Linear の GitHub 連携が先に Done にした票（#3255 → BOA-1711）が、skip でアーカイブされずに残った
+assert.equal(decide("BOA-7", { ...open, state: { type: "completed" }, archivedAt: null }, [], pr).action, "archive");
+assert.equal(decide("BOA-7", { ...open, state: { type: "canceled" } }, [], pr).action, "archive");
+assert.equal(decide("BOA-7", { ...open, state: { type: "completed" }, archivedAt: "2026-11-23T00:00:00Z" }, [], pr).action, "skip");
 assert.equal(
   decide("BOA-7", { ...open, children: { nodes: [{ identifier: "BOA-8", state: { type: "started" } }] } }, [], pr).action,
   "keep",
