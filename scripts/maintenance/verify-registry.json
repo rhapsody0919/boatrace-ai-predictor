@@ -1650,6 +1650,11 @@
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
     },
     {
+      "script": "verify-site-updates.js",
+      "tier": "ci",
+      "guards": "更新のお知らせ（src/data/siteUpdates.js）の形（id・日付の新しい順・種別・字数・リンク・記事の実在・禁止語・今つくっている物は3件まで）と、帯と NEW の判定（src/pure/siteUpdates.js。JST の暦日の境目・minor を出さない・閉じた件）。docs/design/site-updates/"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
