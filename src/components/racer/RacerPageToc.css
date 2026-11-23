@@ -32,29 +32,3 @@
   color: var(--text-primary);
   text-decoration: underline;
 }
-
-/* 絞り込みが効く節の枠。色は青の線（ライトは primary-700、ダークは背景に合わせて primary-400） */
-.racer-filter-scope {
-  --racer-scope-line: var(--color-primary-700);
-  margin: var(--spacing-6) 0 var(--spacing-4);
-  padding: var(--spacing-3);
-  border: 2px solid var(--racer-scope-line);
-  border-radius: var(--radius-md);
-}
-
-[data-theme="dark"] .racer-filter-scope {
-  --racer-scope-line: var(--color-primary-400);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .racer-filter-scope {
-    --racer-scope-line: var(--color-primary-400);
-  }
-}
-
-.racer-filter-scope__title {
-  margin: 0 0 var(--spacing-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  color: var(--racer-scope-line);
-}

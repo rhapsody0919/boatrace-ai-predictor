@@ -354,5 +354,6 @@ tr.racer-vc-row-highlight td:first-child {
 
 /* #st-trend で移ったとき、固定のヘッダーに見出しが隠れないようにする（BOA-879） */
 .racer-st-trend {
-  scroll-margin-top: 80px;
+  /* 目次（RacerPageToc）が貼り付いている間は、その高さも足す */
+  scroll-margin-top: calc(80px + var(--racer-toc-height, 0px));
 }
