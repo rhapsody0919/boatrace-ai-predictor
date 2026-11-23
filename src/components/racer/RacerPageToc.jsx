@@ -24,14 +24,14 @@ function presentSectionIds() {
 }
 
 function usePresentSectionIds() {
-  const [ids, setIds] = useState([]);
+  // プロフィールは目次を出す条件（プロフィールがある選手）と同じなので、最初から入れる。ほかの節が遅れて
+  // 届いても横に項目が増えるだけで、目次の高さは変わらない（下の内容が押し下げられない。CLS）
+  const [ids, setIds] = useState(["racer-profile"]);
   const update = () =>
     setIds((prev) => {
       const next = presentSectionIds();
       return sameList(prev, next) ? prev : next;
     });
-  // 最初の描画の前に1回数える（遅れて出すと下の内容が押し下げられる。CLS）。節は DOM に既にある
-  useLayoutEffect(update, []);
   useEffect(() => {
     let frame = 0;
     const flush = () => {
@@ -41,6 +41,7 @@ function usePresentSectionIds() {
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(flush);
     };
+    schedule();
     const root = document.querySelector(".racer-profile-page") ?? document.body;
     const observer = new MutationObserver(schedule);
     observer.observe(root, { childList: true, subtree: true });
