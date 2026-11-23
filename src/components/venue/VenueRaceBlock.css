@@ -15,9 +15,6 @@ article.venue-race-block .race-card-header {
   font-weight: var(--font-weight-bold);
 }
 .venue-race-block__time {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.5rem;
   margin-left: auto;
   color: var(--text-secondary);
   font-size: 0.875rem;
@@ -38,7 +35,6 @@ article.venue-race-block .race-card-badges:empty {
   flex-wrap: wrap;
   gap: 0 0.75rem;
   margin: 0 0 0.75rem;
-  font-variant-numeric: tabular-nums;
 }
 .venue-race-block__links {
   display: flex;
@@ -58,7 +54,9 @@ article.venue-race-block .race-card-badges:empty {
   font-weight: var(--font-weight-bold);
   text-decoration: none;
 }
+/* 詳細は受付中だけ青の塗り。終わったレースは灰の塗り（無効に見える）にせず隣と同じ枠のボタン */
 article.venue-race-block a.predict-btn {
+  display: flex;
   width: auto;
   padding: 0.5rem;
   border: none;
@@ -74,4 +72,9 @@ article.venue-race-block a.predict-btn {
   font: inherit;
   font-size: 0.875rem;
   cursor: pointer;
+}
+article.venue-race-block.race-card--deadline-passed a.predict-btn {
+  background: none;
+  color: var(--text-primary);
+  border: var(--border-width-1) solid var(--border-hairline);
 }

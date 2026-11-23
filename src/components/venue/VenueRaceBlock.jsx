@@ -30,7 +30,9 @@ function ResultLine({ s }) {
       {r.winningTechnique && (
         <span>{translateTechnique(t, r.winningTechnique)}</span>
       )}
-      {amount != null && <span>¥{formatCount(amount)}</span>}
+      {amount != null && (
+        <span>{`${t("betting.trifecta")} ¥${formatCount(amount)}`}</span>
+      )}
     </p>
   );
 }
@@ -76,7 +78,7 @@ export default function VenueRaceBlock({ race, raceHref, nowHHMM }) {
               )}
           </span>
         )}
-        <RaceCardBadges s={s} racePrediction={rp} showStageGrade={false} />
+        <RaceCardBadges s={s} racePrediction={rp} venueBlock />
       </div>
       <ResultLine s={s} />
       <RaceCardDataTable

@@ -51,25 +51,18 @@ for (const width of [375, 768, 1024, 1440]) {
     const cards = await open(page, width);
     const done = cards.nth(0);
     const bar = done.locator(".race-card-header");
-    await expect(bar).toContainText("1R");
-    await expect(bar).toContainText("一般戦");
-    await expect(bar).toContainText("締切予定時刻 10:30");
-    await expect(bar).not.toContainText("多摩川");
-    await expect(bar).not.toContainText("G3");
+    // 会場名・グレードの札は出さない（見出しにある）
+    await expect(bar).toHaveText("1R一般戦締切予定時刻 10:30");
     await expect(done.getByTestId("venue-race-result")).toHaveText(
-      "結果4-2-1まくり¥8,450",
+      "結果4-2-1まくり3連単 ¥8,450",
     );
     const links = done.locator(".venue-race-block__links a");
     await expect(links).toHaveText(["詳細を見る", "AI予想", "結果"]);
-    await expect(links.nth(0)).toHaveAttribute("href", `/race/${idOf(1)}`);
-    await expect(links.nth(1)).toHaveAttribute(
-      "href",
-      `/race/${idOf(1)}?tab=aiPrediction`,
+    const hrefs = await links.evaluateAll((as) =>
+      as.map((a) => a.getAttribute("href")),
     );
-    await expect(links.nth(2)).toHaveAttribute(
-      "href",
-      `/race/${idOf(1)}?tab=result`,
-    );
+    const id = `/race/${idOf(1)}`;
+    expect(hrefs).toEqual([id, `${id}?tab=aiPrediction`, `${id}?tab=result`]);
     const next = cards.nth(9);
     await expect(next.getByTestId("venue-race-result")).toHaveCount(0);
     await expect(next.locator(".race-card-header")).toContainText("準優勝戦");

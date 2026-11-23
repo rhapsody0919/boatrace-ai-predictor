@@ -55,7 +55,7 @@ function OutcomeBadges({ s }) {
   );
 }
 
-function StatusBadges({ s }) {
+function StatusBadges({ s, venueBlock }) {
   const { t } = useTranslation();
   const { deadlineStatus } = s;
   return (
@@ -76,7 +76,7 @@ function StatusBadges({ s }) {
           {t("raceCard.closingSoon")}
         </RaceCardBadge>
       )}
-      {deadlineStatus === DEADLINE_STATUS.ACCEPTING && (
+      {deadlineStatus === DEADLINE_STATUS.ACCEPTING && !venueBlock && (
         <RaceCardBadge color="var(--color-gray-600)">
           {t("raceCard.accepting")}
         </RaceCardBadge>
@@ -115,12 +115,8 @@ function StageGradeBadges({ raceStage, raceGrade }) {
   );
 }
 
-// showStageGrade=false は会場ページのレースの塊（グレードは見出し、種別は帯の字に出す）
-export default function RaceCardBadges({
-  s,
-  racePrediction,
-  showStageGrade = true,
-}) {
+// venueBlock は会場ページのレースの塊。グレードは見出し・種別は帯の字・受付中は締切までの時刻で分かるので出さない
+export default function RaceCardBadges({ s, racePrediction, venueBlock }) {
   return (
     <div
       className="race-card-badges"
@@ -136,8 +132,8 @@ export default function RaceCardBadges({
         <InCautionBadge level={s.inCaution.level} pct={s.inCaution.pct} />
       )}
       <OutcomeBadges s={s} />
-      <StatusBadges s={s} />
-      {showStageGrade && (
+      <StatusBadges s={s} venueBlock={venueBlock} />
+      {!venueBlock && (
         <StageGradeBadges
           raceStage={racePrediction?.raceStage}
           raceGrade={racePrediction?.raceGrade}
