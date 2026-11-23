@@ -582,7 +582,8 @@
     "error": "Could not send. Please try again in a little while.",
     "thanksTitle": "Received",
     "thanksBody": "Thank you. We will use it as a reference for future improvements.",
-    "thanksReply": "We cannot reply individually. If you need a reply, please use \"Contact\" in the footer (the form is in Japanese).",
+    "thanksReply": "We cannot reply individually. If you need a reply, please use the contact page (the form is in Japanese).",
+    "contactLink": "Open the contact page",
     "more": "Write another",
     "close": "Close"
   },

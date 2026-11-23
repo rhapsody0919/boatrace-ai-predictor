@@ -7,6 +7,7 @@
  *    （ずれると、その値の送信が全部「送れませんでした」になり、どこにも残らない）
  * 4. 出す順番の関門: 台帳（docs/db-migration/APPLIED.md）で表が「適用済み」でなければ赤にする
  *    （表が本番に無いまま画面を出すと、全員の送信が失敗する。db-apply が成功すると台帳が適用済みになる）
+ * 5. 出す順番の関門: プライバシーポリシーに保存の記載が無ければ赤にする（ポリシーを画面より先に入れる）
  *
  * 実行: node scripts/maintenance/verify-site-feedback.js
  */
@@ -267,6 +268,20 @@ if (migrationFile) {
     `出す順番: 台帳で ${migrationFile} が適用済み`,
     isAppliedInLedger(ledger, migrationFile),
     "表が本番に無いまま画面を出すと、全員の送信が失敗する。オーナーが db-apply で当てた後に master を取り込む",
+  );
+}
+
+// ---- 5. 出す順番の関門: プライバシーポリシーに保存の記載がある ----
+// （画面より先にポリシーの PR claude/privacy-feedback-storage を入れる。spec の「出す順番」）
+{
+  const policy = fs.readFileSync(
+    path.join(ROOT, "src/components/privacy/PrivacySectionsA.jsx"),
+    "utf8",
+  );
+  check(
+    "出す順番: プライバシーポリシーに、ご意見・ご要望の送信で保存する内容の記載がある",
+    policy.includes("ご意見・ご要望の送信"),
+    "ポリシーの PR（claude/privacy-feedback-storage）が master に入っていない",
   );
 }
 

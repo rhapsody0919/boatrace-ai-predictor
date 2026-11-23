@@ -338,9 +338,30 @@ test.describe("パソコンの幅（1280px）", () => {
     await page.keyboard.press("Enter");
     await stars.first().focus();
     await page.keyboard.press("Enter");
-    await page.waitForTimeout(300);
+    // Enter の後に確かな操作を1つ挟み、その処理まで終わってから「送っていない」を見る
+    await page.keyboard.press("Tab");
+    await expect(
+      panel(page).getByRole("button", { name: "送る" }),
+    ).toBeFocused();
     expect(rows).toHaveLength(0);
     await expect(panel(page).getByText("受け取りました")).toHaveCount(0);
+  });
+
+  test("送れなかった後に書き直し始めると、前の「送れませんでした」は消える", async ({
+    page,
+  }) => {
+    await captureFeedbackPosts(page, { status: 400 });
+    await page.goto("/");
+    await button(page).click();
+    await panel(page).locator("textarea").fill("一度目");
+    await panel(page).getByRole("button", { name: "送る" }).click();
+    const error = panel(page).getByText(
+      "送れませんでした。時間をおいてもう一度押してください",
+    );
+    await expect(error).toBeVisible();
+    await panel(page).locator("textarea").press("End");
+    await panel(page).locator("textarea").pressSequentially("を直す");
+    await expect(error).toHaveCount(0);
   });
 
   test("空のまま「送る」を押すと、入力欄へフォーカスが移る", async ({

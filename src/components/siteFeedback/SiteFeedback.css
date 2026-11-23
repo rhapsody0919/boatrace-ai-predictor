@@ -31,9 +31,9 @@
   line-height: 1;
   cursor: pointer;
   box-shadow: var(--shadow-lg);
+  /* bottom は動かさない（画面を移って下部ナビ・「先頭へ戻る」が出たとき、ボタンが滑って見える） */
   transition:
     padding 0.2s ease,
-    bottom 0.2s ease,
     opacity 0.2s ease,
     visibility 0.2s;
 }
@@ -424,6 +424,17 @@ body:has(.back-to-top-button) .site-fb-btn {
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+}
+
+.site-fb-link {
+  color: var(--brand-accent-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-fb-link:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
 }
 
 .site-fb-thanks-body {

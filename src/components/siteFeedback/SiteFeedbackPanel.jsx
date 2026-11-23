@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   FEEDBACK_KINDS,
@@ -205,7 +206,14 @@ function FeedbackThanks({ t, onMore, onClose, doneRef }) {
   return (
     <div className="site-fb-thanks" role="status">
       <p className="site-fb-thanks-body">{t(`${K}.thanksBody`)}</p>
-      <p className="site-fb-note">{t(`${K}.thanksReply`)}</p>
+      <p className="site-fb-note">
+        {t(`${K}.thanksReply`)}{" "}
+        {/* /contact は ja 専用（TRANSLATED_PATHS に無い）ので、どの言語でも接頭辞なしで指す（CookieConsent の /privacy と同じ）。
+            画面を移るとパネルは閉じる */}
+        <Link to="/contact" hrefLang="ja" className="site-fb-link">
+          {t(`${K}.contactLink`)}
+        </Link>
+      </p>
       <div className="site-fb-btnrow">
         <button type="button" className="site-fb-ghost" onClick={onMore}>
           {t(`${K}.more`)}
@@ -225,9 +233,9 @@ function FeedbackThanks({ t, onMore, onClose, doneRef }) {
 
 /** Tab を先頭と末尾でつなぎ、パネルの外へフォーカスが出ないようにする */
 function trapTab(e, panel) {
-  const list = [...panel.querySelectorAll("button, textarea, input")].filter(
-    (el) => !el.disabled,
-  );
+  const list = [
+    ...panel.querySelectorAll("button, textarea, input, a[href]"),
+  ].filter((el) => !el.disabled);
   if (list.length === 0) return;
   const first = list[0];
   const last = list[list.length - 1];

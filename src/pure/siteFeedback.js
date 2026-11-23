@@ -1,7 +1,7 @@
 /**
  * サイト全体のご意見ボックス（site_feedback）の決まり。画面（src/components/siteFeedback/）と
  * 検査（scripts/maintenance/verify-site-feedback.js）が同じ値を使う。
- * 表の CHECK（docs/design/site-feedback-box/db-draft.md）と1対1でそろえる。
+ * 表の CHECK（docs/db-migration/205_site_feedback.sql）と1対1でそろえる。
  */
 import { parseLangFromPath } from "./localizePath.js";
 

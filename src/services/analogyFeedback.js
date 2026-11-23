@@ -23,7 +23,7 @@ export async function sendAnalogyFeedback(row) {
 }
 
 /**
- * サイト全体のご意見ボックスの1件を site_feedback に送る（表の案: docs/design/site-feedback-box/db-draft.md）。
+ * サイト全体のご意見ボックスの1件を site_feedback に送る（表の案: docs/db-migration/205_site_feedback.sql）。
  * anon は INSERT しかできないので、返り値を求めない（上と同じ）。重複の決まりは無く、
  * 失敗（表の CHECK・連投の制限・通信）は投げ、画面が「送れませんでした」を出す。
  *

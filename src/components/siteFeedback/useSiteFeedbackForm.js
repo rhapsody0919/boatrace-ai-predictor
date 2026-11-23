@@ -36,6 +36,8 @@ export function useSiteFeedbackForm({ pathname, lang }) {
 
   const changeComment = (text) => {
     setComment(text);
+    // 書き直し始めたら、前の「送れませんでした」は消す
+    setFailed(false);
     if (emptyTried && canSendFeedback(text)) setEmptyTried(false);
   };
 
@@ -76,7 +78,7 @@ export function useSiteFeedbackForm({ pathname, lang }) {
       // 失敗はどこにも残らない（連投の制限は INSERT ごと戻る）ので、種類だけを計測に送る。本文は送らない。
       // 表がまだ無い（PGRST205）・CHECK のずれ（23514）・制限（P0001）・通信の失敗（コードなし）を見分ける
       trackEvent("site_feedback_send_failed", {
-        error_code: String(err?.code ?? "unknown").slice(0, 32),
+        error_code: String(err?.code || "unknown").slice(0, 32),
         feedback_page_type: feedbackPageType(pathname),
       });
       console.error("ご意見を送れなかった", err);

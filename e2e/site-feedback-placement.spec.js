@@ -59,11 +59,41 @@ test.describe("パソコンの幅（1280px）", () => {
     await expect
       .poll(async () => (await button(page).boundingBox()).width)
       .toBeLessThanOrEqual(50);
-    // 読み込みの揺れ（数px の上下）では戻さず、はっきり上へ戻したときだけ戻す
-    await page.mouse.wheel(0, -10);
+    // 読み込みの揺れ（数px の上下）では戻さず、はっきり上へ戻したときだけ戻す。
+    // スクロールの位置が実際に変わり、その scroll の処理が終わってから見る
+    const y0 = await page.evaluate(() => window.scrollY);
+    await page.evaluate(() => window.scrollBy(0, -10));
+    // 読み込みで本文の高さが数px 変わるので、ちょうどの位置ではなく「少しだけ上へ動いた」を待つ
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeLessThan(y0);
+    expect(y0 - (await page.evaluate(() => window.scrollY))).toBeLessThan(40);
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 50))),
+    );
     await expect(button(page)).toHaveClass(/is-mini/);
     await page.mouse.wheel(0, -300);
     await expect(button(page)).not.toHaveClass(/is-mini/);
+  });
+
+  test("お礼の中のリンクからお問い合わせページへ移れ、移るとパネルは閉じる", async ({
+    page,
+  }) => {
+    await captureFeedbackPosts(page);
+    await page.goto("/en/");
+    await button(page).click();
+    await panel(page).locator("textarea").fill("Need a reply");
+    await panel(page).getByRole("button", { name: "Send" }).click();
+    const link = panel(page).getByRole("link", {
+      name: "Open the contact page",
+    });
+    await expect(link).toBeVisible();
+    // /contact は ja 専用なので、英語の画面からも接頭辞なしで指す
+    await expect(link).toHaveAttribute("href", "/contact");
+    await link.click();
+    await expect(page).toHaveURL(/\/contact$/);
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.getByTestId("site-feedback-footer")).toBeVisible();
   });
 
   test("英語のページでは英語で出て、lang は en で送る", async ({ page }) => {
