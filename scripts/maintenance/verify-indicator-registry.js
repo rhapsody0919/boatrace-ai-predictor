@@ -5,14 +5,13 @@
  * 守ること:
  *   - id が重複しない。改名の読み替え（ALIASES）は今ある id を指す
  *   - 種類・主語・値の形・比べ方の向きは決まった値だけ
- *   - 文のキー（見出し・短い見出し）が ja の common.json にある
+ *   - 文のキー（見出し・短い見出し）が i18n のキーの形（中身は画面の E2E が字で照らす）
  *   - 書き方は src/pure/dataFormat.js にある関数の名前
  *   - 見立て（judgement）は材料を持ち、材料の id は登録簿にあって輪にならない
  *   - select は6艇の艇番ごとに { value, n, hidden } を返す
  *   - 最良は表示の桁で比べ、hidden の艇は返さない。書き方は勝率2桁・率は % を分ける
  */
 import * as dataFormat from "../../src/pure/dataFormat.js";
-import ja from "../../src/locales/ja/common.json" with { type: "json" };
 import {
   ALIASES,
   INDICATORS,
@@ -21,8 +20,6 @@ import {
   getIndicator,
 } from "../../src/pure/indicatorRegistry.js";
 
-const hasKey = (key) =>
-  key.split(".").reduce((node, part) => node?.[part], ja) !== undefined;
 
 const KINDS = ["official", "aggregate", "judgement"];
 const SUBJECTS = ["racer", "boat", "course", "motor", "hull", "venue", "race", "meet", "prediction"];
@@ -48,8 +45,9 @@ for (const def of INDICATORS) {
   if (!DIRECTIONS.includes(def.compare?.direction ?? null)) fail(`${where}: compare.direction`);
   if (typeof dataFormat[def.format] !== "function") fail(`${where}: format ${def.format} が dataFormat に無い`);
   if (typeof def.select !== "function") fail(`${where}: select が関数でない`);
+  // 文のキーの有無は locales を読まずに形だけ見る（キーの中身は画面の E2E が字で照らす）
   for (const key of [def.text?.label, def.text?.short]) {
-    if (!key || !hasKey(key)) fail(`${where}: ja の文のキー ${key} が無い`);
+    if (!/^[a-zA-Z]+(\.[a-zA-Z0-9]+)+$/.test(key ?? "")) fail(`${where}: 文のキー ${key} の形`);
   }
   if (def.kind === "judgement" && !def.materials?.length) fail(`${where}: 見立ては materials が要る`);
   if (def.kind !== "judgement" && def.materials) fail(`${where}: 見立てでないのに materials がある`);
