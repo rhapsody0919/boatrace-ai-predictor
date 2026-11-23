@@ -65,6 +65,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか20件 |
 | `src/pure/seriesPointsParts.js` | — | prelimEndDayOf, noRaceDaysOf, semifinalRaceIdsOf, semifinalSlotsOf, isAbsentStartRow ほか10件 |
+| `src/pure/siteUpdates.js` | — | BANNER_DAYS, NEW_DAYS, MAKING_MAX, isWithinJstDays, visibleUpdates ほか3件 |
 | `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
 | `src/pure/snsObservationChecks.js` | SNS観測の入力の検査（src/utils/snsObservations.js の validateObservationInput の中の検査を、順を変えず… | assertObservationEnvelope, assertMetricAndSource, assertObservedAt, assertPeriodBounds, assertDataThrough ほか7件 |
 | `src/pure/snsObservationWindows.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。窓・取得元・指標・時刻の判定（src/utils/snsObservations.js から移し… | windowsFor, displayWindowFor, observationPeriod, OBSERVATION_WINDOWS, FULL_PICTURE_FORMAT ほか10件 |
@@ -653,4 +654,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 611 ファイル / export 3281 件。
+対象 612 ファイル / export 3289 件。
