@@ -40,7 +40,7 @@ export default function RacerProfileLoaded({
         racerId={racerId}
         isInya={front.frontTaking?.isInya === true}
       />
-      {data.profile && <RacerTodayRuns racerId={racerId} />}
+      {data.profile && <RacerTodayRuns racerId={racerId} periodRows={period.periodRows} />}
       {data.profile && !period.periodFailed && (
         <RacerSummaryBlock
           grade={data.grade}
