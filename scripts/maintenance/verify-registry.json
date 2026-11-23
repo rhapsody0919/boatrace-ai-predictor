@@ -706,6 +706,11 @@
       "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
     },
     {
+      "script": "verify-indicator-registry.js",
+      "tier": "ci",
+      "guards": "指標の登録簿（src/pure/indicatorRegistry.js、ADR-0108）。id の重複・改名の読み替え先、種類・主語・値の形・向きの値、ja の文のキー、書き方が dataFormat の関数、見立ての材料の参照先と輪、select の形、最良は表示の桁で比べ hidden を返さない、勝率2桁・率は % を分ける"
+    },
+    {
       "script": "verify-install-actionlint.js",
       "tier": "ci",
       "guards": "actionlint・shellcheck の取得（install-actionlint.js）の取り直し。GitHub Releases の一時的な失敗（HTTP 403・429・5xx、ECONNRESET・ETIMEDOUT）だけ間隔を広げて上限の回数まで取り直し、404 のような取り直しても変わらない失敗は1回で失敗にすること。偽の fetch と sleep で確かめ、ネットワークには繋がない。2026-11-18 に master の Quality Gates が HTTP 403 の1回で落ち、定時の release が止まった"
