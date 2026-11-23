@@ -7,6 +7,8 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeToggle from "./ThemeToggle";
 import RacerSearchBox from "./RacerSearchBox";
 import { THEME_SWITCHING_ENABLED } from "../config/theme";
+import { SITE_UPDATES } from "../data/siteUpdates.js";
+import { hasRecentUpdate } from "../pure/siteUpdates.js";
 import "./Header.css";
 
 // パス（言語プレフィックス除去後）が完全一致でタブ名になるもの（タブ名はパスの先頭の / を除いた形）
@@ -22,6 +24,7 @@ const EXACT_TABS = new Set([
   "faq",
   "about",
   "profile",
+  "updates",
 ]);
 
 // 前方一致でタブ名になるもの
@@ -192,6 +195,17 @@ function Submenu({ activeTab, currentLng, showVenues, onTab, onClose }) {
       <SubmenuLink to={localize("/blog")} tab="blog" {...link}>
         {t("nav.blog")}
       </SubmenuLink>
+      {/* 更新のお知らせ（/updates）は ja専用。7日以内の更新で NEW（docs/design/site-updates/） */}
+      {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
+      {currentLng === "ja" && (
+        <SubmenuLink to="/updates" tab="updates" {...link}>
+          🔔 更新のお知らせ
+          {hasRecentUpdate(SITE_UPDATES) && (
+            <span className="site-updates-menu-new">NEW</span>
+          )}
+        </SubmenuLink>
+      )}
+      {/* i18n-allow-end */}
       <SubmenuLink to={localize("/faq")} tab="faq" {...link}>
         {t("nav.faq")}
       </SubmenuLink>
@@ -246,6 +260,9 @@ function HeaderNav({
         aria-expanded={isMenuOpen}
       >
         ☰
+        {currentLng === "ja" && hasRecentUpdate(SITE_UPDATES) && (
+          <span className="site-updates-menu-dot" aria-hidden="true" />
+        )}
       </button>
     </nav>
   );
