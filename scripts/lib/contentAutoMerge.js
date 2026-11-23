@@ -20,42 +20,56 @@ const ROLES = ["content-qa", "wording-editor", "fan", "seo-marketer"];
 const P1_BLOCKS = ["content-qa", "wording-editor"];
 export const REQUIRED_CHECKS = ["e2e", "verify", "ml-tests"];
 
+function filesReasons(headRef, files) {
+  const reasons = [];
+  if (!/^claude\/content-/.test(headRef)) reasons.push("記事の枝（claude/content-）でない");
+  if (files.length === 0) reasons.push("ファイルが無い");
+  const bad = files.filter(
+    (f) => f.status === "removed" || !ALLOWED.some((re) => re.test(f.path)),
+  );
+  if (bad.length > 0) reasons.push(`置き場の外か削除: ${bad.map((f) => f.path).join(", ")}`);
+  const manifests = files.filter((f) => f.path.startsWith("docs/content-manifests/"));
+  if (manifests.length !== 1) reasons.push(`manifest がちょうど1つでない（${manifests.length}）`);
+  return reasons;
+}
+
+function reviewReason(reviews, role) {
+  const r = reviews.find((x) => x?.role === role);
+  if (!r) return `審査 ${role} が無い`;
+  if (r.result !== "pass") return `審査 ${role} が pass でない`;
+  if (r.p0 !== 0) return `審査 ${role} の P0 が0でない`;
+  if (P1_BLOCKS.includes(role) && r.p1 !== 0) return `審査 ${role} の P1 が0でない`;
+  return null;
+}
+
+function manifestReasons(manifest) {
+  if (!manifest || typeof manifest !== "object") return ["manifest が読めない"];
+  const reviews = Array.isArray(manifest.reviews) ? manifest.reviews : [];
+  const reasons = ROLES.map((role) => reviewReason(reviews, role)).filter(Boolean);
+  const words = manifest.judgement_words;
+  if (!Array.isArray(words) || words.length > 0) reasons.push("判断の要る語がある（または欄が無い）");
+  return reasons;
+}
+
+function checksReasons(checks) {
+  return REQUIRED_CHECKS.flatMap((name) => {
+    const runs = checks.filter((c) => c.name === name);
+    if (runs.length === 0) return [`必須の check ${name} がまだ無い`];
+    return runs.every((c) => c.conclusion === "success") ? [] : [`必須の check ${name} が緑でない`];
+  });
+}
+
 /**
  * @param {{headRef: string, files: Array<{path: string, status: string}>, manifest: unknown,
  *          checks: Array<{name: string, conclusion: string|null}>, lane: string}} pr
  * @returns {{merge: boolean, reasons: string[]}} reasons は merge が false の訳（空なら merge）
  */
 export function judge(pr) {
-  const reasons = [];
-  if (!/^claude\/content-/.test(pr.headRef)) reasons.push("記事の枝（claude/content-）でない");
-  const bad = pr.files.filter(
-    (f) => f.status === "removed" || !ALLOWED.some((re) => re.test(f.path)),
-  );
-  if (pr.files.length === 0) reasons.push("ファイルが無い");
-  if (bad.length > 0) reasons.push(`置き場の外か削除: ${bad.map((f) => f.path).join(", ")}`);
-  const manifests = pr.files.filter((f) => f.path.startsWith("docs/content-manifests/"));
-  if (manifests.length !== 1) reasons.push(`manifest がちょうど1つでない（${manifests.length}）`);
-
-  const m = pr.manifest && typeof pr.manifest === "object" ? pr.manifest : null;
-  if (!m) reasons.push("manifest が読めない");
-  else {
-    const reviews = Array.isArray(m.reviews) ? m.reviews : [];
-    for (const role of ROLES) {
-      const r = reviews.find((x) => x?.role === role);
-      if (!r) reasons.push(`審査 ${role} が無い`);
-      else if (r.result !== "pass") reasons.push(`審査 ${role} が pass でない`);
-      else if (r.p0 !== 0) reasons.push(`審査 ${role} の P0 が0でない`);
-      else if (P1_BLOCKS.includes(role) && r.p1 !== 0) reasons.push(`審査 ${role} の P1 が0でない`);
-    }
-    if (!Array.isArray(m.judgement_words) || m.judgement_words.length > 0)
-      reasons.push("判断の要る語がある（または欄が無い）");
-  }
-
-  for (const name of REQUIRED_CHECKS) {
-    const runs = pr.checks.filter((c) => c.name === name);
-    if (runs.length === 0) reasons.push(`必須の check ${name} がまだ無い`);
-    else if (!runs.every((c) => c.conclusion === "success")) reasons.push(`必須の check ${name} が緑でない`);
-  }
-  if (pr.lane !== "light") reasons.push(`pr-lane が ${pr.lane}`);
+  const reasons = [
+    ...filesReasons(pr.headRef, pr.files),
+    ...manifestReasons(pr.manifest),
+    ...checksReasons(pr.checks),
+    ...(pr.lane === "light" ? [] : [`pr-lane が ${pr.lane}`]),
+  ];
   return { merge: reasons.length === 0, reasons };
 }

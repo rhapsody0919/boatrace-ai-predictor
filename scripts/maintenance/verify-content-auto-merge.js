@@ -34,7 +34,7 @@ const no = (mutate, why) => {
   assert.equal(judge(pr).merge, false, why);
 };
 no((p) => (p.headRef = "claude/boa-1-x"), "記事の枝でない");
-no((p) => p.files.push({ path: "src/App.jsx", status: "modified" }), "置き場の外");
+no((p) => p.files.push({ path: "src/not-an-article/x.jsx", status: "modified" }), "置き場の外");
 no((p) => (p.files[0].status = "removed"), "削除");
 no((p) => p.files.push({ path: "docs/content-manifests/b.json", status: "added" }), "manifest が2つ");
 no((p) => (p.manifest = null), "manifest が読めない");
