@@ -229,6 +229,49 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   background: var(--ind-best-bg);
 }
 
+/* 選んだ艇（?boat=）の列（オーナー 2026-11-23 承認の5。ほかのタブの選んだ艇の行と同じ金の色）。
+   縦の2本線と薄い地で列を示す。最良（金の地＋内枠）と重なるセルは両方を描く。
+   偶数行の縞（tr:nth-child(even) td）に負けないよう tr td から書く */
+.drt-table tr th.drt-boat-th.drt-selected {
+  box-shadow: inset 0 -4px 0 var(--brand-accent-primary);
+}
+
+.drt-table tr th.drt-name-th.drt-selected {
+  background: color-mix(in srgb, var(--brand-accent-primary) 14%, var(--surface-card));
+  font-weight: var(--font-weight-bold);
+}
+
+.drt-table tbody tr td.drt-cell.drt-selected {
+  background: color-mix(in srgb, var(--brand-accent-primary) 8%, var(--surface-card));
+  box-shadow:
+    inset 2px 0 0 var(--brand-accent-primary),
+    inset -2px 0 0 var(--brand-accent-primary);
+}
+
+.drt-table tbody tr td.drt-cell.drt-best.drt-selected {
+  background: var(--ind-best-bg);
+  box-shadow:
+    inset 2px 0 0 var(--brand-accent-primary),
+    inset -2px 0 0 var(--brand-accent-primary),
+    inset 0 0 0 1px var(--ind-best-ring);
+}
+
+/* 艇番の見出しのボタン（押すと選ぶ）。見た目は今までの見出しの数字のまま */
+.drt-boat-select {
+  all: unset;
+  display: block;
+  width: 100%;
+  min-height: 24px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.drt-boat-select:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .drt-value {
   display: inline-flex;
   flex-direction: column;
