@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2805,
+    "sourceFiles": 2808,
     "filesWithAccess": 324,
-    "tableReaders": 956,
+    "tableReaders": 957,
     "tableWriters": 197,
     "rpcCallers": 57,
     "nameMentions": 283,
@@ -8232,6 +8232,18 @@
           ]
         },
         {
+          "ref": "src/services/racerQueries6.js:108",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "f_count",
+            "global_2rate",
+            "race_id",
+            "racer_id",
+            "win_rate"
+          ]
+        },
+        {
           "ref": "src/services/sherlockService.js:70",
           "op": "select",
           "via": "client",
@@ -8521,6 +8533,7 @@
             "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerQueries5.js:45",
+            "src/services/racerQueries6.js:108",
             "src/services/racerQueries6.js:29",
             "src/services/sherlockService.js:70",
             "src/services/watsonService.js:76"
@@ -8744,6 +8757,7 @@
             "src/services/racerQueries.js:47",
             "src/services/racerQueries.js:83",
             "src/services/racerQueries3.js:309",
+            "src/services/racerQueries6.js:108",
             "src/services/sherlockService.js:70"
           ],
           "writers": [],
@@ -8883,7 +8897,8 @@
           "readers": [
             "src/services/motorQueries2.js:111",
             "src/services/raceQueries.js:144",
-            "src/services/raceQueries3.js:83"
+            "src/services/raceQueries3.js:83",
+            "src/services/racerQueries6.js:108"
           ],
           "writers": [],
           "sql": [
@@ -8998,6 +9013,7 @@
             "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerQueries5.js:45",
+            "src/services/racerQueries6.js:108",
             "src/services/racerQueries6.js:29"
           ],
           "writers": [
@@ -9061,7 +9077,8 @@
         "f_count": {
           "readers": [
             "src/services/meetQueries.js:37",
-            "src/services/raceQueries.js:144"
+            "src/services/raceQueries.js:144",
+            "src/services/racerQueries6.js:108"
           ],
           "writers": [],
           "sql": [
