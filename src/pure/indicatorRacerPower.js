@@ -80,4 +80,33 @@ export const RACER_POWER_INDICATORS = [
     detailTab: "racecard",
     adornment: null,
   },
+  {
+    id: "racer.form.winRateDelta90d",
+    family: "F-010",
+    category: "racerPower",
+    kind: "aggregate",
+    subject: "racer",
+    scenes: ["race"],
+    shape: "perBoat",
+    text: {
+      label: "dataTable.rowForm",
+      short: "review.cols.form",
+      hint: "form",
+    },
+    sources: ["race.racerForm"],
+    window: "全国勝率の約90日前との差",
+    format: "fixed",
+    compare: { direction: "max", digits: 2, minN: null },
+    // 上がった艇（Δ > 0）の中の最良だけを強調する。全員が下がっているときに「下がり方が最も小さい艇」へ
+    // 金枠を付けると、赤（悪い）の値に金（最良）が重なる（R1・R2）。上がっていない艇は hidden
+    select: ({ analysis }) =>
+      new Map(
+        (analysis?.racerForm ?? []).map((r) => [
+          r.boat_number,
+          { value: toNumber(r.delta), n: null, hidden: !(r.delta > 0) },
+        ]),
+      ),
+    detailTab: "racer",
+    adornment: "trendArrow",
+  },
 ];
