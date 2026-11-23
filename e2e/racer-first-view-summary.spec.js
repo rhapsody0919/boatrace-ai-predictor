@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, e2eTodayJST } from "./fixtures.js";
 import { stubRacerScopedRuns, runDates } from "./racer-scoped-stub.js";
 
 /**
@@ -168,4 +168,59 @@ test("B1（2878）: 前付けの走が0なら1行を DOM に置かない。descr
   }
   await expect.poll(() => descriptionOf(page)).toContain("2026年後期の勝率 4.21・2連率 18.7%・優出 0・優勝 0。");
   await expect(page).toHaveTitle(/勝率4\.21・決まり手/);
+});
+
+// 冒頭の1行目は最新の出走表の値（#3258 の #2）。出走表の勝率は「今期の累積」でなく直近6か月なので「今期」と書かず、
+// 出走表の日付を付ける。F は期の中の本数なので、出走が今日と同じ期の中のときだけ出す
+async function stubLatestEntry(page, row) {
+  await page.route("**/rest/v1/race_entries?*", (route) => {
+    const url = route.request().url();
+    if (url.includes("global_2rate") && url.includes("f_count") && url.includes("limit=1")) {
+      return route.fulfill({ json: row });
+    }
+    return route.fallback();
+  });
+}
+
+test("冒頭の1行目は最新の出走表の値に日付を付け、前の期の公式成績を2行目に並べる", async ({ page }) => {
+  const today = e2eTodayJST();
+  await stubPeriods(page, 4320);
+  await stubLatestEntry(page, { race_id: `${today}-02-01`, win_rate: 8.12, global_2rate: 61.5, f_count: 1 });
+  await page.goto("/racer/4320");
+  const latest = page.getByTestId("racer-summary-latest");
+  await expect(latest).toHaveText(`${today.replaceAll("-", "/")} の出走表 勝率 8.12・2連率 61.5%・F1`);
+  await expect(latest).not.toContainText("今期");
+  // 2行目は前の期の公式成績のまま（値・期の名前は上の試験と同じ）
+  await expect(page.getByTestId("racer-summary-win-rate")).toHaveText("7.38");
+  await expect(page.getByTestId("racer-summary")).toContainText("公式の期別成績（2026年後期・〜2026/04/30 集計・146走）");
+  // 前の期の値を最新の出走表の値より小さく出す（前の期の大きな「F 0」を今の F と読まない。ファン評価 1周 P1）
+  const size = (loc) => loc.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  expect(await size(latest.locator("strong").first())).toBeGreaterThan(await size(page.getByTestId("racer-summary-win-rate")));
+  // F は上の出走表の F を太字に、公式の期別の F は淡く（ファン評価 2周 P2）
+  await expect(latest.locator("strong", { hasText: "F1" })).toHaveCount(1);
+  const weight = (loc) => loc.evaluate((el) => Number(getComputedStyle(el).fontWeight));
+  expect(await weight(page.getByTestId("racer-summary-f"))).toBeLessThan(500);
+  await expect(page.getByTestId("racer-summary").locator(".racer-summary__stat", { has: page.getByTestId("racer-summary-f") })).toContainText("公式 2026年後期");
+  for (const id of ["racer-summary-latest", "racer-summary-win-rate"]) {
+    expect(await inViewport(page, page.getByTestId(id)), id).toBe(true);
+  }
+});
+
+test("期をまたいだ出走表の F は出さない（0とも書かない）", async ({ page }) => {
+  await stubPeriods(page, 2878);
+  // 2026-10-01 は 5/1〜10/31 の期。録画の今日（11月以降）とは別の期
+  await stubLatestEntry(page, { race_id: "2026-10-01-02-01", win_rate: 4.5, global_2rate: 20.25, f_count: 2 });
+  await page.goto("/racer/2878");
+  const latest = page.getByTestId("racer-summary-latest");
+  await expect(latest).toHaveText("2026/10/01 の出走表 勝率 4.50・2連率 20.3%");
+  await expect(latest).not.toContainText("F");
+});
+
+test("出走表の1行が出ないとき（勝率 0.00 の新人など）、注記は「上の出走表」を指さない", async ({ page }) => {
+  await stubPeriods(page, 2878);
+  await stubLatestEntry(page, { race_id: `${e2eTodayJST()}-02-01`, win_rate: 0, global_2rate: 0, f_count: 0 });
+  await page.goto("/racer/2878");
+  await expect(page.getByTestId("racer-summary")).toContainText("公式の期別成績（2026年後期・〜2026/04/30 集計・98走）");
+  await expect(page.getByTestId("racer-summary-latest")).toHaveCount(0);
+  await expect(page.getByTestId("racer-summary")).not.toContainText("上の出走表");
 });

@@ -43,6 +43,7 @@ export default function RacerProfileLoaded({
       {data.profile && <RacerTodayRuns racerId={racerId} periodRows={period.periodRows} />}
       {data.profile && !period.periodFailed && (
         <RacerSummaryBlock
+          racerId={racerId}
           grade={data.grade}
           // 期別の行が届く前は undefined（取得中）、届いて出走が無ければ null
           summary={period.periodRows ? summary : undefined}

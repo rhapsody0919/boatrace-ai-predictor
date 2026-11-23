@@ -97,3 +97,19 @@ export async function getRaceFrontTakingByRacer(racerIds, beforeRaceId) {
     ]),
   );
 }
+
+/**
+ * 選手の最新の出走表の行（#3258 の #2。選手ページの冒頭の1行目）。失敗は throwOnError で throw
+ * @returns {Promise<{race_id:string, win_rate:number|null, global_2rate:number|null, f_count:number|null}|null>}
+ */
+export async function getRacerLatestEntry(racerId) {
+  if (!supabase) throw new Error("Supabase client not initialized");
+  const { data } = await supabase
+    .from("race_entries")
+    .select("race_id, win_rate, global_2rate, f_count")
+    .eq("racer_id", racerId)
+    .order("race_id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data ?? null;
+}
