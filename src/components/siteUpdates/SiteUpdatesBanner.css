@@ -1,0 +1,73 @@
+/* ja のトップの更新のお知らせの帯。色は意味トークンだけ */
+.site-updates-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  margin: 0 0 var(--spacing-3);
+  padding: var(--spacing-2-5) var(--spacing-2) var(--spacing-2-5) var(--spacing-3);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+}
+
+.site-updates-banner-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+.site-updates-banner-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.site-updates-banner-title {
+  line-height: 1.45;
+}
+
+.site-updates-banner-go {
+  color: var(--brand-accent-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.site-updates-banner-link:hover .site-updates-banner-go,
+.site-updates-banner-link:focus-visible .site-updates-banner-go {
+  text-decoration: underline;
+}
+
+.site-updates-banner-close {
+  flex: none;
+  /* 押せる大きさ44px（ui-layout.md）。左のリンクとの押し損ねを減らす */
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc(-1 * var(--spacing-2)) 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* NEW の札（メニューの NEW は Header.css の .site-updates-menu-new） */
+.site-updates-banner .site-updates-new {
+  display: inline-block;
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--brand-accent-primary);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-1);
+  line-height: 1.5;
+}
