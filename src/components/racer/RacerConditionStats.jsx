@@ -107,7 +107,7 @@ export default function RacerConditionStats({ history }) {
       <h3>レース条件別の成績</h3>
       <p className="racer-vc-note">
         2025年12月以降・{overall.n}
-        走。天候・風速・波高はレース直前の発表値。矢印は全体との差（pt）で、その条件の走とそれ以外の走の差が偶然と言えない（95%）ときだけ付けます。30走未満は率を出さず件数だけ、5走未満の条件は出していません。波高は江戸川を除きます（5cm刻みで記録されるため）
+        走。天候・風速・波高はレース直前の発表値。矢印は全体との差（pt）です。判定は「その条件の走」と「それ以外の走」の比べで、差が大きい目安（|z|≥1.96、多重比較の補正なし）を超えた率だけに付けます。30走未満は率を出さず件数だけ、5走未満の条件は出していません。波高は江戸川を除きます（5cm刻みで記録されるため）
       </p>
       <div className="table-wrapper">
         <table className="racer-return-rate-table racer-cond-table">
