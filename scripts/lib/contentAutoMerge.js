@@ -2,9 +2,10 @@
  * 記事の PR を人の手なしでマージしてよいかの判定（純関数。オーナー 2026-11-23「記事の PR を、審査が通り CI が緑なら
  * 自動でマージする形」に yes）。条件は .claude/skills/owner-session/SKILL.md「マージしてよい範囲」の段階0 F。
  *
- * 今の書き手は非公開の hq の seo-human で、manifest の審査役の名前（hq-review:*）と作り手の欄が
- * docs/operation/content-pr-contract.md の契約と合わないので、check-content-pr.js の判定は使わず、F の条件を直に見る。
- * 書き手を龍神へ移したら（hq 閉鎖の段2）、契約どおりの manifest にして check-content-pr.js に寄せる。
+ * F の条件を直に見るのに加えて、契約の関門（master の版の scripts/content/check-content-pr.js を PR の木に当てた結果、
+ * docs/operation/content-pr-contract.md）が ok でなければ入れない（BOA-1715、11/23 の書き手の移しの前の直し）。
+ * 審査の欄だけだと、本文を直した後に manifest を作り直し忘れた版が入りうるため。
+ * hq の seo-human の manifest は契約と形が合わない（審査役の名前 hq-review:*・作り手の欄）ので、この関門で止まり、窓口が段階0 F で入れる。
  */
 
 // 記事の PR に入れてよい置き場（段階0 F）
@@ -59,9 +60,18 @@ function checksReasons(checks) {
   });
 }
 
+function contractReasons(contract) {
+  if (!contract || contract.ok !== true) {
+    const head = (contract?.errors ?? []).slice(0, 2).join(" / ");
+    return [`契約の関門が ok でない${head ? `（${head}）` : ""}`];
+  }
+  return [];
+}
+
 /**
  * @param {{headRef: string, files: Array<{path: string, status: string}>, manifest: unknown,
- *          checks: Array<{name: string, conclusion: string|null}>, lane: string}} pr
+ *          checks: Array<{name: string, conclusion: string|null}>, lane: string,
+ *          contract: {ok: boolean, errors?: string[]}}} pr  contract は契約の関門の結果
  * @returns {{merge: boolean, reasons: string[]}} reasons は merge が false の訳（空なら merge）
  */
 export function judge(pr) {
@@ -70,6 +80,7 @@ export function judge(pr) {
     ...manifestReasons(pr.manifest),
     ...checksReasons(pr.checks),
     ...(pr.lane === "light" ? [] : [`pr-lane が ${pr.lane}`]),
+    ...contractReasons(pr.contract),
   ];
   return { merge: reasons.length === 0, reasons };
 }

@@ -24,6 +24,7 @@ const ok = () => ({
     { name: "ml-tests", conclusion: "success" },
   ],
   lane: "light",
+  contract: { ok: true, errors: [] },
 });
 
 assert.deepEqual(judge(ok()), { merge: true, reasons: [] }, "fan・seo の P1 は助言なので止めない");
@@ -50,5 +51,7 @@ no((p) => (p.checks[0].conclusion = "failure"), "必須の check が赤");
 no((p) => p.checks.push({ name: "e2e", conclusion: null }), "同じ名の check が走っている");
 no((p) => (p.lane = "heavy"), "heavy");
 no((p) => (p.lane = "unknown"), "pr-lane が読めない");
+no((p) => (p.contract = { ok: false, errors: ["[manifest] content_sha256 が files からの計算と違う"] }), "契約の関門が通らない（manifest の作り直し忘れ）");
+no((p) => delete p.contract, "契約の関門の結果が無い");
 
 console.log("verify-content-auto-merge: OK（段階0 F の条件を欠く PR はマージしない）");
