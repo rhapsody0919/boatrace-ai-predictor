@@ -28,8 +28,9 @@
   gap: 0 0.25rem;
 }
 
+/* 「公式 2026年後期」は 375px の4列の幅を越えるので、列の中で折り返す（nowrap だと隣の列に重なった、2026-11-23 本番） */
 .racer-summary__period {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .racer-summary__stat dd {

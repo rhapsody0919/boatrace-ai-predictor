@@ -224,3 +224,26 @@ test("出走表の1行が出ないとき（勝率 0.00 の新人など）、注�
   await expect(page.getByTestId("racer-summary-latest")).toHaveCount(0);
   await expect(page.getByTestId("racer-summary")).not.toContainText("上の出走表");
 });
+
+// 狭い幅で各欄の札（「公式 2026年後期」）が隣の欄に重ならない（2026-11-23 本番の撮影、visual-designer P1。手元の Chromium では 320px で札が隣の欄に接した）
+for (const width of [320, 375]) test(`${width}px で要約の各欄が横にはみ出さず、隣と重ならない`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 812 });
+  const today = e2eTodayJST();
+  await stubPeriods(page, 4320);
+  await stubLatestEntry(page, { race_id: `${today}-02-01`, win_rate: 8.12, global_2rate: 61.5, f_count: 1 });
+  await page.goto("/racer/4320");
+  await expect(page.getByTestId("racer-summary-latest")).toBeVisible();
+  const boxes = await page.locator(".racer-summary__stat").evaluateAll((nodes) =>
+    nodes.map((n) => {
+      const r = n.getBoundingClientRect();
+      const kids = [...n.querySelectorAll("dt, dt *, dd")].map((k) => k.getBoundingClientRect());
+      return { top: r.top, left: r.left, right: r.right, maxRight: Math.max(...kids.map((k) => k.right)) };
+    }),
+  );
+  for (const b of boxes) expect(b.maxRight).toBeLessThanOrEqual(b.right + 0.5);
+  // 同じ行で隣り合う欄は重ならない
+  const rows = boxes.toSorted((a, b) => a.top - b.top || a.left - b.left);
+  for (let i = 1; i < rows.length; i++) {
+    if (Math.abs(rows[i].top - rows[i - 1].top) < 2) expect(rows[i].left).toBeGreaterThanOrEqual(rows[i - 1].right);
+  }
+});
