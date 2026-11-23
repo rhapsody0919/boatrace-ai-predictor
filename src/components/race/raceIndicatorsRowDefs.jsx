@@ -96,21 +96,9 @@ export function buildRowContext({
 // 指標ごとの候補値リスト（best共用）
 function buildCandidates(players, c, analysis) {
   const { stPredictability, exhibitionTime, returnRate } = analysis;
-  const { officialStByBoat, st30ByBoat, statsByBoat } = c;
+  const { statsByBoat } = c;
   const cand = {
-    // 勝率・当地勝率・2連率・モーターは登録簿の定義へ移した（src/pure/indicator*.js、ADR-0108）
-    avgSt: players.map((p) => ({
-      boat: p.number,
-      value: toNumber(officialStByBoat.get(p.number)),
-    })),
-    avgSt30: players.map((p) => ({
-      boat: p.number,
-      value: toNumber(st30ByBoat.get(p.number)),
-    })),
-    st: (stPredictability ?? []).map((r) => ({
-      boat: r.boat_number,
-      value: r.sample_count > 0 ? toNumber(r.avg_deviation) : null,
-    })),
+    // 勝率・当地勝率・2連率・モーター・平均ST・ST安定度は登録簿の定義へ移した（src/pure/indicator*.js、ADR-0108）
     // 展示でフライング・出遅れした艇（F.01 等）は最良の候補から外す。値は印を外した正の数で、
     // そのままだと F の艇が一番早く見えて金枠が付いた（BOA-759）
     exSt: (stPredictability ?? []).map((r) => ({
@@ -136,7 +124,7 @@ function buildCandidates(players, c, analysis) {
 
 // 登録簿の定義（ADR-0108）から、出走表の行の見出し・詳しいタブ・最良を作る。
 // key は今までの行の key（用語の説明 TermHintButton のキーを兼ねる）
-function rowFromIndicator(t, data, id, key) {
+export function rowFromIndicator(t, data, id, key) {
   const def = getIndicator(id);
   const values = def.select(data);
   return {
