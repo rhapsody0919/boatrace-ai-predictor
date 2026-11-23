@@ -1,12 +1,47 @@
+/* 2段のタブ（#3258 の #4）: 1段目は組のチップ、2段目は20個を組の順に1行で横に流す */
+.analysis-tab-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.analysis-group-chips {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.analysis-group-chip {
+  flex: none;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.analysis-group-chip.active {
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+  color: white;
+}
+
 .analysis-tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
 }
 
 .analysis-tab-btn {
-  padding: 0.6rem 1.25rem;
+  flex: none;
+  padding: 0.6rem 1.1rem;
   font-size: 0.95rem;
   font-weight: 600;
   border-radius: 8px;
@@ -14,7 +49,19 @@
   background: var(--surface-card);
   color: var(--text-primary);
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
+}
+
+/* 組の外の項目は淡く。押せるまま残す */
+.analysis-tab-btn.is-other-group {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* 組の切れ目に余白を入れて区切りを見せる */
+.analysis-tab-btn.is-group-start:not(:first-child) {
+  margin-left: 0.75rem;
 }
 
 .analysis-tab-btn:hover {
