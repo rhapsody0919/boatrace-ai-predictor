@@ -3,7 +3,7 @@
 .six-boat-course p { margin: 0.5rem 0; font-size: var(--font-size-sm, 0.875rem); }
 .six-boat-course table { width: 100%; max-width: 720px; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
 .six-boat-course th, .six-boat-course td { padding: 0.5rem 0.2rem; text-align: right; border-bottom: 1px solid var(--border-hairline); overflow-wrap: anywhere; }
-.six-boat-course th:first-child { width: 32%; text-align: left; }
+.six-boat-course th:first-child { width: 32%; text-align: left; padding-left: 0.5rem; /* 選んだ行の左の帯（4px）が艇番の丸に食い込まない */ }
 .six-boat-course tbody tr { cursor: pointer; height: 64px; color: var(--text-primary); }
 .six-boat-course tbody th { font-weight: normal; }
 .six-boat-course small { display: block; font-size: var(--font-size-xs, 0.75rem); font-weight: normal; }
