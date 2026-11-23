@@ -207,3 +207,12 @@ test("期をまたいだ出走表の F は出さない（0とも書かない）"
   await expect(latest).toHaveText("2026/10/01 の出走表 勝率 4.50・2連率 20.3%");
   await expect(latest).not.toContainText("F");
 });
+
+test("出走表の1行が出ないとき（勝率 0.00 の新人など）、注記は「上の出走表」を指さない", async ({ page }) => {
+  await stubPeriods(page, 2878);
+  await stubLatestEntry(page, { race_id: `${e2eTodayJST()}-02-01`, win_rate: 0, global_2rate: 0, f_count: 0 });
+  await page.goto("/racer/2878");
+  await expect(page.getByTestId("racer-summary")).toContainText("前の期の公式成績（2026年後期・98走）");
+  await expect(page.getByTestId("racer-summary-latest")).toHaveCount(0);
+  await expect(page.getByTestId("racer-summary")).not.toContainText("上の出走表");
+});

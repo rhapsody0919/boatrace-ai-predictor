@@ -109,7 +109,9 @@ export default function RacerSummaryBlock({ racerId, grade, summary, front }) {
       {summary && (
         <>
           <p className="racer-summary__note">
-            前の期の公式成績（{summary.label}・{summary.starts}走）。上の出走表の値とは集計の期間が違います
+            前の期の公式成績（{summary.label}・{summary.starts}走）
+            {/* 1行目（出走表）が出ないとき「上の」が何も指さないので、そのときは書かない */}
+            {latest && "。上の出走表の値とは集計の期間が違います"}
           </p>
           <p className="racer-summary__line" data-testid="racer-summary-finals">
             優出 {summary.finals}・優勝 {summary.wins}（{summary.sinceLabel}からの和）
