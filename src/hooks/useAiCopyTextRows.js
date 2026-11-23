@@ -5,9 +5,29 @@
  * 引数 ui で受け取る（useAiCopyText.js が src/pure/raceIndicatorText.js から渡す。RA41d で画面の部品から pure へ移した）。
  */
 import { formatExhibitionSt } from "../utils/formatters";
+import {
+  formatIndicatorParts,
+  getIndicator,
+} from "../pure/indicatorRegistry.js";
 import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
 
 export const DASH = "—";
+
+/**
+ * 登録簿の定義（ADR-0108）から、6艇ぶんの字を出走表と同じ書き方で作る。data は { players, analysis }。
+ * prefix は値の前に付ける字（ST のズレの「±」）
+ */
+export function indicatorTexts(id, data, prefix = "") {
+  const def = getIndicator(id);
+  const values = def.select(data);
+  return (data.players ?? []).map((p) => {
+    const { text, unit } = formatIndicatorParts(
+      def,
+      values.get(p.number)?.value ?? null,
+    );
+    return text === DASH ? DASH : `${prefix}${text}${unit}`;
+  });
+}
 
 export function byBoat(rows, key = "boat_number") {
   const map = new Map();
@@ -23,15 +43,14 @@ export function buildNameRow(t, players) {
   };
 }
 
-export function buildWinRateRow(t, players, flying, ui) {
-  const { toNumber } = ui;
+export function buildWinRateRow(t, players, flying) {
+  const rates = indicatorTexts("racer.winRate.official", { players });
   return {
     key: "winRate",
     label: t("dataTable.rowWinRate"),
-    values: players.map((p) => {
+    values: players.map((p, i) => {
       // データ出走表の F・L バッジ（FlyingBadge）と同じ値を級別の後ろに書く。
       // F持ちはスタートを控えるので、AI に渡す文面から落とさない（BOA-770 ファン評価）
-      const v = toNumber(p.winRate);
       const row = flying.rows?.get(p.number);
       const fCount = row?.f_count > 0 ? row.f_count : 0;
       const lCount = row?.l_count > 0 ? row.l_count : 0;
@@ -41,53 +60,43 @@ export function buildWinRateRow(t, players, flying, ui) {
           ? `F${fCount}${flying.currentMeet.has(p.number) ? `(${t("flyingBadge.currentMeet")})` : ""}`
           : null,
         lCount ? `L${lCount}` : null,
-        v !== null ? v.toFixed(2) : null,
+        rates[i] === DASH ? null : rates[i],
       ].filter(Boolean);
       return head.length > 0 ? head.join(" ") : DASH;
     }),
   };
 }
 
-export function buildLocalWinRateRow(t, players, ui) {
-  const { toNumber } = ui;
+export function buildLocalWinRateRow(t, players) {
   return {
     key: "localWinRate",
     label: t("dataTable.rowLocalWinRate"),
-    values: players.map((p) => {
-      const v = toNumber(p.localWinRate);
-      return v !== null ? v.toFixed(2) : DASH;
-    }),
+    values: indicatorTexts("racer.localWinRate.official", { players }),
   };
 }
 
-export function buildTwoRateRow(t, players, ui) {
-  const { toNumber } = ui;
+export function buildTwoRateRow(t, players) {
   return {
     key: "twoRate",
     label: t("dataTable.rowTwoRate"),
-    values: players.map((p) => {
-      const v = toNumber(p.global2Rate);
-      return v !== null ? `${v.toFixed(1)}%` : DASH;
-    }),
+    values: indicatorTexts("racer.twoRate.official", { players }),
   };
 }
 
 // モーター交換直後は全艇motor_2rateが0になり「0.0%」が誤解を招くため、
 // raceIndicators.jsxのrowMotorと同じくその場合は全艇「—」にする
-export function buildMotorRow(t, players, motorByBoat, ui) {
-  const { toNumber } = ui;
-  const values = players.map((p) =>
-    toNumber(motorByBoat.get(p.number)?.motor_2rate ?? p.motor2Rate),
+export function buildMotorRow(t, data) {
+  const def = getIndicator("motor.twoRate.last90d");
+  const values = def.select(data);
+  const all = (data.players ?? []).map(
+    (p) => values.get(p.number)?.value ?? null,
   );
-  const allZero = values.length > 0 && values.every((v) => v === 0);
-
+  const allZero = all.length > 0 && all.every((v) => v === 0);
+  const texts = indicatorTexts("motor.twoRate.last90d", data);
   return {
     key: "motor",
     label: t("dataTable.rowMotor"),
-    values: values.map((v) => {
-      if (allZero || v === null) return DASH;
-      return `${v.toFixed(1)}%`;
-    }),
+    values: allZero ? texts.map(() => DASH) : texts,
   };
 }
 
@@ -99,46 +108,34 @@ export function buildFormRow(t, players, formByBoat) {
       const row = formByBoat.get(p.number);
       if (!row || row.delta === null || row.delta === undefined) return DASH;
       const sign = row.delta > 0 ? "↑" : row.delta < 0 ? "↓" : "→";
-      return `${sign}${Math.abs(row.delta).toFixed(2)}`;
+      const def = getIndicator("racer.form.winRateDelta90d");
+      return `${sign}${formatIndicatorParts(def, Math.abs(row.delta)).text}`;
     }),
   };
 }
 
 // データ出走表と同じ2行（raceIndicators.jsx、BOA-815）: 公式は2桁、30走は3桁
-export function buildAvgStOfficialRow(t, players, officialStByBoat, ui) {
-  const { toNumber } = ui;
+export function buildAvgStOfficialRow(t, data) {
   return {
     key: "avgSt",
     label: t("dataTable.rowAvgStOfficial"),
-    values: players.map((p) => {
-      const v = toNumber(officialStByBoat.get(p.number));
-      return v !== null ? v.toFixed(2) : DASH;
-    }),
+    values: indicatorTexts("racer.avgSt.official", data),
   };
 }
 
-export function buildAvgSt30Row(t, players, st30ByBoat, ui) {
-  const { toNumber } = ui;
+export function buildAvgSt30Row(t, data) {
   return {
     key: "avgSt30",
     label: t("dataTable.rowAvgSt30"),
-    values: players.map((p) => {
-      const v = toNumber(st30ByBoat.get(p.number));
-      return v !== null ? v.toFixed(3) : DASH;
-    }),
+    values: indicatorTexts("racer.avgSt.last30", data),
   };
 }
 
-export function buildStRow(t, players, stByBoat) {
+export function buildStRow(t, data) {
   return {
     key: "st",
     label: t("dataTable.rowSt"),
-    values: players.map((p) => {
-      const row = stByBoat.get(p.number);
-      return row && row.sample_count
-        ? `±${row.avg_deviation.toFixed(2)}`
-        : DASH;
-    }),
+    values: indicatorTexts("racer.exStGap.past", data, "±"),
   };
 }
 
