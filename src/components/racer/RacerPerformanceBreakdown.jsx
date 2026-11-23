@@ -194,12 +194,27 @@ export function BothFixedNoRuns({ vc, vcData, vcLabel }) {
 
 const returnOrDash = (v) => (v !== null ? `${v.toFixed(0)}%` : "-");
 
-/** 枠番別回収率（過去180日） */
+/** 回収率を出す最少の走数。未満の行は「-」（選手ごとの回収率は時期の前後でほぼ当たらない。number-scope.md §4） */
+const RETURN_RATE_MIN_RUNS = 30;
+const returnCell = (row, v) =>
+  row.sample_count >= RETURN_RATE_MIN_RUNS ? returnOrDash(v) : "-";
+
+/**
+ * 枠番別回収率（過去180日）。参考の値なので畳み、矢印・色・順位は付けない。
+ * 見出しの走数は枠番の出走数の和（その期間の全出走）
+ */
 export function ReturnRateTable({ view, boatReturnRate }) {
   if (!view.hasReturnRate) return null;
+  const total = boatReturnRate.reduce((sum, row) => sum + row.sample_count, 0);
   return (
-    <div className="racer-technique-profile">
-      <h3>枠番別回収率（過去180日）</h3>
+    <details className="racer-technique-profile racer-return-fold">
+      <summary>
+        枠番別回収率（過去180日）
+        <span className="racer-return-fold-hint">参考・{total}走</span>
+      </summary>
+      <p className="racer-vc-note">
+        {RETURN_RATE_MIN_RUNS}走未満の枠番は「-」にしています。回収率は走数が少ないと大きくぶれるため、順位や好不調の目安にはしないでください
+      </p>
       <div className="table-wrapper">
         <table className="racer-return-rate-table">
           <thead>
@@ -215,13 +230,13 @@ export function ReturnRateTable({ view, boatReturnRate }) {
               <tr key={row.boat_number}>
                 <td>{row.boat_number}</td>
                 <td>{row.sample_count}</td>
-                <td>{returnOrDash(row.win_return_rate)}</td>
-                <td>{returnOrDash(row.place_return_rate)}</td>
+                <td>{returnCell(row, row.win_return_rate)}</td>
+                <td>{returnCell(row, row.place_return_rate)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </details>
   );
 }
