@@ -218,7 +218,7 @@ function TechniqueBarChart({ chartData, allTechniques, techniqueLabel, t }) {
       >
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} unit="%" />
-        <YAxis type="category" dataKey="boat_number" width={56} />
+        <YAxis type="category" dataKey="boat_number" width={64} interval={0} />
         <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
         <Legend
           // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
@@ -266,7 +266,7 @@ function WinSummary({ summary, venueLabel, t }) {
         {summary.boats.map((b) => (
           <li key={b.boat} className="wt-boat-rate">
             <span className="wt-boat-rate-label">{t("analysis.boatN", { n: b.boat })}</span>
-            <strong className="wt-boat-rate-pct">{b.pct}%</strong>
+            <strong className="wt-boat-rate-pct">{b.pct != null ? `${b.pct.toFixed(1)}%` : "-"}</strong>
             <span className="wt-boat-rate-count">{t("analysis.wt.boatWins", { count: b.wins })}</span>
           </li>
         ))}

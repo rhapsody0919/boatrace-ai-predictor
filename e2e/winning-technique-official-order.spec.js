@@ -105,3 +105,21 @@ test("決まり手は結論の一言・枠ごとの1着率を上に出し、件�
   await expect(chart.locator("details.wt-table-details")).not.toHaveAttribute("open", "");
   await expect(chart.locator(".winning-technique-table")).toBeHidden();
 });
+
+// 艇番は #3271 で縦の軸（YAxis）に移った。ko の「N번 보트」・en の「Boat N」が左で切れない（BOA-615 の重なりの後継）
+for (const lang of ["ko", "en"]) {
+  test(`${lang}: 決まり手の艇番の札が 375px で軸の枠の内に収まる`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.route("**/rest/v1/winning_technique_stats?*", (route) =>
+      route.fulfill({ json: statsRows(winningRows, "winning_technique") }),
+    );
+    await page.goto(`/${lang}/winning-technique?tab=technique`);
+    const labels = page.locator(".winning-technique-container .recharts-yAxis-tick-labels text");
+    await expect(labels).toHaveCount(5);
+    const lefts = await labels.evaluateAll((nodes) => {
+      const svg = nodes[0].ownerSVGElement.getBoundingClientRect();
+      return nodes.map((n) => n.getBoundingClientRect().left - svg.left);
+    });
+    for (const left of lefts) expect(left).toBeGreaterThanOrEqual(0);
+  });
+}
