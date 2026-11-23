@@ -120,6 +120,7 @@ for (const lang of ["ko", "en"]) {
       const svg = nodes[0].ownerSVGElement.getBoundingClientRect();
       return nodes.map((n) => n.getBoundingClientRect().left - svg.left);
     });
-    for (const left of lefts) expect(left).toBeGreaterThanOrEqual(0);
+    // 1px 未満は小数の誤差（CI の Linux で −0.34px）。札が切れて読めないのは数px以上のとき
+    for (const left of lefts) expect(left).toBeGreaterThanOrEqual(-1);
   });
 }
