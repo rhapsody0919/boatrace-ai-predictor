@@ -1,5 +1,11 @@
 /* 会場ページのレースの塊（approved.md）。App.css のホームのカードより強く当てるため article から書く（class の衝突の検査） */
+/* 多列では帯・結果・出走表・ボタン・戻るの5行を .race-grid の行に合わせ（subgrid）、同じ段の塊の出走表の高さをそろえる */
 article.venue-race-block.race-card {
+  display: grid;
+  grid-row: span 5;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  align-content: start;
   padding: 1rem;
 }
 article.venue-race-block .race-card-header {
@@ -10,14 +16,32 @@ article.venue-race-block .race-card-header {
   margin-bottom: 0.75rem;
   padding-bottom: 0.5rem;
 }
-.venue-race-block__rn {
+article.venue-race-block .race-card-header .race-number {
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: var(--font-weight-bold);
 }
-.venue-race-block__time {
-  margin-left: auto;
+article.venue-race-block .race-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  margin: 0 0 0 auto;
+}
+article.venue-race-block .race-info .info-item {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+article.venue-race-block .race-info .info-item .label,
+article.venue-race-block .race-info .info-item .value {
   color: var(--text-secondary);
   font-size: 0.875rem;
+  font-weight: normal;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 /* 札は帯の2段目。ホームの「2段ぶんの高さを取る」はせず、札が無ければ段ごと消す */
@@ -36,8 +60,10 @@ article.venue-race-block .race-card-badges:empty {
   gap: 0 0.75rem;
   margin: 0 0 0.75rem;
 }
+/* 詳細は1段目に幅いっぱい（race-card-link.spec.js）、AI予想と直前情報・結果は2段目に半分ずつ */
 .venue-race-block__links {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.75rem;
 }
@@ -56,11 +82,14 @@ article.venue-race-block .race-card-badges:empty {
 }
 /* 詳細は受付中だけ青の塗り。終わったレースは灰の塗り（無効に見える）にせず隣と同じ枠のボタン */
 article.venue-race-block a.predict-btn {
-  display: flex;
-  width: auto;
-  padding: 0.5rem;
+  flex-basis: 100%;
+  display: block;
+  box-sizing: border-box;
+  padding: 0.75rem;
   border: none;
   font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-align: center;
 }
 .venue-race-block__back {
   display: block;

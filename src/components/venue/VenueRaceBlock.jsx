@@ -4,20 +4,19 @@
  */
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { deadlineValueText } from "../../utils/raceListDisplay";
 import { DEADLINE_STATUS } from "../../utils/raceDeadlineStatus";
 import { raceStageLabel } from "../../pure/raceStageConfig";
 import { translateTechnique } from "../../pure/raceIndicatorText";
 import { formatCount } from "../../pure/dataFormat";
 import RaceCardDataTable from "../race/RaceCardDataTable";
-import RaceDeadlineCountdown from "../race/RaceDeadlineCountdown";
+import { RaceNumber, RaceCardInfo } from "../race/RaceCard";
 import RaceCardBadges from "../race/RaceCardBadges";
 import { deriveRaceCardState, aiTabHref } from "../race/RaceCardState";
 import { trackEvent } from "../../utils/analytics";
 import { cautionClickEvent } from "../../utils/cautionEvents";
 import "./VenueRaceBlock.css";
 
-// 結果の1行「結果 4-2-1 まくり ¥8,450」。不成立・着順が無いときは出さない
+// 結果の1行「結果 4-2-1 まくり 3連単 ¥8,450」。不成立・着順が無いときは出さない
 function ResultLine({ s }) {
   const { t } = useTranslation();
   const r = s.result;
@@ -43,6 +42,10 @@ export default function VenueRaceBlock({ race, raceHref, nowHHMM }) {
   const s = deriveRaceCardState(race, nowHHMM);
   const stage = raceStageLabel(rp?.raceStage, t, i18n.resolvedLanguage);
   const finished = Boolean(s.result?.finished);
+  const badgeState =
+    s.deadlineStatus === DEADLINE_STATUS.ACCEPTING
+      ? { ...s, deadlineStatus: null }
+      : s;
   const onDetail = s.inCaution
     ? () => {
         const ev = cautionClickEvent({
@@ -60,27 +63,22 @@ export default function VenueRaceBlock({ race, raceHref, nowHHMM }) {
       className={`race-card venue-race-block${s.isPastDeadline ? " race-card--deadline-passed" : ""}`}
     >
       <div className="race-card-header venue-race-block__bar">
-        <span className="venue-race-block__rn">{race.raceNumber}R</span>
+        <RaceNumber raceNumber={race.raceNumber} />
         {stage && (
           <span translate={stage.isOfficial ? "no" : undefined}>
             {stage.text}
           </span>
         )}
         {race.startTime && (
-          <span className="venue-race-block__time">
-            {t("home.deadline")} {deadlineValueText(t, race.startTime)}
-            {s.deadlineStatus &&
-              s.deadlineStatus !== DEADLINE_STATUS.CLOSED && (
-                <RaceDeadlineCountdown
-                  raceId={race.id}
-                  startTime={race.startTime}
-                />
-              )}
-          </span>
+          <RaceCardInfo race={race} deadlineStatus={s.deadlineStatus} />
         )}
-        <RaceCardBadges s={s} racePrediction={rp} venueBlock />
+        {/* 種別は帯の字・グレードは見出し・受付中は締切までの時刻で分かるので、その札の元を渡さない */}
+        <RaceCardBadges s={badgeState} racePrediction={null} />
       </div>
-      <ResultLine s={s} />
+      {/* 結果が無いレースも枠を置き、多列で隣の塊と出走表の高さをそろえる（subgrid の行） */}
+      <div className="venue-race-block__result-slot">
+        <ResultLine s={s} />
+      </div>
       <RaceCardDataTable
         raceId={race.id}
         players={rp?.players}

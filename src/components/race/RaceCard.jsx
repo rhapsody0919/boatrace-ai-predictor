@@ -27,7 +27,12 @@ const cardBorderStyle = (s) => {
     : undefined;
 };
 
-function RaceCardInfo({ race, deadlineStatus }) {
+// 会場ページの塊（VenueRaceBlock）も使う。ボット向け HTML と同じ関数で番号と締切を書く（verify-bot-page-model）
+export function RaceNumber({ raceNumber }) {
+  return <span className="race-number">{raceNumberLabel(raceNumber)}</span>;
+}
+
+export function RaceCardInfo({ race, deadlineStatus }) {
   const { t } = useTranslation();
   return (
     <div className="race-info">
@@ -61,7 +66,7 @@ function RaceCard({ race, raceHref, nowHHMM = null, linkRacerNames = false }) {
         <h3>{race.venue}</h3>
         <RaceCardBadges s={s} racePrediction={racePrediction} />
         {/* R番号はバッジの外に置く。狭いカードでバッジを2段目に送っても、会場名と同じ段に残す */}
-        <span className="race-number">{raceNumberLabel(race.raceNumber)}</span>
+        <RaceNumber raceNumber={race.raceNumber} />
       </div>
       {race.startTime && (
         <RaceCardInfo race={race} deadlineStatus={s.deadlineStatus} />
