@@ -8,6 +8,10 @@
   "dryRun": true,
   "watchedExtra": [
     {
+      "path": ".github/workflows/ai-readability.yml",
+      "reason": "鍵は使わないが、AI のボットが本番の本文を読めなくなったことを知らせる（hq の ai-visibility の読めるかを移した、2026-11-23）。rerun はしない"
+    },
+    {
       "path": ".github/workflows/quality-gates.yml",
       "reason": "鍵は使わないが、master への push の失敗を知らせる。Codex の PR の自動マージの後の検査（docs/design/codex-direct-pr/design.md §5.4）。rerun はしない"
     },
@@ -21,6 +25,7 @@
     }
   ],
   "watched": [
+    ".github/workflows/ai-readability.yml",
     ".github/workflows/aggregate-course-baseline-stats.yml",
     ".github/workflows/aggregate-racer-course-technique-stats.yml",
     ".github/workflows/aggregate-stats.yml",

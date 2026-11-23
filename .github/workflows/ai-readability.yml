@@ -1,0 +1,34 @@
+name: AI Readability
+
+# AI のボット（GPTBot ほか、src/config/aiCrawlerBots.js の UA）が本番のページの本文を読めるかを週1で確かめる
+# （hq 閉鎖、hq の ai-visibility.yml の「読めるか」を移した。オーナー 2026-11-23「コストがかからない方法だけ」）。
+# 中身は scripts/verification/verify-ai-snapshots.js（ADR 0032）。鍵も外部の API も使わない（本番へ GET するだけ）。
+# Gemini・他社 AI の引用の測りはお金がかかるので移していない。
+# 失敗は job-watch.yml が拾って Issue に書く。
+on:
+  schedule:
+    - cron: "7 0 * * 1"   # 月曜 JST 9:07
+  workflow_dispatch:
+
+concurrency:
+  group: ai-readability
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # 依存のパッケージを使わない（src/ の設定とデータを読むだけ）ので npm ci はしない
+      - run: node scripts/verification/verify-ai-snapshots.js https://www.boat-ai.jp
