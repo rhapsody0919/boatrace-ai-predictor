@@ -5,7 +5,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { formatPercent, slashDate } from "../../utils/formatters";
@@ -101,12 +100,15 @@ export function SummaryCards({ formSummary, officialAvgSt, aggregatedStats }) {
   );
 }
 
-/** 全国勝率・当地勝率の推移 */
+/**
+ * 全国勝率の推移。当地勝率の線は出さない: 当地勝率は節ごとに会場が変わる値で、線でつなぐと
+ * 会場の切り替わりが調子の上下に見え、0.00（当地の出走なし）を0として描いてしまう（number-scope.md §5）
+ */
 export function WinRateChart({ chartData }) {
   if (!(chartData.length > 0)) return null;
   return (
     <div className="racer-stat-chart">
-      <h3>全国勝率・当地勝率の推移</h3>
+      <h3>全国勝率の推移</h3>
       <ResponsiveContainer width="100%" height={240}>
         <LineChart
           data={chartData}
@@ -116,20 +118,11 @@ export function WinRateChart({ chartData }) {
           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} />
           <Tooltip formatter={(value) => value?.toFixed(2)} />
-          <Legend />
           <Line
             type="stepAfter"
             dataKey="national_win_rate"
             name="全国勝率"
             stroke="var(--brand-accent-primary)"
-            strokeWidth={2}
-            dot={{ r: 2 }}
-          />
-          <Line
-            type="stepAfter"
-            dataKey="local_win_rate"
-            name="当地勝率"
-            stroke="var(--brand-accent-secondary)"
             strokeWidth={2}
             dot={{ r: 2 }}
           />

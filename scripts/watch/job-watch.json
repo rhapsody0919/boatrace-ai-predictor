@@ -33,6 +33,7 @@
     ".github/workflows/bot-html-parity.yml",
     ".github/workflows/calculate-accuracy.yml",
     ".github/workflows/collect-racer-news.yml",
+    ".github/workflows/content-auto-merge.yml",
     ".github/workflows/content-ops-nightly-check.yml",
     ".github/workflows/db-apply.yml",
     ".github/workflows/e2e-live.yml",
