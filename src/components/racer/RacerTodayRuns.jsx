@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getRacerTodayRuns } from "../../services/racerQueries6.js";
 import { todayRunsMeetLabel } from "../../pure/racerTodayRuns.js";
-import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
+import { getRacerRaceHistory } from "../../services/racerQueries2.js";
 import { aggregateRacerVenueBoatStats } from "../../utils/racerVenueBoatStats.js";
 import { buildCourseRows } from "../../pure/racerOfficialPeriodStats.js";
 import { pickContextRun, courseCell, venueCell, meetFinishes } from "../../pure/racerTodayContext.js";
@@ -54,12 +54,14 @@ function useTodayRuns(racerId) {
   return load?.racerId === racerId ? load.runs : [];
 }
 
-// 当サイト集計の走（会場別成績の節と同じ取得。withCache で同じ問い合わせは1回）。失敗はこの1段の当地・今節だけ出さない
-function useScopedHistory(racerId) {
+// 当サイト集計の走（会場別成績の節と同じ getRacerRaceHistory。withCache のキーを共有し、問い合わせは増えない）。
+// 今日の走がある選手のときだけ取る。失敗はこの1段の当地・今節だけ出さない
+function useRaceHistory(racerId, enabled) {
   const [load, setLoad] = useState(null);
   useEffect(() => {
+    if (!enabled) return undefined;
     let cancelled = false;
-    getRacerScopedRaceStats(racerId)
+    getRacerRaceHistory(racerId)
       .then((rows) => {
         if (!cancelled) setLoad({ racerId, rows });
       })
@@ -71,7 +73,7 @@ function useScopedHistory(racerId) {
     return () => {
       cancelled = true;
     };
-  }, [racerId]);
+  }, [racerId, enabled]);
   return load?.racerId === racerId ? load.rows : null;
 }
 
@@ -89,7 +91,8 @@ function ContextCell({ cell, testId }) {
 // 今日の枠のコース成績・その場の当地成績・今節の着順の1段（#3258 の #3）
 function TodayContext({ run, periodRows, history }) {
   const venueCode = Number(run.raceId.slice(11, 13));
-  const course = courseCell(buildCourseRows(periodRows)?.courses?.[run.boatNumber - 1]);
+  const courseRows = buildCourseRows(periodRows);
+  const course = courseCell(courseRows?.courses?.[run.boatNumber - 1], courseRows?.periods?.length);
   const venueStats = history ? aggregateRacerVenueBoatStats(history, venueCode, null, null, null) : null;
   const venue = venueCell(venueStats, run.venueName);
   const finishes = venueStats ? meetFinishes(venueStats.matchedRaces, run.raceId.slice(0, 10)) : null;
@@ -131,7 +134,7 @@ function RunRow({ run }) {
  */
 export default function RacerTodayRuns({ racerId, periodRows }) {
   const runs = useTodayRuns(racerId);
-  const history = useScopedHistory(racerId);
+  const history = useRaceHistory(racerId, runs.length > 0);
   if (runs.length === 0) return null;
   const contextRun = pickContextRun(runs);
   const meet = todayRunsMeetLabel(runs);
