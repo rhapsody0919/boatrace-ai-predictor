@@ -11,6 +11,8 @@
  *   (f) 連投の制限: 同じ client_key は24時間で10行まで、全体は10分で30行まで
  *   (g) 2回適用しても失敗しない（冪等）
  *   (h) ロールバック SQL（末尾のコメント）で表と関数が消える
+ *   (i) db-apply の検査（scripts/lib/dbApplySql.js）を通る: 拒否が無く、ファイル自身の BEGIN〜COMMIT で1つのトランザクション、
+ *       触る表は site_feedback だけ、承認つきの heavy に分けられる（オーナーが db-apply を起動して弾かれないように）
  *
  * 画面の列挙（src/pure/siteFeedback.js）との突き合わせは、画面の PR の verify-site-feedback.js が行う
  * （この PR は画面より先に当てるので、画面のファイルをまだ持たない）。ここに書く列挙は画面の決まりの写し。
@@ -18,6 +20,7 @@
  * 実行: node scripts/maintenance/verify-site-feedback-migration.js（@electric-sql/pglite は devDependency）
  */
 import { PGlite } from "@electric-sql/pglite";
+import { classifyMigration, inspectMigration } from "../lib/dbApplySql.js";
 import { readSiteFeedbackMigration } from "./verifyData/site-feedback-migration.js";
 
 const { sql, rollbackSql } = readSiteFeedbackMigration();
@@ -330,6 +333,33 @@ check(
   gone.rows[0].t === null && gone.rows[0].f === null,
   JSON.stringify(gone.rows[0]),
 );
+
+// (i) db-apply の検査
+{
+  const inspection = inspectMigration(sql);
+  check(
+    "(i) db-apply の検査で拒否が無い",
+    inspection.rejections.length === 0,
+    JSON.stringify(inspection.rejections),
+  );
+  check(
+    "(i) ファイル自身の BEGIN〜COMMIT で1つのトランザクション",
+    inspection.mode === "file-transaction",
+    inspection.mode,
+  );
+  check(
+    "(i) 触る表は site_feedback だけ（既存の表に触れない）",
+    JSON.stringify(inspection.tables.map((t) => t.table)) ===
+      JSON.stringify(["site_feedback"]),
+    JSON.stringify(inspection.tables),
+  );
+  const lane = classifyMigration(sql, "205_site_feedback.sql");
+  check(
+    "(i) 承認つきの heavy に分けられ、止める理由が無い",
+    lane.label === "heavy" && lane.stops.length === 0,
+    JSON.stringify({ label: lane.label, stops: lane.stops }),
+  );
+}
 
 await db.close();
 if (failures > 0) {
