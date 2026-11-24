@@ -2842,11 +2842,11 @@
     },
     "outcome": {
       "title": "📊 Trifecta Outcome Distribution",
-      "description": "Based on race results from the past 90 days, this analyzes trifecta outcome patterns at each venue. See at a glance which 2nd/3rd place course combinations are most common for each winning course.",
+      "description": "Based on race results from the past 90 days, this analyzes trifecta outcome patterns at each venue. See at a glance which 2nd/3rd place boat-number combinations are most common for each winning boat.",
       "summary": "{{count}} races in the past 90 days",
       "summary_one": "{{count}} race in the past 90 days",
-      "firstHeading": "Course {{n}} wins",
-      "note": "💡 The rate is the probability within races won by that course. Higher payouts mean harder-to-hit patterns.",
+      "firstHeading": "Boat {{n}} wins",
+      "note": "💡 The rate is the probability within races won by that boat. Higher payouts mean harder-to-hit patterns.",
       "empty": "No outcome distribution data found"
     },
     "nige": {
@@ -3171,7 +3171,7 @@
     "features": {
       "outcome": {
         "name": "Outcome Distribution",
-        "description": "Analyzes 2nd/3rd place patterns broken down by winning course"
+        "description": "Analyzes 2nd/3rd place patterns broken down by winning boat number"
       },
       "technique": {
         "name": "Winning Technique Analysis",
@@ -3253,7 +3253,7 @@
     "info": {
       "outcome": {
         "title": "About Outcome Distribution",
-        "dataView": "Based on race results from the past 90 days, this statistically analyzes which 2nd/3rd place combinations tend to appear at each venue when a given course finishes 1st.",
+        "dataView": "Based on race results from the past 90 days, this statistically analyzes which 2nd/3rd place combinations tend to appear at each venue when a given boat number finishes 1st.",
         "tips": [
           {
             "strong": "High appearance rate",
