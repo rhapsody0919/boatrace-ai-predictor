@@ -7,8 +7,8 @@
     "rpcs": 68,
     "sourceFiles": 2834,
     "filesWithAccess": 324,
-    "tableReaders": 957,
-    "tableWriters": 197,
+    "tableReaders": 958,
+    "tableWriters": 196,
     "rpcCallers": 57,
     "nameMentions": 283,
     "tablesWithoutReaders": 21,
@@ -3895,7 +3895,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-morning-digest.js:280",
+          "ref": "scripts/daily/generate-morning-digest.js:322",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -3903,7 +3903,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-morning-digest.js:309",
+          "ref": "scripts/daily/generate-morning-digest.js:339",
           "op": "update",
           "via": "client",
           "columns": [
@@ -3917,8 +3917,8 @@
       "columns": {
         "digest_date": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:280",
-            "scripts/daily/generate-morning-digest.js:309",
+            "scripts/daily/generate-morning-digest.js:322",
+            "scripts/daily/generate-morning-digest.js:339",
             "scripts/maintenance/verify-morning-digest.js:40",
             "src/services/scheduleQueries.js:278"
           ],
@@ -3930,7 +3930,7 @@
             "scripts/maintenance/verify-morning-digest.js:40"
           ],
           "writers": [
-            "scripts/daily/generate-morning-digest.js:309"
+            "scripts/daily/generate-morning-digest.js:339"
           ],
           "sql": []
         },
@@ -4030,21 +4030,13 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-morning-digest.js:285",
+          "ref": "scripts/daily/generate-morning-digest.js:327",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-morning-digest.js:294",
-          "op": "insert",
-          "via": "client",
-          "columns": [
-            "?"
-          ]
-        },
-        {
-          "ref": "scripts/daily/generate-morning-digest.js:302",
+          "ref": "scripts/daily/generate-morning-digest.js:334",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -4058,7 +4050,7 @@
       "columns": {
         "digest_date": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:285",
+            "scripts/daily/generate-morning-digest.js:327",
             "scripts/maintenance/verify-morning-digest.js:58",
             "src/services/scheduleQueries.js:283"
           ],
@@ -5489,6 +5481,16 @@
           ]
         },
         {
+          "ref": "scripts/lib/morningDigestFetch.js:253",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "feature_contributions",
+            "model_id",
+            "race_id"
+          ]
+        },
+        {
           "ref": "scripts/lib/predictionHitFix.js:24",
           "op": "select",
           "via": "helper:fetchAll",
@@ -5827,6 +5829,7 @@
             "scripts/daily/todays-volatility-digest.js:124",
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/morningDigestFetch.js:225",
+            "scripts/lib/morningDigestFetch.js:253",
             "scripts/lib/predictionWriteRows.js:328",
             "scripts/lib/raceResultPersist.js:39",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
@@ -5870,6 +5873,7 @@
             "scripts/daily/todays-volatility-digest.js:124",
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/morningDigestFetch.js:225",
+            "scripts/lib/morningDigestFetch.js:253",
             "scripts/lib/predictionWriteRows.js:328",
             "scripts/lib/raceResultPersist.js:39",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
@@ -5991,6 +5995,7 @@
             "scripts/daily/todays-volatility-digest.js:124",
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/morningDigestFetch.js:225",
+            "scripts/lib/morningDigestFetch.js:253",
             "scripts/lib/raceResultPersist.js:39",
             "src/services/raceQueries2.js:226"
           ],
@@ -12921,7 +12926,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/daily/generate-morning-digest.js:252",
+          "ref": "scripts/daily/generate-morning-digest.js:254",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12958,7 +12963,7 @@
         },
         "venue_code": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:252",
+            "scripts/daily/generate-morning-digest.js:254",
             "scripts/lib/raceNoticesRun.js:115"
           ],
           "writers": [],
@@ -12966,7 +12971,7 @@
         },
         "race_date": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:252",
+            "scripts/daily/generate-morning-digest.js:254",
             "scripts/lib/raceNoticesRun.js:115"
           ],
           "writers": [],
@@ -12974,7 +12979,7 @@
         },
         "category": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:252",
+            "scripts/daily/generate-morning-digest.js:254",
             "scripts/lib/raceNoticesRun.js:115"
           ],
           "writers": [],
@@ -12982,7 +12987,7 @@
         },
         "racer_id": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:252"
+            "scripts/daily/generate-morning-digest.js:254"
           ],
           "writers": [],
           "sql": []
@@ -12994,7 +12999,7 @@
         },
         "detail_text": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:252",
+            "scripts/daily/generate-morning-digest.js:254",
             "scripts/lib/raceNoticesRun.js:115"
           ],
           "writers": [],
@@ -13090,7 +13095,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-morning-digest.js:161",
+          "ref": "scripts/daily/generate-morning-digest.js:162",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13327,7 +13332,7 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/poolContractRowChecks.mjs:65",
-            "scripts/daily/generate-morning-digest.js:161",
+            "scripts/daily/generate-morning-digest.js:162",
             "scripts/lib/kfileSync.js:43",
             "scripts/lib/kfileSync.js:67",
             "scripts/lib/raceResultFix.js:125",
@@ -13353,7 +13358,7 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/poolContractRowChecks.mjs:65",
-            "scripts/daily/generate-morning-digest.js:161",
+            "scripts/daily/generate-morning-digest.js:162",
             "scripts/lib/kfileSync.js:43",
             "scripts/lib/kfileSync.js:67",
             "scripts/lib/raceResultFix.js:125",
@@ -13378,7 +13383,7 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/poolContractRowChecks.mjs:65",
-            "scripts/daily/generate-morning-digest.js:161",
+            "scripts/daily/generate-morning-digest.js:162",
             "src/services/meetQueries2.js:165",
             "src/services/raceQueries4.js:22"
           ],
@@ -13425,7 +13430,7 @@
         "finish_mark": {
           "readers": [
             "scripts/analysis/past-rate-check/poolContractRowChecks.mjs:65",
-            "scripts/daily/generate-morning-digest.js:161",
+            "scripts/daily/generate-morning-digest.js:162",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
@@ -13833,7 +13838,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/daily/generate-morning-digest.js:125",
+          "ref": "scripts/daily/generate-morning-digest.js:126",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13911,7 +13916,7 @@
         },
         "window_end": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:125",
+            "scripts/daily/generate-morning-digest.js:126",
             "scripts/lib/snsTodayDigestV3.js:113"
           ],
           "writers": [],
@@ -29251,13 +29256,12 @@
       "reachableFiles": 31,
       "writes": {
         "morning_digest_days": [
-          "scripts/daily/generate-morning-digest.js:280",
-          "scripts/daily/generate-morning-digest.js:309"
+          "scripts/daily/generate-morning-digest.js:322",
+          "scripts/daily/generate-morning-digest.js:339"
         ],
         "morning_digest_rows": [
-          "scripts/daily/generate-morning-digest.js:285",
-          "scripts/daily/generate-morning-digest.js:294",
-          "scripts/daily/generate-morning-digest.js:302"
+          "scripts/daily/generate-morning-digest.js:327",
+          "scripts/daily/generate-morning-digest.js:334"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",

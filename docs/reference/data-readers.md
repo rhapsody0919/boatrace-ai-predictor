@@ -12,8 +12,8 @@
 | RPC（写しの関数） | 68 |
 | 読んだファイル | 2834 |
 | 読み書きのあるファイル | 324 |
-| 表の読み手（箇所） | 957 |
-| 表の書き手（箇所） | 197 |
+| 表の読み手（箇所） | 958 |
+| 表の書き手（箇所） | 196 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 283 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
@@ -53,7 +53,7 @@
 | [model_performance_daily](#t-model_performance_daily) | table | anon 可 | 3 | 1 | data_health_nightly_freshness |  |  |  |
 | [models](#t-models) | table | anon 可 | 2 | 1 | get_accuracy_summary, view:v_production_models |  |  |  |
 | [morning_digest_days](#t-morning_digest_days) | table | anon 可 | 2 | 2 |  |  | morning_digest |  |
-| [morning_digest_rows](#t-morning_digest_rows) | table | anon 可 | 2 | 3 |  |  | morning_digest |  |
+| [morning_digest_rows](#t-morning_digest_rows) | table | anon 可 | 2 | 2 |  |  | morning_digest |  |
 | [motor_pretest_stats](#t-motor_pretest_stats) | table | anon 可 | 7 | 0 |  |  |  |  |
 | [mycroft_predictions](#t-mycroft_predictions) | table | anon 可 | 1 | 1 |  |  |  |  |
 | [nige_outcome_distribution](#t-nige_outcome_distribution) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  | outcome_distribution_update |  |
@@ -61,7 +61,7 @@
 | [outcome_distribution](#t-outcome_distribution) | table | anon 可 | 6 | 2 | data_health_nightly_freshness |  | outcome_distribution_update |  |
 | [poirot_predictions](#t-poirot_predictions) | table | anon 可 | 2 | 1 | data_health_morning_freshness |  |  |  |
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
-| [predictions](#t-predictions) | table | anon 可 | 44 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか3 | hq:platform/finals_sheet.py |
+| [predictions](#t-predictions) | table | anon 可 | 45 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか3 | hq:platform/finals_sheet.py |
 | [race_conditions](#t-race_conditions) | table | anon 可 | 45 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか3 |  |
 | [race_entries](#t-race_entries) | table | anon 可 | 148 | 17 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
 | [race_history_cache](#t-race_history_cache) | table | anon 可 | 3 | 1 | data_health_nightly_freshness |  |  |  |
@@ -576,8 +576,8 @@
   - `scripts/maintenance/verify-morning-digest.js:40` select [digest_date, generated_at, notes, race_count, venue_count] （検査）
   - `src/services/scheduleQueries.js:278` select [*, digest_date]
 - 書き手（2）: 
-  - `scripts/daily/generate-morning-digest.js:280` upsert [?]
-  - `scripts/daily/generate-morning-digest.js:309` update [generated_at]
+  - `scripts/daily/generate-morning-digest.js:322` upsert [?]
+  - `scripts/daily/generate-morning-digest.js:339` update [generated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-morning_digest_rows"></a>morning_digest_rows
@@ -587,10 +587,9 @@
 - 読み手（2）: 
   - `scripts/maintenance/verify-morning-digest.js:58` select [*, digest_date] （検査）
   - `src/services/scheduleQueries.js:283` select [*, digest_date, rank, section]
-- 書き手（3）: 
-  - `scripts/daily/generate-morning-digest.js:285` delete
-  - `scripts/daily/generate-morning-digest.js:294` insert [?]
-  - `scripts/daily/generate-morning-digest.js:302` insert [?]
+- 書き手（2）: 
+  - `scripts/daily/generate-morning-digest.js:327` delete
+  - `scripts/daily/generate-morning-digest.js:334` insert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-motor_pretest_stats"></a>motor_pretest_stats
@@ -694,7 +693,7 @@
 - 取得のジョブ: exhibition, kfile_sync, race_info, races_init, result, result_catchup
 - 外の読み手: hq `platform/finals_sheet.py`（read） 廃止した3モデルのうち safeBet の予想（BOA-1124 の記述では predictions.safeBet.top3）を「龍神の本線」として読む。読む経路（表・RPC・API のどれか）と列は未確認。3モデルの生成を止める前に hq 側の参照を外す（BOA-1124、2026-10-27）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/delete-phantom-races.js:83`, `scripts/maintenance/fix-opening-day-race-id-date.js:68`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:41`, `scripts/ml/analogy/in_caution_bands.py:204`, `scripts/ml/analogy/tests/test_in_caution_bands.py:286`, `scripts/ml/analogy/tests/test_in_caution_bands.py:318`
-- 読み手（44）: 
+- 読み手（45）: 
   - `scripts/analysis/analyze-prediction-ensemble.js:66` select(helper:fetchAll)
   - `scripts/analysis/analyze-upset-factors.js:109` select [feature_contributions, model_id, race_id]
   - `scripts/analysis/calibration-report.js:92` select(helper:fetchAll)
@@ -718,6 +717,7 @@
   - `scripts/daily/update-race-history-cache.js:27` select(helper:fetchAll)
   - `scripts/lib/inCautionHealth.js:127` select [feature_contributions, model_id, race_id]
   - `scripts/lib/morningDigestFetch.js:225` select [feature_contributions, model_id, race_id]
+  - `scripts/lib/morningDigestFetch.js:253` select [feature_contributions, model_id, race_id]
   - `scripts/lib/predictionHitFix.js:24` select(helper:fetchAll)
   - `scripts/lib/raceResultPersist.js:39` select [feature_contributions, model_id, prediction_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:50` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
@@ -1298,7 +1298,7 @@
 - 本体で読む RPC: data_health_table_rows
 - 取得のジョブ: race_notices
 - 読み手（1）: 
-  - `scripts/daily/generate-morning-digest.js:252` select [category, detail_text, race_date, racer_id, venue_code]
+  - `scripts/daily/generate-morning-digest.js:254` select [category, detail_text, race_date, racer_id, venue_code]
 - 書き手（1）: 
   - `scripts/lib/raceNoticesRun.js:115` upsert [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: boat_number, structured_data, scraped_at
@@ -1316,7 +1316,7 @@
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:70` select(helper:fetchAllByRaceId)
   - `scripts/analysis/verify-race-analysis-rpc.js:74` select(helper:fetchAll)
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:169` select(helper:fetchInChunks)
-  - `scripts/daily/generate-morning-digest.js:161` select [boat_number, finish_mark, race_id, start_timing]
+  - `scripts/daily/generate-morning-digest.js:162` select [boat_number, finish_mark, race_id, start_timing]
   - `scripts/daily/update-top-start-stats.js:173` select(helper:fetchAll)
   - `scripts/lib/kfileSync.js:43` select [?, boat_number, race_id]
   - `scripts/lib/raceResultPersist.js:124` select(helper:upsertChangedRows)
@@ -1373,7 +1373,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 取得のジョブ: racer_course_technique_stats
 - 読み手（4）: 
-  - `scripts/daily/generate-morning-digest.js:125` select [window_end]
+  - `scripts/daily/generate-morning-digest.js:126` select [window_end]
   - `scripts/daily/update-racer-course-technique-stats.js:386` select(helper:upsertStamped)
   - `scripts/lib/morningDigestFetch.js:149` select [*, course, racer_id]
   - `scripts/lib/snsTodayDigestV3.js:113` rest(rest) [course, makuri_rate, nigashi_rate, nige_rate, racer_id, runs, window_end, window_start]
