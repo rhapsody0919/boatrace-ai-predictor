@@ -8,8 +8,8 @@ const RACER_SECTIONS = [
   { id: "racer-profile", label: "プロフィール" },
   { id: "racer-official", label: "公式成績" },
   { id: "racer-motor", label: "モーター" },
-  { id: "racer-stats", label: "成績" },
-  { id: "racer-filtered", label: "調子（絞り込み）" },
+  { id: "racer-stats", label: "成績・調子" },
+  { id: "racer-filtered", label: "絞り込み" },
   { id: "racer-race-list", label: "レース一覧" },
   { id: "racer-news", label: "ニュース" },
 ];
