@@ -251,6 +251,36 @@ function BasicInfoLegends({ officialRates, accidentByRacer }) {
   );
 }
 
+// 今の値の棒（6艇）と凡例
+function NowBars({ values, shared, scale, src }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {scale.isRelativeScaleMetric && (
+        <p className="rbit-metric-caveat rbit-relative-note">
+          {t("basicInfo.relativeBarNote")}
+        </p>
+      )}
+      {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
+      <div className="race-split">
+        <div className="race-split__main">
+          <div className="rbit-bars">
+            {values.map((row) => (
+              <BasicInfoBarBlock key={row.boat} row={row} shared={shared} />
+            ))}
+          </div>
+        </div>
+        <div className="race-split__side">
+          <BasicInfoLegends
+            officialRates={src.officialRates}
+            accidentByRacer={src.accidentByRacer}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
 function BasicInfoFilterBar({
   filters,
   needsOwnAggregation,
@@ -370,27 +400,9 @@ function RaceBasicInfoTab({
           onSelectBoat={onFocusBoat}
         />
       )}
-      {view === "now" && scale.isRelativeScaleMetric && (
-        <p className="rbit-metric-caveat rbit-relative-note">
-          {t("basicInfo.relativeBarNote")}
-        </p>
+      {view === "now" && (
+        <NowBars values={values} shared={shared} scale={scale} src={src} />
       )}
-      {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
-      <div className="race-split" hidden={view === "trend"}>
-        <div className="race-split__main">
-          <div className="rbit-bars">
-            {values.map((row) => (
-              <BasicInfoBarBlock key={row.boat} row={row} shared={shared} />
-            ))}
-          </div>
-        </div>
-        <div className="race-split__side">
-          <BasicInfoLegends
-            officialRates={src.officialRates}
-            accidentByRacer={src.accidentByRacer}
-          />
-        </div>
-      </div>
     </div>
   );
 }
