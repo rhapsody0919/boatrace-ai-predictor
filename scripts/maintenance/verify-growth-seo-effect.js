@@ -7,6 +7,7 @@
  *   - 新記事は段（索引→表示→クリック）で、止まった段を返す。確認の日は D+1/D+3/D+7 と T+28
  *   - 「分けられない」は機械の3条件（同じ反映の枠に同じページ・サイト全体の変更／コアアップデート期間／GA4 の計測の変更日をまたぐ）
  *   - 改稿は対照（触っていないページ群）の動きで割ってから帯と比べ、サイト全体の波を効きにしない
+ *   - 判定は 伸びた・戻った・動かず・落ちた・分けられない。戻った = 落ちていた記事が落ちる前の帯まで戻った（伸びたより先）
  */
 import assert from "node:assert/strict";
 import {
@@ -101,9 +102,21 @@ const mk = (f) => series(56, before(f));
 const ctrlFlat = mk({ before: 10, mid: 10, after: 10 });
 assert.equal(run(mk({ before: 2, mid: 2, after: 4 }), ctrlFlat).verdict, "伸びた");
 assert.equal(run(mk({ before: 2, mid: 2, after: 2 }), ctrlFlat).verdict, "動かず");
-assert.equal(run(mk({ before: 2, mid: 2, after: 1 }), ctrlFlat).verdict, "戻った");
+assert.equal(run(mk({ before: 2, mid: 2, after: 1 }), ctrlFlat).verdict, "落ちた");
 // サイト全体の波: 対照も2倍になっているなら、対象の2倍は効きではない
 assert.equal(run(mk({ before: 2, mid: 2, after: 4 }), mk({ before: 10, mid: 10, after: 20 })).verdict, "動かず");
+// 戻った: 改稿の前に落ちていた記事（落ちる前の28日 4/日 → 改稿前28日 1/日）が、落ちる前の帯まで戻った。
+// 日 0〜27 = 落ちる前、28〜55 = 改稿前の28日、56〜 = 改稿の後、77〜83 = T+28 の7日
+const longSeries = (f) => Array.from({ length: 84 }, (_, i) => ({ date: iso(Date.parse("2026-09-03T00:00:00Z") + i * DAY), page: "p", clicks: f(i), impressions: 0 }));
+const longCtrl = longSeries(() => 10);
+const runLong = (f) => judgeRewrite({ rows: longSeries(f), controlRows: longCtrl, editDate, cannot: sep });
+const dropped = (after) => (i) => (i < 28 ? 4 : i < 56 ? 1 : i >= 77 ? after : 1);
+assert.equal(runLong(dropped(4)).verdict, "戻った");
+assert.equal(runLong(dropped(3)).verdict, "伸びた", "帯の上には出たが、落ちる前の帯の下限（和 28）には戻っていない");
+assert.equal(runLong(dropped(1)).verdict, "動かず");
+assert.equal(runLong((i) => (i >= 77 ? 3 : 2)).verdict, "伸びた", "落ちていない記事は戻ったでなく伸びた");
+assert.equal(runLong((i) => (i >= 77 ? 1 : 2)).verdict, "落ちた");
+assert.equal(runLong(dropped(4)).earlier.min, 28);
 // 対照が無い・基準が短い・分けられない条件
 assert.deepEqual(run(mk({ before: 2, mid: 2, after: 4 }), []).reasons, ["control_missing"]);
 assert.deepEqual(run(series(10, () => 2), ctrlFlat).reasons, ["baseline_too_short"]);

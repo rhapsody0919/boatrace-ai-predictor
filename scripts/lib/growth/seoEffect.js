@@ -111,9 +111,14 @@ export function newArticleStage({ indexStatus, impressions, clicks }) {
 }
 
 /**
- * 改稿の判定: 戻った / 伸びた / 動かず / 分けられない。
- * 改稿後の T+28 時点の7日の和（編集日から22〜28日目）を、基準の帯と比べる。対照（触っていないページ群）が同じ期間に動いた割合で割って
- * から比べる（サイト全体の波を消す）。帯より上 = 伸びた、下 = 戻った（改稿前の水準より下に戻った）、帯の中 = 動かず。
+ * 改稿の判定: 伸びた / 戻った / 動かず / 落ちた / 分けられない（オーナーの窓口の決定 2026-11-24）。
+ * 改稿後の T+28 時点の7日の和（編集日から22〜28日目）を、対照（触っていないページ群）が同じ期間に動いた割合で割ってから
+ * （サイト全体の波を消す）、改稿前28日の帯と比べる。
+ *   戻った: 改稿の前に落ちていた記事（改稿前28日の基準値が、その前の28日の帯の下限を下回る）が、落ちる前の帯の下限まで戻った。
+ *           落ちる前の帯が取れない（日が足りない）ときは「戻った」は返さない。伸びたより先に当てる
+ *   伸びた: 改稿前28日の帯の上に出た
+ *   落ちた: 改稿前28日の帯の下に出た
+ *   動かず: 帯の中
  * rows: 対象ページの日次、controlRows: 触っていないページ群の日次の合計（date ごと）。分けられない条件は cannot を渡す
  */
 export function judgeRewrite({ rows, controlRows, editDate, cannot, metric = "clicks" }) {
@@ -127,8 +132,13 @@ export function judgeRewrite({ rows, controlRows, editDate, cannot, metric = "cl
   if (!ctrlBand || ctrlBand.base === 0) return { verdict: "分けられない", reasons: ["control_missing"] };
   const wave = ctrlAfter / ctrlBand.base; // 触っていないページ群の動き（1 = 変わらず）
   const adjusted = wave > 0 ? after / wave : after;
-  const verdict = adjusted > band.max ? "伸びた" : adjusted < band.min ? "戻った" : "動かず";
-  return { verdict, reasons: [], band, after, adjusted, wave };
+  const earlier = baselineBand(rows, isoDay(dayMs(editDate) - EFFECT.baselineDays * DAY), metric); // 落ちる前の帯
+  const droppedBefore = earlier !== null && band.base < earlier.min;
+  let verdict = "動かず";
+  if (droppedBefore && adjusted >= earlier.min) verdict = "戻った";
+  else if (adjusted > band.max) verdict = "伸びた";
+  else if (adjusted < band.min) verdict = "落ちた";
+  return { verdict, reasons: [], band, earlier, after, adjusted, wave };
 }
 
 /** 未測定: 公開から28日を過ぎて T+28 の判定が出ていない記事。articles: [{ id, publishDate, measuredAt }] */
