@@ -189,7 +189,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/ga4MeasurementBreaks.js` | GA4 の計測方法が変わった日（この日の前後で PV を比較してはいけない日）の一覧と、 | ga4PvBreaksWithin, formatGa4PvBreakNotice, GA4_PV_BREAKS |
 | `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, createRestJobStateClient, shouldSkipOnGha, isGhaFetchStopped ほか4件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
-| `scripts/lib/growth/gscDaily.js` | Search Console の日別の明細（query × page × date）を growth_gsc_daily の行にする（BOA-1706、hq 閉… | ptToday, windowDates, toRows, chunk, canPrune ほか11件 |
+| `scripts/lib/growth/gscDaily.js` | Search Console の日別の明細（query × page × date）を growth_gsc_daily の行にする（BOA-1706、hq 閉… | ptToday, windowDates, toRows, chunk, canPrune ほか13件 |
+| `scripts/lib/growth/gscPageDaily.js` | Search Console の date × page だけの取得（匿名化された語も入るページの合計）と、補充（バックフィル）の道具 | fetchPageDay, toPageRows, isMissingTable, missingTableMessage, assertPageTableExists ほか6件 |
 | `scripts/lib/harville.js` | — | — |
 | `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
 | `scripts/lib/inCaution.js` | BOA-822 イン崩れ注意度: 朝の生成（generate-unified-predictions.js）がレースごとの値を決める純関数。 | toInCautionRates, computeInCaution |
@@ -666,4 +667,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 624 ファイル / export 3341 件。
+対象 625 ファイル / export 3354 件。

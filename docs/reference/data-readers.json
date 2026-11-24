@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2840,
-    "filesWithAccess": 324,
-    "tableReaders": 959,
-    "tableWriters": 196,
+    "sourceFiles": 2843,
+    "filesWithAccess": 325,
+    "tableReaders": 960,
+    "tableWriters": 198,
     "rpcCallers": 57,
     "nameMentions": 283,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 10,
+    "notInSnapshot": 11,
     "unresolved": 35,
     "parseErrors": 0,
     "uncoveredFiles": 56
@@ -30150,9 +30150,18 @@
       "kind": "table",
       "name": "growth_gsc_daily",
       "refs": [
-        "scripts/growth/collect-gsc-daily.js:44",
-        "scripts/growth/collect-gsc-daily.js:59",
-        "scripts/growth/collect-gsc-daily.js:68"
+        "scripts/lib/growth/gscDaily.js:168",
+        "scripts/lib/growth/gscDaily.js:181",
+        "scripts/lib/growth/gscDaily.js:187"
+      ]
+    },
+    {
+      "kind": "table",
+      "name": "growth_gsc_page_daily",
+      "refs": [
+        "scripts/lib/growth/gscPageDaily.js:73",
+        "scripts/lib/growth/gscPageDaily.js:85",
+        "scripts/lib/growth/gscPageDaily.js:92"
       ]
     },
     {

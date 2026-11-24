@@ -10,16 +10,16 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2840 |
-| 読み書きのあるファイル | 324 |
-| 表の読み手（箇所） | 959 |
-| 表の書き手（箇所） | 196 |
+| 読んだファイル | 2843 |
+| 読み書きのあるファイル | 325 |
+| 表の読み手（箇所） | 960 |
+| 表の書き手（箇所） | 198 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 283 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
-| コードが使うのに写しに無い名前 | 10 |
+| コードが使うのに写しに無い名前 | 11 |
 | 名前が式で拾えなかった箇所 | 35 |
 | 構文木にできなかったファイル | 0 |
 | 対象外の言語のファイル（Python 等） | 56 |
@@ -2319,7 +2319,8 @@
 - rpc `get_racer_scoped_race_rows`: `src/services/racerQueries4.js:174`
 - table `a`: `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:186`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:187`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:188`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:80`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:399`
-- table `growth_gsc_daily`: `scripts/growth/collect-gsc-daily.js:44`, `scripts/growth/collect-gsc-daily.js:59`, `scripts/growth/collect-gsc-daily.js:68`
+- table `growth_gsc_daily`: `scripts/lib/growth/gscDaily.js:168`, `scripts/lib/growth/gscDaily.js:181`, `scripts/lib/growth/gscDaily.js:187`
+- table `growth_gsc_page_daily`: `scripts/lib/growth/gscPageDaily.js:73`, `scripts/lib/growth/gscPageDaily.js:85`, `scripts/lib/growth/gscPageDaily.js:92`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`, `scripts/maintenance/verifyData/sns-send-runner-scenes-4.js:174`
 
