@@ -1,0 +1,109 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "headwind-strong-nige-by-venue",
+ "kind": "new",
+ "ticket": "OC-20261124T100132-seo-human-1",
+ "paths": [
+  "public/blog/headwind-strong-nige-by-venue.md",
+  "src/data/blog-posts/headwind-strong-nige-by-venue.json"
+ ],
+ "files": {
+  "public/blog/headwind-strong-nige-by-venue.md": "8775114757eb276c4d448fe162d88ae4228c495638e523b1d355cb22ba75c2e4",
+  "src/data/blog-posts/headwind-strong-nige-by-venue.json": "5b8affc92dc27429e42da9cf5bfd4f4fbb124b5cf8f2bd2abb56205d55341b94"
+ },
+ "content_sha256": "fb254e4c7463047d72b9bf93f83f6d91c1bfb918cd7550d45e34c68c52494da6",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "fb254e4c7463047d72b9bf93f83f6d91c1bfb918cd7550d45e34c68c52494da6",
+   "model": "opus",
+   "at": "2026-11-24T10:09:20+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "fb254e4c7463047d72b9bf93f83f6d91c1bfb918cd7550d45e34c68c52494da6",
+   "model": "opus",
+   "at": "2026-11-24T10:09:20+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "fb254e4c7463047d72b9bf93f83f6d91c1bfb918cd7550d45e34c68c52494da6",
+   "model": "opus",
+   "at": "2026-11-24T10:09:20+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "fb254e4c7463047d72b9bf93f83f6d91c1bfb918cd7550d45e34c68c52494da6",
+   "model": "opus",
+   "at": "2026-11-24T10:09:20+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "全国では向かい風4m以上で逃げが55.1%から48.9%に減った",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "逃げが減ったのは24場中17場",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "線に届かなかった7場",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "画面の「会場の平均との差」と弱い・横風との比べは別の物差し",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "src/locales/ja/common.json",
+    "public/blog/weather-wind-impact.md"
+   ]
+  },
+  {
+   "h2": "向かい風2〜3mの時点で逃げが減る会場もある",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "今日のレースでは、会場の行から展示へ進む",
+   "evidence": [
+    "public/blog/gamagori-makuri-wind-guide.md"
+   ]
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  }
+ ],
+ "sources": "ref の data/analysis/weather-in-escape.json（period 2020-02-01〜2026-09-30、rows 368,332）の wind.venues.<1〜24>.bins.calm_cross・head_strong・head の n と techniques.逃げ、表3は同じ鍵の inWinRate と all.n・all.inWinRate をそのまま写した。全国の逃げの回数は24場の和（derived_numbers）、全国の分母は wind.pooled.calm_cross.n（157,904）と wind.pooled.head_strong.n（45,541）。検定は二標本の比率の z（pooled）、24場を Bonferroni（線 約3.08）。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-24T10:11:18+09:00",
+ "run": "20261124T100132-seo-human",
+ "engine": "claude"
+}
