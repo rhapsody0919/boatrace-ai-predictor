@@ -3,6 +3,7 @@
  */
 import { Fragment } from "react";
 import { bestOf } from "../../utils/bestOf";
+import { rowFromIndicator } from "./raceIndicatorsRowDefs";
 import {
   meetPrevRunState,
   meetPrevRunWhenParams,
@@ -225,11 +226,18 @@ export function buildStatsRows(c) {
     t,
     ph,
     cand,
+    players,
+    analysis,
     techByBoat,
-    rateByBoat,
     statsByBoat,
     localizedTechnique,
   } = c;
+  const returnRate = rowFromIndicator(
+    t,
+    { players, analysis },
+    "racer.winReturnRate.waku180d",
+    "returnRate",
+  );
   return [
     {
       key: "courseRate",
@@ -278,19 +286,15 @@ export function buildStatsRows(c) {
       },
     },
     {
-      key: "returnRate",
-      label: t("dataTable.rowReturnRate"),
-      shortLabel: t("review.cols.returnRate"),
-      tab: "returnrate",
-      best: bestOf(cand.returnRate, "max", { digits: 0 }),
+      ...returnRate,
       render: (p) => {
-        const row = rateByBoat.get(p.number);
-        if (!row || !row.sample_count) return ph("returnRate");
+        const value = returnRate.values.get(p.number)?.value ?? null;
+        if (value === null) return ph("returnRate");
+        const { text, unit } = returnRate.text(p);
         return (
-          <span
-            className={`drt-value ${row.win_return_rate >= 100 ? "drt-plus" : ""}`}
-          >
-            {row.win_return_rate.toFixed(0)}%
+          <span className={`drt-value ${value >= 100 ? "drt-plus" : ""}`}>
+            {text}
+            {unit}
           </span>
         );
       },
