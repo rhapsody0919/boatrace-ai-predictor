@@ -50,8 +50,8 @@ L["cum_exh"] = prior_window("exh_dev", None)
 for n in NS:
     L[f"exh_r{n}"] = L.groupby("motor_uid", sort=False).exh_dev.shift(1).groupby(L.motor_uid).transform(lambda x, n=n: x.rolling(n, min_periods=int(n * 0.8)).mean()).where(L.j == L.mstart).groupby([L.motor_uid, L.meet]).transform("first")
 L.to_pickle(f"{W}/linked_feats.pkl")
-tot = {k: sum(x.get(k, 0) for x in links["byVenue"].values()) for k in ["stints", "exact", "exactReplacement", "lag", "resync", "new", "anchor", "unmatched"]}
-tot["linkedShare"] = (tot["exact"] + tot["exactReplacement"] + tot["lag"] + tot["resync"]) / (tot["stints"] - tot["new"])
+tot = {k: sum(x.get(k, 0) for x in links["byVenue"].values()) for k in ["stints", "exact", "exactSubstitute", "lag", "resync", "new", "anchor", "unmatched"]}
+tot["linkedShare"] = (tot["exact"] + tot["exactSubstitute"] + tot["lag"] + tot["resync"]) / (tot["stints"] - tot["new"])
 links["total"] = tot
 res = {"generatedAt": datetime.now(timezone.utc).isoformat(),
        "source": "data/ml/dataset.csv・start_timings.csv（scripts/ml/export-training-data.js、2026-09-14 書き出しの本番の写し。motor_number は無く reconstruct.py で再構成）",
