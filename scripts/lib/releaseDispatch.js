@@ -8,7 +8,7 @@
  * 3. master の検査（Post-merge Checks・Quality Gates）を、出す範囲（本番の版の次〜master の先）のコミットの run で見る。
  *    範囲の中で走っている run（skipped を除く）が1本でもある・master の先が10分以内のコミットなら「待つ」
  *    （20分後の拾い直しでもう一度見る。先の新しさは自動 docs 再生成の commit を除いた最後の commit の時刻で見る）。範囲の中に落ちた run が1本でもあれば出さずに失敗（Slack）。
- *    後の run の成功では解かない（summarizeGates の説明）
+ *    後の run の成功では解かない（summarizeGates の説明）。live で赤・読み切れないなら、全件の検査を起こして「待つ」（releaseFullCheck.js）
  * 4. それ以外なら Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL、master に結び付けたもの）を叩く
  *
  * 見張り（scrape_job_state.last_report に持つ。成功の記録のときだけ置き換わり、失敗の間は前の値が残る）:
@@ -21,6 +21,7 @@
  */
 import { GITHUB_REPO, githubHeaders } from "./analogyDispatch.js";
 import { decideRelease } from "./releaseDecide.js";
+import { readFullChecks, startFullChecks } from "./releaseFullCheck.js";
 
 // 出すかどうかの判定（純関数）は releaseDecide.js。今までどおりここからも読めるようにする
 export {
@@ -348,8 +349,12 @@ export function createReleaseDispatchRun({
     if (read.error) return read.error;
     const { head, compare, gateRuns } = read;
 
-    const gates = summarizeGates(compare.commitShas, gateRuns);
-    const decision = decideRelease({
+    // 範囲に赤・読み切れないがあれば、全件の検査の run で解く・起こす（releaseFullCheck.js）
+    const io = { fetchImpl, token, deployedSha };
+    const full = await readFullChecks(io, compare, gateRuns, summarizeGates);
+    if (full.error) return full.error;
+    const { gates } = full;
+    let decision = decideRelease({
       deployedSha,
       head,
       compare,
@@ -357,6 +362,12 @@ export function createReleaseDispatchRun({
       previous,
       now: ctx.now(),
     });
+    // stuck・Instant Rollback は error で先に止まる（blocked にならない）ので、そのときは起こさない
+    if (decision.action === "blocked" && full.needDispatch) {
+      const started = await startFullChecks(io, ctx.mode, full, decision);
+      if (started.error) return started.error;
+      decision = started.decision;
+    }
     const report = releaseReport({
       deployedSha,
       head,
