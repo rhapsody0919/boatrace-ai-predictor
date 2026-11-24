@@ -145,6 +145,52 @@ export function zeroWindowMessage(dates, counts) {
   );
 }
 
+/** 1日ぶんを書く: 既存の行と比べ、変わった行だけ upsert し、全部を取り切れた日は無くなった行を主キーで消す */
+export async function writeDay({ readExisting, upsert, deleteRows }, date, apiRows, fetchedAt) {
+  const plan = planDay(await readExisting(date), toRows(apiRows, fetchedAt));
+  await upsert(date, plan.toWrite);
+  if (plan.stale.length > 0) await deleteRows(date, plan.stale);
+  return plan;
+}
+
+const TABLE = "growth_gsc_daily";
+// 1回の upsert の行数（目安・根拠なし）。PostgREST の既定の上限は1000行で、読みもこの単位の .range() の輪にする
+const DB_PAGE = 1000;
+
+/** growth_gsc_daily への口（collect と補充 CLI が同じ書き方をする）。db は supabase-js の client */
+export function dbDeps(db) {
+  return {
+    // その日の既存の行（主キーと比べる値だけ）を .range() の輪で全部読む。黙って1000行で切れない
+    async readExisting(date) {
+      const rows = [];
+      for (;;) {
+        const { data, error } = await db
+          .from(TABLE)
+          .select("date,query,page,clicks,impressions,position")
+          .eq("date", date)
+          .order("query")
+          .order("page")
+          .range(rows.length, rows.length + DB_PAGE - 1);
+        if (error) throw new Error(`既存の行の読みの失敗（${date}）: ${safeError(error)}`);
+        rows.push(...data);
+        if (data.length < DB_PAGE) return rows;
+      }
+    },
+    async upsert(date, rows) {
+      for (const part of chunk(rows, DB_PAGE)) {
+        const { error } = await db.from(TABLE).upsert(part, { onConflict: KEY_COLUMNS.join(",") });
+        if (error) throw new Error(`upsert の失敗（${date}）: ${safeError(error)}`);
+      }
+    },
+    async deleteRows(date, keys) {
+      for (const k of keys) {
+        const { error } = await db.from(TABLE).delete().eq("date", k.date).eq("query", k.query).eq("page", k.page);
+        if (error) throw new Error(`古い行の削除の失敗（${date}）: ${safeError(error)}`);
+      }
+    },
+  };
+}
+
 /**
  * 窓の全日を順に取り、1日ずつ書く。1日が落ちても他の日は取る。
  * 外との口（API・DB）は deps で受ける（試験で差し替える）。ログは日付と行数だけ。
@@ -157,10 +203,7 @@ export async function collectWindow(deps) {
   for (const date of dates) {
     try {
       const apiRows = await fetchRows(date);
-      const incoming = toRows(apiRows, fetchedAt);
-      const plan = planDay(await readExisting(date), incoming);
-      await upsert(date, plan.toWrite);
-      if (plan.stale.length > 0) await deleteRows(date, plan.stale);
+      const plan = await writeDay({ readExisting, upsert, deleteRows }, date, apiRows, fetchedAt);
       counts.push(apiRows.length);
       log(
         `${logLine(date, apiRows.length, canPrune(apiRows.length))}` +
