@@ -71,15 +71,18 @@
 ## PR-5 /accuracy の実績（plan §6）
 
 - [x] **29. `in_caution_bands.py` に実績の集計を足す**: 公開前の検証（表だけで作る。full のとき・無いとき・`def` が違うときだけ）、公開後（`launchDate` 以降、同じ `def` の unified の行の `level` と完全レースの1号艇の1着の有無）。`accuracy_cache.in_caution_accuracy` に upsert。pytest に再現テスト
-- [ ] **30. 確認**: 公開前の検証の段ごとの率・件数が、ラウンドで分けた率で出した値 21,030・27.2%／32,178・43.4%／22,087・65.7%（design-reviewer が races.pkl で再現）と合うか。round4 の L（ラウンドで分けない、26.7／42.6／65.5%）との差も PR に書く。`sparse_cell` のレースを除くので件数は少し減る。`data-accuracy-verifier`
+- [x] **30. 確認**: 公開前の検証の段ごとの率・件数が、ラウンドで分けた率で出した値 21,030・27.2%／32,178・43.4%／22,087・65.7%（design-reviewer が races.pkl で再現）と合うか。round4 の L（ラウンドで分けない、26.7／42.6／65.5%）との差も PR に書く。`sparse_cell` のレースを除くので件数は少し減る。`data-accuracy-verifier`
+  - 結果（2026-11-24、窓口が本番の読み取り専用の SQL で照合）: 夜のジョブの値（accuracy_cache、def gapband-r-v1、11/23 17:32Z）と表から SQL で出し直した値が5つとも完全に一致。low 21,027件・27.2%、mid 32,169件・43.4%、high 22,071件・65.7%、sparse 28件、全体 75,295件・45.4%。design-reviewer の値との差は件数 −3・−9・−16（0.1%未満）で、率は3段とも一致。low < mid < high。SQL は窓口の共有ノート boa822-verify-30-34.sql.md
 
 ## PR-6 /today・SNS 企画（plan §5・§7 の 6）
 
 - [x] **31. 前提: BOA-851 がマージ済み**（同じ `pickFeatured` を触る。#1455、2026-10-13）
-- [ ] **32. オーナー: 156 を適用**（JST 05:20〜05:40 と 06:30・08:00 の前後を避ける）。事後（Claude が読み取り）: 3列・CHECK・anon の SELECT
+- [x] **32. オーナー: 156 を適用**（JST 05:20〜05:40 と 06:30・08:00 の前後を避ける）。事後（Claude が読み取り）: 3列・CHECK・anon の SELECT
+  - 結果（2026-11-24）: オーナーが db-apply で適用し、窓口が読み取りで確認した（3列 in_caution_level text・in_caution_n integer・in_caution_pct smallint、CHECK は validated、anon の SELECT は true）。APPLIED.md の 156 の行は別に直す
 - [ ] **33. `generate-morning-digest.js`**: `fetchInCaution`、`in_caution_pct`・`in_caution_n`・`in_caution_level` を書く（`OPTIONAL_ROW_COLUMNS`）。`MORNING_DIGEST_IN_CAUTION = false` の間は注目レースと SNS のネタは旧の値のまま。`unchangedRows.js` の比較に3列を足す。inCaution が全レース null の日に注目レースが0件になること、06:30・08:00 の再実行で埋まるか（再実行の条件 `cronWrapper.js:468-474` が「注目レース0件」を不完全と見るか）を確かめる
   - 2026-11-24（#3325、マージ待ち）: `MORNING_DIGEST_IN_CAUTION = false` は `scripts/lib/morningDigestSummary.js`。156 が未適用でも、列が無いエラーのときはマイグレーションのグループごとに列を除いて書く（131 の `motor_race_count` は書き続ける）。全レースで値が無い日は、定数が true なら注目レースが0件になる（試験あり）。再実行では埋まらない。`incomplete` を返すのは完全性チェックだけ（`cronWrapperParts.js:366`）で、旧の指数でも同じ動き。直すかは公開の前に決める。`unchangedRows.js` は numeric の列だけを扱い、3列は smallint・integer・text なので足していない
-- [ ] **34. 注目レースの選び方の比較**: `MORNING_DIGEST_IN_CAUTION = true` で過去7日分を dry-run し、入れ替わる注目レースの件数と例を PR に書く。変わり方が大きければ Orchestrate に返す（2026-10-13 Orchestrate）
+- [ ] **34. 注目レースの選び方の比較**（2026-11-24: 30 と同じく、窓口が本番の読み取り専用の SQL で回す。SQL は保存した上位25件の逃げしか見えないので、26位以降の候補は dry-run でしか比べられない）: `MORNING_DIGEST_IN_CAUTION = true` で過去7日分を dry-run し、入れ替わる注目レースの件数と例を PR に書く。変わり方が大きければ Orchestrate に返す（2026-10-13 Orchestrate）
+  - 結果（2026-11-24、窓口が SQL で照合）: 旧の選び方の再現は7日中7日で保存した注目レースと一致（SQL の作りは生成と合う）。注意度で選ぶと7日中4日が入れ替わる（11/17 は逃げ→逃げ、11/18・21・23 は逃げ→まくり）。1位は新がまくり4・逃げ3、旧は逃げ6・まくり1。注意度の欠けは 11/20 の1件だけ。まくりに寄るので、オーナーに返した（窓口の推奨: 公開は AI タブから、MORNING_DIGEST_IN_CAUTION は false のまま1週見てから別に決める）
 - [ ] **35. `DigestRaceCard`・`FeaturedRaceCard`** の表示（フラグの側。`in_caution_*` が無い過去の行は欄を出さない）
   - 2026-11-24（#3329、マージ待ち）: 注目レースは「イン崩れ注意度 N%」＋段の札＋件数、カードのフッターは「イン崩れ注意度 ［札 N%］（全国の過去レースN件）」。準優・優勝戦でも件数をラウンドで分けたと書けない（行にラウンドの列が無い。ファン評価 P2、公開の前に決める）。/today の計測（surface `today`、task 27 の残り）も入れた（`src/hooks/useTodayCaution.js`、`e2e/today-in-caution.spec.js`）
 - [x] **36. SNS 企画** `findQualifyingRaces`: 点区切りの metric、`inCaution.*` の条件は unified の行で判定。`create-campaign.js` の既定値 0.985 を外して必須に。再現テスト（standard が新しいレースでも unified で判定される）
@@ -101,7 +104,36 @@
 | 生成の `turnPrediction` の計算 | plan §8 で「的中の記録として残す」 | 変えない（やめるなら新しい票） |
 
 - [ ] **45. タブの名前**: `raceTabs.aiPrediction` の表示を、フラグの側で「イン崩れ」に替える（新しいキーを足し、フラグで切り替える。`analysisPage.tabs.volatility` と同じ形）。タブの id と URL の `?tab=aiPrediction`・GA の値は変えない（共有リンク・e2e・計測が使う）。訳は用語集 124 行の「イン崩れ」から取る: en `Lane-1 Upset`・ko `1코스 이변`・zh-TW `1號位失守`（wording-editor 2026-11-24、禁止語・誇大・保証・射幸心とも問題なし）。用語集に行を足す。タブの中の先頭の見出しは「イン崩れ注意度」と略さずに書く。375px のタブの幅は `e2e/race-tab-width.spec.js` で確かめる。`inCaution.where`（4言語）の「「AI予想」タブ」も替える
-  - wording-editor の指摘で、オーナーに確かめること: `About.jsx` の「各レースの詳細ページ「AI予想」タブで、毎回の的中/不的中を確認できます」は、タブの中身が変わるので名前の置き換えでは済まない（38 で書き直す）。サービス名としての「AI予想」（「AI予想は無料で見られます」等）を残すか
+  - `About.jsx` の「各レースの詳細ページ「AI予想」タブで、毎回の的中/不的中を確認できます」は 38 で書き直す（2026-11-24 オーナー）
+
+### 「AI予想」という言葉をやめる（2026-11-24 オーナー決定）
+
+オーナーの決定（2026-11-24、窓口の会話で直接）: サービス名としての「AI予想」もやめる（龍神レーダーは分析サイト）。言い換えは wording-editor、title・meta は seo-marketer が判定した。
+- 言い換えの軸: 画面の中の呼び名・CTA は「データ分析」「レースの分析」、タブは「イン崩れ」、中身が注意度の所は「イン崩れ注意度」。「AI分析」「AI予測」は使わない
+- 場所の一覧と before/after は、窓口の共有ノートの `boa822-ai-yosou-wording-2026-11-24.md`
+- (1) title・meta・OGP は「予想」を残し、「AI」だけを外す。(2) 利用規約は今は変えない。(3) ブログは本文を触らず、共通の導線（CTA）だけ直す
+
+| 場所 | 入れる所 |
+|---|---|
+| タブ・タブへの案内・タブの中の空状態 | 45 |
+| About・FAQ・HowToUse の文（「展開予測の的中率は約79%」とその統計カードは、展開予測の廃止に合わせて文ごと削除） | 38（フラグの側） |
+| ホームの見出し・FAQ（ボット向け HTML も読む）、本日のレースの CTA、ハッシュタグ、共有の定型 | 39（フラグで隠せない物） |
+| 旧モデルの説明（「新AI予想モデル」） | 42 |
+| 会場の一覧の見出し「本日のレース・AI予想」（`venueRaceList.todayTitle`、ボット向け HTML の h1 も同じ文） | 39（フラグで隠せない） |
+| 龍神ソナーの説明の「（AI予想とは別の分析）」（`aiPredictionTab.analogy.outlook.lede`、4言語） | 45 の続き（フラグの側で文を分ける） |
+| ヘッダーのナビの「🏁 予想」「✅ 的中」、フッターの「本サイトはAIによる予測情報を提供するもの」 | 39（ナビは /hit-races の転送と一緒に） |
+| /about の「扱うデータ」の節が、画面に無いデータ（行き足・対戦成績など）を挙げる | 39 の前に、画面にある物だけに絞る（#3338 のファン評価 P2） |
+| /about の紹介動画とポスター（「ボートレースAI予想サービス」「展開予測の実測的中率 78.2%」） | フラグの側では出さない（#3338）。差し替えは別の票 |
+| title・meta・OGP・manifest・llms.txt・記事の共通の CTA | 46 |
+| 利用規約 | 47（保留） |
+
+- [ ] **46. title・meta から「AI」を外す**（「予想」は残す。2026-11-24 オーナー、seo-marketer の推奨どおり）。BOA-822 の公開とは別の PR にし、2回に分ける。
+  - 1回目（公開の後）: 会場・レース詳細の title・description、`VenueGridPage`・`RaceHistory`。案は、会場「{{venue}}競艇の予想・出走表｜本日の全レースのデータ - 龍神レーダー」、レース詳細「{{venue}}競艇 {{race}}R 出走表・直前情報・展示・イン崩れ（{{date}}）」
+  - 2回目（1〜2週あけて）: トップの title・og・twitter・manifest・`useSocialMeta`・llms.txt（生成物なので生成元を直す）。案は「ボートレースの予想に使えるデータ分析が無料｜競艇 龍神レーダー」。長さで検索結果に切れないかは、出す前に確かめる
+  - 出す前: GSC のページ×クエリを人が取る（ページごとの流入の数字はリポジトリに無い）。`seo-measures.json` に投入日の1行を足す。戻す基準を先に決める（目安、根拠なし）
+  - 記事の共通の導線（`BlogPost.jsx` の CTA、`ContentHubCtaSection.jsx`）もここで直す。「勝率アップを目指しましょう」は外す
+- [ ] **47. 利用規約（保留）**: `TermsSectionsA.jsx` の「ボートレースAI予想サービス」「予想情報」は今は変えない（2026-11-24 オーナー）。変えるなら法務の確認の後に別に。第2条の「ボートレースレース」は誤字
+- ファン評価（#3336・#3337、2026-11-24）の残り: (1) 会場の一覧のリンク「イン崩れ」は、確定したレースでは「このレースはイン崩れだった」に読める恐れ（P2）。一覧のリンクだけ「イン崩れ注意度」にする案。言葉の判断なのでオーナーに確かめる。(2) /accuracy の「中くらい（注意度35〜55%）」（`InCautionAccuracyChart.jsx` の `hi: 55`）が、FAQ・About の「35〜54%」と1ずれる（P2）。注意度は整数で `pct < 55` が中くらいなので、/accuracy を「35〜54%」にそろえる
 
 ## PR-7 公開（plan §7 の 7・8）
 
