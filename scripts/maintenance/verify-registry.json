@@ -669,6 +669,11 @@
       "guards": "Search Console の日別の取り込み（scripts/lib/growth/gscDaily.js、BOA-1706）。取り直す窓が PT の今日を除く直近7日であること・行の列の集合が全行で同じで欠けた値が NULL で上書きされないこと・上限に当たった日と0行の日は古い行を消さないこと・公開のリポジトリの Actions のログと失敗の文に数字の値や DB の行の中身を出さないこと"
     },
     {
+      "script": "verify-growth-gsc-guard.js",
+      "tier": "ci",
+      "guards": "Search Console の日別の取り込みの見張り（scripts/lib/growth/gscDaily.js）。取った窓の全日が0行なら失敗にすること・変わらない行は書かないこと・消す行は fetched_at でなく主キーで決め上限に当たった日と0行の日は消さないこと・1日が落ちても他の日は取ること・ログに数字の値を出さないこと（SEO データの輪 PR1）"
+    },
+    {
       "script": "verify-guard-deploy-approval.js",
       "tier": "ci",
       "guards": ".claude/hooks/guard-deploy-approval.sh。本番 DB の適用の起動・承認・Environments の変更（2026-10-02）に加え、Claude の素の gh（オーナー、admin）での PR の承認・--admin のマージ・ruleset とブランチ保護の書き換えを止め、読み取りと ryujin-maker の名義のマージを通すこと。--admin は作成の App の鍵が置かれた後だけ止める。このリポジトリへの claude/ でない枝の push を止める（2026-11-06、ADR-0097 の追記）"
