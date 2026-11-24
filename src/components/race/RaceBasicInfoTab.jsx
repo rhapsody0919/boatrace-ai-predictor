@@ -29,7 +29,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { parseRaceId } from "../../utils/raceId";
-import { recordsBeforeRace, currentTermStart } from "../../pure/basicInfoStats.js";
+import {
+  recordsBeforeRace,
+  currentTermStart,
+} from "../../pure/basicInfoStats.js";
 import {
   useOfficialRates,
   useOfficialAvgSt,
@@ -45,6 +48,7 @@ import {
 import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
+import BasicInfoTrend, { ViewHead } from "./basic-info/BasicInfoTrend";
 import "./RaceBasicInfoTab.css";
 
 // 指標・範囲・グレード・期間の選択state。グレードと期間は互いに連動する
@@ -109,9 +113,13 @@ function useBasicInfoSources({
     racerIdsKey,
     raceDate,
   );
-  const { accidentRecords, accidentByRacer, accidentRangeLabel, retryAccident } =
-    useAccidentData(racerIdsKey, raceDate, sortedPlayers);
-  const scopedStatsByRacer = useScopedStats({
+  const {
+    accidentRecords,
+    accidentByRacer,
+    accidentRangeLabel,
+    retryAccident,
+  } = useAccidentData(racerIdsKey, raceDate, sortedPlayers);
+  const { scopedStatsByRacer, failedRacers } = useScopedStats({
     sortedPlayers,
     raceId,
     expandedBoat,
@@ -129,6 +137,9 @@ function useBasicInfoSources({
       ? recordsBeforeRace(records, raceId)
       : records;
   };
+  // 推移は取得の失敗（null）を「記録が足りない」と分けて出す
+  const trendRecordsOf = (racerId) =>
+    failedRacers.has(racerId) ? null : recordsOf(racerId);
   // 「直近3ヶ月・直近1ヶ月」の起点もレースの日にそろえる（当日のレースは今日と同じ）
   const periodAnchor = raceId
     ? new Date(`${raceId.slice(0, 10)}T12:00:00+09:00`)
@@ -150,6 +161,7 @@ function useBasicInfoSources({
     scopedStatsByRacer,
     currentMeetFlyingBoats,
     recordsOf,
+    trendRecordsOf,
     periodAnchor,
     currentTermFrom,
   };
@@ -243,9 +255,52 @@ function BasicInfoLegends({ officialRates, accidentByRacer }) {
   );
 }
 
-function BasicInfoFilterBar({ filters, needsOwnAggregation, src }) {
+// 今の値の棒（6艇）と凡例
+function NowBars({ values, shared, scale, src }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
+          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
+          読ませないよう書き添える（#1064 ファン評価2周目） */}
+      {scale.isRelativeScaleMetric && (
+        <p className="rbit-metric-caveat rbit-relative-note">
+          {t("basicInfo.relativeBarNote")}
+        </p>
+      )}
+      {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
+      <div className="race-split">
+        <div className="race-split__main">
+          <div className="rbit-bars">
+            {values.map((row) => (
+              <BasicInfoBarBlock key={row.boat} row={row} shared={shared} />
+            ))}
+          </div>
+        </div>
+        <div className="race-split__side">
+          <BasicInfoLegends
+            officialRates={src.officialRates}
+            accidentByRacer={src.accidentByRacer}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function BasicInfoFilterBar({
+  filters,
+  needsOwnAggregation,
+  src,
+  view,
+  setView,
+}) {
   return (
     <FilterControls
+      viewSlot={
+        <ViewHead view={view} setView={setView} metric={filters.metric} />
+      }
+      hidePeriod={view === "trend"}
       metric={filters.metric}
       setMetric={filters.setMetric}
       scope={filters.scope}
@@ -269,9 +324,10 @@ function RaceBasicInfoTab({
   focusedBoat,
   onFocusBoat,
 }) {
-  const { t } = useTranslation();
   const filters = useBasicInfoFilters();
   const { metric, scope, grade, period } = filters;
+  // 「今の値｜推移」（オーナー 2026-11-24）。開いた最初は今の値
+  const [view, setView] = useState("now");
   // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
   // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
   // その艇が展開済みで開く
@@ -290,7 +346,8 @@ function RaceBasicInfoTab({
     raceId,
     sortedPlayers,
     expandedBoat,
-    needsOwnAggregation,
+    // 推移は6選手の走の記録を使うので、推移を開いたら6人ぶん取る
+    needsOwnAggregation: needsOwnAggregation || view === "trend",
   });
 
   if (sortedPlayers.length === 0) return null;
@@ -330,32 +387,25 @@ function RaceBasicInfoTab({
         filters={filters}
         needsOwnAggregation={needsOwnAggregation}
         src={src}
+        view={view}
+        setView={setView}
       />
 
-      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
-          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
-          読ませないよう書き添える（#1064 ファン評価2周目） */}
-      {scale.isRelativeScaleMetric && (
-        <p className="rbit-metric-caveat rbit-relative-note">
-          {t("basicInfo.relativeBarNote")}
-        </p>
+      {view === "trend" && (
+        <BasicInfoTrend
+          metric={metric}
+          scope={scope}
+          grade={grade}
+          venueCode={venueCode}
+          sortedPlayers={sortedPlayers}
+          recordsOf={src.trendRecordsOf}
+          selectedBoat={expandedBoat}
+          onSelectBoat={onFocusBoat}
+        />
       )}
-      {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
-      <div className="race-split">
-        <div className="race-split__main">
-          <div className="rbit-bars">
-            {values.map((row) => (
-              <BasicInfoBarBlock key={row.boat} row={row} shared={shared} />
-            ))}
-          </div>
-        </div>
-        <div className="race-split__side">
-          <BasicInfoLegends
-            officialRates={src.officialRates}
-            accidentByRacer={src.accidentByRacer}
-          />
-        </div>
-      </div>
+      {view === "now" && (
+        <NowBars values={values} shared={shared} scale={scale} src={src} />
+      )}
     </div>
   );
 }

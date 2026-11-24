@@ -158,6 +158,8 @@ export default function FilterControls({
   officialAvgSt,
   onRetryOfficialAvgSt,
   currentTermFrom,
+  viewSlot = null,
+  hidePeriod = false,
 }) {
   const { t } = useTranslation();
 
@@ -186,6 +188,9 @@ export default function FilterControls({
         </p>
       )}
 
+      {/* 「今の値｜推移」の切り替えは指標の札のすぐ下（visual-designer 11/24） */}
+      {viewSlot}
+
       <ChipGroup
         label={t("basicInfo.scopeLabel")}
         values={SCOPES}
@@ -209,15 +214,18 @@ export default function FilterControls({
         setGrade={setGrade}
       />
 
-      <PeriodDetails
-        metric={metric}
-        scope={scope}
-        period={period}
-        setPeriod={setPeriod}
-        officialAvgSt={officialAvgSt}
-        onRetryOfficialAvgSt={onRetryOfficialAvgSt}
-        currentTermFrom={currentTermFrom}
-      />
+      {/* 推移は期間を使わない（推移そのものが期間を表す）ので、推移の画面では出さない */}
+      {!hidePeriod && (
+        <PeriodDetails
+          metric={metric}
+          scope={scope}
+          period={period}
+          setPeriod={setPeriod}
+          officialAvgSt={officialAvgSt}
+          onRetryOfficialAvgSt={onRetryOfficialAvgSt}
+          currentTermFrom={currentTermFrom}
+        />
+      )}
     </>
   );
 }

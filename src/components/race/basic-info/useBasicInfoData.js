@@ -186,6 +186,8 @@ export function useScopedStats({
   needsOwnAggregation,
 }) {
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
+  // 取得に失敗した選手。下の catch は今までの表示のため [] に倒すので、推移では失敗をここで見分ける
+  const [failedRacers, setFailedRacers] = useState(() => new Set());
 
   const ensureScopedStats = useCallback((racerId) => {
     if (!racerId) return;
@@ -204,6 +206,7 @@ export function useScopedStats({
           // 倒す（例外を握りつぶさずログには残す）
           console.error("選手出走履歴取得エラー:", err?.message ?? String(err));
           setScopedStatsByRacer((cur) => ({ ...cur, [racerId]: [] }));
+          setFailedRacers((cur) => new Set(cur).add(racerId));
         });
       // 取得中はundefinedのまま保持し、二重取得を防ぐ
       return { ...prev, [racerId]: undefined };
@@ -230,5 +233,5 @@ export function useScopedStats({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedBoat, raceId]);
 
-  return scopedStatsByRacer;
+  return { scopedStatsByRacer, failedRacers };
 }
