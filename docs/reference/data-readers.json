@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2839,
+    "sourceFiles": 2840,
     "filesWithAccess": 324,
-    "tableReaders": 958,
+    "tableReaders": 959,
     "tableWriters": 196,
     "rpcCallers": 57,
     "nameMentions": 283,
@@ -30150,8 +30150,9 @@
       "kind": "table",
       "name": "growth_gsc_daily",
       "refs": [
-        "scripts/growth/collect-gsc-daily.js:39",
-        "scripts/growth/collect-gsc-daily.js:45"
+        "scripts/growth/collect-gsc-daily.js:44",
+        "scripts/growth/collect-gsc-daily.js:59",
+        "scripts/growth/collect-gsc-daily.js:68"
       ]
     },
     {

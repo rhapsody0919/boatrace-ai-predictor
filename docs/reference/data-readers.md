@@ -10,9 +10,9 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2839 |
+| 読んだファイル | 2840 |
 | 読み書きのあるファイル | 324 |
-| 表の読み手（箇所） | 958 |
+| 表の読み手（箇所） | 959 |
 | 表の書き手（箇所） | 196 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 283 |
@@ -2319,7 +2319,7 @@
 - rpc `get_racer_scoped_race_rows`: `src/services/racerQueries4.js:174`
 - table `a`: `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:186`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:187`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:188`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:80`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:399`
-- table `growth_gsc_daily`: `scripts/growth/collect-gsc-daily.js:39`, `scripts/growth/collect-gsc-daily.js:45`
+- table `growth_gsc_daily`: `scripts/growth/collect-gsc-daily.js:44`, `scripts/growth/collect-gsc-daily.js:59`, `scripts/growth/collect-gsc-daily.js:68`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`, `scripts/maintenance/verifyData/sns-send-runner-scenes-4.js:174`
 
