@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
+import { isInCautionEnabled } from "../config/featureFlags";
+import { applyFaqOverrides } from "./faqInCaution";
 import "./FAQ.css";
 
 const faqs = [
@@ -199,7 +201,7 @@ function FaqCtaSection({ navigate }) {
           お問い合わせ
         </button>
         <button onClick={() => navigate("/")} className="try-button">
-          AI予想を試す
+          {isInCautionEnabled() ? "レースの分析を見る" : "AI予想を試す"}
         </button>
       </div>
     </div>
@@ -214,8 +216,12 @@ export default function FAQ() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  // イン崩れ注意度の公開の後の文（BOA-822 task 38、フラグの側）
+  const inCaution = isInCautionEnabled();
+  const list = inCaution ? applyFaqOverrides(faqs) : faqs;
+
   // Prepare FAQ schema data
-  const faqSchemaItems = faqs.flatMap((category) =>
+  const faqSchemaItems = list.flatMap((category) =>
     category.questions.map((faq) => ({
       "@type": "Question",
       name: faq.q,
@@ -231,7 +237,11 @@ export default function FAQ() {
       <title>よくある質問（FAQ） | 龍神レーダー</title>
       <meta
         name="description"
-        content="龍神レーダーに関するよくある質問と回答。無料での利用方法、AI予測の精度、使い方、予測データの活用方法など、皆様の疑問にお答えします。"
+        content={
+          inCaution
+            ? "龍神レーダーに関するよくある質問と回答。無料での利用方法、イン崩れ注意度、使い方、データの活用方法など、皆様の疑問にお答えします。"
+            : "龍神レーダーに関するよくある質問と回答。無料での利用方法、AI予測の精度、使い方、予測データの活用方法など、皆様の疑問にお答えします。"
+        }
       />
       <link rel="canonical" href="https://www.boat-ai.jp/faq" />
 
@@ -274,7 +284,7 @@ export default function FAQ() {
           <p>龍神レーダーに関するよくある質問と回答</p>
         </div>
 
-        {faqs.map((category, categoryIndex) => (
+        {list.map((category, categoryIndex) => (
           <FaqCategorySection
             key={categoryIndex}
             category={category}
