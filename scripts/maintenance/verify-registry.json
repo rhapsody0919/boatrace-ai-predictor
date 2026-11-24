@@ -1107,6 +1107,12 @@
       "guards": "PR の差分の形（scripts/lib/prShape.js）。symlink・submodule・.gitmodules・Git LFS のポインタ・.gitattributes・本文の無い差分（バイナリ・NUL を含む JS・中身を変えない改名や複製）・299ファイル超・差分20万字超を落とす。もとは review.yml の gate（AI 審査、2026-11-06 にゼロベース再設計 v3.3 で外した）の検査で、判定の関数は gate と同じ。一時の git の木で、git から作った入力の判定が compare API の形の入力の判定と同じことを確かめる。verify で足した線: 先頭の印（magic bytes）が拡張子と合う png・jpg・gif・webp・wav・mp4・woff2・ttf・gz の追加と変更、空のファイルの追加、中身を変えない実行権の変更は通す。消したファイルの本文は上限に数えない。LFS は行の頭（足した行・変えない行）のポインタだけを落とす（gate は本文のどこかに URL があれば落とした）"
     },
     {
+      "script": "verify-pr-size.js",
+      "tier": "ci",
+      "args": ["--base=origin/master"],
+      "guards": "PR の大きさ（AGENTS.md の安全の6点の5、300行・5ファイル）の数え方（scripts/maintenance/prSize.js、BOA-1718）。新しい e2e の spec・verify・台帳の行の追加・ja と同じキーを足しただけの他の locale・コードの注釈と空行・消した行は数えず、ほかは全部数える。試験のファイルに本体を置いた変異（ほかの変更が新しい試験を import・require・new URL する）は数える。移すだけ（prLaneMoveOnly.js）と記事の PR（check-content-pr.js）は線の外。#3304・#3303 の実の差分が線の中に入ること。この PR の数は表示するだけで、超えても落とさない（オーナー 2026-11-24、超えたら pr-lane の重い道）"
+    },
+    {
       "script": "verify-pre-race-parsers.js",
       "tier": "ci",
       "guards": "出走表・直前情報の全項目パーサー・行の組み立て・書き込み経路"
