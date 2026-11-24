@@ -1110,7 +1110,7 @@
       "script": "verify-pr-size.js",
       "tier": "ci",
       "args": ["--base=origin/master"],
-      "guards": "PR の大きさ（AGENTS.md の安全の6点の5、300行・5ファイル）の数え方（scripts/maintenance/prSize.js、BOA-1718）。新しい e2e の spec・verify・台帳の行の追加・ja と同じキーを足しただけの他の locale・コードの注釈と空行・消した行は数えず、ほかは全部数える。試験のファイルに本体を置いた変異（ほかの変更が新しい試験を import・require・new URL する）は数える。移すだけ（prLaneMoveOnly.js）と記事の PR（check-content-pr.js）は線の外。#3304・#3303 の実の差分が線の中に入ること。この PR の数は表示するだけで、超えても落とさない（オーナー 2026-11-24、超えたら pr-lane の重い道）"
+      "guards": "PR の大きさ（AGENTS.md の安全の6点の5、300行・5ファイル）の数え方（scripts/maintenance/prSize.js、git から読む入口は prSizeGit.js、BOA-1718）。新しい e2e の spec・verify・同じ PR で台帳に足した verify・台帳の項目の追加・ja と同じキーを足しただけの他の locale・コードの注釈と空行・消した行は数えず、ほかは全部数える。試験のファイルに本体を置いた変異（ほかの変更が新しい試験の名を出す・試験を経由して読む・試験の置き場から改名する）は数える。移すだけ（prLaneMoveOnly.js）と記事の PR（check-content-pr.js）は線の外。#3304・#3303 の実の差分が線の中に入ること。この PR の数は表示するだけで、超えても落とさない（オーナー 2026-11-24、超えたら pr-lane の重い道）"
     },
     {
       "script": "verify-pre-race-parsers.js",

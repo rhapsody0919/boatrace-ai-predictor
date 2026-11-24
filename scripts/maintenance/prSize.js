@@ -2,9 +2,10 @@
  * prSize.js - PR の大きさ（AGENTS.md の安全の6点の5「300行・5ファイル」）を数える（BOA-1718）。
  *
  * 作り手が自分で数えるのをやめ、機械で数える。数えない物は少なく決め、ほかは全部数える（知らない置き場は数える側）:
- *   1. 新しく足した e2e の spec（e2e 以下の *.spec.js）と verify（scripts/maintenance/verify-*.js）。
- *      ただし差分のほかのファイルが足した行で import・require・new URL するなら数える（試験のファイルに本体を置く抜け道）
- *   2. verify-registry.json の行の追加だけ（既存の行を変えた・消したら全部数える。pr-lane の H5 の rowsOnlyAdded と同じ見方）
+ *   1. 新しく足した e2e の spec（e2e 以下の *.spec.js）と、同じ PR で台帳に足した verify（scripts/maintenance/verify-*.js）。
+ *      ただし試験でないほかの変更ファイル（文書・台帳を除く）の足した行に名が出るなら数える（試験のファイルに本体を置く抜け道）。
+ *      数える側に移った試験の名を出す試験も数える。数えない試験の置き場から数える置き場への改名は、先の全部の行を数える
+ *   2. verify-registry.json の項目の追加だけ（JSON で比べ、既存の項目を1字でも変えたら全部数える）
  *   3. ja 以外の locale（src/locales/<言語>/<名>.json）の行の追加だけで、足したキーの集合が同じ PR の ja の同じ名の
  *      ファイルで足したキーの集合と同じとき（ja は数える。訳の揃いは verify-i18n-consistency が CI で見る）
  *   4. 空行と、コードのファイル（.js・.jsx・.mjs・.cjs・.ts・.tsx・.css）の注釈だけの行（行頭が // ・* ・/* ・{/*）
@@ -13,21 +14,8 @@
  * 線の外（全部を数えない）の PR: 移すだけ（pr-lane の moveOnlyPaths が差分の全部のファイルを移すだけと判定）と、
  * 記事の PR（scripts/content/check-content-pr.js が通す）。判定は呼び手がその物を呼んで渡す。
  *
- * Node の組み込みと相対の import だけ（pr-lane.js から使うため）。数える本体 measurePrSize は git に触れない。
- * git から読んで数える入口は measureCommits（verify-pr-size.js と pr-lane.js が呼ぶ）。
+ * git に触れない純関数。git から読んで数える入口は prSizeGit.js の measureCommits（verify-pr-size.js と pr-lane.js が呼ぶ）。
  */
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { moveOnlyPaths } from "./prLaneMoveOnly.js";
-import { loadMoveOnly } from "./prLaneClassify.js";
-import { parsePatch } from "./pr-lane.js";
-
-const CHECK_CONTENT_PR = fileURLToPath(
-  new URL("../content/check-content-pr.js", import.meta.url),
-);
 
 /** 線（数字の根拠は無いが動かさない。オーナー 2026-11-24、BOA-1718） */
 export const SIZE_LIMIT = Object.freeze({ lines: 300, files: 5 });
@@ -39,12 +27,21 @@ const NEW_TEST = [
 const REGISTRY = /^scripts\/maintenance\/verify-registry\.json$/;
 const LOCALE = /^src\/locales\/([^/]+)\/(.+\.json)$/;
 const CODE = /\.(js|jsx|mjs|cjs|ts|tsx|css)$/;
-const NOTE = /^\s*(\/\/|\*|\/\*|\{\/\*)/;
+// 注釈だけの行: // で始まる、/* で始まり行の末で閉じるか閉じない、{/* で始まり行の末の */} で閉じる、
+// ブロックの注釈の中の行（* の後が空白か行の末）。/**/ の後ろにコードを置く行・CSS の * のセレクタは数える
+const NOTE = [
+  /^\s*\/\//,
+  /^\s*\/\*(?!.*\*\/.*\S.*$)(.*\*\/\s*$|(?!.*\*\/).*$)/,
+  /^\s*\{\/\*.*\*\/\}\s*$/,
+];
+const NOTE_INNER = /^\s*\*(\s|\/\s*$|$)/;
 
 /** 数えない行（空行・コードのファイルの注釈だけの行） */
 export function isNoteLine(path, line) {
   if (line.trim() === "") return true;
-  return CODE.test(path) && NOTE.test(line);
+  if (!CODE.test(path)) return false;
+  if (NOTE.some((re) => re.test(line))) return true;
+  return !path.endsWith(".css") && NOTE_INNER.test(line);
 }
 
 /** 行の追加だけか（配列の末尾に足して前の行の "}" が "}," に変わった物は書き換えに数えない） */
@@ -103,57 +100,127 @@ function exemptLocales(changes, patches, readText) {
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** 足した行が、この試験のファイルを import・require・new URL するか（拡張子は省いてもよい） */
-function importsFile(lines, testPath) {
+/**
+ * 足した行に、この試験のファイルの名が引用符か / の後に出るか（import・require・new URL・path.join・bash の起動。
+ * 拡張子は省いてもよい）。語で絞らない（数えすぎは安全側）
+ */
+function namesFile(lines, testPath) {
   const name = escapeRe(
     testPath
       .split("/")
       .pop()
       .replace(/\.(js|mjs|cjs|sh)$/, ""),
   );
-  const re = new RegExp(
-    `(\\bimport\\b|\\brequire\\s*\\(|\\bnew\\s+URL\\s*\\(|\\bfrom\\s)[^\\n]*[/"'\`]${name}(\\.(js|mjs|cjs|sh))?["'\`]`,
-  );
+  const re = new RegExp(`[/"'\`]${name}(\\.(js|mjs|cjs|sh))?(?![\\w.-])`);
   return lines.some((line) => re.test(line));
 }
 
-/** 数えない新しい試験のファイル（試験でないほかの変更ファイルから読まれる物は数える） */
-function exemptTests(changes, patches) {
-  const candidates = changes.filter(
-    (c) => c.status === "A" && NEW_TEST.some((re) => re.test(c.path)),
+/** 同じ PR で台帳に tier=ci で足した verify の名（台帳に無い verify-*.js は試験と見なさない。verify の名の道具を除く） */
+function registeredTests(readText) {
+  const names = (side) => {
+    try {
+      const reg = JSON.parse(
+        readText(side, "scripts/maintenance/verify-registry.json") ?? "{}",
+      );
+      return new Set(
+        (reg.entries ?? []).filter((v) => v.tier === "ci").map((v) => v.script),
+      );
+    } catch {
+      return new Set(); // 読めない台帳は「足した verify なし」（verify を数える側）
+    }
+  };
+  const before = names("base");
+  return new Set([...names("head")].filter((n) => !before.has(n)));
+}
+
+/**
+ * 数えない新しい試験のファイル。試験でないほかの変更ファイル（文書・台帳を除く）の足した行に名が出る物は数え、
+ * 数える側に移った試験の名を出す試験も数える（不動点まで。試験を経由して本体を読む形）
+ */
+function exemptTests(changes, patches, readText) {
+  const added = registeredTests(readText);
+  const candidates = new Set(
+    changes
+      .filter((c) => c.status === "A")
+      .map((c) => c.path)
+      .filter((p) =>
+        /^e2e\//.test(p)
+          ? NEW_TEST[0].test(p)
+          : NEW_TEST[1].test(p) && added.has(p.split("/").pop()),
+      ),
   );
-  const isCandidate = (p) => candidates.some((x) => x.path === p);
-  const exempt = new Map();
-  for (const t of candidates) {
-    const read = changes.some(
-      (c) =>
-        !isCandidate(c.path) &&
-        !REGISTRY.test(c.path) &&
-        importsFile(patches.get(c.path)?.added ?? [], t.path),
-    );
-    if (!read) exempt.set(t.path, "新しい試験のファイル");
+  const readers = changes
+    .map((c) => c.path)
+    .filter((p) => !candidates.has(p) && !REGISTRY.test(p) && !/\.md$/.test(p));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const t of [...candidates]) {
+      if (readers.some((r) => namesFile(patches.get(r)?.added ?? [], t))) {
+        candidates.delete(t);
+        readers.push(t);
+        changed = true;
+      }
+    }
   }
-  return exempt;
+  return new Map([...candidates].map((p) => [p, "新しい試験のファイル"]));
+}
+
+/** 台帳の変更が、既存の項目を変えずに新しい script の項目を足しただけか（JSON で比べる） */
+function registryOnlyAdded(readText) {
+  try {
+    const items = (side) =>
+      JSON.parse(
+        readText(side, "scripts/maintenance/verify-registry.json") ?? "null",
+      ).entries;
+    const before = items("base");
+    const after = items("head");
+    const key = (v) => JSON.stringify(v);
+    const kept = new Set(after.map(key));
+    const known = new Set(before.map((v) => v.script));
+    return (
+      before.every((v) => kept.has(key(v))) &&
+      after.every(
+        (v) => before.some((b) => key(b) === key(v)) || !known.has(v.script),
+      )
+    );
+  } catch {
+    return false; // 読めない台帳は数える
+  }
 }
 
 /** 数えないファイル → 理由（新しい試験・ja と同じキーの locale・台帳の行の追加だけ） */
 function skipList(changes, live, patches, readText) {
   const skip = new Map([
-    ...exemptTests(changes, patches),
+    ...exemptTests(changes, patches, readText),
     ...exemptLocales(changes, patches, readText),
   ]);
   const reg = live.find((c) => REGISTRY.test(c.path));
-  if (reg && patches.get(reg.path) && onlyAdded(patches.get(reg.path)))
-    skip.set(reg.path, "台帳の行の追加だけ");
+  if (reg && registryOnlyAdded(readText))
+    skip.set(reg.path, "台帳の項目の追加だけ");
   return skip;
 }
 
+/**
+ * 数えない試験の置き場から数える置き場への改名は、先のファイルの全部の行を足した行として扱う
+ * （-M で差分だけになると、試験として足した本体を次の PR の改名で洗える）
+ */
+function laundered(change, patches, readText) {
+  if (change.status !== "R" || !change.from) return patches.get(change.path);
+  const fromTest = NEW_TEST.some((re) => re.test(change.from));
+  const toTest = NEW_TEST.some((re) => re.test(change.path));
+  if (!fromTest || toTest) return patches.get(change.path);
+  const text = readText("head", change.path);
+  return { added: text === null ? [""] : text.split("\n"), removed: [] };
+}
+
 /** ファイルごとに数える（数えない物は skipped に理由つきで） */
-function countFiles(live, patches, skip) {
+function countFiles(live, patches, skip, readText) {
   const counted = [];
   const skipped = [];
-  for (const { path } of live) {
-    const patch = patches.get(path);
+  for (const change of live) {
+    const { path } = change;
+    const patch = laundered(change, patches, readText);
     if (skip.has(path)) skipped.push({ path, why: skip.get(path) });
     else if (!patch || patch.added.length + patch.removed.length === 0)
       counted.push({ path, lines: 0 }); // 行の無い差分（バイナリ・改名だけ・mode だけ）はファイルに数える
@@ -169,7 +236,7 @@ function countFiles(live, patches, skip) {
 /**
  * PR の大きさを数える（git に触れない）
  * @param {{
- *   changes: { status: string, path: string }[],
+ *   changes: { status: string, path: string, from?: string }[],
  *   patches: Map<string, { added: string[], removed: string[] }>,
  *   readText?: (side: "base"|"head", path: string) => string|null,
  *   moved?: Set<string>,
@@ -202,6 +269,7 @@ export function measurePrSize({
     live,
     patches,
     skipList(changes, live, patches, readText),
+    readText,
   );
   const lines = counted.reduce((n, c) => n + c.lines, 0);
   return {
@@ -212,101 +280,4 @@ export function measurePrSize({
     counted,
     skipped,
   };
-}
-
-/**
- * git の出力から measurePrSize の入力を作る（git は呼び手が渡す: 引数の配列 → 標準出力の文字列）。
- * 差分は merge-base から head まで、改名を見る（-M。verify-pr-shape.js と同じ）。
- * patch は pr-lane.js の parsePatch（改名の元のパスにも空の行が入るが、changes に無いので数えない）
- */
-export function collectSizeInput(git, mergeBase, head) {
-  const tokens = git(["diff", "--name-status", "-M", "-z", mergeBase, head])
-    .split("\0")
-    .filter((t) => t !== "");
-  const changes = [];
-  for (let i = 0; i < tokens.length;) {
-    const status = tokens[i][0];
-    const twoPaths = status === "R" || status === "C";
-    changes.push({ status, path: tokens[i + (twoPaths ? 2 : 1)] });
-    i += twoPaths ? 3 : 2;
-  }
-  const patches = parsePatch(
-    git(["diff", "-M", "-U0", "--no-color", "--no-ext-diff", mergeBase, head]),
-  );
-  const readText = (side, path) => {
-    try {
-      return git(["show", `${side === "base" ? mergeBase : head}:${path}`]);
-    } catch {
-      return null; // 無いファイル（足した・消した側）は null。locale の判定は無い側を空として扱う
-    }
-  };
-  return { changes, patches, readText };
-}
-
-/** check-content-pr.js を dir（HEAD が PR の head の作業ツリー）で起動し、終了コード0なら記事の PR */
-function runContentGate(dir, baseSha) {
-  try {
-    execFileSync(process.execPath, [CHECK_CONTENT_PR, "--base", baseSha], {
-      cwd: dir,
-      stdio: ["ignore", "ignore", "ignore"],
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    return true;
-  } catch (err) {
-    // 1＝記事の PR でない、2＝判定できない（どちらも数える側）。起動できない等の失敗は投げる
-    if (typeof err.status === "number") return false;
-    throw err;
-  }
-}
-
-/**
- * 記事の PR か（scripts/content/check-content-pr.js をそのまま当てる）。関門は作業ツリーの HEAD を見るので、
- * head が repo の HEAD でなければ一時の作業ツリー（detach）に head を出して当てる（auto-merge-content-prs.js の contract と同じ）
- */
-export function isContentPr(repo, baseSha, headSha) {
-  const git = (args) =>
-    execFileSync("git", args, {
-      cwd: repo,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
-  if (git(["rev-parse", "HEAD"]) === headSha)
-    return runContentGate(repo, baseSha);
-  const dir = mkdtempSync(join(tmpdir(), "pr-size-content-"));
-  try {
-    git(["worktree", "add", "-q", "--detach", dir, headSha]);
-    return runContentGate(dir, baseSha);
-  } finally {
-    try {
-      git(["worktree", "remove", "--force", dir]);
-    } catch {
-      rmSync(dir, { recursive: true, force: true }); // worktree add の前に落ちた等で git が知らない場所は消すだけ
-      git(["worktree", "prune"]);
-    }
-  }
-}
-
-/**
- * git から差分を読んで数える（repo の base と head の merge-base から head まで）。
- * 記事の PR の判定（作業ツリーを出すので重い）は、数えて線を超えたときだけ回す
- */
-export function measureCommits(repo, base, head) {
-  const git = (args) =>
-    execFileSync("git", ["-c", "core.quotepath=false", ...args], {
-      cwd: repo,
-      encoding: "utf8",
-      maxBuffer: 1024 * 1024 * 1024,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-  const sha = (ref) => git(["rev-parse", "--verify", `${ref}^{commit}`]).trim();
-  const headSha = sha(head);
-  const baseSha = sha(base);
-  const mergeBase = git(["merge-base", baseSha, headSha]).trim();
-  const input = collectSizeInput(git, mergeBase, headSha);
-  const moved = moveOnlyPaths(loadMoveOnly(), input.changes, input.readText);
-  const counted = measurePrSize({ ...input, moved });
-  if (!counted.over) return counted;
-  return isContentPr(repo, baseSha, headSha)
-    ? measurePrSize({ ...input, moved, contentPr: true })
-    : counted;
 }

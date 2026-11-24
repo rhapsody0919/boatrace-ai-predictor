@@ -6,19 +6,35 @@ import { SIZE_LIMIT, measurePrSize } from "../prSize.js";
 
 let check;
 
-const n = (k, f = (i) => `const v${i} = ${i};`) =>
+export const n = (k, f = (i) => `const v${i} = ${i};`) =>
   Array.from({ length: k }, (_, i) => f(i));
-/** 純関数の入力: files は [status, path, added, removed?] */
+const REG = "scripts/maintenance/verify-registry.json";
+const regText = (entries) => JSON.stringify({ entries });
+/** 台帳の base（空）と head（files で足した verify-*.js を tier=ci で並べる）。texts に台帳があればそちらが勝つ */
+const autoRegistry = (files) => ({
+  [`base:${REG}`]: regText([]),
+  [`head:${REG}`]: regText(
+    files
+      .filter(([st, p]) => st === "A" && /\/verify-[^/]+$/.test(p))
+      .map(([, p]) => ({ script: p.split("/").pop(), tier: "ci" })),
+  ),
+});
+/** 純関数の入力: files は [status, path, added, removed?, from?] */
 const input = (files, texts = {}) => ({
-  changes: files.map(([status, p]) => ({ status, path: p })),
+  changes: files.map(([status, p, , , from]) => ({
+    status,
+    path: p,
+    ...(from ? { from } : {}),
+  })),
   patches: new Map(
     files
       .filter(([, , added]) => added !== null)
       .map(([, p, added, removed = []]) => [p, { added, removed }]),
   ),
-  readText: (side, p) => texts[`${side}:${p}`] ?? null,
+  readText: (side, p) =>
+    ({ ...autoRegistry(files), ...texts })[`${side}:${p}`] ?? null,
 });
-const size = (files, texts, extra = {}) =>
+export const size = (files, texts, extra = {}) =>
   measurePrSize({ ...input(files, texts), ...extra });
 const skippedPaths = (r) => r.skipped.map((s) => s.path).sort();
 
@@ -46,28 +62,52 @@ function scenePureTests() {
     JSON.stringify(helper),
   );
 
-  const reg = "scripts/maintenance/verify-registry.json";
-  const regAdd = size([
+  const unregistered = size(
+    [["A", "scripts/maintenance/verify-tool.js", n(150)]],
+    { [`head:${REG}`]: regText([]) },
+  );
+  check(
+    "台帳に tier=ci で足していない verify の名の道具は数える",
+    unregistered.lines === 150,
+    JSON.stringify(unregistered.counted),
+  );
+
+  const old = { script: "verify-a.js", tier: "ci", guards: "a" };
+  const regRows = [
     [
       "M",
-      reg,
+      REG,
       ["    {", '      "script": "verify-x.js",', "    },"],
       ["    }"],
     ],
-  ]);
+  ];
+  const regAdd = size(regRows, {
+    [`base:${REG}`]: regText([old]),
+    [`head:${REG}`]: regText([old, { script: "verify-x.js", tier: "ci" }]),
+  });
   check(
-    "台帳の行の追加だけは数えない（前の行の } が }, になるのは追加）",
+    "台帳の新しい項目の追加だけは数えない",
     regAdd.lines === 0 && regAdd.files === 0,
     JSON.stringify(regAdd),
   );
-  const regChange = size([
-    ["M", reg, ['      "tier": "manual",'], ['      "tier": "ci",']],
-  ]);
-  check(
-    "台帳の既存の行の変更は数える",
-    regChange.lines === 1,
-    JSON.stringify(regChange),
-  );
+  for (const [label, head] of [
+    ["既存の項目に性質の行を足す", [{ ...old, args: ["--x"] }]],
+    ["既存の項目の tier を変える", [{ ...old, tier: "manual" }]],
+    [
+      "既にある script の名で2つ目の項目を足す",
+      [old, { script: "verify-a.js", tier: "manual" }],
+    ],
+  ]) {
+    const r = size(regRows, {
+      [`base:${REG}`]: regText([old]),
+      [`head:${REG}`]: regText(head),
+    });
+    check(
+      `台帳を数える: ${label}`,
+      r.files === 1 && r.lines === 3,
+      JSON.stringify(r.counted),
+    );
+  }
 }
 
 function scenePureNotes() {
@@ -93,6 +133,26 @@ function scenePureNotes() {
     notes.lines === 4 &&
       notes.counted.find((c) => c.path === "docs/a.md")?.lines === 2,
     JSON.stringify(notes.counted),
+  );
+
+  const code = [
+    "/**/ export const r = 1;",
+    "{/* c */}<Row />",
+    "  *entries() {",
+    "/* 注釈 */ const b = 2;",
+    "/**",
+    " */",
+    " *",
+  ];
+  const codeLike = size([
+    ["M", "src/b.jsx", code],
+    ["M", "src/b.css", ["* {", "*,", "*::before {", " * 注釈", "/* 閉じない"]],
+  ]);
+  check(
+    "注釈の後ろにコードを置く行・ジェネレーター・CSS の * のセレクタは数える",
+    codeLike.counted.find((c) => c.path === "src/b.jsx")?.lines === 4 &&
+      codeLike.counted.find((c) => c.path === "src/b.css")?.lines === 4,
+    JSON.stringify(codeLike.counted),
   );
 
   const removedOnly = size([
@@ -213,69 +273,6 @@ function scenePureLimit() {
   );
 }
 
-function sceneMutation() {
-  const body = n(250, (i) => `export const rule${i} = (x) => x + ${i};`);
-  for (const [label, test, spec] of [
-    [
-      "verify に本体（src から import）",
-      "scripts/maintenance/verify-rules.js",
-      'import { rule1 } from "../../scripts/maintenance/verify-rules.js";',
-    ],
-    [
-      "verify に本体（拡張子を省いた import）",
-      "scripts/maintenance/verify-rules.js",
-      "import { rule1 } from '../maintenance/verify-rules';",
-    ],
-    [
-      "spec に本体（require）",
-      "e2e/rules.spec.js",
-      'const { rule1 } = require("../e2e/rules.spec.js");',
-    ],
-    [
-      "verify に本体（new URL）",
-      "scripts/maintenance/verify-rules.js",
-      'const u = new URL("./verify-rules.js", import.meta.url);',
-    ],
-  ]) {
-    const r = size([
-      ["A", test, body],
-      ["M", "src/pages/Venue.jsx", [spec, "const a = rule1(1);"]],
-    ]);
-    check(
-      `変異は数える: ${label}`,
-      r.lines === 252 && r.counted.some((c) => c.path === test),
-      JSON.stringify(r.counted),
-    );
-  }
-  const fromTest = size([
-    ["A", "scripts/maintenance/verify-rules.js", body],
-    [
-      "A",
-      "scripts/maintenance/verify-other.js",
-      ['import { rule1 } from "./verify-rules.js";'],
-    ],
-    [
-      "M",
-      "scripts/maintenance/verify-registry.json",
-      ['    { "script": "verify-rules.js" },'],
-    ],
-  ]);
-  check(
-    "新しい試験どうしの import・台帳の名は本体扱いしない",
-    fromTest.lines === 0,
-    JSON.stringify(fromTest.counted),
-  );
-  const nameOnly = size([
-    ["A", "scripts/maintenance/verify-rules.js", body],
-    ["M", "docs/a.md", ["`node scripts/maintenance/verify-rules.js` を回す"]],
-  ]);
-  check(
-    "文書で名を挙げるだけなら本体扱いしない",
-    nameOnly.lines === 1,
-    JSON.stringify(nameOnly.counted),
-  );
-}
-
 /** verify から呼ぶ入口。env は verify 側の束縛（check） */
 export function runPrSizeScenes(env) {
   ({ check } = env);
@@ -283,5 +280,4 @@ export function runPrSizeScenes(env) {
   scenePureNotes();
   scenePureLocale();
   scenePureLimit();
-  sceneMutation();
 }

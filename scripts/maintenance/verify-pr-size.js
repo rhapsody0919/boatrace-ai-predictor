@@ -23,8 +23,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SIZE_LIMIT, measureCommits } from "./prSize.js";
+import { SIZE_LIMIT } from "./prSize.js";
+import { measureCommits } from "./prSizeGit.js";
 import { runPrSizeScenes } from "./verifyData/pr-size-scenes.js";
+import { runPrSizeScenes2 } from "./verifyData/pr-size-scenes-2.js";
 import { makePr } from "./verifyData/content-pr-gate-make-pr.js";
 import { baseMd } from "./verifyData/content-pr-gate-fixtures.js";
 
@@ -47,6 +49,7 @@ const n = (k, f = (i) => `const v${i} = ${i};`) =>
 
 // ---- 1・2（純関数と、試験のファイルに本体を置いた変異）は verifyData/pr-size-scenes.js ----
 runPrSizeScenes({ check });
+runPrSizeScenes2({ check });
 
 // ---- 3. 一時の git の木 ----
 const tmpGit = (fn) => {
@@ -191,6 +194,30 @@ tmpGit(({ dir, write, commit, g }) => {
   );
 });
 
+// 改名（-M）: 試験の置き場から数える置き場へ移すと全部の行を数え、ふつうの改名と書き換えは足した行だけ（パスは新しい方）
+tmpGit(({ write, commit, g, dir }) => {
+  const body = n(400, (i) => `export const rule${i} = (x) => x + ${i};`);
+  write("e2e/rules.spec.js", `${body.join("\n")}\n`);
+  write("src/pure/a.js", `${body.join("\n")}\n`);
+  const base = commit("base");
+  g("mv", "e2e/rules.spec.js", "src/pure/rules.js");
+  g("mv", "src/pure/a.js", "src/pure/b.js");
+  write(
+    "src/pure/b.js",
+    `${["export const edited = 1;", ...body.slice(1)].join("\n")}\n`,
+  );
+  const head = commit("rename");
+  const r = measureCommits(dir, base, head);
+  const of = (p) => r.counted.find((c) => c.path === p)?.lines;
+  check(
+    "一時の木: 試験の置き場から src/pure への改名は全部の行、ふつうの改名と書き換えは1行",
+    of("src/pure/rules.js") === 400 &&
+      of("src/pure/b.js") === 1 &&
+      r.files === 2,
+    JSON.stringify(r.counted),
+  );
+});
+
 // ---- 4. 実の差分（#3304 と #3303。作り手が線に合わせて置き場を曲げた PR） ----
 const resolvable = (ref) => {
   try {
@@ -255,6 +282,6 @@ else {
   for (const s of mine.skipped) console.log(`  数えない ${s.path}（${s.why}）`);
   if (mine.over)
     console.log(
-      "  超えた PR は pr-lane で重い道（人が見る）に回る。落とさない",
+      "  超えても落とさない。超えた PR を pr-lane で重い道（人が見る）に回すのは BOA-1718 の続きの PR",
     );
 }
