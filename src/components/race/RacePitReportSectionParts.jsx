@@ -1,4 +1,4 @@
-import { BOAT_COLORS } from "../../utils/colors";
+import BoatBadge from "./BoatBadge";
 import TermHintButton from "./TermHintButton";
 import { formatCapturedAtJst } from "../../utils/formatters";
 
@@ -34,16 +34,10 @@ function ConfidenceStars({ stars, t }) {
 }
 
 function PitCommentCard({ comment, player, t }) {
-  const color = BOAT_COLORS[comment.boatNumber] || {};
   return (
-    <li className="rpr-comment">
+    <li className="rpr-comment" data-boat={comment.boatNumber}>
       <div className="rpr-comment-head">
-        <span
-          className="rpr-boat-chip"
-          style={{ background: color.bg, color: color.text }}
-        >
-          {comment.boatNumber}
-        </span>
+        <BoatBadge n={comment.boatNumber} />
         {player?.name ? (
           <span className="rpr-racer-name" translate="no">
             {/* 出走表の名前は姓と名の間を全角スペースで詰めてある。結果タブと同じく
@@ -87,16 +81,19 @@ export function PitReportPublished({
     <section className="rbi-card rpr-card">
       {heading}
 
-      <div className="rpr-source">
-        <p className="rpr-source-text">{t("pitReport.source")}</p>
+      {/* 副題と出典。出典（名前・取得時刻・公式へのリンク）はカード上部に1回
+          （ADR-0067 のピットレポートの追記）。語の途中で折れないよう塊ごとに分ける */}
+      <p className="rpr-subtitle">{t("pitReport.subtitle")}</p>
+      <p className="rpr-source">
+        <span className="rpr-source-part">{t("pitReport.source")}</span>
+        {officialLink}
         {capturedAt && (
-          <p className="rpr-source-text">
+          <span className="rpr-source-part">
             {t("pitReport.capturedAt", { time: capturedAt })}
             {t("home.jstNote")}
-          </p>
+          </span>
         )}
-        {officialLink}
-      </div>
+      </p>
 
       <ul className="rpr-comment-list">
         {report.comments.map((comment) => (
@@ -109,7 +106,7 @@ export function PitReportPublished({
         ))}
       </ul>
 
-      <p className="rbi-note">{t("pitReport.note")}</p>
+      <p className="rbi-note">💡 {t("pitReport.cardNote")}</p>
       {i18n.language !== "ja" && (
         <p className="rbi-note">{t("pitReport.originalLanguageNote")}</p>
       )}
