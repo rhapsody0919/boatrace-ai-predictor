@@ -486,3 +486,9 @@
     font-size: 1rem;
   }
 }
+
+/* イン崩れ注意度の出し方（BOA-822、フラグの側）。HowToUse.css の .step-content の min-height: 500px が
+   769px 以上で効いて、2行の本文のカードに大きな空白が出る（ファン評価 2026-11-24 P2）。この節だけ打ち消す */
+.about-in-caution-steps .ai-step .step-content {
+  min-height: auto;
+}
