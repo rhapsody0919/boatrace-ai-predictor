@@ -679,6 +679,11 @@
       "guards": "Search Console の date × page の取得と書き手・補充の道具（scripts/lib/growth/gscPageDaily.js、SEO データの輪 PR2）。query を付けずに取ること・表が無い間は書き手が何を適用するかを書いて止まること・補充の範囲が 2025-12-21 以降で引数の誤りは文で止まること・0行の日と上限に当たった日は古い行を消さないこと"
     },
     {
+      "script": "verify-growth-morning-sheet.js",
+      "tier": "ci",
+      "guards": "SEO の朝の1枚の組み立て（scripts/lib/growth/morningSheet.js、SEO データの輪 PR6）。見張りが growth 表の最新の日と行数で、必須の表が空か古いか無いときは赤になり、赤のときは察知と効きを出さないこと・1枚と票の雛形に正確な件数やクリックや順位を出さず桁と順位の帯だけにすること・旬の語と指名と開催起因を別の節に分けること・新記事の段と未測定と改稿の判定待ちを出すこと"
+    },
+    {
       "script": "verify-growth-seo-detect.js",
       "tier": "ci",
       "guards": "SEO の察知の純関数（scripts/lib/growth/seoDetect.js、SEO データの輪 PR3）。順位が表示で重みを付けた平均であること・page の www/無印/末尾スラッシュを同じにすること・指名と一般の分け（ボートアイ系は競合名と同じ印）・開催起因の語を一般の伸びと混ぜないこと・伸び/新/落ちの7日の和・カニバリは正規化した page の上位2ページ・判定木の順と AIO の語をクリック率の改稿から外すこと・票に出すのは桁だけ"
