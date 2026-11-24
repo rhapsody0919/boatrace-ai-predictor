@@ -136,6 +136,36 @@ function exemptTests(changes, patches) {
   return exempt;
 }
 
+/** 数えないファイル → 理由（新しい試験・ja と同じキーの locale・台帳の行の追加だけ） */
+function skipList(changes, live, patches, readText) {
+  const skip = new Map([
+    ...exemptTests(changes, patches),
+    ...exemptLocales(changes, patches, readText),
+  ]);
+  const reg = live.find((c) => REGISTRY.test(c.path));
+  if (reg && patches.get(reg.path) && onlyAdded(patches.get(reg.path)))
+    skip.set(reg.path, "台帳の行の追加だけ");
+  return skip;
+}
+
+/** ファイルごとに数える（数えない物は skipped に理由つきで） */
+function countFiles(live, patches, skip) {
+  const counted = [];
+  const skipped = [];
+  for (const { path } of live) {
+    const patch = patches.get(path);
+    if (skip.has(path)) skipped.push({ path, why: skip.get(path) });
+    else if (!patch || patch.added.length + patch.removed.length === 0)
+      counted.push({ path, lines: 0 }); // 行の無い差分（バイナリ・改名だけ・mode だけ）はファイルに数える
+    else {
+      const lines = patch.added.filter((l) => !isNoteLine(path, l)).length;
+      if (lines > 0) counted.push({ path, lines });
+      else skipped.push({ path, why: "注釈・空行・消した行だけ" });
+    }
+  }
+  return { counted, skipped };
+}
+
 /**
  * PR の大きさを数える（git に触れない）
  * @param {{
@@ -168,31 +198,11 @@ export function measurePrSize({
   if (changes.length > 0 && changes.every((c) => moved.has(c.path)))
     return whole("移すだけ（pr-lane の moveOnly）");
 
-  const skip = new Map([
-    ...exemptTests(changes, patches),
-    ...exemptLocales(changes, patches, readText),
-  ]);
-  const reg = live.find((c) => REGISTRY.test(c.path));
-  if (reg && patches.get(reg.path) && onlyAdded(patches.get(reg.path)))
-    skip.set(reg.path, "台帳の行の追加だけ");
-
-  const counted = [];
-  const skipped = [];
-  for (const { path } of live) {
-    if (skip.has(path)) {
-      skipped.push({ path, why: skip.get(path) });
-      continue;
-    }
-    const patch = patches.get(path);
-    if (!patch || (patch.added.length === 0 && patch.removed.length === 0)) {
-      // 行の無い差分（バイナリ・改名だけ・mode だけ）はファイルに数える
-      counted.push({ path, lines: 0 });
-      continue;
-    }
-    const lines = patch.added.filter((l) => !isNoteLine(path, l)).length;
-    if (lines > 0) counted.push({ path, lines });
-    else skipped.push({ path, why: "注釈・空行・消した行だけ" });
-  }
+  const { counted, skipped } = countFiles(
+    live,
+    patches,
+    skipList(changes, live, patches, readText),
+  );
   const lines = counted.reduce((n, c) => n + c.lines, 0);
   return {
     lines,
