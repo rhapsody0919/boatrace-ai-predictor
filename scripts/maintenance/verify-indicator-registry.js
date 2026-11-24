@@ -13,6 +13,7 @@
  *   - モーターは自社の再計算を先に、取れないとき公式の値。調子は上がった艇の中の最良だけ
  *   - 平均ST は小さいほど良く、表示の桁（公式2桁・30走3桁）で比べる。ST のズレは走数0の艇を比べない
  *   - 展示ST はフライング・出遅れの艇を外す（次に早い艇が最良）。展示タイムは値の無い艇を比べない
+ *   - 回収率は走数0の艇を比べず、整数の % で書く
  */
 import * as dataFormat from "../../src/pure/dataFormat.js";
 import {
@@ -131,6 +132,11 @@ expectEq("展示ST のフライングの艇は外し、次に早い艇が最良"
 const exTime = getIndicator("boat.exhibitionTime.today");
 const exRows = [[1, 6.71], [2, 6.69], [3, null]].map(([b, v]) => ({ boat_number: b, exhibition_time: v }));
 expectEq("展示タイムは小さいほど良い（値の無い艇は比べない）", sorted(bestOfIndicator(exTime, exTime.select({ analysis: { exhibitionTime: exRows } }))), [2]);
+
+const ret = getIndicator("racer.winReturnRate.waku180d");
+const retRows = [[1, 0, 300], [2, 12, 104.4], [3, 30, 98]].map(([b, n, v]) => ({ boat_number: b, sample_count: n, win_return_rate: v }));
+expectEq("回収率は走数0の艇を比べない", sorted(bestOfIndicator(ret, ret.select({ analysis: { returnRate: retRows } }))), [2]);
+expectEq("回収率は整数の %", formatIndicatorParts(ret, 104.4), { text: "104", unit: "%" });
 
 const hidden = new Map([[1, { value: 9, hidden: true }], [2, { value: 5, hidden: false }], [3, { value: 3 }]]);
 expectEq("hidden の艇は最良に返さない（繰り下げない）", sorted(bestOfIndicator(win, hidden)), []);
