@@ -116,7 +116,8 @@ function AboutRaceTabsSection({ inCaution }) {
         </li>
         {inCaution && (
           <li>
-            <strong>龍神ソナー</strong>: 類似レースの決まり方
+            <strong>龍神ソナー</strong>:
+            今日と条件の近い過去のレース（類似レース）で、どの艇がどう決まったか
           </li>
         )}
         <li>
@@ -329,7 +330,10 @@ export default function About() {
           </p>
         </div>
 
-        <AboutHeroVideoSection mobileVideoRef={mobileVideoRef} desktopVideoRef={desktopVideoRef} videoStarted={videoStarted} handlePlayVideo={handlePlayVideo} />
+        {/* 紹介動画とポスターは「AI予想」「展開予測の的中率」を映すので、フラグの側では出さない（ファン評価 2026-11-24 P1。差し替えは別に） */}
+        {!inCaution && (
+          <AboutHeroVideoSection mobileVideoRef={mobileVideoRef} desktopVideoRef={desktopVideoRef} videoStarted={videoStarted} handlePlayVideo={handlePlayVideo} />
+        )}
 
         <AboutSections inCaution={inCaution} navigate={navigate} />
       </div>

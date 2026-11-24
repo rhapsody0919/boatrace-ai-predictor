@@ -28,7 +28,12 @@ test("フラグの側: 「AI予想」と展開予測の的中率を出さず、�
     .toHaveAttribute("href", "/accuracy");
   await expect(body.getByRole("button", { name: "レースの分析を見る" })).toBeVisible();
   await expect(body).toContainText("発走前は8つ");
-  await expect(body).toContainText("龍神ソナー: 類似レースの決まり方");
+  await expect(body).toContainText("龍神ソナー:");
+  // 紹介動画は「AI予想」を映すので出さない
+  await expect(page.locator(".about-hero-video")).toHaveCount(0);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const card = body.locator(".about-in-caution-steps .step-content").first();
+  expect((await card.boundingBox()).height).toBeLessThan(300);
   await expect(page).toHaveTitle(
     "龍神レーダーについて | ボートレースのデータ分析サービスの詳細",
   );
@@ -47,4 +52,5 @@ test("フラグの外: 今のまま", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "🎓 イン崩れ注意度の出し方" }),
   ).toHaveCount(0);
+  await expect(page.locator(".about-hero-video")).toHaveCount(1);
 });
