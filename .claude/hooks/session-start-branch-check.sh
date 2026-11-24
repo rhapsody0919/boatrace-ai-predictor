@@ -4,8 +4,11 @@
 # 誤削除したインシデント（2026-08-13〜14）の再発防止。
 cd "$CLAUDE_PROJECT_DIR" 2>/dev/null || exit 0
 
+git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 branch=$(git branch --show-current 2>/dev/null)
-[ -z "$branch" ] && exit 0
+# master から外れた状態（detached HEAD）でも止めずに出す。以前はここで黙って終わり、メインの作業ツリーが
+# 古い版のまま残っても誰も気づかなかった（2026-11-24）
+[ -z "$branch" ] && branch="（master から外れた状態: $(git rev-parse --short HEAD 2>/dev/null)）"
 
 status=$(git status --short 2>/dev/null)
 
