@@ -9,10 +9,12 @@
  * (c) getHreflangAlternates の href が全部「検索に出す」URL
  * (d) vercel.json の X-Robots-Tag の規則がちょうど1つ・値 noindex・has と missing が無く、
  *     source が「検索に出さない」見本の全部に当たり「検索に出す」見本に1つも当たらない
- * (e) public/robots.txt の Disallow が見本のどれにも当たらない（塞ぐと noindex が読まれない。/admin だけ）
+ * (e) public/robots.txt の検索の bot の組の Disallow が見本のどれにも当たらない（塞ぐと noindex が読まれない。/admin だけ）。
+ *     学習用の AI クローラー（src/config/aiCrawlerBots.js）だけの組は Disallow: / だけを許す
  */
 
 import assert from "node:assert/strict";
+import { BLOCKED_CRAWLER_USER_AGENTS } from "../../src/config/aiCrawlerBots.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -165,18 +167,41 @@ function verifyVercel() {
   console.log(`✅ (d) vercel.json の X-Robots-Tag: noindex が1本・見本どおりに当たる（${rule.source}）`);
 }
 
+// robots.txt を User-agent の組に分ける（空行で区切らず、User-agent の行が続けば同じ組、規則の後の User-agent で新しい組）
+function robotsGroups(text) {
+  const groups = [];
+  let cur = null;
+  for (const line of text.split("\n")) {
+    const ua = line.match(/^\s*User-agent:\s*(\S+)/i)?.[1];
+    if (ua) {
+      if (!cur || cur.rules.length > 0) groups.push((cur = { agents: [], rules: [] }));
+      cur.agents.push(ua);
+      continue;
+    }
+    const dis = line.match(/^\s*Disallow:\s*(\S+)/i)?.[1];
+    if (dis && cur) cur.rules.push(dis);
+  }
+  return groups;
+}
+
 function verifyRobots() {
   const text = fs.readFileSync(path.join(ROOT, "public/robots.txt"), "utf-8");
-  const disallows = text
-    .split("\n")
-    .map((l) => l.match(/^\s*Disallow:\s*(\S+)/i)?.[1])
-    .filter(Boolean);
+  const groups = robotsGroups(text);
+  // 学習用の AI クローラー（src/config/aiCrawlerBots.js、#2992）だけの組は全体を断ってよい。検索の bot は読まない組
+  const blocked = new Set(BLOCKED_CRAWLER_USER_AGENTS.map((u) => u.toLowerCase()));
+  const isBlockedOnly = (g) => g.agents.every((a) => blocked.has(a.toLowerCase()));
+  for (const g of groups.filter(isBlockedOnly)) {
+    assert.deepEqual(g.rules, ["/"], `(e) 学習用の AI クローラーの組（${g.agents.join("・")}）は Disallow: / だけにする`);
+  }
+  const searchGroups = groups.filter((g) => !isBlockedOnly(g));
+  assert.ok(searchGroups.some((g) => g.agents.includes("*")), "(e) robots.txt に User-agent: * の組が無い");
+  const disallows = searchGroups.flatMap((g) => g.rules);
   const urls = [...INDEXED_SAMPLES, ...samples().map((s) => s.url)];
   for (const prefix of disallows) {
     const hit = urls.filter((u) => u.startsWith(prefix));
     assert.deepEqual(hit, [], `(e) robots.txt の Disallow: ${prefix} が見本に当たる（塞ぐと noindex が読まれない）`);
   }
-  console.log(`✅ (e) robots.txt の Disallow（${disallows.join("・") || "なし"}）が見本に当たらない`);
+  console.log(`✅ (e) 検索の bot の組の Disallow（${disallows.join("・") || "なし"}）が見本に当たらない（学習用の AI クローラーの組は ${groups.filter(isBlockedOnly).length} つ）`);
 }
 
 async function main() {

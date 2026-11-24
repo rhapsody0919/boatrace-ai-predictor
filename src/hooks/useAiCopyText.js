@@ -76,7 +76,6 @@ function buildRows(
       originalKeys.has(ORIGINAL_EXHIBITION_ROW_META[kind]?.key),
     ),
   );
-  const motorByBoat = byBoat(analysis.motor);
   const formByBoat = byBoat(analysis.racerForm);
   const stByBoat = byBoat(analysis.stPredictability);
   const exByBoat = byBoat(analysis.exhibitionTime);
@@ -84,12 +83,8 @@ function buildRows(
   const techByBoat = byBoat(analysis.techniqueProfile);
   const rateByBoat = byBoat(analysis.returnRate);
   const meetPrevByBoat = byBoat(analysis.meetPrevRun);
-  const officialStByBoat = new Map(
-    (analysis.officialAvgSt?.rows ?? []).map((r) => [r.boatNumber, r.avgSt]),
-  );
-  const st30ByBoat = new Map(
-    (analysis.st30 ?? []).map((r) => [r.boatNumber, r.st30]),
-  );
+  // 出走表と同じ定義から値を作る行（登録簿、ADR-0108）
+  const data = { players, analysis };
 
   const ui = {
     toNumber,
@@ -100,14 +95,14 @@ function buildRows(
 
   return [
     buildNameRow(t, players),
-    buildWinRateRow(t, players, flying, ui),
-    buildLocalWinRateRow(t, players, ui),
-    buildTwoRateRow(t, players, ui),
-    buildMotorRow(t, players, motorByBoat, ui),
+    buildWinRateRow(t, players, flying),
+    buildLocalWinRateRow(t, players),
+    buildTwoRateRow(t, players),
+    buildMotorRow(t, data),
     buildFormRow(t, players, formByBoat),
-    buildAvgStOfficialRow(t, players, officialStByBoat, ui),
-    buildAvgSt30Row(t, players, st30ByBoat, ui),
-    buildStRow(t, players, stByBoat),
+    buildAvgStOfficialRow(t, data),
+    buildAvgSt30Row(t, data),
+    buildStRow(t, data),
     buildExhibitionStRow(t, players, stByBoat),
     buildExhibitionTimeRow(t, players, exByBoat),
     // 直前情報表と同じ位置・行生成・値の整形を使う。
