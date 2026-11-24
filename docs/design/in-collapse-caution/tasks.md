@@ -42,7 +42,8 @@
 
 - [x] **14. `verify-rpc-output-keys.js`** に `MIGRATION_157_IN_CAUTION_KEYS`（3関数のレースの `inCaution`）
 - [x] **15. `transformEdgeResponse`・`transformTodayRaces`** で `inCaution` をレース直下に通す。`RaceDetailPage.jsx:81-85` で prediction に写す
-- [ ] **16. オーナー: 157 を適用**。事前（Claude が読み取り）: md5(prosrc) が `5d0ff6d8…`・`a5c39f55…`・`8f6cf80c…`。事後: `012ecc95…`・`2cd99677…`・`bada0caa…`、`verify-rpc-output-keys.js`、APPLIED.md。録画データ（`e2e/recordings/`）を取り直す
+- [x] **16. オーナー: 157 を適用**。事前（Claude が読み取り）: md5(prosrc) が `5d0ff6d8…`・`a5c39f55…`・`8f6cf80c…`。事後: `012ecc95…`・`2cd99677…`・`bada0caa…`、`verify-rpc-output-keys.js`、APPLIED.md。録画データ（`e2e/recordings/`）を取り直す
+  - 結果: 2026-10-17 にユーザーが適用（APPLIED.md 157、md5 は期待値と一致）。録画は取り直さず、画面の試験は `page.route` で応答を差し替えて書いた（2026-11-24 に印を付けた）
 
 ## PR-4 画面（フラグの裏、plan §4。部品ごとに PR を分けてよい）
 
@@ -77,15 +78,37 @@
 - [x] **31. 前提: BOA-851 がマージ済み**（同じ `pickFeatured` を触る。#1455、2026-10-13）
 - [ ] **32. オーナー: 156 を適用**（JST 05:20〜05:40 と 06:30・08:00 の前後を避ける）。事後（Claude が読み取り）: 3列・CHECK・anon の SELECT
 - [ ] **33. `generate-morning-digest.js`**: `fetchInCaution`、`in_caution_pct`・`in_caution_n`・`in_caution_level` を書く（`OPTIONAL_ROW_COLUMNS`）。`MORNING_DIGEST_IN_CAUTION = false` の間は注目レースと SNS のネタは旧の値のまま。`unchangedRows.js` の比較に3列を足す。inCaution が全レース null の日に注目レースが0件になること、06:30・08:00 の再実行で埋まるか（再実行の条件 `cronWrapper.js:468-474` が「注目レース0件」を不完全と見るか）を確かめる
+  - 2026-11-24（#3325、マージ待ち）: `MORNING_DIGEST_IN_CAUTION = false` は `scripts/lib/morningDigestSummary.js`。156 が未適用でも、列が無いエラーのときはマイグレーションのグループごとに列を除いて書く（131 の `motor_race_count` は書き続ける）。全レースで値が無い日は、定数が true なら注目レースが0件になる（試験あり）。再実行では埋まらない。`incomplete` を返すのは完全性チェックだけ（`cronWrapperParts.js:366`）で、旧の指数でも同じ動き。直すかは公開の前に決める。`unchangedRows.js` は numeric の列だけを扱い、3列は smallint・integer・text なので足していない
 - [ ] **34. 注目レースの選び方の比較**: `MORNING_DIGEST_IN_CAUTION = true` で過去7日分を dry-run し、入れ替わる注目レースの件数と例を PR に書く。変わり方が大きければ Orchestrate に返す（2026-10-13 Orchestrate）
 - [ ] **35. `DigestRaceCard`・`FeaturedRaceCard`** の表示（フラグの側。`in_caution_*` が無い過去の行は欄を出さない）
-- [ ] **36. SNS 企画** `findQualifyingRaces`: 点区切りの metric、`inCaution.*` の条件は unified の行で判定。`create-campaign.js` の既定値 0.985 を外して必須に。再現テスト（standard が新しいレースでも unified で判定される）
+  - 2026-11-24（#3329、マージ待ち）: 注目レースは「イン崩れ注意度 N%」＋段の札＋件数、カードのフッターは「イン崩れ注意度 ［札 N%］（全国の過去レースN件）」。準優・優勝戦でも件数をラウンドで分けたと書けない（行にラウンドの列が無い。ファン評価 P2、公開の前に決める）。/today の計測（surface `today`、task 27 の残り）も入れた（`src/hooks/useTodayCaution.js`、`e2e/today-in-caution.spec.js`）
+- [x] **36. SNS 企画** `findQualifyingRaces`: 点区切りの metric、`inCaution.*` の条件は unified の行で判定。`create-campaign.js` の既定値 0.985 を外して必須に。再現テスト（standard が新しいレースでも unified で判定される）
+  - 対象が無くなった: `snsCampaigns.js`・`create-campaign.js` は #1813（hq SH01 R2、使われていない作成・承認の口を消す）で消えた（2026-11-24 確認）
+
+## PR-6b AIタブを注意度の場所にする（2026-11-24 オーナー決定）
+
+オーナーの決定（2026-11-24、窓口の会話で直接）: 「AIタブの展開予想は本当はやめたい。龍神レーダーは分析サイトの位置付け。AIタブはイン崩れ注意度のみで良い」。続けて (1) 出現パターン（`OutcomePatternPreview`）と過去に発生した割合（`PastRateChecker`）は残す、(2) タブの名前を「AI予想」から「イン崩れ」に変える。外れの札に「展開」の主語を付ける #3305 は要らなくなる
+
+| やること | 今 | 入れる所 |
+|---|---|---|
+| AIタブで展開予測・答え合わせ・旧指数を描かない | フラグの側で済み（task 20、`RaceAiPredictionTab.jsx` の `renderInCautionTab`）。中身は注意度のカード・出現パターン・過去に発生した割合 | 39（公開で本番に出る） |
+| AIコピーで展開予測に触れない | フラグの側で済み（#1595、`aiCopyPrompts.js`） | 39 |
+| タブの表示名「イン崩れ」 | 未 | 45（公開前、フラグの側で表示名を切り替える） |
+| 本文の「「AI予想」タブ」 | `inCaution.where`（4言語）・`About.jsx` の「AI予想」タブの説明 | 45（`inCaution.where` はフラグの側でだけ出る）・38（About） |
+| e2e のタブ名の期待（`AI予想`） | フラグの外の試験が名前で探している（例 `boat-vs-course-labels.spec.js`・`assist-sonar-link.spec.js`） | 39（公開でタブ名が替わる） |
+| 旧の分岐と部品（`TurnPatternList`・`PredictionCard` の turn・`VolatilityDisplay`・`RaceMoodEffect`） | 残っている | 42 |
+| 使っていないモデルの説明（「展開パターンに基づく」、ja common.json の safeBet・standard・upset） | 残っている | 42 |
+| 生成の `turnPrediction` の計算 | plan §8 で「的中の記録として残す」 | 変えない（やめるなら新しい票） |
+
+- [ ] **45. タブの名前**: `raceTabs.aiPrediction` の表示を、フラグの側で「イン崩れ」に替える（新しいキーを足し、フラグで切り替える。`analysisPage.tabs.volatility` と同じ形）。タブの id と URL の `?tab=aiPrediction`・GA の値は変えない（共有リンク・e2e・計測が使う）。訳は用語集 124 行の「イン崩れ」から取る: en `Lane-1 Upset`・ko `1코스 이변`・zh-TW `1號位失守`（wording-editor 2026-11-24、禁止語・誇大・保証・射幸心とも問題なし）。用語集に行を足す。タブの中の先頭の見出しは「イン崩れ注意度」と略さずに書く。375px のタブの幅は `e2e/race-tab-width.spec.js` で確かめる。`inCaution.where`（4言語）の「「AI予想」タブ」も替える
+  - wording-editor の指摘で、オーナーに確かめること: `About.jsx` の「各レースの詳細ページ「AI予想」タブで、毎回の的中/不的中を確認できます」は、タブの中身が変わるので名前の置き換えでは済まない（38 で書き直す）。サービス名としての「AI予想」（「AI予想は無料で見られます」等）を残すか
 
 ## PR-7 公開（plan §7 の 7・8）
 
 - [ ] **37. 待ち: 公開の日をユーザーが決める**（計測の基準 10/11〜 を7日以上、できれば14日。GA4 の4ディメンションの登録が済んでいること）
 - [ ] **38. 説明の書き直し**: About・FAQ・HowToUse・HomeAiIntro（フラグの側）、ブログ上位2記事（rough-race-signals・first-mark-prediction-guide）と翻訳版、`morningDigestCopy.js`（用語集・説明）。`content-qa`・`wording-editor`・`seo-marketer`
   - レース詳細の title（「AI予想・展開予測」）・meta も、展開予測を外す公開の PR で書き直す（#1595 ファン評価2周目 P3）
+  - 2026-11-24 に足す: サイトの meta（ja common.json の site description「1マークの展開予測とイン崩れ指数を公開」）・会場の meta（「1マークの展開予測」）・ホームの帯 `IntroBanner`（`home.introBannerText`「展開予測・イン崩れ指数」）。4言語
   - rough-race-signals（GSC の入口記事。表示・クリックの実数は hq、2026-10-13 Orchestrate）: 直すのは表示名「イン崩れ指数」→「イン崩れ注意度」（63・148・152・154・156・162・210・211・218 行の現在の画面を案内する箇所。192 行の当時の実践例の名前は変えない）と、トップへの案内文の短文3つ（見出し・現行の案内文・本文末の CTA）だけ。案内文は公開後の中身（勝率差の帯の全国実績の割合、3段）で書く。過去の実践例・率・倍率は触らない（BOA-617）。修正案と照合表: `~/ryujin-marketing/out/reports/2026-10-13-audit-20261013-01.md`・`~/ryujin-marketing/out/text-audit/20261013-01/comparison.md`（「本日のイン崩れ注意度ハイライト」「同じ会場のレースと比べた相対値」は今の画面の説明なので、そのままは使わない）
   - 同記事の実践例のリンク `/race/2025-12-15-04-10` は今「レースが見つかりませんでした」。リンクを外し、日付・会場・レース番号の文字だけ残す（推奨。注記で「今の画面では開けない」と書くより短い）。同じ PR で
   - 名前が変わらないので先行もできるが、案内文の中身が公開で変わるため公開の PR で一緒に直す（2026-10-13 判断、二度書き直さないため）
