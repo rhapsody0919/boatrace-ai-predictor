@@ -23,6 +23,17 @@ on:
   push:
     branches:
       - master
+  # 範囲の赤を解く全件の検査（ADR-0106 の 2026-11-24 の追記）。release-dispatch が、出す範囲に失敗した run があるときだけ
+  # master に起こす。base は今の本番の版で、lint をその差分で1回、ml-tests の pytest を全部回す（verify:ci はもとから全件）
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "本番の版の SHA（40桁）。lint をこの版からの差分で回す"
+        required: true
+
+# 全件の run は表示名に base を入れる（run の API は inputs を返さないので、release-dispatch は display_title で見分ける）。
+# ほかの起動は GitHub の既定と同じ表示名（push はコミットの題、PR は PR の題）
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Quality Gates 全件 base={0}', inputs.base) || github.event.pull_request.title || github.event.head_commit.message }}
 
 # PRへのpushは同じPRの古い実行を止める（同じheadブランチでgroupを束ねる）。
 # masterへのpushはそれぞれ独立に最後まで走らせたいので、run_idで一意にしてcancelしない
@@ -74,8 +85,19 @@ jobs:
       # 差分のファイルだけの eslint と、大きさ・複雑さの線・循環の import（madge）・重複のコード（jscpd）（T3・T5、2026-11-07）。
       # 手元の `npm run verify:pr` と同じ検査。--ci で madge・jscpd を足す（devDependencies の固定の版を npx --no で使う、CI03）。
       # 編集ごとの hook（prettier・eslint --fix）を外した代わり。ジョブの名（verify）は ruleset の必須の check なので変えない
+      # 全件の run（workflow_dispatch）は、本番の版からの差分で1回回す（push の run の差分の絞りを、範囲の差分に置き換える）
       - name: Lint the changed files
-        run: node scripts/maintenance/lint-changed.js --ci --base=origin/master
+        env:
+          FULL_BASE: ${{ inputs.base }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if ! [[ "$FULL_BASE" =~ ^[0-9a-f]{40}$ ]] || ! git merge-base --is-ancestor "$FULL_BASE" HEAD; then
+              echo "::error::base は HEAD の祖先の40桁の SHA にする: $FULL_BASE"; exit 1
+            fi
+            node scripts/maintenance/lint-changed.js --ci --base="$FULL_BASE"
+          else
+            node scripts/maintenance/lint-changed.js --ci --base=origin/master
+          fi
 
       # 本番向けの build（vite build ＋ AI クローラー向けのスナップショット）。claude/**・codex/** は Vercel の Preview を
       # 作らない（#2304）ので、Vercel の Preview の build の代わりにここで確かめる。e2e の束（build:e2e）は録画の宛先で
@@ -124,7 +146,10 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          if git diff --quiet "$BASE" HEAD -- scripts/ml/ src/constants/raceStageConfig.js src/pure/raceStageConfig.js; then
+          # 全件の run（workflow_dispatch）は、差分によらず pytest を全部回す
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$BASE" HEAD -- scripts/ml/ src/constants/raceStageConfig.js src/pure/raceStageConfig.js; then
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
