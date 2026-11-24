@@ -1,0 +1,179 @@
+/* 6艇の推移の線（TrendChart・BasicInfoTrend）。色は艇の色と意味トークンだけ */
+.trc-wrap {
+  max-width: 720px;
+}
+
+.trc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+  border-bottom: 1px solid var(--border-default, var(--color-gray-200));
+  margin-bottom: var(--spacing-1);
+}
+
+.trc-title {
+  margin: 0;
+  padding: var(--spacing-2) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.trc-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.trc-tab {
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border: 0;
+  background: none;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.trc-tab[aria-pressed="true"] {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  border-bottom: 2px solid var(--brand-accent-primary);
+  margin-bottom: -1px;
+}
+
+.trc-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.trc-grid {
+  stroke: var(--border-default, var(--color-gray-200));
+}
+
+.trc-tick,
+.trc-axisnote {
+  font-size: 10px;
+  fill: var(--text-secondary);
+}
+
+.trc-latest {
+  fill: var(--text-primary);
+  font-weight: 700;
+}
+
+.trc-end {
+  font-size: 11px;
+  fill: var(--text-primary);
+}
+
+.trc-leader {
+  stroke: var(--text-secondary);
+  stroke-width: 0.7;
+}
+
+.trc-gap {
+  stroke: var(--text-secondary);
+  stroke-dasharray: 3 3;
+}
+
+.trc-halo {
+  stroke: var(--color-gray-500);
+}
+
+/* 艇の線の色は公式の艇色（src/utils/colors.js の BOAT_COLORS と同じ値） */
+.trc-line-1 .trc-stroke {
+  stroke: #ffffff;
+}
+.trc-line-2 .trc-stroke {
+  stroke: #000000;
+}
+.trc-line-3 .trc-stroke {
+  stroke: #e53935;
+}
+.trc-line-4 .trc-stroke {
+  stroke: #1e88e5;
+}
+.trc-line-5 .trc-stroke {
+  stroke: #fdd835;
+}
+.trc-line-6 .trc-stroke {
+  stroke: #43a047;
+}
+
+/* ダークでは2号艇の黒を少し明るくし、1号艇の白と縁の明るさで紛れないようにする（visual-designer 11/24） */
+[data-theme="dark"] .trc-line-2 .trc-stroke {
+  stroke: #1f2937;
+}
+[data-theme="dark"] .trc-line-2 .trc-halo {
+  stroke: var(--color-gray-400);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .trc-line-2 .trc-stroke {
+    stroke: #1f2937;
+  }
+  :root:not([data-theme="light"]) .trc-line-2 .trc-halo {
+    stroke: var(--color-gray-400);
+  }
+}
+
+.trc-boats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: var(--spacing-2) 0 0;
+}
+
+/* 選ぶ札は見た目を大きく（径28px）、押せる範囲は40px 四方（visual-designer 11/24） */
+.trc-boat .rol-boat-badge {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.trc-boat {
+  min-width: 40px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.trc-boat[aria-pressed="true"] .rol-boat-badge {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.trc-hint,
+.trc-note {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.trc-hint {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.trc-note {
+  margin: var(--spacing-2) 0 0;
+  padding: var(--spacing-2);
+  border-left: 3px solid var(--brand-accent-primary);
+  background: var(--surface-page);
+}
+
+/* ダークでは2号艇の黒い札が紺の地に溶けるので明るい縁を付ける */
+[data-theme="dark"] .trc-boat:nth-child(2) .rol-boat-badge {
+  box-shadow: 0 0 0 1px var(--color-gray-400);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .trc-boat:nth-child(2) .rol-boat-badge {
+    box-shadow: 0 0 0 1px var(--color-gray-400);
+  }
+}
