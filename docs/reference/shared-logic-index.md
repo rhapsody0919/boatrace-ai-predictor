@@ -71,6 +71,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerTodayContext.js` | 選手ページの「今日の出走」の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地成績・今節の着順。 | pickContextRun, courseCell, venueCell, meetFinishes, SMALL_RUNS |
 | `src/pure/racerTodayRuns.js` | — | splitTodayRaceId, finishLabelOf, buildRacerTodayRuns, todayRunsMeetLabel |
 | `src/pure/racerTrendSeries.js` | 選手の成績の「推移の線」（直近 N 走ごとの移動）を作る（2026-11-24 オーナー決定、モック改訂3）。 | trendSeries, trendGapIndexes, TREND_WINDOW, TREND_MAX_POINTS, TREND_GAP_DAYS ほか1件 |
+| `src/pure/racerWinRateSteps.js` | 選手の勝率の推移を公式の期ごとの段で出すための形（2026-11-24 オーナー決定「勝率は期ごとの段」）。 | winRateSteps, stepLabelParts |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか20件 |
@@ -671,4 +672,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 629 ファイル / export 3397 件。
+対象 630 ファイル / export 3399 件。
