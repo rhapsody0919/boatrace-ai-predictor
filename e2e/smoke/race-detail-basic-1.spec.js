@@ -130,7 +130,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     await page
       .locator(".expand-button", {
-        hasText: "コースが1着の場合の出現パターン",
+        hasText: "号艇が1着の場合の出現パターン",
       })
       .click({ timeout: 15000 });
 
