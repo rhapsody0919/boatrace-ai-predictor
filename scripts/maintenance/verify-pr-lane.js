@@ -371,12 +371,14 @@ runPrLaneScenes14({ prlCli1, prlCli2, prlCli3, prlCli5, prlCli7, prlCli8, prlCli
 /** { の中身を割った 18/19 */
 function prlCli18({ master, repo, words }) {
 
-  // hq の写し: pr-lane.js・その部品 prLane(Classify|Human|Lines).js・prLaneMoveOnly*.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
+  // hq の写し: pr-lane.js・その部品 prLane(Classify|Human|Lines).js・prLaneMoveOnly*.js・大きさの数え prSize(Git).js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
   {
     const copy = mkdtempSync(join(tmpdir(), "pr-lane-hq-"));
     for (const p of [
       "scripts/maintenance/pr-lane.js",
       ...["Classify", "Human", "Lines", "MoveOnly", "MoveOnlyParse"].map((n) => `scripts/maintenance/prLane${n}.js`),
+      "scripts/maintenance/prSize.js",
+      "scripts/maintenance/prSizeGit.js",
       "config/pr-path-rules.json",
       "scripts/lib/relativeImportGraph.js",
     ]) {
@@ -455,6 +457,7 @@ for (const p of [
   "scripts/maintenance/pr-lane.js",
   "scripts/maintenance/prLaneClassify.js",
   "scripts/maintenance/prLaneMoveOnly.js",
+  "scripts/maintenance/prSizeGit.js",
   "scripts/lib/relativeImportGraph.js",
 ]) {
   const src = readFileSync(join(ROOT, p), "utf8");
