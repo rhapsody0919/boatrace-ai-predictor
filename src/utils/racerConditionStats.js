@@ -86,6 +86,10 @@ export const RACER_CONDITION_MIN_RUNS = 5;
 function rateRow(g) {
   return {
     n: g.n,
+    // 条件の走とそれ以外の走を比べる検定（pure/racerConditionDiff）と「N走中1着M回」の表示に使う
+    win: g.win,
+    top2: g.top2,
+    top3: g.top3,
     winRate: g.n > 0 ? g.win / g.n : null,
     top2Rate: g.n > 0 ? g.top2 / g.n : null,
     top3Rate: g.n > 0 ? g.top3 / g.n : null,
