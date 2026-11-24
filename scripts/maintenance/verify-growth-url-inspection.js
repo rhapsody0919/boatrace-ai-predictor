@@ -85,6 +85,18 @@ await writeInspections(dbWith(null, calls), [full, empty]);
 assert.deepEqual(calls, [[2, "url,inspected_on"]]);
 await writeInspections(dbWith(null, calls), []);
 assert.equal(calls.length, 1, "0行なら書かない");
+
+// 同じ URL が一覧に2回あっても、検査は1回・upsert に同じ主キーを2行入れない（cannot affect row a second time で塊ごと落ちる）
+const dup = [articles[0], articles[0], articles[1]];
+assert.deepEqual(pendingInspections(dup, [], "2026-11-25"), [
+  { url: articles[0].url, checkpoint: "D+3" },
+  { url: articles[1].url, checkpoint: "D+1" },
+]);
+const sent2 = [];
+const capture = { from: () => ({ upsert: async (rows) => (sent2.push(rows), { error: null }) }) };
+await writeInspections(capture, [{ ...full, verdict: "NEUTRAL" }, full, empty]);
+assert.equal(sent2[0].length, 2, "同じ (url, inspected_on) は1行");
+assert.equal(sent2[0].find((r) => r.url === full.url).verdict, "PASS", "後の行を残す");
 await assertInspectionTableExists(dbWith(null));
 
 console.log("verify-growth-url-inspection: OK（D+1/D+3/D+7・済みを飛ばす・canonical・列の集合・表が無いときの文）");

@@ -35,7 +35,10 @@ export function pendingInspections(articles, done, today) {
   const out = [];
   for (const a of articles) {
     const checkpoint = latestDueCheckpoint(a.publishDate, today);
-    if (checkpoint && !doneKeys.has(`${a.url} ${checkpoint}`)) out.push({ url: a.url, checkpoint });
+    const key = `${a.url} ${checkpoint}`;
+    if (!checkpoint || doneKeys.has(key)) continue;
+    doneKeys.add(key); // 一覧に同じ URL が2回あっても、検査は1回（API の呼びと同じ主キーの2行を避ける）
+    out.push({ url: a.url, checkpoint });
   }
   return out;
 }
@@ -101,7 +104,9 @@ export async function assertInspectionTableExists(db) {
 /** 行を書く。主キー (url, inspected_on) の upsert なので、同じ日に回し直しても二重にならない */
 export async function writeInspections(db, rows) {
   if (rows.length === 0) return;
-  const { error } = await db.from(INSPECTION_TABLE).upsert(rows, { onConflict: "url,inspected_on" });
+  // 同じ主キー (url, inspected_on) を1回の upsert に2行入れると Postgres が「cannot affect row a second time」で塊ごと落ちる。後の行を残す
+  const unique = [...new Map(rows.map((r) => [`${r.url} ${r.inspected_on}`, r])).values()];
+  const { error } = await db.from(INSPECTION_TABLE).upsert(unique, { onConflict: "url,inspected_on" });
   if (!error) return;
   if (isMissingTable(error)) throw new Error(missingTableMessage());
   throw new Error(`${INSPECTION_TABLE} の upsert の失敗: ${safeError(error)}`);
