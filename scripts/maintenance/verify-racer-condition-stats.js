@@ -15,6 +15,11 @@ import {
   tallyWinPlaceShow,
   RACER_CONDITION_MIN_RUNS,
 } from "../../src/utils/racerConditionStats.js";
+import {
+  COND_RATE_MIN_RUNS,
+  isConditionDiffSignificant,
+  twoGroupZ,
+} from "../../src/pure/racerConditionDiff.js";
 
 const failures = [];
 const check = (label, ok) => {
@@ -228,6 +233,51 @@ for (const [label, row, winRate, top2Rate, top3Rate] of [
     row?.n === 5 && row.winRate === winRate &&
       row.top2Rate === top2Rate && row.top3Rate === top3Rate,
   );
+}
+
+// 矢印を付けてよいかの判定（UI/UX 改善 #8）: 30走以上で、その条件の走対それ以外の走の差が |z|≥1.96
+check("矢印の線は30走", COND_RATE_MIN_RUNS === 30);
+{
+  const z = twoGroupZ(30, 60, 20, 140); // 50% 対 14.3%
+  check("2群の z: 50%(30/60) 対 14.3%(20/140) は 1.96 を超える", z > 1.96);
+  const near = twoGroupZ(12, 40, 36, 160); // 30% 対 22.5%（差は偶然の幅の内）
+  check("2群の z: 30%(12/40) 対 22.5%(36/160) は 1.96 未満", near !== null && Math.abs(near) < 1.96);
+  check("2群の z: 片方の走が0なら null", twoGroupZ(0, 0, 5, 10) === null && twoGroupZ(5, 10, 0, 0) === null);
+  check("2群の z: 合算の率が0（全員が該当なし）なら null", twoGroupZ(0, 30, 0, 50) === null);
+  check("2群の z: 向きは差の符号（条件が低いと負）", twoGroupZ(5, 40, 60, 160) < 0);
+}
+{
+  const overall = { n: 200, hits: 60 }; // 全体 30%
+  check("矢印: 30走未満は差が大きくても付けない（20走で 0%）",
+    !isConditionDiffSignificant({ n: 20, hits: 0 }, overall));
+  check("矢印: 29走は付けず、30走で同じ差なら付ける",
+    !isConditionDiffSignificant({ n: 29, hits: 0 }, overall) &&
+      isConditionDiffSignificant({ n: 30, hits: 0 }, overall));
+  check("矢印: 30走で 40%(12/30) は全体30%に対し偶然の幅の内なので付けない",
+    !isConditionDiffSignificant({ n: 30, hits: 12 }, overall));
+  check("矢印: 100走で 45%(45/100) は付ける（それ以外 15/100 = 15%）",
+    isConditionDiffSignificant({ n: 100, hits: 45 }, overall));
+  // 全体との差の大きさでなく、それ以外との比べで決める（条件の走が全体の大半だと「それ以外」が小さく幅が広がる）
+  check("矢印: 条件が全体のほぼ全部（190走）で全体との差が小さいときは付けない",
+    !isConditionDiffSignificant({ n: 190, hits: 58 }, overall));
+}
+{
+  const rows = [
+    ...times(40, { place: 1, weather: "雨" }),
+    ...times(60, { place: 6, weather: "晴" }),
+    ...times(3, { place: 1, weather: "曇り" }),
+  ];
+  const agg = aggregateRacerConditionStats(rows);
+  const rain = rowOf(agg, "rainy");
+  check("集計: 行に win・top2・top3 の件数を持つ（雨40走で1着40回）",
+    rain?.n === 40 && rain.win === 40 && rain.top2 === 40 && rain.top3 === 40);
+  check("集計: 全体にも件数を持つ（103走で1着43回）",
+    agg.overall.n === 103 && agg.overall.win === 43);
+  check("矢印: 雨40走（1着率100%）は それ以外63走(3勝) との比べで付く",
+    isConditionDiffSignificant(
+      { n: rain.n, hits: rain.win },
+      { n: agg.overall.n, hits: agg.overall.win },
+    ));
 }
 
 if (failures.length > 0) {
