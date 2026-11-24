@@ -2,9 +2,30 @@ import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
+import { isInCautionEnabled } from "../config/featureFlags";
+import {
+  InCautionCtaSection,
+  InCautionFeaturesSection,
+  InCautionHowSection,
+  InCautionResultsSection,
+  InCautionTabIntro,
+  InCautionTabItem,
+  InCautionWhatIsSection,
+} from "./AboutInCautionSections";
 import "./About.css";
 
 const TITLE = "龍神レーダーについて | AIボートレース予想サービスの詳細";
+const KEYWORDS =
+  "龍神レーダー,ボートレース,AI分析,機械学習,データ分析,データサイエンス,無料";
+
+// イン崩れ注意度の公開の後（BOA-822 task 38、フラグの側）。「AI予想」と言わない・「数える」を使わない（wording-editor 2026-11-24）
+const IN_CAUTION_META = {
+  title: "龍神レーダーについて | ボートレースのデータ分析サービスの詳細",
+  subtitle: "ボートレースのデータを、自分で確かめられる形に",
+  description:
+    "龍神レーダーは、選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果から割合を出して見える化するボートレースのデータ分析サービスです。完全無料・登録不要で使えます。",
+  keywords: "龍神レーダー,ボートレース,データ分析,イン崩れ,過去データ,無料",
+};
 const DESCRIPTION =
   "龍神レーダーは、選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービスです。完全無料・登録不要で使えます。";
 
@@ -69,7 +90,7 @@ function AboutWhatIsSection() {
   );
 }
 
-function AboutRaceTabsSection() {
+function AboutRaceTabsSection({ inCaution }) {
   return (
     <section className="about-section">
       <h2>🗂️ レース詳細で見られるもの（タブ構成）</h2>
@@ -77,9 +98,16 @@ function AboutRaceTabsSection() {
         各レースの詳細ページは、見たい切り口ごとにタブに分かれています。発走前は
         <strong>7つ</strong>、レースが確定すると「結果」が加わって
         <strong>8つ</strong>
-        になります。AI予想はそのうちの1つで、残りは
-        <strong>誰が見ても同じ客観的なデータ</strong>
-        です。予想を受け取るだけでなく、その根拠を自分で確かめられる構成にしています。
+        になります。
+        {inCaution ? (
+          <InCautionTabIntro />
+        ) : (
+          <>
+            AI予想はそのうちの1つで、残りは
+            <strong>誰が見ても同じ客観的なデータ</strong>
+            です。予想を受け取るだけでなく、その根拠を自分で確かめられる構成にしています。
+          </>
+        )}
       </p>
       <p>
         並びは粒度順で、
@@ -92,8 +120,14 @@ function AboutRaceTabsSection() {
           勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数も併記します
         </li>
         <li>
-          <strong>AI予想</strong>:
-          1マークの展開予測と、1号艇が崩れやすいかを示すイン崩れ注意度。展開予測が的中したかどうかもここで確認できます
+          {inCaution ? (
+            <InCautionTabItem />
+          ) : (
+            <>
+              <strong>AI予想</strong>:
+              1マークの展開予測と、1号艇が崩れやすいかを示すイン崩れ注意度。展開予測が的中したかどうかもここで確認できます
+            </>
+          )}
         </li>
         <li>
           <strong>今節</strong>:
@@ -316,6 +350,36 @@ function AboutCtaSection({ navigate }) {
   );
 }
 
+/** 本文の節。フラグの側（BOA-822）は「AI予想」・展開予測の節を注意度の節に替える */
+function AboutSections({ inCaution, navigate }) {
+  if (!inCaution) {
+    return (
+      <>
+        <AboutWhatIsSection />
+        <AboutRaceTabsSection inCaution={false} />
+        <AboutDataSection />
+        <AboutFeaturesSection />
+        <AboutAiMechanismSection />
+        <AboutAccuracySection />
+        <AboutTermsSection />
+        <AboutCtaSection navigate={navigate} />
+      </>
+    );
+  }
+  return (
+    <>
+      <InCautionWhatIsSection />
+      <AboutRaceTabsSection inCaution />
+      <AboutDataSection />
+      <InCautionFeaturesSection />
+      <InCautionHowSection />
+      <InCautionResultsSection />
+      <AboutTermsSection />
+      <InCautionCtaSection navigate={navigate} />
+    </>
+  );
+}
+
 export default function About() {
   const navigate = useNavigate();
   const mobileVideoRef = useRef(null);
@@ -328,18 +392,22 @@ export default function About() {
     desktopVideoRef.current?.play();
   };
 
+  const inCaution = isInCautionEnabled();
+  const meta = inCaution
+    ? IN_CAUTION_META
+    : { title: TITLE, description: DESCRIPTION, keywords: KEYWORDS };
+
   useSocialMeta({
-    title: TITLE,
-    description: DESCRIPTION,
+    title: meta.title,
+    description: meta.description,
     url: "https://www.boat-ai.jp/about",
-    keywords:
-      "龍神レーダー,ボートレース,AI分析,機械学習,データ分析,データサイエンス,無料",
+    keywords: meta.keywords,
   });
 
   return (
     <>
-      <title>{TITLE}</title>
-      <meta name="description" content={DESCRIPTION} />
+      <title>{meta.title}</title>
+      <meta name="description" content={meta.description} />
       <link rel="canonical" href="https://www.boat-ai.jp/about" />
 
       {/* BreadcrumbList */}
@@ -369,26 +437,16 @@ export default function About() {
       <div className="about-container">
         <div className="about-header">
           <h1>🚀 龍神レーダーについて</h1>
-          <p>AI技術でボートレース予想を革新する</p>
+          <p>
+            {inCaution
+              ? IN_CAUTION_META.subtitle
+              : "AI技術でボートレース予想を革新する"}
+          </p>
         </div>
 
         <AboutHeroVideoSection mobileVideoRef={mobileVideoRef} desktopVideoRef={desktopVideoRef} videoStarted={videoStarted} handlePlayVideo={handlePlayVideo} />
 
-        <AboutWhatIsSection />
-
-        <AboutRaceTabsSection />
-
-        <AboutDataSection />
-
-        <AboutFeaturesSection />
-
-        <AboutAiMechanismSection />
-
-        <AboutAccuracySection />
-
-        <AboutTermsSection />
-
-        <AboutCtaSection navigate={navigate} />
+        <AboutSections inCaution={inCaution} navigate={navigate} />
       </div>
     </>
   );
