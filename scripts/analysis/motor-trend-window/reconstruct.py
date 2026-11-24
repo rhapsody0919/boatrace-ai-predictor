@@ -144,7 +144,7 @@ for v, sv in st.groupby("venue"):
             if kind == "new":
                 uids.append(f"{int(v):02d}-g{g0}-{len(uids)}"); anchored.append(False)
                 cur_s = np.vstack([cur_s, [0, 0, 0]]); lag_s = np.vstack([lag_s, [np.nan] * 3]); used_end = np.append(used_end, np.datetime64("NaT")); j = len(uids) - 1
-            if kind == "exact" and not np.isnat(used_end[j]): kind = "exactReplacement"
+            if kind == "exact" and not np.isnat(used_end[j]): kind = "exactSubstitute"
             stats["stints"] += 1; stats[kind] = stats.get(kind, 0) + 1
             used_end[j] = np.datetime64(row.end); assign[sid] = (j, kind); matched_N.append(cur_s[j, 0])
         # つなげなかった艇: 表示から走数を推定して新しい鎖を始める（基の同一性は切れる）
@@ -169,7 +169,7 @@ for v, sv in st.groupby("venue"):
             cur_s[j] = cur_s[j] + np.array([row.m, row.k2, row.k3])
     stats["motorsSeen"] = len(uids); stats["chainsFromStart"] = int(sum(1 for a_ in anchored if not a_))
     denom = max(1, stats["stints"] - stats["new"])
-    stats["linkedShare"] = (stats["exact"] + stats.get("exactReplacement", 0) + stats["lag"] + stats["resync"]) / denom
+    stats["linkedShare"] = (stats["exact"] + stats.get("exactSubstitute", 0) + stats["lag"] + stats["resync"]) / denom
     links["byVenue"][str(v)] = stats
 pd.DataFrame(resync_rows).to_pickle(f"{OUT}/resync.pkl")
 d["motor_uid"] = d.stint.map(uid_of)
