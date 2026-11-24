@@ -6,8 +6,9 @@ import { n, size } from "./pr-size-scenes.js";
 
 let check;
 
+const body = n(250, (i) => `export const rule${i} = (x) => x + ${i};`);
+
 function sceneMutation() {
-  const body = n(250, (i) => `export const rule${i} = (x) => x + ${i};`);
   for (const [label, test, spec] of [
     [
       "verify に本体（src から import）",
@@ -58,6 +59,9 @@ function sceneMutation() {
     fromTest.lines === 0,
     JSON.stringify(fromTest.counted),
   );
+}
+
+function sceneMutationVia() {
   const via = size([
     ["A", "scripts/maintenance/verify-rules.js", body],
     [
@@ -111,6 +115,9 @@ function sceneMutation() {
     prefix.lines === 1,
     JSON.stringify(prefix.counted),
   );
+}
+
+function sceneMutationRename() {
   const launder = size(
     [["R", "src/pure/rules.js", ["// 1行だけ直した"], [], "e2e/rules.spec.js"]],
     { "head:src/pure/rules.js": body.join("\n") },
@@ -153,4 +160,6 @@ function sceneMutation() {
 export function runPrSizeScenes2(env) {
   ({ check } = env);
   sceneMutation();
+  sceneMutationVia();
+  sceneMutationRename();
 }
