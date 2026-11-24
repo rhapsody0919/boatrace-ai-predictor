@@ -689,6 +689,11 @@
       "guards": "SEO の効きの測りの純関数（scripts/lib/growth/seoEffect.js、SEO データの輪 PR4）。比べる単位が7日の和であること・基準は改稿前の28日で帯は7日の和の最小から最大であること・新記事は索引、表示、クリックの段で止まった段を返すこと・分けられない3条件（同じ反映の枠の同じページかサイト全体の変更、コアアップデート期間、GA4 の計測の変更日をまたぐ）・対照のページ群の動きで割ってから帯と比べ、判定は伸びた・戻った（落ちていた記事が落ちる前の帯まで戻った）・動かず・落ちた・分けられないの5つであること・公開から28日を過ぎた未測定を出すこと"
     },
     {
+      "script": "verify-growth-url-inspection.js",
+      "tier": "ci",
+      "guards": "URL Inspection の取得の部品（scripts/lib/growth/urlInspection.js、SEO データの輪 PR5）。確かめる日が公開の翌日・3日後・7日後で、遅れたときは最後の1つだけ・済みは飛ばすこと・canonical は www と無印と末尾スラッシュを同じとみなし応答に無ければ未確認とすること・行の列の集合が全行で同じこと・表が無い間は何を適用するかを書いて止まること"
+    },
+    {
       "script": "verify-guard-deploy-approval.js",
       "tier": "ci",
       "guards": ".claude/hooks/guard-deploy-approval.sh。本番 DB の適用の起動・承認・Environments の変更（2026-10-02）に加え、Claude の素の gh（オーナー、admin）での PR の承認・--admin のマージ・ruleset とブランチ保護の書き換えを止め、読み取りと ryujin-maker の名義のマージを通すこと。--admin は作成の App の鍵が置かれた後だけ止める。このリポジトリへの claude/ でない枝の push を止める（2026-11-06、ADR-0097 の追記）"
