@@ -89,7 +89,8 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
       page.getByText("旧モデルの月別成績アーカイブを見る"),
     ).toBeVisible();
     // 段の%は注意度の範囲、注意度が出る場所を書く（#1606 ファン評価1周目 P2）
-    await expect(chart).toContainText("レース詳細の「AI予想」タブ");
+    // タブの名前は「イン崩れ」（BOA-822 task 45、2026-11-24 オーナー決定。フラグの側の文）
+    await expect(chart).toContainText("レース詳細の「イン崩れ」タブ");
   });
 
   test("公開直後: 既定は公開後、30件未満の段は件数だけ。公開前の検証に切り替えられる", async ({
