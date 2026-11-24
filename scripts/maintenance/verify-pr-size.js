@@ -1,39 +1,27 @@
 #!/usr/bin/env node
 /**
- * verify-pr-size.js - PR の大きさ（300行・5ファイル）の数え方（scripts/maintenance/prSize.js、BOA-1718）の試験と、この PR の数。
+ * verify-pr-size.js - PR の大きさ（300行・5ファイル）の数え方（scripts/maintenance/prSize.js・prSizeGit.js、BOA-1718）を、
+ * 実の履歴のコミットで確かめ、この PR の数を出す。
  *
  * 作り手が自分で数えて置き場の決まりを曲げた（#3304 とその前の #3303 で、src/pure に置かない・訳のキーを流用・注釈を削る）ので、
- * 数え方を機械に移した。数えない物は prSize.js の頭の注釈。超えたときは落とさず pr-lane で重い道（人が見る）に回す
- * （オーナー 2026-11-24 の (ii)）。この verify は数え方の試験が落ちたときだけ落ち、この PR の数は表示するだけ。
+ * 数え方を機械に移した。数えない物は prSize.js の頭の注釈。超えても落とさない（オーナー 2026-11-24 の (ii)、
+ * 超えた PR を重い道に回すのは pr-lane）。この verify は試験が落ちたときだけ落ち、この PR の数は表示するだけ。
+ * 純関数の場面は verify-pr-size-rules.js・verify-pr-size-mutation.js。
  *
- * 確かめること:
- *   1. 純関数: 数えない物（新しい試験・台帳の行の追加・ja と同じキーの他の locale・注釈と空行・消した行）と、数える物
- *      （既存の試験の変更・md の * の行・キーが合わない locale・行の無い差分）、線の境（300行・5ファイル）
- *   2. 試験のファイルに本体を置いた変異（ほかの変更が新しい verify・spec を import する）は数える
- *   3. 一時の git の木: 移すだけ（moveOnly）の大きい PR と記事の PR（check-content-pr.js が通す形）は線の外、
- *      どちらも1ファイルを足すと数える
- *   4. 実の差分: #3304（3fa222c70）と #3303（1069770b5）が線の中
+ * 確かめること（実の履歴。git の木を作らず、作業場所に書かない）:
+ *   1. #3304（3fa222c70）と #3303（1069770b5）は線の中で、新しい spec を数えない
+ *   2. 移すだけ（split-data-layer.mjs の RA10〜RA13 の5本）は線の外。例外を外すと線を超える（例外が効いている）
+ *   3. 記事の PR: #3313（442432b57）は check-content-pr.js が通す。418行の記事 d15c76bdf（manifest の契約より前）は通さず、数えて超える
+ *   4. 改名（-M）: #2819（2dd78794b）の weatherInfo.js の改名と書き換えは、新しいパスで書き換えた行だけを数える
  *   5. この PR（merge-base から HEAD）の数を出す
  *
  * 使い方: node scripts/maintenance/verify-pr-size.js --base=origin/master
- *   base や 4 のコミットを解決できない場合、CI（環境変数 CI）では失敗、手元ではスキップする。
+ *   base や上のコミットを読めない場合、CI（環境変数 CI）では失敗、手元ではスキップする。
  */
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { SIZE_LIMIT } from "./prSize.js";
-import { measureCommits } from "./prSizeGit.js";
-import { runPrSizeScenes } from "./verifyData/pr-size-scenes.js";
-import { runPrSizeScenes2 } from "./verifyData/pr-size-scenes-2.js";
-import { makePr } from "./verifyData/content-pr-gate-make-pr.js";
-import { baseMd } from "./verifyData/content-pr-gate-fixtures.js";
+import { SIZE_LIMIT, measurePrSize } from "./prSize.js";
+import { isContentPr, measureCommits, readCommits } from "./prSizeGit.js";
 
-const ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const ROOT = new URL("../..", import.meta.url).pathname;
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -44,216 +32,100 @@ function check(label, pass, detail = "") {
   }
 }
 
-const n = (k, f = (i) => `const v${i} = ${i};`) =>
-  Array.from({ length: k }, (_, i) => f(i));
-
-// ---- 1・2（純関数と、試験のファイルに本体を置いた変異）は verifyData/pr-size-scenes.js ----
-runPrSizeScenes({ check });
-runPrSizeScenes2({ check });
-
-// ---- 3. 一時の git の木 ----
-const tmpGit = (fn) => {
-  const dir = mkdtempSync(path.join(os.tmpdir(), "verify-pr-size-"));
-  const g = (...args) =>
-    execFileSync(
-      "git",
-      ["-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", ...args],
-      {
-        cwd: dir,
-        encoding: "utf8",
-      },
-    );
-  const write = (p, body) => {
-    mkdirSync(path.dirname(path.join(dir, p)), { recursive: true });
-    writeFileSync(path.join(dir, p), body);
-  };
-  const commit = (m) => {
-    g("add", "-A");
-    g("commit", "-q", "-m", m);
-    return g("rev-parse", "HEAD").trim();
-  };
-  try {
-    g("init", "-q", "-b", "main");
-    g("config", "user.name", "verify");
-    g("config", "user.email", "verify@example.invalid");
-    fn({ dir, write, commit, g });
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-};
-
-// 移すだけ: supabaseDataService.js の 120 個のメソッドを scheduleQueries.js へ字のまま移す（pr-lane の試験の場面と同じ形）
-tmpGit(({ dir, write, commit }) => {
-  const SVC = "src/services/supabaseDataService.js";
-  const SQ = "src/services/scheduleQueries.js";
-  const names = Array.from({ length: 120 }, (_, i) => `getM${i}`);
-  const method = (m) => [`  ${m}(v) {`, `    return b(v) + "${m}";`, "  },"];
-  write(
-    "src/utils/a.js",
-    "export const b = (v) => v;\nexport const c = (v) => v;\n",
-  );
-  write(
-    SVC,
-    [
-      'import { b } from "../utils/a.js";',
-      'import { c } from "../utils/a.js";',
-      "",
-      "export const supabaseDataService = {",
-      ...names.flatMap(method),
-      "  getZ(v) {",
-      "    return c(v);",
-      "  },",
-      "};",
-      "",
-    ].join("\n"),
-  );
-  const base = commit("base");
-  write(
-    SVC,
-    [
-      'import { c } from "../utils/a.js";',
-      `import { ${names.join(", ")} } from "./scheduleQueries.js";`,
-      "",
-      "export const supabaseDataService = {",
-      ...names.map((m) => `  ${m},`),
-      "  getZ(v) {",
-      "    return c(v);",
-      "  },",
-      "};",
-      "",
-    ].join("\n"),
-  );
-  write(
-    SQ,
-    [
-      "// src/services/supabaseDataService.js から scripts/maintenance/split-data-layer.mjs で字のまま移した（領域: schedule）。",
-      "// 本体の字下げは元のまま。手で直すときは普通の関数として直してよい",
-      "",
-      'import { b } from "../utils/a.js";',
-      "",
-      ...names.flatMap((m) => [
-        `export function ${m}(v) {`,
-        `    return b(v) + "${m}";`,
-        "  }",
-      ]),
-      "",
-    ].join("\n"),
-  );
-  const head = commit("move");
-  const r = measureCommits(dir, base, head);
-  check(
-    "一時の木: 移すだけの PR（360行を超える移し）は線の外",
-    r.exempt !== null && !r.over,
-    JSON.stringify({ ...r, skipped: r.skipped.length }),
-  );
-  write("src/pages/Extra.jsx", "export const x = 1;\n");
-  const head2 = commit("extra");
-  const r2 = measureCommits(dir, base, head2);
-  check(
-    "一時の木: 移すだけに1ファイルを足すと全部数えて超える",
-    r2.exempt === null && r2.over,
-    JSON.stringify({ lines: r2.lines, files: r2.files }),
-  );
-});
-
-// 記事の PR: verify-content-pr-gate.js の正しい新規記事（makePr）を木に置き、check-content-pr.js に判定させる
-tmpGit(({ dir, write, commit, g }) => {
-  const pr = makePr({
-    md: `${baseMd}\n${n(400, (i) => `段落 ${i}。`).join("\n\n")}\n`,
-  });
-  for (const p of pr.basePaths)
-    write(p, p.endsWith(".json") ? "{}\n" : "# 既存\n");
-  const base = commit("base");
-  for (const [p, bytes] of Object.entries(pr.head)) write(p, bytes);
-  const head = commit("article");
-  const r = measureCommits(dir, base, head);
-  check(
-    "一時の木: 記事の PR（400行を超える本文）は線の外",
-    r.exempt !== null && !r.over,
-    JSON.stringify({ exempt: r.exempt, lines: r.lines }),
-  );
-  write("src/pages/Extra.jsx", "export const x = 1;\n");
-  const head2 = commit("extra");
-  const r2 = measureCommits(dir, base, head2);
-  check(
-    "一時の木: 記事の PR に src を足すと記事の PR でなくなり数える",
-    r2.exempt === null && r2.lines > SIZE_LIMIT.lines,
-    JSON.stringify({ exempt: r2.exempt, lines: r2.lines }),
-  );
-  g("checkout", "-q", base);
-  const r3 = measureCommits(dir, base, head);
-  check(
-    "一時の木: head が HEAD でなくても記事の PR と判定する（一時の作業ツリーに出す）",
-    r3.exempt !== null,
-    JSON.stringify({ exempt: r3.exempt }),
-  );
-  check(
-    "一時の木: 一時の作業ツリーを残さない",
-    g("worktree", "list").trim().split("\n").length === 1,
-    g("worktree", "list"),
-  );
-});
-
-// 改名（-M）: 試験の置き場から数える置き場へ移すと全部の行を数え、ふつうの改名と書き換えは足した行だけ（パスは新しい方）
-tmpGit(({ write, commit, g, dir }) => {
-  const body = n(400, (i) => `export const rule${i} = (x) => x + ${i};`);
-  write("e2e/rules.spec.js", `${body.join("\n")}\n`);
-  write("src/pure/a.js", `${body.join("\n")}\n`);
-  const base = commit("base");
-  g("mv", "e2e/rules.spec.js", "src/pure/rules.js");
-  g("mv", "src/pure/a.js", "src/pure/b.js");
-  write(
-    "src/pure/b.js",
-    `${["export const edited = 1;", ...body.slice(1)].join("\n")}\n`,
-  );
-  const head = commit("rename");
-  const r = measureCommits(dir, base, head);
-  const of = (p) => r.counted.find((c) => c.path === p)?.lines;
-  check(
-    "一時の木: 試験の置き場から src/pure への改名は全部の行、ふつうの改名と書き換えは1行",
-    of("src/pure/rules.js") === 400 &&
-      of("src/pure/b.js") === 1 &&
-      r.files === 2,
-    JSON.stringify(r.counted),
-  );
-});
-
-// ---- 4. 実の差分（#3304 と #3303。作り手が線に合わせて置き場を曲げた PR） ----
-const resolvable = (ref) => {
-  try {
-    execFileSync(
-      "git",
-      ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`],
-      { cwd: ROOT, stdio: "ignore" },
-    );
-    return true;
-  } catch {
-    return false;
-  }
-};
 const skipOrFail = (message) => {
   if (process.env.CI) {
     failures += 1;
     console.error(`❌ ${message}`);
   } else console.log(`スキップ: ${message}（手元のため。CIでは失敗扱い）`);
 };
+
+/** 実のコミット sha を、親から数える。読めなければ null（手元はスキップ、CI は失敗） */
+const measured = (sha) => {
+  try {
+    return measureCommits(ROOT, `${sha}^`, sha);
+  } catch (err) {
+    skipOrFail(`${sha} を読めない: ${String(err.message).split("\n")[0]}`);
+    return null;
+  }
+};
+
+// ---- 1. #3304 と #3303（作り手が線に合わせて置き場を曲げた PR） ----
 for (const [pr, sha, spec] of [
   ["#3304", "3fa222c70", "e2e/venue-race-block.spec.js"],
   ["#3303", "1069770b5", "e2e/venue-meet-heading.spec.js"],
 ]) {
-  if (!resolvable(sha)) {
-    skipOrFail(`${pr}（${sha}）を解決できない`);
-    continue;
-  }
-  const r = measureCommits(ROOT, `${sha}^`, sha);
+  const r = measured(sha);
+  if (r)
+    check(
+      `実の差分: ${pr} は線の中で、新しい spec を数えない`,
+      !r.over &&
+        r.exempt === null &&
+        r.skipped.some((s) => s.path === spec) &&
+        r.lines < SIZE_LIMIT.lines,
+      JSON.stringify({ lines: r.lines, files: r.files, counted: r.counted }),
+    );
+}
+
+// ---- 2. 移すだけ（RA10〜RA13） ----
+for (const sha of [
+  "07b5bfc57",
+  "5c99d2da7",
+  "c2afe571f",
+  "251b1a770",
+  "53811bb2c",
+]) {
+  const r = measured(sha);
+  if (!r) continue;
   check(
-    `実の差分: ${pr} は線の中で、新しい spec を数えない`,
-    !r.over &&
-      r.exempt === null &&
-      r.skipped.some((s) => s.path === spec) &&
-      r.lines < SIZE_LIMIT.lines,
-    JSON.stringify({ lines: r.lines, files: r.files, counted: r.counted }),
+    `実の差分: 移すだけの ${sha} は線の外`,
+    r.exempt !== null && !r.over,
+    JSON.stringify(r).slice(0, 300),
   );
+  const { input } = readCommits(ROOT, `${sha}^`, sha);
+  const raw = measurePrSize(input);
+  check(
+    `実の差分: 移すだけの ${sha} は、例外を外すと線を超える`,
+    raw.exempt === null && raw.over,
+    JSON.stringify({ lines: raw.lines, files: raw.files }),
+  );
+}
+
+// ---- 3. 記事の PR ----
+try {
+  check(
+    "実の差分: #3313（442432b57）は記事の関門が通す",
+    isContentPr(ROOT, "442432b57^", "442432b57"),
+  );
+  const old = measured("d15c76bdf");
+  if (old)
+    check(
+      "実の差分: manifest の無い 418行の記事 d15c76bdf は関門が通さず、数えて超える",
+      old.exempt === null && old.over && old.lines > SIZE_LIMIT.lines,
+      JSON.stringify({ lines: old.lines, files: old.files }),
+    );
+  const { input } = readCommits(ROOT, "d15c76bdf^", "d15c76bdf");
+  const asContent = measurePrSize({ ...input, contentPr: true });
+  check(
+    "記事の PR と判定されれば線の外",
+    asContent.exempt !== null && !asContent.over,
+  );
+} catch (err) {
+  skipOrFail(`記事の PR を読めない: ${String(err.message).split("\n")[0]}`);
+}
+
+// ---- 4. 改名（-M） ----
+{
+  const r = measured("2dd78794b");
+  const moved = r?.counted.find((c) => c.path === "src/utils/weatherInfo.js");
+  if (r)
+    check(
+      "実の差分: 改名と書き換えは新しいパスで書き換えた行だけ（元のパスは数えない）",
+      moved !== undefined &&
+        moved.lines > 0 &&
+        moved.lines < 10 &&
+        !r.counted.some((c) => c.path === "src/components/race/weatherInfo.js"),
+      JSON.stringify(r.counted),
+    );
 }
 
 if (failures > 0) {
@@ -268,11 +140,15 @@ const base =
     .filter((a) => a.startsWith("--base="))
     .map((a) => a.slice("--base=".length))
     .pop() || "origin/master";
-if (!resolvable(base)) {
-  skipOrFail(`base（${base}）を解決できない`);
+let mine;
+try {
+  mine = measureCommits(ROOT, base, "HEAD");
+} catch (err) {
+  skipOrFail(
+    `base（${base}）から HEAD を数えられない: ${String(err.message).split("\n")[0]}`,
+  );
   process.exit(failures > 0 ? 1 : 0);
 }
-const mine = measureCommits(ROOT, base, "HEAD");
 if (mine.exempt) console.log(`OK: この PR は線の外（${mine.exempt}）`);
 else {
   console.log(
@@ -282,6 +158,6 @@ else {
   for (const s of mine.skipped) console.log(`  数えない ${s.path}（${s.why}）`);
   if (mine.over)
     console.log(
-      "  超えても落とさない。超えた PR を pr-lane で重い道（人が見る）に回すのは BOA-1718 の続きの PR",
+      "  超えても落とさない。超えた PR は pr-lane で重い道（人が見る）に回す",
     );
 }

@@ -1,12 +1,23 @@
+#!/usr/bin/env node
 /**
- * verify-pr-size.js の場面（純関数の数え方と、試験のファイルに本体を置いた変異）。verify ではない。
- * check は verify 側の物を受け取る（失敗の数は verify が数える）。
+ * verify-pr-size-rules.js - PR の大きさの数え方（scripts/maintenance/prSize.js の measurePrSize、BOA-1718）の純関数の場面（1/2）。
+ * 外部接続なし・git に触れない。試験のファイルに本体を置いた変異は verify-pr-size-mutation.js、実の履歴とこの PR の数は verify-pr-size.js。
+ *
+ * 数えない物（新しい試験・台帳の項目の追加・ja と同じキーの他の locale・注釈と空行・消した行）と数える物
+ * （既存の試験の変更・helper・名だけの verify・md の行・キーの違う locale・行の無い差分・注釈の後ろのコード）、線の境（300行・5ファイル）
  */
-import { SIZE_LIMIT, measurePrSize } from "../prSize.js";
+import { SIZE_LIMIT, measurePrSize } from "./prSize.js";
 
-let check;
+let failures = 0;
+function check(label, pass, detail = "") {
+  if (pass) console.log(`✅ ${label}`);
+  else {
+    failures += 1;
+    console.error(`❌ ${label}${detail ? ` (${detail})` : ""}`);
+  }
+}
 
-export const n = (k, f = (i) => `const v${i} = ${i};`) =>
+const n = (k, f = (i) => `const v${i} = ${i};`) =>
   Array.from({ length: k }, (_, i) => f(i));
 const REG = "scripts/maintenance/verify-registry.json";
 const regText = (entries) => JSON.stringify({ entries });
@@ -34,7 +45,7 @@ const input = (files, texts = {}) => ({
   readText: (side, p) =>
     ({ ...autoRegistry(files), ...texts })[`${side}:${p}`] ?? null,
 });
-export const size = (files, texts, extra = {}) =>
+const size = (files, texts, extra = {}) =>
   measurePrSize({ ...input(files, texts), ...extra });
 const skippedPaths = (r) => r.skipped.map((s) => s.path).sort();
 
@@ -273,11 +284,12 @@ function scenePureLimit() {
   );
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check） */
-export function runPrSizeScenes(env) {
-  ({ check } = env);
-  scenePureTests();
-  scenePureNotes();
-  scenePureLocale();
-  scenePureLimit();
+scenePureTests();
+scenePureNotes();
+scenePureLocale();
+scenePureLimit();
+if (failures > 0) {
+  console.error(`NG: verify-pr-size-rules の試験が ${failures} 件失敗`);
+  process.exit(1);
 }
+console.log("verify-pr-size-rules: OK");

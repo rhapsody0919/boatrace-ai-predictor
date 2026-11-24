@@ -112,6 +112,19 @@ export function isContentPr(repo, baseSha, headSha, timeout) {
  * timeout: ミリ秒か、残りのミリ秒を返す関数（pr-lane の時間の上限を渡す）。超えたら execFileSync が投げる
  */
 export function measureCommits(repo, base, head, { timeout } = {}) {
+  const { input, moved, baseSha, headSha } = readCommits(repo, base, head, {
+    timeout,
+  });
+  const counted = measurePrSize({ ...input, moved });
+  if (!counted.over) return counted;
+  const left = typeof timeout === "function" ? timeout() : timeout;
+  return isContentPr(repo, baseSha, headSha, left)
+    ? measurePrSize({ ...input, moved, contentPr: true })
+    : counted;
+}
+
+/** git から measurePrSize の入力と移すだけの判定を読む（measureCommits の前半。試験は例外を外した数を見るのに使う） */
+export function readCommits(repo, base, head, { timeout } = {}) {
   const git = (args) =>
     execFileSync("git", ["-c", "core.quotepath=false", ...args], {
       cwd: repo,
@@ -126,10 +139,5 @@ export function measureCommits(repo, base, head, { timeout } = {}) {
   const mergeBase = git(["merge-base", baseSha, headSha]).trim();
   const input = collectSizeInput(git, mergeBase, headSha);
   const moved = moveOnlyPaths(loadMoveOnly(), input.changes, input.readText);
-  const counted = measurePrSize({ ...input, moved });
-  if (!counted.over) return counted;
-  const left = typeof timeout === "function" ? timeout() : timeout;
-  return isContentPr(repo, baseSha, headSha, left)
-    ? measurePrSize({ ...input, moved, contentPr: true })
-    : counted;
+  return { input, moved, baseSha, headSha };
 }

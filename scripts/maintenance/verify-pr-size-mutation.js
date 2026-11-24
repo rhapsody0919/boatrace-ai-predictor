@@ -1,10 +1,43 @@
+#!/usr/bin/env node
 /**
- * verify-pr-size.js の場面（2/2: 試験のファイルに本体を置いた変異と改名）。verify ではない。
- * check は verify 側の物を受け取る（失敗の数は verify が数える）。
+ * verify-pr-size-mutation.js - PR の大きさの数え方（scripts/maintenance/prSize.js、BOA-1718）の場面（2/2）: 試験のファイルに本体を置いた変異。
+ * 外部接続なし・git に触れない。新しい verify・spec に本体を置き、ほかの変更が名を出す（import・require・new URL・path.join・bash）、
+ * 試験を経由して読む、試験の置き場から数える置き場へ改名する形は数える。名の前の部分だけ合う別のファイル・文書で名を挙げるだけは数えない
  */
-import { n, size } from "./pr-size-scenes.js";
+import { measurePrSize } from "./prSize.js";
 
-let check;
+let failures = 0;
+function check(label, pass, detail = "") {
+  if (pass) console.log(`✅ ${label}`);
+  else {
+    failures += 1;
+    console.error(`❌ ${label}${detail ? ` (${detail})` : ""}`);
+  }
+}
+
+const REGISTRY = "scripts/maintenance/verify-registry.json";
+const n = (k, f = (i) => `let w${i} = ${i};`) =>
+  Array.from({ length: k }, (_, i) => f(i));
+/** files は [status, path, added, removed?, from?]。台帳は base が空、head が足した verify-*.js を tier=ci で持つ */
+function size(files, texts = {}) {
+  const verifies = files
+    .filter(([st, p]) => st === "A" && /\/verify-[^/]+$/.test(p))
+    .map(([, p]) => ({ script: p.split("/").pop(), tier: "ci" }));
+  const registry = { base: { entries: [] }, head: { entries: verifies } };
+  return measurePrSize({
+    changes: files.map(([status, path, , , from]) =>
+      from ? { status, path, from } : { status, path },
+    ),
+    patches: new Map(
+      files
+        .filter((f) => f[2] !== null)
+        .map(([, p, added, removed = []]) => [p, { added, removed }]),
+    ),
+    readText: (side, p) =>
+      texts[`${side}:${p}`] ??
+      (p === REGISTRY ? JSON.stringify(registry[side]) : null),
+  });
+}
 
 const body = n(250, (i) => `export const rule${i} = (x) => x + ${i};`);
 
@@ -156,10 +189,11 @@ function sceneMutationRename() {
   );
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check） */
-export function runPrSizeScenes2(env) {
-  ({ check } = env);
-  sceneMutation();
-  sceneMutationVia();
-  sceneMutationRename();
+sceneMutation();
+sceneMutationVia();
+sceneMutationRename();
+if (failures > 0) {
+  console.error(`NG: verify-pr-size-mutation の試験が ${failures} 件失敗`);
+  process.exit(1);
 }
+console.log("verify-pr-size-mutation: OK");
