@@ -10,14 +10,14 @@
     "tableReaders": 960,
     "tableWriters": 198,
     "rpcCallers": 57,
-    "nameMentions": 283,
+    "nameMentions": 285,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
     "notInSnapshot": 11,
     "unresolved": 35,
     "parseErrors": 0,
-    "uncoveredFiles": 56
+    "uncoveredFiles": 57
   },
   "tables": {
     "accuracy_cache": {
@@ -26631,7 +26631,10 @@
         }
       },
       "columnsNotInSnapshot": [],
-      "mentions": [],
+      "mentions": [
+        "scripts/analysis/motor-trend-window/analyze.py:72",
+        "scripts/analysis/motor-trend-window/analyze.py:90"
+      ],
       "external": [],
       "scrapeJobs": []
     },
@@ -30384,6 +30387,7 @@
     "scripts/analysis/in-collapse-caution/round2/c2_rebuild.py",
     "scripts/analysis/in-collapse-caution/round3/c2_round3.py",
     "scripts/analysis/in-collapse-caution/round4/sparse_cells.py",
+    "scripts/analysis/motor-trend-window/analyze.py",
     "scripts/analysis/original-exhibition/analyze.py",
     "scripts/analysis/original-exhibition/analyze2.py",
     "scripts/analysis/original-exhibition/analyze4.py",

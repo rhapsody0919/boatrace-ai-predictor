@@ -15,14 +15,14 @@
 | 表の読み手（箇所） | 960 |
 | 表の書き手（箇所） | 198 |
 | RPC の呼び手（箇所） | 57 |
-| 名前の文字列だけの箇所（呼ぶ経路は式） | 283 |
+| 名前の文字列だけの箇所（呼ぶ経路は式） | 285 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
 | コードが使うのに写しに無い名前 | 11 |
 | 名前が式で拾えなかった箇所 | 35 |
 | 構文木にできなかったファイル | 0 |
-| 対象外の言語のファイル（Python 等） | 56 |
+| 対象外の言語のファイル（Python 等） | 57 |
 
 ## 表
 
@@ -2274,6 +2274,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 本体で書く RPC: update_venue_stats
+- 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/motor-trend-window/analyze.py:72`, `scripts/analysis/motor-trend-window/analyze.py:90`
 - 読み手（6）: 
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89` select [cluster, code]
   - `scripts/lib/predictionRaceFetch.js:8` select [avg_first_win_rate, code]
@@ -2284,7 +2285,7 @@
 - 書き手（2）: 
   - `scripts/maintenance/update-venue-stats.js:46` update [avg_first_win_rate, avg_first_win_rate_race_count, updated_at]
   - `scripts/maintenance/update-venue-stats.js:58` update [avg_first_win_rate, avg_first_win_rate_race_count, updated_at]
-- コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: water_type, course_entry_baseline, course_entry_baseline_updated_at
+- 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-watson_predictions"></a>watson_predictions
 
@@ -2363,7 +2364,7 @@
   - `scripts/maintenance/verifyData/live-odds-wiring-supabase.js:13` RPC の名前が変数（.rpc(式)）
   - `scripts/sns/pushSetsuKiryokuShortStore.js:37` REST の表の名前が式（/rest/v1/${…}）
 - 構文木にできなかったファイル: 0
-- 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 56
+- 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 57
   - `scripts/analysis/analogy-finder-fr2-holdout.py`
   - `scripts/analysis/analogy-finder-fr2-strat/features_prod.py`
   - `scripts/analysis/analogy-finder-perrace/finish_targets.py`
@@ -2386,6 +2387,7 @@
   - `scripts/analysis/in-collapse-caution/round2/c2_rebuild.py`
   - `scripts/analysis/in-collapse-caution/round3/c2_round3.py`
   - `scripts/analysis/in-collapse-caution/round4/sparse_cells.py`
+  - `scripts/analysis/motor-trend-window/analyze.py`
   - `scripts/analysis/original-exhibition/analyze.py`
   - `scripts/analysis/original-exhibition/analyze2.py`
   - `scripts/analysis/original-exhibition/analyze4.py`
