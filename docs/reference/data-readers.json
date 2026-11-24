@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2850,
-    "filesWithAccess": 326,
-    "tableReaders": 962,
+    "sourceFiles": 2853,
+    "filesWithAccess": 327,
+    "tableReaders": 963,
     "tableWriters": 199,
     "rpcCallers": 57,
     "nameMentions": 285,
@@ -15,7 +15,7 @@
     "rpcsWithoutCallers": 7,
     "external": 1,
     "notInSnapshot": 12,
-    "unresolved": 35,
+    "unresolved": 37,
     "parseErrors": 0,
     "uncoveredFiles": 57
   },
@@ -12690,6 +12690,12 @@
           "ref": "scripts/maintenance/backfill-series-day.js:64",
           "op": "select",
           "via": "helper:fetchAll",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/seo-morning-sheet.js:75",
+          "op": "select",
+          "via": "helper:readAll",
           "columns": []
         },
         {
@@ -30353,6 +30359,16 @@
     {
       "file": "scripts/maintenance/motor-pretest-backfill.js",
       "line": 251,
+      "reason": "表の名前が変数（.from(式)）"
+    },
+    {
+      "file": "scripts/maintenance/seo-morning-sheet.js",
+      "line": 60,
+      "reason": "表の名前が変数（.from(式)）"
+    },
+    {
+      "file": "scripts/maintenance/seo-morning-sheet.js",
+      "line": 66,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
