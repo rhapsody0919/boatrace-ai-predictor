@@ -1,17 +1,17 @@
 /**
  * raceIndicators の行定義（平均ST・ST・展示ST・展示タイム）
  */
-import { bestOf } from "../../utils/bestOf";
 import { formatExhibitionSt, slashDate } from "../../utils/formatters";
 import { EMPTY } from "../../pure/dataFormat.js";
 import { rowFromIndicator } from "./raceIndicatorsRowDefs";
 
 export function buildStRows(c) {
-  const { t, ph, cand, players, analysis, stByBoat, officialPeriod } = c;
+  const { t, ph, players, analysis, stByBoat, officialPeriod } = c;
   const data = { players, analysis };
   const avgSt = rowFromIndicator(t, data, "racer.avgSt.official", "avgSt");
   const avgSt30 = rowFromIndicator(t, data, "racer.avgSt.last30", "avgSt30");
   const st = rowFromIndicator(t, data, "racer.exStGap.past", "st");
+  const exSt = rowFromIndicator(t, data, "boat.exhibitionSt.today", "exSt");
   // 値が無ければ取得中の骨組みか「—」（出所ごとの pending、ph）
   const valueOr = (row, p, source, prefix = "") => {
     const { text } = row.text(p);
@@ -46,13 +46,9 @@ export function buildStRows(c) {
     { ...avgSt30, render: (p) => valueOr(avgSt30, p, "st30") },
     { ...st, render: (p) => valueOr(st, p, "stPredictability", "±") },
     {
-      key: "exSt",
-      label: t("dataTable.rowExSt"),
-      shortLabel: t("review.cols.exSt"),
+      ...exSt,
       // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
       category: "beforeInfo",
-      tab: "st",
-      best: bestOf(cand.exSt, "min", { digits: 2 }),
       render: (p) => {
         const row = stByBoat.get(p.number);
         const shown = formatExhibitionSt(
@@ -73,23 +69,23 @@ export function buildStRows(c) {
 }
 
 export function buildExhibitionRow(c) {
-  const { t, ph, cand, exByBoat } = c;
+  const { t, ph, players, analysis, exByBoat } = c;
+  const exhibition = rowFromIndicator(
+    t,
+    { players, analysis },
+    "boat.exhibitionTime.today",
+    "exhibition",
+  );
   return [
     {
-      key: "exhibition",
-      label: t("dataTable.rowExhibition"),
-      shortLabel: t("review.cols.exhibition"),
+      ...exhibition,
       // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
       category: "beforeInfo",
-      tab: "extrend",
-      best: bestOf(cand.exhibition, "min", { digits: 2 }),
       render: (p) => {
         const row = exByBoat.get(p.number);
         if (!row) return ph("exhibitionTime");
         if (row.exhibition_time !== null && row.exhibition_time !== undefined) {
-          return (
-            <span className="drt-value">{row.exhibition_time.toFixed(2)}</span>
-          );
+          return <span className="drt-value">{exhibition.text(p).text}</span>;
         }
         if (
           row.avg_exhibition_time !== null &&

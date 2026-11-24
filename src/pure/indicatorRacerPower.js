@@ -109,4 +109,36 @@ export const RACER_POWER_INDICATORS = [
     detailTab: "racer",
     adornment: "trendArrow",
   },
+  {
+    id: "racer.winReturnRate.waku180d",
+    family: "F-013",
+    category: "racerPower",
+    kind: "aggregate",
+    subject: "racer",
+    scenes: ["race"],
+    shape: "perBoat",
+    text: {
+      label: "dataTable.rowReturnRate",
+      short: "review.cols.returnRate",
+      hint: "returnRate",
+    },
+    sources: ["race.returnRate"],
+    window: "過去180日・同じ艇番で出走したレースの単勝回収率",
+    format: "rateParts",
+    compare: { direction: "max", digits: 0, minN: null },
+    // 走数0の艇は値を持たない（比べない）
+    select: ({ analysis }) =>
+      new Map(
+        (analysis?.returnRate ?? []).map((r) => [
+          r.boat_number,
+          {
+            value: r.sample_count > 0 ? toNumber(r.win_return_rate) : null,
+            n: r.sample_count ?? null,
+            hidden: false,
+          },
+        ]),
+      ),
+    detailTab: "returnrate",
+    adornment: null,
+  },
 ];

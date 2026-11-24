@@ -1,0 +1,98 @@
+/* 会場ページのレースの塊（approved.md）。App.css の旧カードより強く当てるため article から書く。多列では帯・結果・出走表・ボタン・戻るの5行を .race-grid の行に合わせ（subgrid）、同じ段の出走表の高さをそろえる。
+   App.css の旧カードの container（大きさの封じ込め）は subgrid を止めるので外す（出走表は自分の container を持つ） */
+article.venue-race-block.race-card {
+  container-type: normal;
+  display: grid;
+  grid-row: span 5;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  padding: 1rem;
+}
+article.venue-race-block .race-card-header {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+article.venue-race-block .race-card-header .race-number {
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+}
+article.venue-race-block .race-info,
+article.venue-race-block .race-info .info-item {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0 0.25rem;
+  margin: 0 0 0 auto;
+}
+article.venue-race-block .race-info .info-item > * {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
+}
+article.venue-race-block .race-card-badges {
+  flex-basis: 100%;
+  margin-left: 0;
+  min-height: 0;
+}
+article.venue-race-block .race-card-badges:empty {
+  display: none;
+}
+.venue-race-block__result {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.75rem;
+  margin: 0 0 0.75rem;
+}
+/* 詳細は1段目に幅いっぱい（race-card-link.spec.js）、AI予想と直前情報・結果は2段目に半分ずつ */
+.venue-race-block__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.venue-race-block__links a {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+/* 詳細は受付中だけ青の塗り。終わったレースは灰の塗り（無効に見える）にせず隣と同じ枠のボタン */
+article.venue-race-block a.predict-btn {
+  flex-basis: 100%;
+  display: block;
+  padding: 0.75rem;
+  border: none;
+  line-height: 1.25rem;
+  text-align: center;
+}
+article.venue-race-block.race-card--deadline-passed a.predict-btn {
+  background: none;
+  color: var(--text-primary);
+  border: var(--border-width-1) solid var(--border-hairline);
+}
+.venue-race-block__back {
+  display: block;
+  margin: 0.5rem 0 0 auto;
+  min-height: 44px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}

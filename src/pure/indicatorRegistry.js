@@ -8,6 +8,7 @@
  */
 import { bestOf } from "./bestOf.js";
 import * as dataFormat from "./dataFormat.js";
+import { BEFORE_RACE_INDICATORS } from "./indicatorBeforeRace.js";
 import { MOTOR_INDICATORS } from "./indicatorMotor.js";
 import { RACER_POWER_INDICATORS } from "./indicatorRacerPower.js";
 import { START_INDICATORS } from "./indicatorStart.js";
@@ -16,6 +17,7 @@ export const INDICATORS = [
   ...RACER_POWER_INDICATORS,
   ...MOTOR_INDICATORS,
   ...START_INDICATORS,
+  ...BEFORE_RACE_INDICATORS,
 ];
 
 /** 改名した id の読み替え（旧 id → 新 id）。保存された並べ方の中の id を消さないため */
