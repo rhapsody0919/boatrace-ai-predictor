@@ -232,7 +232,8 @@ function featuredSignal(row, useInCaution) {
 function featuredSignalSentence(row, useInCaution) {
   if (useInCaution) {
     return (
-      `イン崩れ注意度は${row.in_caution_pct}%（勝率差が同じくらいの全国の過去レース${row.in_caution_n}件で、` +
+      `イン崩れ注意度は${row.in_caution_pct}%（1号艇と、他の艇で一番高い全国勝率の差が同じくらいの` +
+      `全国の過去レース${Number(row.in_caution_n).toLocaleString("ja-JP")}件で、` +
       `1号艇が1着を逃した割合）で、`
     );
   }

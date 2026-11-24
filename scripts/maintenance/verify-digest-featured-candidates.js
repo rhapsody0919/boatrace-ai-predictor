@@ -97,7 +97,7 @@ cases.push(
   ["注意度で選ぶと、注意度の値で方向一致度を出し、理由文も注意度で書く", () => {
     const featured = pickFeatured(cautionSections, { useInCaution: true });
     assert.equal(featured.race_id, nigeB.race_id);
-    assert.match(featured.detail.reason, /イン崩れ注意度は10%（勝率差が同じくらいの全国の過去レース3000件で/);
+    assert.match(featured.detail.reason, /イン崩れ注意度は10%（1号艇と、他の艇で一番高い全国勝率の差が同じくらいの全国の過去レース3,000件で/);
     assert.doesNotMatch(featured.detail.reason, /イン崩れ指数/);
     const legacy = pickFeatured(cautionSections, { useInCaution: false });
     assert.equal(legacy.race_id, nigeA.race_id);
