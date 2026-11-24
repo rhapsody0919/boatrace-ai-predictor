@@ -3641,7 +3641,7 @@
   },
   "stConsideration": {
     "title": "Start timing",
-    "subtitle": "Lower figure is the gap from the average for the same course and class",
+    "subtitle": "Lower figure is the gap from the average for the same course and class. Courses assume boats enter in boat-number order (not valid when a boat moves in)",
     "window": "Average compared against: {{start}} to {{end}}",
     "ownWindow": "The racer's figures count only races before this one",
     "gradeRow": "Class",
