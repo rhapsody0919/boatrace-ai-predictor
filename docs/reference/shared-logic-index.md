@@ -32,6 +32,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
 | `src/pure/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
 | `src/pure/hitJudge.js` | 複勝的中判定（2着以内） | isPlaceHit, isShowHit |
+| `src/pure/indicatorMotor.js` | 指標の定義: 大分類「機力（モーター・ボート）」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は c… | MOTOR_INDICATORS |
+| `src/pure/indicatorRacerPower.js` | 指標の定義: 大分類「選手の力」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | RACER_POWER_INDICATORS |
+| `src/pure/indicatorRegistry.js` | 指標の登録簿（ADR-0108）。指標の定義の正はここに並ぶ定義だけ。 | bestOfIndicator, formatIndicatorParts, INDICATORS, ALIASES, getIndicator |
+| `src/pure/indicatorStart.js` | 指標の定義: 大分類「スタート」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | START_INDICATORS |
 | `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetCompareSideRows.js` | RaceMeetTab 比較表の注記（RaceMeetTabCompareSide.jsx）の人数の行の文言を作る純関数（副作用なし）。 | countLineText |
@@ -658,4 +662,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 616 ファイル / export 3310 件。
+対象 620 ファイル / export 3318 件。
