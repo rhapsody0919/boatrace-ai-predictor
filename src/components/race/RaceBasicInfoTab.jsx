@@ -256,6 +256,9 @@ function NowBars({ values, shared, scale, src }) {
   const { t } = useTranslation();
   return (
     <>
+      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
+          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
+          読ませないよう書き添える（#1064 ファン評価2周目） */}
       {scale.isRelativeScaleMetric && (
         <p className="rbit-metric-caveat rbit-relative-note">
           {t("basicInfo.relativeBarNote")}
@@ -317,7 +320,6 @@ function RaceBasicInfoTab({
   focusedBoat,
   onFocusBoat,
 }) {
-  const { t } = useTranslation();
   const filters = useBasicInfoFilters();
   const { metric, scope, grade, period } = filters;
   // 「今の値｜推移」（オーナー 2026-11-24）。開いた最初は今の値
@@ -385,9 +387,6 @@ function RaceBasicInfoTab({
         setView={setView}
       />
 
-      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
-          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
-          読ませないよう書き添える（#1064 ファン評価2周目） */}
       {view === "trend" && (
         <BasicInfoTrend
           metric={metric}
