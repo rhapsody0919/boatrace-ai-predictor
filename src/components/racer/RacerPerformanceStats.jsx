@@ -187,7 +187,7 @@ function overviewBlocks(t, vc, view, venueStats) {
     if (!view.hasVenueStats && !view.hasCourseStats) return [];
     return [
       <p key="overviewHidden" className="racer-stat-note" data-testid="racer-overview-hidden">
-        会場別・枠番別の表はグレード・レース種別で絞り込めないため、選んでいる間は出しません
+        全会場の会場別・枠番別の表はグレード・レース種別では絞れないため、選んでいる間は出しません。会場か枠番を選ぶと、絞った表が出ます
       </p>,
     ];
   }
