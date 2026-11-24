@@ -27,6 +27,8 @@ test("フラグの側: 「AI予想」と展開予測の的中率を出さず、�
   await expect(body.getByRole("link", { name: "段ごとの実績を見る →" }))
     .toHaveAttribute("href", "/accuracy");
   await expect(body.getByRole("button", { name: "レースの分析を見る" })).toBeVisible();
+  await expect(body).toContainText("発走前は8つ");
+  await expect(body).toContainText("龍神ソナー: 類似レースの決まり方");
   await expect(page).toHaveTitle(
     "龍神レーダーについて | ボートレースのデータ分析サービスの詳細",
   );

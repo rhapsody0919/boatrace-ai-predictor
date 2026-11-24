@@ -87,8 +87,10 @@ function AboutRaceTabsSection({ inCaution }) {
       <h2>🗂️ レース詳細で見られるもの（タブ構成）</h2>
       <p>
         各レースの詳細ページは、見たい切り口ごとにタブに分かれています。発走前は
-        <strong>7つ</strong>、レースが確定すると「結果」が加わって
-        <strong>8つ</strong>
+        {/* フラグの側は龍神ソナーのタブも数える（ファン評価 2026-11-24 P2） */}
+        <strong>{inCaution ? "8つ" : "7つ"}</strong>
+        、レースが確定すると「結果」が加わって
+        <strong>{inCaution ? "9つ" : "8つ"}</strong>
         になります。
         {inCaution ? (
           <InCautionTabIntro />
@@ -100,16 +102,23 @@ function AboutRaceTabsSection({ inCaution }) {
           </>
         )}
       </p>
-      <p>
-        並びは粒度順で、
-        <strong>前半の4つは6艇をまとめて見るタブ</strong>、
-        <strong>後半は艇を1つ選んで掘るタブ</strong>です。
-      </p>
+      {!inCaution && (
+        <p>
+          並びは粒度順で、
+          <strong>前半の4つは6艇をまとめて見るタブ</strong>、
+          <strong>後半は艇を1つ選んで掘るタブ</strong>です。
+        </p>
+      )}
       <ul className="about-tab-list">
         <li>
           <strong>基本情報</strong>:
           勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数も併記します
         </li>
+        {inCaution && (
+          <li>
+            <strong>龍神ソナー</strong>: 類似レースの決まり方
+          </li>
+        )}
         <li>
           {inCaution ? (
             <InCautionTabItem />
