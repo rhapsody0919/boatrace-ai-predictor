@@ -1,0 +1,136 @@
+/* 更新のお知らせ（/updates）。色は意味トークンだけ（ライト・ダークで同じ規則） */
+.site-updates {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--spacing-6) var(--spacing-4) var(--spacing-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  color: var(--text-primary);
+}
+
+.site-updates-head h1 {
+  font-size: var(--font-size-2xl);
+  margin: 0 0 var(--spacing-2);
+}
+
+.site-updates-head p,
+.site-updates-item-body,
+.site-updates-minor {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.site-updates-making {
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.site-updates-making h2 {
+  font-size: var(--font-size-sm);
+  color: var(--brand-accent-primary);
+  margin: 0 0 var(--spacing-1);
+}
+
+.site-updates-making ul,
+.site-updates-minor ul {
+  margin: var(--spacing-1) 0 0;
+  padding-left: 1.2em;
+  font-size: var(--font-size-sm);
+}
+
+.site-updates-making p,
+.site-updates-disclaimer {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.site-updates-month,
+.site-updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.site-updates-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-updates-month-title {
+  font-size: var(--font-size-base);
+  margin: 0;
+  padding-bottom: var(--spacing-1);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.site-updates-item {
+  display: grid;
+  grid-template-columns: 3.2em minmax(0, 1fr);
+  gap: var(--spacing-3);
+}
+
+.site-updates-date {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  padding-top: 0.1em;
+}
+
+.site-updates-item-title {
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  margin: 0 0 var(--spacing-1);
+}
+
+.site-updates-tag {
+  display: inline-block;
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-1-5);
+  margin-right: var(--spacing-2);
+  vertical-align: 0.15em;
+  line-height: 1.6;
+}
+
+.site-updates-tag--feature,
+.site-updates-links a,
+.site-updates-making h2 {
+  color: var(--brand-accent-primary);
+}
+
+.site-updates-tag--improvement {
+  color: var(--text-secondary);
+}
+
+.site-updates-links {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--spacing-4);
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* リンクの色は既存（.result-volatility-caveat a）と同じ意味トークン。下線は残す。押せる高さ44px（ui-layout.md） */
+.site-updates-links a {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.site-updates-minor {
+  margin-left: calc(3.2em + var(--spacing-3));
+}
+
+.site-updates-disclaimer {
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}

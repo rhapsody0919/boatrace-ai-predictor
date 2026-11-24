@@ -9,7 +9,10 @@
  * 環境変数: GH_TOKEN（マージできる App のトークン）・GITHUB_REPOSITORY
  * 終了コード: 0 済み、1 読み書きの失敗
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { judge } from "../lib/contentAutoMerge.js";
 
 const DRY = process.argv.includes("--dry-run");
@@ -30,6 +33,29 @@ function lane(baseSha, headSha) {
     return JSON.parse(out).lane;
   } catch {
     return "unknown";
+  }
+}
+
+// PR の木を別の作業ツリーに出し、master の版の check-content-pr.js を当てる（PR のコードは実行しない。関門は git の中身を読むだけ）
+function contract(baseSha, headSha) {
+  const dir = mkdtempSync(join(tmpdir(), "content-pr-"));
+  try {
+    git(["worktree", "add", "-q", "--detach", dir, headSha]);
+    const out = spawnSync("node", [join(process.cwd(), "scripts/content/check-content-pr.js"), "--base", baseSha], {
+      cwd: dir,
+      encoding: "utf8",
+      maxBuffer: 32 * 1024 * 1024,
+    });
+    const parsed = JSON.parse(out.stdout || "{}");
+    return { ok: parsed.ok === true, errors: parsed.errors ?? [`関門の終了コード ${out.status}`] };
+  } catch (err) {
+    return { ok: false, errors: [`関門を回せない: ${String(err.message).split("\n")[0]}`] };
+  } finally {
+    try {
+      git(["worktree", "remove", "--force", dir]);
+    } catch {
+      rmSync(dir, { recursive: true, force: true });
+    }
   }
 }
 
@@ -66,6 +92,7 @@ function main() {
       manifest: manifestOf(files, headSha),
       checks,
       lane: lane(baseSha, headSha),
+      contract: contract(baseSha, headSha),
     });
     if (!merge) {
       console.log(`#${p.number}: 待つ（${reasons.join("・")}）`);

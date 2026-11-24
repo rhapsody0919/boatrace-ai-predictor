@@ -185,6 +185,11 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
+      "script": "verify-blocked-crawlers.js",
+      "tier": "ci",
+      "guards": "断るクローラー（Reflectionbot・meta-externalagent・Bytespider、Supabase の枠越えの主因 2026-11-19）は middleware.js が matcher の全パスで 403・no-store（大文字小文字を問わない部分一致）、検索ボット・他の AI・SNS・人は 403 にならず今の経路のまま"
+    },
+    {
       "script": "verify-blog-chart-png.js",
       "tier": "ci",
       "guards": "ブログの図の PNG の書き出し（ADR 0099、src/utils/blogChartPng.js・scripts/lib/blogChartPng.js）。大きさの固定の一覧が整数の画素（1080×1350・1280×720）で BlogChart.css の [data-chart-export] と同じ、URL のパス、本番の判定は content-type と先頭8バイトの両方（無い PNG は rewrite で index.html が返る）、撮る図の一覧を記事ごとにまとめる、朝夜のまとめの行（足された・変わった JSON だけ、作られていない理由を status.json から）、status.json の照合が図の PNG の失敗を拾う"
@@ -330,6 +335,11 @@
       "script": "verify-daily-reconcile.js",
       "tier": "ci",
       "guards": "日次の照合（N29、daily_reconcile）"
+    },
+    {
+      "script": "verify-data-format.js",
+      "tier": "ci",
+      "guards": "表とグラフの数字の書き方（src/pure/dataFormat.js、design-system.md「表とグラフ」決まり5・6）。勝率2桁・率1桁で % を数字と分ける、件数の桁区切り、空は —、-0.0 を出さない、差の符号、上下の向きは表示の桁で、少ない母数は6件未満"
     },
     {
       "script": "verify-data-health-job.js",
@@ -699,6 +709,11 @@
       "script": "verify-index-jsonld.js",
       "tier": "ci",
       "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
+    },
+    {
+      "script": "verify-indicator-registry.js",
+      "tier": "ci",
+      "guards": "指標の登録簿（src/pure/indicatorRegistry.js、ADR-0108）。id の重複・改名の読み替え先、種類・主語・値の形・向きの値、文のキーの形、書き方が dataFormat の関数、見立ての材料の参照先と輪、select の形、最良は表示の桁で比べ hidden を返さない、勝率2桁・率は % を分ける"
     },
     {
       "script": "verify-install-actionlint.js",
@@ -1653,6 +1668,11 @@
       "script": "verify-sherlock-race-make.js",
       "tier": "ci",
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
+    },
+    {
+      "script": "verify-site-updates.js",
+      "tier": "ci",
+      "guards": "更新のお知らせ（src/data/siteUpdates.js）の形（id・日付の新しい順・種別・字数・リンク・記事の実在・禁止語・今つくっている物は3件まで）と、帯と NEW の判定（src/pure/siteUpdates.js。JST の暦日の境目・minor を出さない・閉じた件）。docs/design/site-updates/"
     },
     {
       "script": "verify-sitemap-coverage.js",

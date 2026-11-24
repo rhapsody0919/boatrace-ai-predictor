@@ -134,3 +134,91 @@ test.describe("レイアウト: 会場のレース一覧カード（出走表の
     }
   });
 });
+
+// 「調子・展示・回収率まで見る」を開いた行が、上の艇番の列とずれず、表が枠からはみ出さない（2026-11-23 ファン評価 P0・P1）。
+// 以前は開いた行を別の表に置いたため列の幅が中身で決まり、375px で展示ST が隣の艇の列の下に出て、6号艇の列が枠の外へ切れた。
+// 同じ表に移した後も、1024px（カード約315px）では1行のままのラベルと「47.6kg」等で表が約9px 広がった。
+// 録画にこのレースの詳細が無く開いた行が「—」になるので、本番 /venue/2 1R（11/23）と同じ長さの文字を入れて測る
+const LONG_EXPANDED_VALUES = {
+  "2連率": ["17.8%", "23.9%", "12.5%", "42.6%", "1.4%", "34.0%"],
+  調子: ["↑0.26", "↑1.82", "—", "↑0.36", "↓0.16", "↑0.05"],
+  展示ST: ["0.05", "0.09", "0.12", "F.05", "0.01", "0.10"],
+  体重: ["47.6kg", "47.9kg", "40.5kg", "47.0kg", "48.3kg", "52.0kg"],
+  調整重量: ["0.0kg", "0.0kg", "6.5kg", "0.0kg", "0.0kg", "0.0kg"],
+  今節前走: [
+    "6着 6コース 11/22 7R",
+    "3着 6コース 11/22 11R",
+    "6着 3コース 11/22 5R",
+    "3着 4コース 11/22 10R",
+    "6着 6コース 11/22 4R",
+    "2着 5コース 11/22 12R",
+  ],
+  枠番: ["13% 3/23", "0% 0/17", "0% 0/16", "3% 1/36", "0% 0/22", "4% 1/25"],
+  決まり手: [
+    "まくり差し 4勝",
+    "逃げ 3勝",
+    "まくり差し 3勝",
+    "逃げ 13勝",
+    "勝利なし",
+    "まくり 2勝",
+  ],
+  回収率: ["110%", "0%", "0%", "28%", "0%", "87%"],
+};
+
+for (const width of [375, 1024]) {
+  test(`会場のレースカード: 開いた行の列が艇番の列とそろい、6号艇の列が枠の中にある（${width}px）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/races/2026-09-24/1", { waitUntil: "domcontentloaded" });
+    const card = page.locator(".race-list-section .race-card").first();
+    await expect(card.locator(".rcdt-table")).toBeVisible({ timeout: 30000 });
+    await card.locator(".rcdt-expand-btn").click();
+    // 開いた行（展示ST）が出るまで待つ。表の組み方（1つか2つか）に依らない形で待つ
+    await expect(
+      card.locator("tbody tr", { hasText: "展示ST" }).first(),
+    ).toBeVisible({ timeout: 30000 });
+
+    const m = await card.evaluate((el, values) => {
+      el.querySelectorAll(".rcdt tbody tr").forEach((tr) => {
+        const row = values[tr.children[0].textContent.trim()];
+        if (!row) return;
+        [...tr.children].slice(1).forEach((td, i) => {
+          td.textContent = row[i];
+        });
+      });
+      const heads = [...el.querySelectorAll("thead tr:first-child th")].map(
+        (th) => th.getBoundingClientRect(),
+      );
+      const rows = [...el.querySelectorAll(".rcdt tbody tr")].map((tr) =>
+        [...tr.children].map((td) => td.getBoundingClientRect()),
+      );
+      const wrap = el.querySelector(".rcdt-table-wrapper");
+      return {
+        overflow: wrap.scrollWidth - wrap.clientWidth,
+        heads: heads.map((r) => ({ left: r.left, right: r.right })),
+        rows: rows.map((cells) =>
+          cells.map((r) => ({ left: r.left, right: r.right })),
+        ),
+      };
+    }, LONG_EXPANDED_VALUES);
+
+    // 常時の3行（勝率・当地・モーター）より多い＝開いた行も照らしている
+    expect(m.rows.length).toBeGreaterThan(3);
+    // 開いた後も6号艇の列が枠の中（横スクロールに隠れない）
+    expect(m.overflow, "開いた後の出走表の横スクロール").toBeLessThanOrEqual(1);
+    for (const [i, cells] of m.rows.entries()) {
+      expect(cells.length, `${i + 1}行目: 列の数`).toBe(m.heads.length);
+      for (const [j, cell] of cells.entries()) {
+        expect(
+          Math.abs(cell.left - m.heads[j].left),
+          `${i + 1}行目の${j}列目: 左端が見出しとずれる`,
+        ).toBeLessThanOrEqual(1);
+        expect(
+          Math.abs(cell.right - m.heads[j].right),
+          `${i + 1}行目の${j}列目: 右端が見出しとずれる`,
+        ).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+}

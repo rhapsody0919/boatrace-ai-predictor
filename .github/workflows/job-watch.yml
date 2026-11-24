@@ -86,7 +86,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
       (github.event.workflow_run.head_repository.full_name == github.repository &&
       (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'workflow_dispatch' ||
-      github.event.workflow_run.event == 'push') &&
+      github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_run') &&
       (github.event.workflow_run.conclusion != 'success' ||
       github.event.workflow_run.path == '.github/workflows/key-canary.yml')))
     # 見回りは毎回全部を見るので、待ちの間に来たイベントを落としても次の見回りで拾う。同時に2本は走らせない

@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import AnalysisTabs from "../components/analysis/AnalysisTabs";
+import { TAB_GROUPS } from "../components/analysis/analysisTabGroups";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -31,33 +33,9 @@ import {
 import "./OutcomeDistribution.css";
 import "./WinningTechniqueAnalysis.css";
 
-const TAB_KEYS = [
-  "outcome",
-  "technique",
-  "motor",
-  "motorranking",
-  "racer",
-  "st",
-  "topstart",
-  "losing",
-  "nige",
-  "extime",
-  "extrend",
-  "techprofile",
-  "formranking",
-  "returnrate",
-  "attackdefense",
-  "racecard",
-  "venueranking",
-  "venuegrade",
-  "volatility",
-  "weather",
-];
+// タブの一覧の正本は TAB_GROUPS（組の順）。組に入れ忘れたタブがボタンに出なくなるのを防ぐ
+const TAB_KEYS = TAB_GROUPS.flatMap((group) => group.tabs);
 
-// BOA-822（機能フラグの側）: volatility タブのラベルは新しいキー。analysisPage.tabs.volatility を上書きすると
-// ボット向けの静的ページ（generate-ai-snapshots.js）が公開前に変わる（plan「URL」、design-reviewer 指摘9）
-const tabLabelKey = (key) =>
-  key === "volatility" && isInCautionEnabled() ? "volatilityInCaution" : key;
 
 // 詳しい解説記事（ja専用ブログのため、非ja言語では該当info-cardごと非表示にする）
 const BLOG_LINKS = {
@@ -129,21 +107,6 @@ function AnalysisHead({ t, i18n, canonicalUrl, homeUrl }) {
   );
 }
 
-function AnalysisTabs({ t, activeTab, setActiveTab }) {
-  return (
-    <div className="analysis-tabs">
-      {TAB_KEYS.map((key) => (
-        <button
-          key={key}
-          className={`analysis-tab-btn ${activeTab === key ? "active" : ""}`}
-          onClick={() => setActiveTab(key)}
-        >
-          {t(`analysisPage.tabs.${tabLabelKey(key)}`)}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function TabChartsFirst({
   activeTab,

@@ -67,6 +67,7 @@ export default function VenueRaceListView({
             date={date}
             backLink={backLink}
             t={t}
+            heading={{ loading, error, venueRaces, liveNextIndex, gridRef }}
           />
 
           {/* 会場の常設の要約2行（直近1年、BOA-1189 GS02-b）と、出走表の後の節へのリンク（BOA-1687） */}

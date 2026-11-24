@@ -1,106 +1,62 @@
 {
- "schema": "content-pr-manifest/v1",
- "id": "headwind-strong-makuri-makurizashi-by-venue",
- "kind": "new",
- "ticket": "OC-20261122T100252-seo-human-1",
- "paths": [
-  "public/blog/headwind-strong-makuri-makurizashi-by-venue.md",
-  "src/data/blog-posts/headwind-strong-makuri-makurizashi-by-venue.json"
- ],
- "files": {
-  "public/blog/headwind-strong-makuri-makurizashi-by-venue.md": "963ed12801ef249e6581c0b2f50679b830d8a7a6842b512b64fec0e4d636c721",
-  "src/data/blog-posts/headwind-strong-makuri-makurizashi-by-venue.json": "4428b78eece39904deffc49f68bc109dad629b6de74fc8c9d5ad06e7418ce394"
- },
- "content_sha256": "ff1b307ca9ae49f77a42c009292975126be90a4742e9ef51fd5fe0736572361c",
- "judgement_words": [],
- "reviews": [
-  {
-   "role": "content-qa",
-   "agent": "hq-review:article+content-qa",
-   "result": "pass",
-   "p0": 0,
-   "p1": 0,
-   "reviewed_sha256": "ff1b307ca9ae49f77a42c009292975126be90a4742e9ef51fd5fe0736572361c",
-   "model": "opus",
-   "at": "2026-11-22T10:10:25+09:00"
+  "schema": "content-pr-manifest/v1",
+  "id": "headwind-strong-makuri-makurizashi-by-venue",
+  "kind": "revision",
+  "ticket": "ZB04",
+  "paths": [
+    "public/blog/headwind-strong-makuri-makurizashi-by-venue.md"
+  ],
+  "files": {
+    "public/blog/headwind-strong-makuri-makurizashi-by-venue.md": "e0a9f33fcec63d88083c3121a283301f9161a4b50038a45841c49641e22874ab"
   },
-  {
-   "role": "wording-editor",
-   "agent": "hq-review:wording",
-   "result": "pass",
-   "p0": 0,
-   "p1": 0,
-   "reviewed_sha256": "ff1b307ca9ae49f77a42c009292975126be90a4742e9ef51fd5fe0736572361c",
-   "model": "opus",
-   "at": "2026-11-22T10:10:25+09:00"
+  "content_sha256": "f0f8e46baaa06df7f8c25682e979c8649510cc42b53459702a9dd6a593eac950",
+  "content_at": "2026-11-23T14:49:21+09:00",
+  "judgement_words": [],
+  "reviews": [
+    {
+      "role": "content-qa",
+      "agent": "content-qa",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "f0f8e46baaa06df7f8c25682e979c8649510cc42b53459702a9dd6a593eac950",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-23T15:14:21+09:00"
+    },
+    {
+      "role": "wording-editor",
+      "agent": "wording-editor",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "f0f8e46baaa06df7f8c25682e979c8649510cc42b53459702a9dd6a593eac950",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-23T15:14:21+09:00"
+    },
+    {
+      "role": "fan",
+      "agent": "boatrace-fan-reviewer",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "f0f8e46baaa06df7f8c25682e979c8649510cc42b53459702a9dd6a593eac950",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-23T15:14:21+09:00"
+    },
+    {
+      "role": "seo-marketer",
+      "agent": "seo-marketer",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "f0f8e46baaa06df7f8c25682e979c8649510cc42b53459702a9dd6a593eac950",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-23T15:14:21+09:00"
+    }
+  ],
+  "author": {
+    "model": "seo-human（hq、2026-11-23 の直し）・取り込み claude-opus-5-5",
+    "lane": "窓口（龍神）"
   },
-  {
-   "role": "fan",
-   "agent": "hq-review:fan",
-   "result": "pass",
-   "p0": 0,
-   "p1": 2,
-   "reviewed_sha256": "ff1b307ca9ae49f77a42c009292975126be90a4742e9ef51fd5fe0736572361c",
-   "model": "opus",
-   "at": "2026-11-22T10:10:25+09:00"
-  },
-  {
-   "role": "seo-marketer",
-   "agent": "hq-review:seo+marketing",
-   "result": "pass",
-   "p0": 0,
-   "p1": 0,
-   "reviewed_sha256": "ff1b307ca9ae49f77a42c009292975126be90a4742e9ef51fd5fe0736572361c",
-   "model": "opus",
-   "at": "2026-11-22T10:10:25+09:00"
-  }
- ],
- "evidence": [
-  {
-   "h2": "全国では向かい風4m以上でまくりもまくり差しも増えた",
-   "evidence": [
-    "data/analysis/weather-in-escape.json"
-   ]
-  },
-  {
-   "h2": "まくりが増えたのは24場中12場",
-   "evidence": [
-    "data/analysis/weather-in-escape.json"
-   ]
-  },
-  {
-   "h2": "まくり差しが増えたのは24場中10場",
-   "evidence": [
-    "data/analysis/weather-in-escape.json"
-   ]
-  },
-  {
-   "h2": "まくりとまくり差しの組み合わせで24場は4つに分かれる",
-   "evidence": [
-    "data/analysis/weather-in-escape.json"
-   ]
-  },
-  {
-   "h2": "2〜3mとの比べと弱い・横風との比べは別の問い",
-   "evidence": [
-    "data/analysis/weather-in-escape.json",
-    "public/blog/headwind-strength-makuri-by-venue.md"
-   ]
-  },
-  {
-   "h2": "今日のレースでは、会場の組から展示へ進む",
-   "evidence": []
-  },
-  {
-   "h2": "数字の範囲と注意",
-   "evidence": [
-    "data/analysis/weather-in-escape.json"
-   ]
-  }
- ],
- "sources": "ref の data/analysis/weather-in-escape.json（period 2020-02-01〜2026-09-30、rows 368,332）の wind.venues.<1〜24>.bins.calm_cross と head_strong の n と techniques.まくり・まくり差し をそのまま写した。全国の回数は24場の和（derived_numbers）、全国の分母は wind.pooled.calm_cross.n（157,904）と wind.pooled.head_strong.n（45,541）。宮島の向かい風2〜3mは bins.head。検定は二標本の比率の z（pooled）、24場×2決まり手の48組を Bonferroni（線 約3.28）。",
- "author": "hq-employee:seo-human",
- "created_at": "2026-11-22T10:12:39+09:00",
- "run": "20261122T100252-seo-human",
- "engine": "claude"
+  "created_at": "2026-11-23T15:19:21+09:00"
 }

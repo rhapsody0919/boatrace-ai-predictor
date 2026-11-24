@@ -56,10 +56,10 @@ function toneVerdict(tone) {
   if (tone === "small") return " — 走数が少ないため参考値";
   return ` — ${
     tone === "good"
-      ? "実力以上に走っている"
+      ? "モーターは乗る選手の実力以上に走っている"
       : tone === "bad"
-        ? "選手の実力より低調"
-        : "実力相応"
+        ? "モーターは乗る選手の実力より低調"
+        : "モーターは乗る選手の実力相応"
   }`;
 }
 
@@ -114,6 +114,7 @@ function TrendSection({ chartData, captionHead, isPrevMeet, venueName }) {
             chartData[chartData.length - 1].day
           }）、この選手がこのモーターで出走してからの展示タイム`}
         </p>
+        <p className="racer-motor-status-note">縦軸は展示タイム。下ほど速い</p>
         <TrendLineChart
           data={chartData}
           yAxisLabel="展示タイム (秒)"

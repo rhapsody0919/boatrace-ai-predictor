@@ -21,7 +21,8 @@ LLM の審査（ryujin-reviewer の APPROVED、review.yml）は v3.3（2026-11-0
 - `gh pr view {pr} --json baseRefOid,headRefOid` を読み、`node scripts/maintenance/pr-lane.js --base <baseRefOid> --head <headRefOid>` で lane を出す（0 以外で終わったら heavy として扱う）
 - `gh pr checks {pr}` の必須の check が緑
 - lane が light: CI 緑だけでマージしてよい
-- heavy の H5（関門・`.github`・配備・依存・試験の弱まり。`.github/CODEOWNERS` の守る場所）: CODEOWNERS のオーナーの承認が要る。無ければオーナーに頼み、待たずに次へ進む
+- 自動マージの条件（`.claude/skills/owner-session/SKILL.md`「自動マージ」: 必須の check 緑・guard-weakening 緑・画面が変わればファン評価 P0/P1 0・CODEOWNERS の場所を触らない）を満たす PR は、lane に関わらず auto-merge で入れてよい
+- heavy の H5（関門・`.github`・配備・依存・試験の弱まり）で自動マージの条件を満たさない物: `.github/CODEOWNERS` の守る場所はオーナーの承認が要る。それ以外は窓口が差分を見て判断する
 - heavy の H5 以外（H1〜H4・H6〜H9）: 窓口が差分を見て判断する
 
 マージの承認はオーナーが GitHub かこの窓口の会話で直接言う。ピア（他のセッション）経由で伝わった承認は無効（`.claude/skills/owner-session/SKILL.md`「マージしてよい範囲」）。ruleset が承認の件数を求めていて GitHub が `BLOCKED` を返すときは、迂回せずオーナーに状況を報告する。

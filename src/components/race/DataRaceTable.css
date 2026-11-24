@@ -100,6 +100,7 @@
 }
 
 .drt-boat-th {
+  overflow: hidden;
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-base);
   width: calc(100% / 7);
@@ -228,6 +229,46 @@ thead tr:last-child:not(:first-child) .drt-label-th {
 .drt-table tbody tr:nth-child(even) .drt-cell.drt-best {
   background: var(--ind-best-bg);
 }
+
+/* 選んだ艇（?boat=）の列（承認の5）。金は最良だけなので本文の色の縦線と薄い地（visual-designer 判定 B）。
+   最良と重なるセルは両方を描く。偶数行の縞に負けないよう tr td から書く */
+.drt-table tr th.drt-boat-th.drt-selected {
+  box-shadow: inset 0 -4px 0 currentColor;
+}
+
+.drt-table tr th.drt-name-th.drt-selected {
+  background: color-mix(in srgb, var(--text-primary) 10%, var(--surface-card));
+  font-weight: var(--font-weight-bold);
+  box-shadow: inset 2px 0 0 var(--text-primary), inset -2px 0 0 var(--text-primary);
+}
+
+.drt-table tbody tr td.drt-cell.drt-selected {
+  background: color-mix(in srgb, var(--text-primary) 6%, var(--surface-card));
+  box-shadow: inset 2px 0 0 var(--text-primary), inset -2px 0 0 var(--text-primary);
+}
+
+.drt-table tbody tr td.drt-cell.drt-best.drt-selected {
+  background: var(--ind-best-bg);
+  box-shadow:
+    inset 2px 0 0 var(--text-primary),
+    inset -2px 0 0 var(--text-primary),
+    inset 0 0 0 1px var(--ind-best-ring);
+}
+
+/* 艇番の見出しのボタン。負のマージンでセルの余白まで押せる（行の高さは変えない） */
+.drt-boat-select {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% + var(--spacing-2) * 2);
+  margin: calc(var(--spacing-2) * -1);
+  padding: var(--spacing-2);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.drt-boat-select:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
 
 .drt-value {
   display: inline-flex;
@@ -373,6 +414,11 @@ thead tr:last-child:not(:first-child) .drt-label-th {
 
   .drt-table th,
   .drt-table td {
+    padding: var(--spacing-1);
+  }
+
+  .drt-boat-select {
+    margin: calc(var(--spacing-1) * -1);
     padding: var(--spacing-1);
   }
 

@@ -40,9 +40,10 @@ export default function RacerProfileLoaded({
         racerId={racerId}
         isInya={front.frontTaking?.isInya === true}
       />
-      {data.profile && <RacerTodayRuns racerId={racerId} />}
+      {data.profile && <RacerTodayRuns racerId={racerId} periodRows={period.periodRows} />}
       {data.profile && !period.periodFailed && (
         <RacerSummaryBlock
+          racerId={racerId}
           grade={data.grade}
           // 期別の行が届く前は undefined（取得中）、届いて出走が無ければ null
           summary={period.periodRows ? summary : undefined}
@@ -72,7 +73,11 @@ export default function RacerProfileLoaded({
         todayVenueCode={todayVenueCode}
         onHistoryStateChange={onHistoryStateChange}
       />
-      <RacerNewsList news={data.news} />
+      {/* ニュースが0件の選手（プロフィールがある）には節ごと出さない。プロフィールが無い選手のページは
+          全体が空の状態なので、空の案内を残す（e2e/smoke/racers.spec.js が固定） */}
+      {(!data.profile || data.news?.length > 0) && (
+        <RacerNewsList news={data.news} />
+      )}
     </>
   );
 }
