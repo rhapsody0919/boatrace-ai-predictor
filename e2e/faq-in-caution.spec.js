@@ -33,6 +33,9 @@ test("フラグの側: 展開予測の的中率と「AI予想」を出さず、�
   expect(names).toContain("イン崩れ注意度とは何ですか？");
   expect(names).not.toContain("AI予測の精度はどのくらいですか？");
   expect(JSON.stringify(faqLd)).not.toContain("展開予測");
+  expect(JSON.stringify(faqLd)).not.toContain("機械学習");
+  expect(JSON.stringify(faqLd)).not.toContain("数え");
+  expect(names).toContain("どうやってレースの分析を見れば良いですか？");
 });
 
 test("フラグの外: 今のまま", async ({ page }) => {
