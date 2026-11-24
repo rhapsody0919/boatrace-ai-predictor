@@ -744,6 +744,7 @@
     "basic": "Basic Info",
     "waku": "Lane Stats",
     "aiPrediction": "AI Prediction",
+    "inCaution": "Lane-1 Upset",
     "motor": "Motor Info",
     "meet": "This Series",
     "beforeInfo": "Just Before",
@@ -844,6 +845,7 @@
   },
   "aiPredictionTab": {
     "cancelled": "This race was cancelled, so there is no AI prediction.",
+    "cancelledInCaution": "This race was cancelled, so there is no Lane-1 upset caution level.",
     "unavailableTitle": "No AI prediction data",
     "unavailableBody": "This race doesn't have the data needed for an AI prediction.",
     "analogy": {
@@ -3989,7 +3991,7 @@
       "loading": "Loading results…",
       "error": "Could not load the results. Please try again later.",
       "empty": "No results yet. They appear after the nightly update.",
-      "where": "The caution level appears in the AI Prediction tab of each race, on the badges in each venue's race list, and in \"Today's Lane-1 upset caution level\" on the home page.",
+      "where": "The caution level appears in the Lane-1 Upset tab of each race, on the badges in each venue's race list, and in \"Today's Lane-1 upset caution level\" on the home page.",
       "sparseNote": "{{n}} races with too few past races in their win-rate-gap band got no caution level; they are counted in all races but in no tier."
     }
   },
