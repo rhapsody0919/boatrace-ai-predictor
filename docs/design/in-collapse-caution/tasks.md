@@ -71,7 +71,8 @@
 ## PR-5 /accuracy の実績（plan §6）
 
 - [x] **29. `in_caution_bands.py` に実績の集計を足す**: 公開前の検証（表だけで作る。full のとき・無いとき・`def` が違うときだけ）、公開後（`launchDate` 以降、同じ `def` の unified の行の `level` と完全レースの1号艇の1着の有無）。`accuracy_cache.in_caution_accuracy` に upsert。pytest に再現テスト
-- [ ] **30. 確認**: 公開前の検証の段ごとの率・件数が、ラウンドで分けた率で出した値 21,030・27.2%／32,178・43.4%／22,087・65.7%（design-reviewer が races.pkl で再現）と合うか。round4 の L（ラウンドで分けない、26.7／42.6／65.5%）との差も PR に書く。`sparse_cell` のレースを除くので件数は少し減る。`data-accuracy-verifier`
+- [x] **30. 確認**: 公開前の検証の段ごとの率・件数が、ラウンドで分けた率で出した値 21,030・27.2%／32,178・43.4%／22,087・65.7%（design-reviewer が races.pkl で再現）と合うか。round4 の L（ラウンドで分けない、26.7／42.6／65.5%）との差も PR に書く。`sparse_cell` のレースを除くので件数は少し減る。`data-accuracy-verifier`
+  - 結果（2026-11-24、窓口が本番の読み取り専用の SQL で照合）: 夜のジョブの値（accuracy_cache、def gapband-r-v1、11/23 17:32Z）と表から SQL で出し直した値が5つとも完全に一致。low 21,027件・27.2%、mid 32,169件・43.4%、high 22,071件・65.7%、sparse 28件、全体 75,295件・45.4%。design-reviewer の値との差は件数 −3・−9・−16（0.1%未満）で、率は3段とも一致。low < mid < high。SQL は窓口の共有ノート boa822-verify-30-34.sql.md
 
 ## PR-6 /today・SNS 企画（plan §5・§7 の 6）
 
@@ -81,6 +82,7 @@
 - [ ] **33. `generate-morning-digest.js`**: `fetchInCaution`、`in_caution_pct`・`in_caution_n`・`in_caution_level` を書く（`OPTIONAL_ROW_COLUMNS`）。`MORNING_DIGEST_IN_CAUTION = false` の間は注目レースと SNS のネタは旧の値のまま。`unchangedRows.js` の比較に3列を足す。inCaution が全レース null の日に注目レースが0件になること、06:30・08:00 の再実行で埋まるか（再実行の条件 `cronWrapper.js:468-474` が「注目レース0件」を不完全と見るか）を確かめる
   - 2026-11-24（#3325、マージ待ち）: `MORNING_DIGEST_IN_CAUTION = false` は `scripts/lib/morningDigestSummary.js`。156 が未適用でも、列が無いエラーのときはマイグレーションのグループごとに列を除いて書く（131 の `motor_race_count` は書き続ける）。全レースで値が無い日は、定数が true なら注目レースが0件になる（試験あり）。再実行では埋まらない。`incomplete` を返すのは完全性チェックだけ（`cronWrapperParts.js:366`）で、旧の指数でも同じ動き。直すかは公開の前に決める。`unchangedRows.js` は numeric の列だけを扱い、3列は smallint・integer・text なので足していない
 - [ ] **34. 注目レースの選び方の比較**（2026-11-24: 30 と同じく、窓口が本番の読み取り専用の SQL で回す。SQL は保存した上位25件の逃げしか見えないので、26位以降の候補は dry-run でしか比べられない）: `MORNING_DIGEST_IN_CAUTION = true` で過去7日分を dry-run し、入れ替わる注目レースの件数と例を PR に書く。変わり方が大きければ Orchestrate に返す（2026-10-13 Orchestrate）
+  - 結果（2026-11-24、窓口が SQL で照合）: 旧の選び方の再現は7日中7日で保存した注目レースと一致（SQL の作りは生成と合う）。注意度で選ぶと7日中4日が入れ替わる（11/17 は逃げ→逃げ、11/18・21・23 は逃げ→まくり）。1位は新がまくり4・逃げ3、旧は逃げ6・まくり1。注意度の欠けは 11/20 の1件だけ。まくりに寄るので、オーナーに返した（窓口の推奨: 公開は AI タブから、MORNING_DIGEST_IN_CAUTION は false のまま1週見てから別に決める）
 - [ ] **35. `DigestRaceCard`・`FeaturedRaceCard`** の表示（フラグの側。`in_caution_*` が無い過去の行は欄を出さない）
   - 2026-11-24（#3329、マージ待ち）: 注目レースは「イン崩れ注意度 N%」＋段の札＋件数、カードのフッターは「イン崩れ注意度 ［札 N%］（全国の過去レースN件）」。準優・優勝戦でも件数をラウンドで分けたと書けない（行にラウンドの列が無い。ファン評価 P2、公開の前に決める）。/today の計測（surface `today`、task 27 の残り）も入れた（`src/hooks/useTodayCaution.js`、`e2e/today-in-caution.spec.js`）
 - [x] **36. SNS 企画** `findQualifyingRaces`: 点区切りの metric、`inCaution.*` の条件は unified の行で判定。`create-campaign.js` の既定値 0.985 を外して必須に。再現テスト（standard が新しいレースでも unified で判定される）
