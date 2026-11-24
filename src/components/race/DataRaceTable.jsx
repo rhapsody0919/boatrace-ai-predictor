@@ -14,7 +14,6 @@
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { useSixBoatCourseStats } from "../../hooks/useSixBoatCourseStats";
 import { buildBasicIndicatorRows } from "./raceIndicators";
@@ -25,6 +24,8 @@ import { useRaceEntryFlyingRows } from "../../hooks/useRaceEntryFlyingRows";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import InlineFetchError from "../InlineFetchError";
 import FavoriteStarButton from "../common/FavoriteStarButton.jsx";
+import BoatCompareTable from "../dataDisplay/BoatCompareTable";
+import { useRaceUrlState } from "./PredictionPanelState";
 import "./DataRaceTable.css";
 import { splitRacerName } from "../../utils/racerName";
 
@@ -35,60 +36,36 @@ const nameParts = (name) =>
     </span>
   ));
 
-const cellClass = (boat, best) =>
-  `drt-cell ${best?.has(boat) ? "drt-best" : ""}`;
-
-function BoatHeaderRows({ players }) {
+// 選手名の見出し（2段目）
+function NameHeader({ p }) {
   return (
     <>
-      <tr>
-        <th className="drt-label-th"></th>
-        {players.map((p) => {
-          const color = BOAT_COLORS[p.number] || {};
-          return (
-            <th
-              key={p.number}
-              className="drt-boat-th"
-              style={{ background: color.bg, color: color.text }}
-            >
-              {p.number}
-            </th>
-          );
-        })}
-      </tr>
-      <tr>
-        <th className="drt-label-th"></th>
-        {players.map((p) => (
-          <th key={p.number} className="drt-name-th">
-            {/* 姓と名を別の塊にする。スマホでは2行に分け、名前の途中で
-                折れないようにする（BOA-612。PCでは続けて1行に並ぶ） */}
-            {p.racerId ? (
-              <Link to={`/racer/${p.racerId}`} translate="no">
-                {nameParts(p.name)}
-              </Link>
-            ) : (
-              <span translate="no">{nameParts(p.name)}</span>
-            )}
-            {p.racerId && (
-              <div className="drt-name-favorite">
-                <FavoriteStarButton
-                  type="racer"
-                  id={p.racerId}
-                  name={p.name}
-                  entry="race_table"
-                />
-              </div>
-            )}
-          </th>
-        ))}
-      </tr>
+      {/* 姓と名を別の塊にする。スマホでは2行に分け、名前の途中で
+          折れないようにする（BOA-612。PCでは続けて1行に並ぶ） */}
+      {p.racerId ? (
+        <Link to={`/racer/${p.racerId}`} translate="no">
+          {nameParts(p.name)}
+        </Link>
+      ) : (
+        <span translate="no">{nameParts(p.name)}</span>
+      )}
+      {p.racerId && (
+        <div className="drt-name-favorite">
+          <FavoriteStarButton
+            type="racer"
+            id={p.racerId}
+            name={p.name}
+            entry="race_table"
+          />
+        </div>
+      )}
     </>
   );
 }
 
-function RowLabelCell({ row, deepLink }) {
+function RowLabel({ row, deepLink }) {
   return (
-    <td className="drt-label-cell">
+    <>
       {row.tab ? (
         <Link
           to={deepLink(row.tab)}
@@ -121,25 +98,14 @@ function RowLabelCell({ row, deepLink }) {
           {row.note}
         </span>
       )}
-    </td>
-  );
-}
-
-function IndicatorRow({ row, players, deepLink }) {
-  return (
-    <tr>
-      <RowLabelCell row={row} deepLink={deepLink} />
-      {players.map((p) => (
-        <td key={p.number} className={cellClass(p.number, row.best)}>
-          {row.render(p)}
-        </td>
-      ))}
-    </tr>
+    </>
   );
 }
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
   const { t, i18n } = useTranslation();
+  // 選んだ艇（?boat=）はほかのタブと同じ URL の値（BOA-492、オーナー 2026-11-23 承認の5）
+  const { focusedBoat, handleFocusBoat } = useRaceUrlState();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
   // 級別の後ろの F・L バッジ。基本情報タブの勝率バー・ST考察カードと同じ出所
   // （race_entries.f_count / l_count）と「今節」の判定を使う。以前はこの表にだけ出ず、
@@ -207,21 +173,14 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       )}
 
       <div className="drt-table-wrapper">
-        <table className="drt-table">
-          <thead>
-            <BoatHeaderRows players={players} />
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <IndicatorRow
-                key={row.key}
-                row={row}
-                players={players}
-                deepLink={deepLink}
-              />
-            ))}
-          </tbody>
-        </table>
+        <BoatCompareTable
+          players={players}
+          rows={rows}
+          renderLabel={(row) => <RowLabel row={row} deepLink={deepLink} />}
+          renderName={(p) => <NameHeader p={p} />}
+          selectedBoat={focusedBoat}
+          onSelectBoat={handleFocusBoat}
+        />
       </div>
 
       <p className="drt-note">💡 {t("dataTable.noteExpectedCourse")}</p>
