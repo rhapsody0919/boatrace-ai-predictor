@@ -128,6 +128,9 @@ async function startScenes() {
     "(f) S（MID）で success なら範囲の始め〜S の失敗を解き、S より後（HEAD）の push の run が緑なら出す",
     j(r3),
   );
+}
+
+async function afterSScenes() {
   const k = fake({
     pushRuns: {
       ...red(),
@@ -350,6 +353,7 @@ async function coverageScenes() {
 export async function runReleaseDispatchScenes3(env) {
   ({ check, DEPLOYED, HEAD, MID, NOW, OLD_HEAD } = env);
   await startScenes();
+  await afterSScenes();
   await acceptScenes();
   await runningAndFailedScenes();
   await guardScenes();
