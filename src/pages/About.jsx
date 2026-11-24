@@ -2,9 +2,37 @@ import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
+import { isInCautionEnabled } from "../config/featureFlags";
+import {
+  AboutAccuracySection,
+  AboutAiMechanismSection,
+  AboutCtaSection,
+  AboutFeaturesSection,
+  AboutWhatIsSection,
+} from "./AboutLegacySections";
+import {
+  InCautionCtaSection,
+  InCautionFeaturesSection,
+  InCautionHowSection,
+  InCautionResultsSection,
+  InCautionTabIntro,
+  InCautionTabItem,
+  InCautionWhatIsSection,
+} from "./AboutInCautionSections";
 import "./About.css";
 
 const TITLE = "龍神レーダーについて | AIボートレース予想サービスの詳細";
+const KEYWORDS =
+  "龍神レーダー,ボートレース,AI分析,機械学習,データ分析,データサイエンス,無料";
+
+// イン崩れ注意度の公開の後（BOA-822 task 38、フラグの側）。「AI予想」と言わない・「数える」を使わない（wording-editor 2026-11-24）
+const IN_CAUTION_META = {
+  title: "龍神レーダーについて | ボートレースのデータ分析サービスの詳細",
+  subtitle: "ボートレースのデータを、自分で確かめられる形に",
+  description:
+    "龍神レーダーは、選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果から割合を出して見える化するボートレースのデータ分析サービスです。完全無料・登録不要で使えます。",
+  keywords: "龍神レーダー,ボートレース,データ分析,イン崩れ,過去データ,無料",
+};
 const DESCRIPTION =
   "龍神レーダーは、選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービスです。完全無料・登録不要で使えます。";
 
@@ -53,47 +81,54 @@ function AboutHeroVideoSection({ mobileVideoRef, desktopVideoRef, videoStarted, 
   );
 }
 
-function AboutWhatIsSection() {
-  return (
-    <section className="about-section">
-      <h2>龍神レーダーとは</h2>
-      <p>
-        龍神レーダーは、人工知能（AI）を活用したボートレース予想サービスです。
-        選手成績・モーター・展示・スタートのデータを総合的に分析し、高精度な予想を提供します。
-      </p>
-      <p>
-        従来の「勘」や「経験」に頼る予想ではなく、データとAIの力で、
-        より科学的で再現性の高い予想を実現しています。
-      </p>
-    </section>
-  );
-}
-
-function AboutRaceTabsSection() {
+function AboutRaceTabsSection({ inCaution }) {
   return (
     <section className="about-section">
       <h2>🗂️ レース詳細で見られるもの（タブ構成）</h2>
       <p>
         各レースの詳細ページは、見たい切り口ごとにタブに分かれています。発走前は
-        <strong>7つ</strong>、レースが確定すると「結果」が加わって
-        <strong>8つ</strong>
-        になります。AI予想はそのうちの1つで、残りは
-        <strong>誰が見ても同じ客観的なデータ</strong>
-        です。予想を受け取るだけでなく、その根拠を自分で確かめられる構成にしています。
+        {/* フラグの側は龍神ソナーのタブも数える（ファン評価 2026-11-24 P2） */}
+        <strong>{inCaution ? "8つ" : "7つ"}</strong>
+        、レースが確定すると「結果」が加わって
+        <strong>{inCaution ? "9つ" : "8つ"}</strong>
+        になります。
+        {inCaution ? (
+          <InCautionTabIntro />
+        ) : (
+          <>
+            AI予想はそのうちの1つで、残りは
+            <strong>誰が見ても同じ客観的なデータ</strong>
+            です。予想を受け取るだけでなく、その根拠を自分で確かめられる構成にしています。
+          </>
+        )}
       </p>
-      <p>
-        並びは粒度順で、
-        <strong>前半の4つは6艇をまとめて見るタブ</strong>、
-        <strong>後半は艇を1つ選んで掘るタブ</strong>です。
-      </p>
+      {!inCaution && (
+        <p>
+          並びは粒度順で、
+          <strong>前半の4つは6艇をまとめて見るタブ</strong>、
+          <strong>後半は艇を1つ選んで掘るタブ</strong>です。
+        </p>
+      )}
       <ul className="about-tab-list">
         <li>
           <strong>基本情報</strong>:
           勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数も併記します
         </li>
+        {inCaution && (
+          <li>
+            <strong>龍神ソナー</strong>:
+            今日と条件の近い過去のレース（類似レース）で、どの艇がどう決まったか
+          </li>
+        )}
         <li>
-          <strong>AI予想</strong>:
-          1マークの展開予測と、1号艇が崩れやすいかを示すイン崩れ注意度。展開予測が的中したかどうかもここで確認できます
+          {inCaution ? (
+            <InCautionTabItem />
+          ) : (
+            <>
+              <strong>AI予想</strong>:
+              1マークの展開予測と、1号艇が崩れやすいかを示すイン崩れ注意度。展開予測が的中したかどうかもここで確認できます
+            </>
+          )}
         </li>
         <li>
           <strong>今節</strong>:
@@ -188,109 +223,6 @@ function AboutDataSection() {
   );
 }
 
-function AboutFeaturesSection() {
-  return (
-    <section className="about-section">
-      <h2>✨ 龍神レーダーの特徴</h2>
-      <div className="features-grid">
-        <div className="feature-card">
-          <div className="feature-icon">🆓</div>
-          <h3>完全無料</h3>
-          <p>すべての機能を無料で利用できます。登録も不要です。</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">🎯</div>
-          <h3>高精度分析</h3>
-          <p>展開予測的中率約79%の実測実績</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">📈</div>
-          <h3>実績公開</h3>
-          <p>
-            予測精度・分析パフォーマンスをすべて公開。透明性を重視しています。
-          </p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">🔄</div>
-          <h3>毎日更新</h3>
-          <p>
-            発走が近いレースから順次、最新の直前情報を取り込んで予想を更新します。
-          </p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">📱</div>
-          <h3>スマホ対応</h3>
-          <p>スマートフォンからでも快適に利用できます。</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">🤖</div>
-          <h3>展開予測</h3>
-          <p>
-            1マークの展開をシミュレーション。レース展開が一目でわかります。
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AboutAiMechanismSection() {
-  return (
-    <section className="about-section">
-      <h2>🎓 AIの仕組み（概要）</h2>
-      <div className="ai-explanation">
-        <div className="ai-step">
-          <div className="step-number">1</div>
-          <div className="step-content">
-            <h3>データ収集</h3>
-            <p>最新のレースデータを収集</p>
-          </div>
-        </div>
-        <div className="ai-step">
-          <div className="step-number">2</div>
-          <div className="step-content">
-            <h3>データ分析</h3>
-            <p>選手成績・モーター・展示・スタートのデータを総合的に分析</p>
-          </div>
-        </div>
-        <div className="ai-step">
-          <div className="step-number">3</div>
-          <div className="step-content">
-            <h3>展開予測</h3>
-            <p>1マークでの各艇の動きをシミュレーション</p>
-          </div>
-        </div>
-        <div className="ai-step">
-          <div className="step-number">4</div>
-          <div className="step-content">
-            <h3>予想生成</h3>
-            <p>展開予測・イン崩れ指数を算出</p>
-          </div>
-        </div>
-      </div>
-      <p className="note">※ 詳細なアルゴリズムは企業秘密のため非公開です</p>
-    </section>
-  );
-}
-
-function AboutAccuracySection() {
-  return (
-    <section className="about-section">
-      <h2>📊 AI分析の精度（実測値）</h2>
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">79%</div>
-          <div className="stat-label">展開予測的中率</div>
-        </div>
-      </div>
-      <p className="stats-note">
-        ※
-        実測値。各レースの詳細ページ「AI予想」タブで、毎回の的中/不的中を確認できます
-      </p>
-    </section>
-  );
-}
-
 function AboutTermsSection() {
   return (
     <section className="about-section">
@@ -304,15 +236,33 @@ function AboutTermsSection() {
   );
 }
 
-function AboutCtaSection({ navigate }) {
+/** 本文の節。フラグの側（BOA-822）は「AI予想」・展開予測の節を注意度の節に替える */
+function AboutSections({ inCaution, navigate }) {
+  if (!inCaution) {
+    return (
+      <>
+        <AboutWhatIsSection />
+        <AboutRaceTabsSection inCaution={false} />
+        <AboutDataSection />
+        <AboutFeaturesSection />
+        <AboutAiMechanismSection />
+        <AboutAccuracySection />
+        <AboutTermsSection />
+        <AboutCtaSection navigate={navigate} />
+      </>
+    );
+  }
   return (
-    <section className="about-cta">
-      <h2>🚀 今すぐ無料で試す</h2>
-      <p>登録不要・完全無料でAI予想を確認できます</p>
-      <button onClick={() => navigate("/")} className="cta-button">
-        AI予想を見る
-      </button>
-    </section>
+    <>
+      <InCautionWhatIsSection />
+      <AboutRaceTabsSection inCaution />
+      <AboutDataSection />
+      <InCautionFeaturesSection />
+      <InCautionHowSection />
+      <InCautionResultsSection />
+      <AboutTermsSection />
+      <InCautionCtaSection navigate={navigate} />
+    </>
   );
 }
 
@@ -328,18 +278,22 @@ export default function About() {
     desktopVideoRef.current?.play();
   };
 
+  const inCaution = isInCautionEnabled();
+  const meta = inCaution
+    ? IN_CAUTION_META
+    : { title: TITLE, description: DESCRIPTION, keywords: KEYWORDS };
+
   useSocialMeta({
-    title: TITLE,
-    description: DESCRIPTION,
+    title: meta.title,
+    description: meta.description,
     url: "https://www.boat-ai.jp/about",
-    keywords:
-      "龍神レーダー,ボートレース,AI分析,機械学習,データ分析,データサイエンス,無料",
+    keywords: meta.keywords,
   });
 
   return (
     <>
-      <title>{TITLE}</title>
-      <meta name="description" content={DESCRIPTION} />
+      <title>{meta.title}</title>
+      <meta name="description" content={meta.description} />
       <link rel="canonical" href="https://www.boat-ai.jp/about" />
 
       {/* BreadcrumbList */}
@@ -369,26 +323,19 @@ export default function About() {
       <div className="about-container">
         <div className="about-header">
           <h1>🚀 龍神レーダーについて</h1>
-          <p>AI技術でボートレース予想を革新する</p>
+          <p>
+            {inCaution
+              ? IN_CAUTION_META.subtitle
+              : "AI技術でボートレース予想を革新する"}
+          </p>
         </div>
 
-        <AboutHeroVideoSection mobileVideoRef={mobileVideoRef} desktopVideoRef={desktopVideoRef} videoStarted={videoStarted} handlePlayVideo={handlePlayVideo} />
+        {/* 紹介動画とポスターは「AI予想」「展開予測の的中率」を映すので、フラグの側では出さない（ファン評価 2026-11-24 P1。差し替えは別に） */}
+        {!inCaution && (
+          <AboutHeroVideoSection mobileVideoRef={mobileVideoRef} desktopVideoRef={desktopVideoRef} videoStarted={videoStarted} handlePlayVideo={handlePlayVideo} />
+        )}
 
-        <AboutWhatIsSection />
-
-        <AboutRaceTabsSection />
-
-        <AboutDataSection />
-
-        <AboutFeaturesSection />
-
-        <AboutAiMechanismSection />
-
-        <AboutAccuracySection />
-
-        <AboutTermsSection />
-
-        <AboutCtaSection navigate={navigate} />
+        <AboutSections inCaution={inCaution} navigate={navigate} />
       </div>
     </>
   );

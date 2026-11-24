@@ -654,6 +654,11 @@
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
     },
     {
+      "script": "verify-git-hygiene-main-head.js",
+      "tier": "ci",
+      "guards": "メインの作業ツリーが master から外れて古い版にいるときの、セッションの始めの警告（check-git-hygiene.js の mainHeadLines）"
+    },
+    {
       "script": "verify-git-hygiene.js",
       "tier": "ci",
       "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
@@ -1105,6 +1110,22 @@
       "tier": "ci",
       "args": ["--base=origin/master"],
       "guards": "PR の差分の形（scripts/lib/prShape.js）。symlink・submodule・.gitmodules・Git LFS のポインタ・.gitattributes・本文の無い差分（バイナリ・NUL を含む JS・中身を変えない改名や複製）・299ファイル超・差分20万字超を落とす。もとは review.yml の gate（AI 審査、2026-11-06 にゼロベース再設計 v3.3 で外した）の検査で、判定の関数は gate と同じ。一時の git の木で、git から作った入力の判定が compare API の形の入力の判定と同じことを確かめる。verify で足した線: 先頭の印（magic bytes）が拡張子と合う png・jpg・gif・webp・wav・mp4・woff2・ttf・gz の追加と変更、空のファイルの追加、中身を変えない実行権の変更は通す。消したファイルの本文は上限に数えない。LFS は行の頭（足した行・変えない行）のポインタだけを落とす（gate は本文のどこかに URL があれば落とした）"
+    },
+    {
+      "script": "verify-pr-size-mutation.js",
+      "tier": "ci",
+      "guards": "PR の大きさの数え方（scripts/maintenance/prSize.js、BOA-1718）の、試験のファイルに本体を置いた変異: 新しい verify・spec に本体を置き、ほかの変更が名を出す（import・require・new URL・path.join・bash）・試験を経由して読む・試験の置き場から数える置き場へ改名する形は数える。名の前の部分だけ合う別のファイル・文書で名を挙げるだけ・新しい試験どうしの import は数えない"
+    },
+    {
+      "script": "verify-pr-size-rules.js",
+      "tier": "ci",
+      "guards": "PR の大きさ（AGENTS.md の安全の6点の5、300行・5ファイル）の数え方（scripts/maintenance/prSize.js、BOA-1718）の純関数: 同じ PR で台帳に足した verify・新しい e2e の spec・台帳の項目の追加・ja と同じキーを足しただけの他の locale・コードの注釈と空行・消した行は数えず、ほかは全部数える（既存の試験の変更・helper・名だけの verify・md の行・キーの違う locale・行の無い差分・注釈の後ろのコード・CSS の * のセレクタ）。線の境（300行は中・301行と6ファイルは超える）、記事の PR と移すだけは線の外"
+    },
+    {
+      "script": "verify-pr-size.js",
+      "tier": "ci",
+      "args": ["--base=origin/master"],
+      "guards": "PR の大きさの数え方（scripts/maintenance/prSize.js・prSizeGit.js、BOA-1718）を実の履歴で確かめる: #3304・#3303 は線の中（新しい spec を数えない）、移すだけの RA10〜RA13 は線の外で例外を外すと超える、#3313 は記事の関門が通し manifest の無い 418行の記事は数えて超える、改名と書き換えは新しいパスで書き換えた行だけ。この PR の数は表示するだけで、超えても落とさない（オーナー 2026-11-24、超えたら pr-lane の重い道）"
     },
     {
       "script": "verify-pre-race-parsers.js",

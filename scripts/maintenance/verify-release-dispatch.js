@@ -12,6 +12,9 @@
  *       stuck は叩かずに失敗（巻き戻しと区別できない）、出した記録（released・fromSha・lastReleasedSha）を返す、比べる先は読んだ master の sha、
  *       拾い直し（UTC の分が30より前の起動）は前が「待つ」のときだけ動き、それ以外は前の記録を残す、出すべき差分が13時間残れば alerts
  *   (d) 死活（monitor.js）: livenessStaleMin のある monitor のジョブは shadow・live の間だけ last_tick_at を見る
+ *   (f) 範囲の赤を解く全件の検査（releaseFullCheck.js、verifyData/release-dispatch-scenes-3.js）: 全件の run が無ければ2本を起こして待つ・
+ *       tip か S で success なら解く（S より後は push の run のまま）・base 違い等は認めない・走っていれば待つ・失敗なら止めて起こし直さない・
+ *       shadow と stuck・Instant Rollback は起こさない・赤の無い範囲は全件の run の取得に左右されない
  *   (e) 配線: レジストリ、api/cron の maxDuration とモードのゲート、vercel.json の cron（定時と20分後の拾い直し）
  *
  * 使い方: node scripts/maintenance/verify-release-dispatch.js
@@ -28,6 +31,7 @@ import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { cronWiring } from "./verifyData/cronWiring.js";
 import { runReleaseDispatchScenes1 } from "./verifyData/release-dispatch-scenes-1.js";
 import { runReleaseDispatchScenes2 } from "./verifyData/release-dispatch-scenes-2.js";
+import { runReleaseDispatchScenes3 } from "./verifyData/release-dispatch-scenes-3.js";
 
 let failures = 0;
 const check = (ok, label, detail = "") => {
@@ -247,9 +251,11 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
   );
 }
 
-// ---- 後半の場面（verifyData/release-dispatch-scenes-1.js・release-dispatch-scenes-2.js） ----
+// ---- 後半の場面（verifyData/release-dispatch-scenes-1〜3.js） ----
 await runReleaseDispatchScenes1({ check, DEPLOYED, HEAD, MID, NOW, OLD_HEAD });
 await runReleaseDispatchScenes2({ check, DEPLOYED, HEAD, MID, NOW });
+// 範囲の赤を解く全件の検査（releaseFullCheck.js）
+await runReleaseDispatchScenes3({ check, DEPLOYED, HEAD, MID, NOW, OLD_HEAD });
 
 // ---------------------------------------------------------------- (e)
 {

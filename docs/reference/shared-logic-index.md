@@ -219,8 +219,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
 | `scripts/lib/moriartyBetJudge.js` | モリアーティの推奨（bet_recommendations.reasons）の照合のうち、3連単・3連複の部分（純粋関数）。 | judgeThreeBoatBet |
 | `scripts/lib/morningDigestFetch.js` | generate-morning-digest.js から字のまま移した DB の読み（ページング・レース・出走表・モーター・選手の成績・基準・コース別1着率・… | fetchMotorRaceCounts, fetchCourseWin |
-| `scripts/lib/morningDigestParts.js` | generate-morning-digest.js の純粋な部品（DB に触らない）。 | baselineKey, lookupBaseline, buildMetricRow, sectionRow, indexStats ほか6件 |
-| `scripts/lib/morningDigestSummary.js` | generate-morning-digest.js のまとめの部品（DB に触らない）。 | rankRows, motorTargetsOf, logMotorSummary, logSectionSummary, buildDayRow ほか8件 |
+| `scripts/lib/morningDigestParts.js` | generate-morning-digest.js の純粋な部品（DB に触らない）。 | baselineKey, inCautionColumns, lookupBaseline, buildMetricRow, sectionRow ほか7件 |
+| `scripts/lib/morningDigestSummary.js` | generate-morning-digest.js のまとめの部品（DB に触らない）。 | rankRows, motorTargetsOf, logMotorSummary, logSectionSummary, buildDayRow ほか9件 |
 | `scripts/lib/motorPretestCoverage.js` | 前検タイムの定期取得（motorPretestJob.js）の純関数: 取得の窓の日付・会場ごとの充足の引き継ぎと集計・last_report の形。 | fetchWindow, mergeCoverage, coverageSummary, reportCoverage |
 | `scripts/lib/motorPretestJob.js` | 前検タイム・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）の共通ラッパ向けハンドラー（tasks.md T4b-20）。 | fetchMotorPretest, findMotorPretestDriftAlerts, buildCoverageAlerts, runMotorPretestJob, MOTOR_PRETEST_CONCURRENCY ほか3件 |
 | `scripts/lib/motorPretestParser.js` | 公式のモーター抽選結果・前検タイム（boatrace.jp race/rankingmotor）のパーサー（純関数。DB・取得先に接続しない） | buildMotorPretestUrl, readHeaderLabels, competitionRanks, parseMotorPretestHtml, MOTOR_PRETEST_PARSER_VERSION ほか1件 |
@@ -325,6 +325,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか2件 |
 | `scripts/lib/releaseDecide.js` | 本番のデプロイをまとめて出すかどうかの判定（純関数、ADR-0106）。起動と GitHub の読み取りは releaseDispatch.js。 | freshnessBasis, decideRelease, COMPARE_FILES_CAP, FRESH_HEAD_MS, AUTOMATED_COMMIT_EMAIL ほか1件 |
 | `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | staleReleaseAlerts, summarizeGates, fetchMasterHead, fetchCompare, fetchGateRuns ほか8件 |
+| `scripts/lib/releaseFullCheck.js` | 範囲の赤を解く全件の検査（ADR-0106 の 2026-11-24 の追記）。releaseDispatch.js が、出す範囲に失敗した run がある・ | applyFullRuns, fetchFullRuns, readFullChecks, startFullChecks, fullRunTitle |
 | `scripts/lib/renderJsx.js` | verify から React の部品（.jsx）を jsdom に描き、DOM を返す（hq のオーナー決定 2026-11-09）。 | resolve, load, renderJsx |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
 | `scripts/lib/repoPaths.js` | repoPaths.js - リポジトリのパスの一覧と、ある ref の版のファイルを git から読む（HR74）。読むだけで、書かない・ネットワークに触れな… | listRepoPaths, showAtRef |
@@ -664,4 +665,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 622 ファイル / export 3323 件。
+対象 623 ファイル / export 3330 件。

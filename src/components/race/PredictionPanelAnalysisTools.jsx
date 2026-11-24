@@ -1,50 +1,18 @@
 /**
- * PredictionPanel の分析ツール群（データ出走表・枠番傾向・埋め込み分析アコーディオン）
+ * PredictionPanel の分析ツール群（データ出走表・枠番傾向）
  *
- * 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
- * データ取得する。モーター調子（BOA-308）はモータ情報タブへ昇格したため、
- * 重複表示を避けるためここでは表示しない
+ * 以前は下に分析ツールの畳み6つ（選手調子・STのズレ・展示タイム推移・選手別決まり手・
+ * 回収率・超展開）を並べていた。出走表の行と重なるか定義・期間が画面に無いため、
+ * 既定の画面から外した（オーナー 2026-11-24）。図は /winning-technique に残り、
+ * 出走表の行の名前から飛べる
  */
 import DataRaceTable from "./DataRaceTable";
 import VenueTendencyPanel from "./VenueTendencyPanel";
-import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
-import RacerFormChart from "../analysis/RacerFormChart";
-import StPredictabilityChart from "../analysis/StPredictabilityChart";
-import ExhibitionTimeTrendChart from "../analysis/ExhibitionTimeTrendChart";
-import RacerTechniqueProfileChart from "../analysis/RacerTechniqueProfileChart";
-import RacerBoatReturnRateChart from "../analysis/RacerBoatReturnRateChart";
-import AttackDefenseAnalysis from "../analysis/AttackDefenseAnalysis";
-
-const EMBEDDED_ANALYSES = [
-  { titleKey: "racer", hintKey: "racerForm", Chart: RacerFormChart },
-  { titleKey: "st", hintKey: "stDeviation", Chart: StPredictabilityChart },
-  {
-    titleKey: "extrend",
-    hintKey: "exhibitionTimeTrend",
-    Chart: ExhibitionTimeTrendChart,
-  },
-  {
-    titleKey: "techprofile",
-    hintKey: "racerTechniqueProfile",
-    Chart: RacerTechniqueProfileChart,
-  },
-  {
-    titleKey: "returnrate",
-    hintKey: "returnRateAnalysis",
-    Chart: RacerBoatReturnRateChart,
-  },
-  {
-    titleKey: "attackdefense",
-    hintKey: "attackDefense",
-    Chart: AttackDefenseAnalysis,
-  },
-];
 
 export default function PredictionPanelAnalysisTools({
   analysisRaceId,
   prediction,
   venueCode,
-  t,
 }) {
   return (
     <>
@@ -58,22 +26,6 @@ export default function PredictionPanelAnalysisTools({
       {/* この会場の枠番別傾向（FR-2）: 会場×枠番の過去傾向。選手個人のデータ出走表とは
           主語が異なるため別コンポーネントとして分離する */}
       <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
-
-      {venueCode &&
-        analysisRaceId &&
-        EMBEDDED_ANALYSES.map(({ titleKey, hintKey, Chart }) => (
-          <EmbeddedAnalysisSection
-            key={hintKey}
-            title={t(`analysisPage.tabs.${titleKey}`)}
-            hintKey={hintKey}
-          >
-            <Chart
-              embedded
-              initialVenueCode={venueCode}
-              initialRaceId={analysisRaceId}
-            />
-          </EmbeddedAnalysisSection>
-        ))}
     </>
   );
 }

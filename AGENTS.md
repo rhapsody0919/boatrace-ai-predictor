@@ -21,7 +21,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
    - 例外: 既存の `verify-*.js` を振る舞いの試験へ置き換える変更は、機械の変異検査（`scripts/maintenance/guard_weakening/`: 旧の verify が落とす変異 ⊆ 新の試験が落とす変異）を通したときだけ可
    - `vercel.json`（AI の枝の Preview を止める設定。`verify-codex-no-preview.js` が固定）
    - `docs/operation/codex-backlog.md`「回すもの・回さないもの」の (a)（`scripts/db/**`・`scripts/watch/**`・`scripts/lib/dbApplySql.js` 等の守りの本体）
-5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない。`node scripts/maintenance/split-data-layer.mjs` の出力そのままの PR（pr-lane が移すだけと判定する物、config/pr-path-rules.json の moveOnly）は300行5ファイルの線の外。記事の PR で `docs/operation/content-pr-contract.md` の「PR に入れてよいもの」だけを変える物（記事の本文・メタ・manifest・図の JSON・画像）は、300行5ファイルと `src/`・`docs/` を混ぜない線の外（代わりに契約の関門 `check-content-pr.js` が見る）
+5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。数え方と線の外の PR（移すだけ・記事の PR）は `scripts/maintenance/prSize.js` が正で、`verify-pr-size.js` が数えて出す（自分で数えない。ADR-0109）。着手の前に見積もり、置き場の決まり（`src/pure`・訳のキー・注釈）を曲げないと収まらないなら分け、分けられなければ止める。`src/` と `docs/` を混ぜない（記事の PR は線の外。契約の関門 `check-content-pr.js` が見る）。票に「変えてよいファイル」があればその外を変えない
 6. **マージしない**。`gh pr merge`・承認（approve）・自動マージの設定（`--auto`）をしない。force push をしない
 
 ## 作業の進め方

@@ -42,6 +42,7 @@ import { normalizeRacerName } from "../../src/utils/digestMetrics.js";
 import {
   attachReturnReasons,
   buildSections,
+  inCautionColumns,
   indexStats,
   returnedCandidates,
   returnedRows,
@@ -73,7 +74,7 @@ import {
   fetchRacerStats,
   fetchBaseline,
   fetchCourseWin,
-  fetchVolatility,
+  fetchRaceSignals,
 } from "../lib/morningDigestFetch.js";
 
 /** 当日の会場数が前日のこの割合を下回ったら、出走表の投入が途中とみなして書かない */
@@ -206,6 +207,7 @@ async function buildFlying(date, prevDate) {
         sample_size_90d: null,
         motor_2rate: null,
         volatility_percentile: null,
+        ...inCautionColumns(null),
         // "F.01" 形式（公式の表記に合わせる）
         detail: {
           startTiming: st,
@@ -265,8 +267,48 @@ async function buildReturned(date, prevDate, todayRaces) {
 // 書き込み
 // ---------------------------------------------------------------------------
 
-/** マイグレーションの適用前でも書き込みを止めない列（131: motor_race_count） */
-const OPTIONAL_ROW_COLUMNS = ["motor_race_count"];
+/**
+ * マイグレーションの適用前でも書き込みを止めない列。グループごとに除く（156 が未適用でも 131 の列は書き続ける）
+ */
+const OPTIONAL_ROW_COLUMN_GROUPS = {
+  "マイグレーション131": ["motor_race_count"],
+  "マイグレーション156": ["in_caution_pct", "in_caution_n", "in_caution_level"],
+};
+
+/**
+ * 200行ずつ INSERT する。列が無いエラー（isColumnMissingError）がグループの列のときは、そのグループを除いて
+ * 書き直し、以降のバッチにも引き継ぐ。グループ数+1回で必ず終わる。ほかのエラーは投げる。
+ *
+ * @param {(chunk: object[]) => Promise<{error: object|null}>} insertChunk
+ * @param {object[]} rows
+ * @param {Record<string, string[]>} [groups]
+ * @returns {Promise<string[]>} 除いたグループの名前
+ */
+export async function insertWithOptionalColumnGroups(
+  insertChunk,
+  rows,
+  groups = OPTIONAL_ROW_COLUMN_GROUPS,
+) {
+  const missingGroups = new Set();
+  for (let i = 0; i < rows.length; i += 200) {
+    const chunk = rows.slice(i, i + 200);
+    for (;;) {
+      const skipped = [...missingGroups].flatMap((name) => groups[name]);
+      const { error } = await insertChunk(stripColumns(chunk, skipped));
+      if (!error) break;
+      const missing = Object.keys(groups).find(
+        (name) =>
+          !missingGroups.has(name) && isColumnMissingError(error, groups[name]),
+      );
+      if (missing === undefined) throw error;
+      missingGroups.add(missing);
+      console.warn(
+        `  ⚠️ morning_digest_rows に ${groups[missing].join(", ")} がありません（${missing}が未適用）。この列を除いて書きます`,
+      );
+    }
+  }
+  return [...missingGroups];
+}
 
 /**
  * 書き込み順は **rows が先、generated_at の確定が最後**（ADR-0070、レビュー指摘M-8）。
@@ -287,23 +329,11 @@ async function write(date, dayRow, rows) {
     .eq("digest_date", date);
   if (delErr) throw delErr;
 
-  // motor_race_count（マイグレーション131）が未適用の DB では、その列だけを除いて書く（生成は止めない）
-  let payload = rows;
-  for (let i = 0; i < payload.length; i += 200) {
-    let { error } = await supabase
-      .from("morning_digest_rows")
-      .insert(payload.slice(i, i + 200));
-    if (error && isColumnMissingError(error, OPTIONAL_ROW_COLUMNS)) {
-      console.warn(
-        `  ⚠️ morning_digest_rows に ${OPTIONAL_ROW_COLUMNS.join(", ")} がありません（マイグレーション131が未適用）。この列を除いて書きます`,
-      );
-      payload = stripColumns(payload, OPTIONAL_ROW_COLUMNS);
-      ({ error } = await supabase
-        .from("morning_digest_rows")
-        .insert(payload.slice(i, i + 200)));
-    }
-    if (error) throw error;
-  }
+  // 131・156 が未適用の DB では、その列だけを除いて書く（生成は止めない）
+  await insertWithOptionalColumnGroups(
+    (chunk) => supabase.from("morning_digest_rows").insert(chunk),
+    rows,
+  );
 
   const { error: stampErr } = await supabase
     .from("morning_digest_days")
@@ -350,20 +380,20 @@ export async function runMorningDigest({
   if (problems.length > 0) return incompleteResult(date, problems);
   logCompleteness(races, entries);
 
-  const [statRows, baselineRows, volatilityMap] = await Promise.all([
+  const [statRows, baselineRows, signals] = await Promise.all([
     fetchRacerStats(entries.map((e) => e.racer_id)),
     fetchBaseline(),
-    fetchVolatility(races.map((r) => r.race_id)),
+    fetchRaceSignals(races.map((r) => r.race_id)),
   ]);
   const { statMap, baselineMap } = indexStats(statRows, baselineRows);
-  warnNoVolatility(volatilityMap);
+  warnNoVolatility(signals.volatilityMap, signals.inCautionMap);
 
   const sections = buildSections({
     races,
     entries,
     statMap,
     baselineMap,
-    volatilityMap,
+    ...signals,
   });
   const featured = pickFeatured(sections);
   const courseWin = await fetchCourseWin(date, races, entries);
@@ -388,7 +418,7 @@ export async function runMorningDigest({
   };
   logMotorSummary(rows, motorRaceCounts);
   logSectionSummary({ ...digest, rows });
-  const dayRow = buildDayRow({ ...digest, rows, volatilityMap, courseWin });
+  const dayRow = buildDayRow({ ...digest, rows, ...signals, courseWin });
   const { report, byGradeReport } = buildReport({
     date,
     dayRow,
