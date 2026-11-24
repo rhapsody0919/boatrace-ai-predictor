@@ -163,10 +163,10 @@ export default function FilterControls({
 
   return (
     <>
-      {/* 題・副題（design-system「表とグラフ」1: 形は1つ）。見た目はデータ出走表の題と同じにする
+      {/* 題・副題（design-system「表とグラフ」1: 形は1つ）。題の見た目はデータ出走表の題と同じにする。副題は rbit-note のまま（drt-subtitle と同じ型で、ko の keep-all が効く）
           （同じタブの直下にあり DataRaceTable.css が読まれている） */}
       <h3 className="drt-title">📊 {t("basicInfo.title")}</h3>
-      <p className="drt-subtitle">{t("basicInfo.note")}</p>
+      <p className="rbit-note">{t("basicInfo.note")}</p>
 
       <ChipGroup
         label={t("basicInfo.metricLabel")}
