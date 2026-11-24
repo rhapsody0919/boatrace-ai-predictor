@@ -163,6 +163,18 @@ export function checkWorkflow(file, yamlText) {
   return problems;
 }
 
+// 作成の App の鍵の検査そのものの検査（決めた workflow の素の job は通し、ほかの workflow・checkout・npm は落とす）
+function makerKeySelfTest() {
+  const maker = (steps) =>
+    `on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  m:\n    environment: ryujin-maker\n    runs-on: ubuntu-latest\n    steps:\n${steps}      - uses: actions/create-github-app-token@v3\n        with:\n          private-key: \${{ secrets.RYUJIN_MAKER_PRIVATE_KEY }}\n`;
+  return (
+    checkWorkflow("content-auto-merge.yml", maker("")).length === 0 &&
+    checkWorkflow("other.yml", maker("")).length === 1 &&
+    checkWorkflow("content-auto-merge.yml", maker("      - run: npm ci\n")).length === 1 &&
+    checkWorkflow("content-auto-merge.yml", maker("      - uses: actions/checkout@v4\n")).length === 1
+  );
+}
+
 function main() {
   let failures = 0;
   const check = (label, pass, detail = "") => {
@@ -176,15 +188,7 @@ function main() {
   // 検査そのものの検査
   const good =
     "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    environment: prod-jobs\n    runs-on: ubuntu-latest\n    steps:\n      - run: x\n        env:\n          K: ${{ secrets.SUPABASE_SERVICE_KEY }}\n";
-  const maker = (steps) =>
-    `on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  m:\n    environment: ryujin-maker\n    runs-on: ubuntu-latest\n    steps:\n${steps}      - uses: actions/create-github-app-token@v3\n        with:\n          private-key: \${{ secrets.RYUJIN_MAKER_PRIVATE_KEY }}\n`;
-  check(
-    "作成の App の鍵は決めた workflow の、checkout も npm もしない job でだけ使う",
-    checkWorkflow("content-auto-merge.yml", maker("")).length === 0 &&
-      checkWorkflow("other.yml", maker("")).length === 1 &&
-      checkWorkflow("content-auto-merge.yml", maker("      - run: npm ci\n")).length === 1 &&
-      checkWorkflow("content-auto-merge.yml", maker("      - uses: actions/checkout@v4\n")).length === 1,
-  );
+  check("作成の App の鍵は決めた workflow の、checkout も npm もしない job でだけ使う", makerKeySelfTest());
   check(
     "environment つきの job は通る",
     checkWorkflow("x.yml", good).length === 0,
