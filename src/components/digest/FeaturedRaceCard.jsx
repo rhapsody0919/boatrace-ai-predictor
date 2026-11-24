@@ -13,7 +13,10 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import RacerLink from "../race/assist/RacerLink";
 import InCautionBadge from "../race/InCautionBadge";
-import { useTodayCaution } from "./DigestRaceCard";
+import {
+  useTodayCaution,
+  useTodayCautionVisible,
+} from "../../hooks/useTodayCaution";
 import "./FeaturedRaceCard.css";
 
 /** 何を分母に何を数えた割合か、文で書く（RateWithBaseline と同じ方針） */
@@ -33,6 +36,44 @@ const BASELINE_GRADE_LABEL = {
   G2: "G2",
   G3: "G3",
 };
+
+/** 注意度の欄（BOA-822 task 35、フラグの側）。欄が画面に入ったら caution_visible */
+function FeaturedCautionStat({ row }) {
+  const visibleRef = useTodayCautionVisible(row);
+  return (
+    <div ref={visibleRef} className="featured-race__stat">
+      <span className="featured-race__stat-label">イン崩れ注意度</span>
+      <span className="featured-race__stat-value featured-race__stat-value--plain">
+        {row.in_caution_pct}
+        <span className="featured-race__stat-unit">%</span>
+      </span>
+      <span className="featured-race__stat-sub">
+        <InCautionBadge level={row.in_caution_level} />{" "}
+        勝率差が同じくらいの全国の過去レース{row.in_caution_n}件で、1号艇が1着を逃した割合
+      </span>
+    </div>
+  );
+}
+
+/** 当日の値の欄。フラグの側は注意度（無い行は出さない）、外は旧のイン崩れ指数 */
+function FeaturedSignalStat({ row, caution }) {
+  if (caution.enabled) return <FeaturedCautionStat row={row} />;
+  if (!caution.showLegacy || row.volatility_percentile === null) return null;
+  return (
+    <div className="featured-race__stat">
+      <span className="featured-race__stat-label">イン崩れ指数</span>
+      <span className="featured-race__stat-value featured-race__stat-value--plain">
+        {Math.round(Number(row.volatility_percentile))}
+        <span className="featured-race__stat-unit">%</span>
+      </span>
+      <span className="featured-race__stat-sub">
+        {Number(row.volatility_percentile) >= 50
+          ? "高い（荒れやすい）"
+          : "低い（堅い）"}
+      </span>
+    </div>
+  );
+}
 
 function FeaturedRaceCard({ row }) {
   const { t } = useTranslation();
@@ -99,33 +140,7 @@ function FeaturedRaceCard({ row }) {
                 ).toFixed(1)}%`}
             </span>
           </div>
-          {caution.enabled && (
-            <div ref={caution.ref} className="featured-race__stat">
-              <span className="featured-race__stat-label">イン崩れ注意度</span>
-              <span className="featured-race__stat-value featured-race__stat-value--plain">
-                {row.in_caution_pct}
-                <span className="featured-race__stat-unit">%</span>
-              </span>
-              <span className="featured-race__stat-sub">
-                <InCautionBadge level={row.in_caution_level} />{" "}
-                勝率差が同じくらいの全国の過去レース{row.in_caution_n}件で、1号艇が1着を逃した割合
-              </span>
-            </div>
-          )}
-          {caution.showLegacy && row.volatility_percentile !== null && (
-            <div className="featured-race__stat">
-              <span className="featured-race__stat-label">イン崩れ指数</span>
-              <span className="featured-race__stat-value featured-race__stat-value--plain">
-                {Math.round(Number(row.volatility_percentile))}
-                <span className="featured-race__stat-unit">%</span>
-              </span>
-              <span className="featured-race__stat-sub">
-                {Number(row.volatility_percentile) >= 50
-                  ? "高い（荒れやすい）"
-                  : "低い（堅い）"}
-              </span>
-            </div>
-          )}
+          <FeaturedSignalStat row={row} caution={caution} />
         </div>
 
         {row.detail?.reason && (
