@@ -1457,6 +1457,11 @@
       "guards": "選手の成績の推移の線（src/pure/racerTrendSeries.js）。窓は30走で30走未満は点なし、点は直近30走の率、平均ST は ST のある走で数える、点は最大60、30日以上の空きに印、勝率は推移を出さない"
     },
     {
+      "script": "verify-racer-winrate-steps.js",
+      "tier": "ci",
+      "guards": "勝率の期ごとの段の形（racerWinRateSteps.js）。レース日より前に終わった直近5期を古い順、直前の期の取り込み前は4期と pending、期の並びにそろえ記録なし・出走0は null、他の選手・範囲外の期を混ぜない、札は同じ年は月・年またぎは YY/MM"
+    },
+    {
       "script": "verify-races-derived-backfill.js",
       "tier": "ci",
       "guards": "races の導出列の埋め直し（build-races-derived-backfill-sql.js、BOA-630）が、generate-predictions.js と同じ式（丸めてから平均・母標準偏差）で計算し、6列とも NULL の行だけを更新し（既存の値を上書きしない・再実行は0件）、モデルの出力の列（volatility_* 等）に触れないこと"
