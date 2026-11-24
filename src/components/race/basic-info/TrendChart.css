@@ -1,6 +1,6 @@
 /* 6艇の推移の線（TrendChart・BasicInfoTrend）。色は艇の色と意味トークンだけ */
 .trc-wrap {
-  max-width: 720px;
+  max-width: 480px;
 }
 
 .trc-head {
@@ -8,7 +8,7 @@
   justify-content: space-between;
   align-items: flex-end;
   gap: var(--spacing-2);
-  border-bottom: 1px solid var(--border-default, var(--color-gray-200));
+  border-bottom: 1px solid var(--border-hairline);
   margin-bottom: var(--spacing-1);
 }
 
@@ -49,7 +49,7 @@
 }
 
 .trc-grid {
-  stroke: var(--border-default, var(--color-gray-200));
+  stroke: var(--border-hairline);
 }
 
 .trc-tick,
