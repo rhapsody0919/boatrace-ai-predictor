@@ -240,6 +240,41 @@ async function fetchVolatility(raceIds) {
   return map;
 }
 
+/**
+ * イン崩れ注意度（BOA-822）。朝の unified の feature_contributions.inCaution の pct・n・level をそのまま写す
+ * （画面に出す%と段を同じ整数から出す。plan §1・§5）。値の無いレース（中止・1号艇の欠場・sparse_cell 等）は Map に入れない。
+ */
+async function fetchInCaution(raceIds) {
+  const map = new Map();
+  for (let i = 0; i < raceIds.length; i += 200) {
+    const chunk = raceIds.slice(i, i + 200);
+    const rows = await fetchAll((from, to) =>
+      supabase
+        .from("predictions")
+        .select("race_id, feature_contributions")
+        .eq("model_id", "unified")
+        .in("race_id", chunk)
+        .order("race_id", { ascending: true })
+        .range(from, to),
+    );
+    for (const r of rows) {
+      const ic = r.feature_contributions?.inCaution;
+      if (!ic || typeof ic.pct !== "number") continue;
+      map.set(r.race_id, { pct: ic.pct, n: ic.n, level: ic.level });
+    }
+  }
+  return map;
+}
+
+/** レースごとの当日の値（旧のイン崩れ指数と注意度）。注目レースの方向一致度と行の列に使う */
+async function fetchRaceSignals(raceIds) {
+  const [volatilityMap, inCautionMap] = await Promise.all([
+    fetchVolatility(raceIds),
+    fetchInCaution(raceIds),
+  ]);
+  return { volatilityMap, inCautionMap };
+}
+
 export {
   STATS_MAX_LAG_DAYS,
   addDays,
@@ -249,4 +284,6 @@ export {
   fetchRacerStats,
   fetchBaseline,
   fetchVolatility,
+  fetchInCaution,
+  fetchRaceSignals,
 };
