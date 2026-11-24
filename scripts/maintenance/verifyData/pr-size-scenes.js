@@ -22,7 +22,7 @@ const size = (files, texts, extra = {}) =>
   measurePrSize({ ...input(files, texts), ...extra });
 const skippedPaths = (r) => r.skipped.map((s) => s.path).sort();
 
-function scenePure() {
+function scenePureTests() {
   const r = size([
     ["A", "e2e/venue-x.spec.js", n(200)],
     ["A", "scripts/maintenance/verify-x.js", n(150)],
@@ -68,7 +68,9 @@ function scenePure() {
     regChange.lines === 1,
     JSON.stringify(regChange),
   );
+}
 
+function scenePureNotes() {
   const notes = size([
     [
       "M",
@@ -113,7 +115,9 @@ function scenePure() {
     noBody.files === 2 && noBody.lines === 0,
     JSON.stringify(noBody),
   );
+}
 
+function scenePureLocale() {
   const ja = "src/locales/ja/venue.json";
   const en = "src/locales/en/venue.json";
   const ko = "src/locales/ko/venue.json";
@@ -162,7 +166,9 @@ function scenePure() {
     noJa.lines === 2,
     JSON.stringify(noJa),
   );
+}
 
+function scenePureLimit() {
   const at = (lines, files) =>
     size(
       Array.from({ length: files }, (_, i) => [
@@ -273,6 +279,9 @@ function sceneMutation() {
 /** verify から呼ぶ入口。env は verify 側の束縛（check） */
 export function runPrSizeScenes(env) {
   ({ check } = env);
-  scenePure();
+  scenePureTests();
+  scenePureNotes();
+  scenePureLocale();
+  scenePureLimit();
   sceneMutation();
 }
