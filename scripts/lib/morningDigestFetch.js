@@ -266,6 +266,15 @@ async function fetchInCaution(raceIds) {
   return map;
 }
 
+/** レースごとの当日の値（旧のイン崩れ指数と注意度）。注目レースの方向一致度と行の列に使う */
+async function fetchRaceSignals(raceIds) {
+  const [volatilityMap, inCautionMap] = await Promise.all([
+    fetchVolatility(raceIds),
+    fetchInCaution(raceIds),
+  ]);
+  return { volatilityMap, inCautionMap };
+}
+
 export {
   STATS_MAX_LAG_DAYS,
   addDays,
@@ -276,4 +285,5 @@ export {
   fetchBaseline,
   fetchVolatility,
   fetchInCaution,
+  fetchRaceSignals,
 };

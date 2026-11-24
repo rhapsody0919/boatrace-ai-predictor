@@ -74,8 +74,7 @@ import {
   fetchRacerStats,
   fetchBaseline,
   fetchCourseWin,
-  fetchVolatility,
-  fetchInCaution,
+  fetchRaceSignals,
 } from "../lib/morningDigestFetch.js";
 
 /** 当日の会場数が前日のこの割合を下回ったら、出走表の投入が途中とみなして書かない */
@@ -381,24 +380,20 @@ export async function runMorningDigest({
   if (problems.length > 0) return incompleteResult(date, problems);
   logCompleteness(races, entries);
 
-  const raceIds = races.map((r) => r.race_id);
-  const [statRows, baselineRows, volatilityMap, inCautionMap] =
-    await Promise.all([
-      fetchRacerStats(entries.map((e) => e.racer_id)),
-      fetchBaseline(),
-      fetchVolatility(raceIds),
-      fetchInCaution(raceIds),
-    ]);
+  const [statRows, baselineRows, signals] = await Promise.all([
+    fetchRacerStats(entries.map((e) => e.racer_id)),
+    fetchBaseline(),
+    fetchRaceSignals(races.map((r) => r.race_id)),
+  ]);
   const { statMap, baselineMap } = indexStats(statRows, baselineRows);
-  warnNoVolatility(volatilityMap, inCautionMap);
+  warnNoVolatility(signals.volatilityMap, signals.inCautionMap);
 
   const sections = buildSections({
     races,
     entries,
     statMap,
     baselineMap,
-    volatilityMap,
-    inCautionMap,
+    ...signals,
   });
   const featured = pickFeatured(sections);
   const courseWin = await fetchCourseWin(date, races, entries);
@@ -423,7 +418,7 @@ export async function runMorningDigest({
   };
   logMotorSummary(rows, motorRaceCounts);
   logSectionSummary({ ...digest, rows });
-  const dayRow = buildDayRow({ ...digest, rows, volatilityMap, courseWin });
+  const dayRow = buildDayRow({ ...digest, rows, ...signals, courseWin });
   const { report, byGradeReport } = buildReport({
     date,
     dayRow,
