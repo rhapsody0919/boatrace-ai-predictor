@@ -90,8 +90,9 @@ test("イン崩れ注意度のフラグの側は、確定後のレースに共�
   await page.goto("/race/2026-09-27-02-11?caution=1", {
     waitUntil: "domcontentloaded",
   });
+  // フラグの側のタブの名前は「イン崩れ」（BOA-822 task 45）
   await page
-    .locator(".race-tabs-btn", { hasText: /^AI予想$/ })
+    .locator(".race-tabs-btn", { hasText: /^イン崩れ$/ })
     .click({ timeout: 60000 });
   await expect(page.locator(".in-caution-tab")).toBeVisible({
     timeout: 60000,
