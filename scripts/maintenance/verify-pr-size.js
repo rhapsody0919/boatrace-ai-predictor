@@ -436,12 +436,17 @@ tmpGit(({ dir, write, commit, g }) => {
     r2.exempt === null && r2.lines > SIZE_LIMIT.lines,
     JSON.stringify({ exempt: r2.exempt, lines: r2.lines }),
   );
-  g("checkout", "-q", head);
-  const r3 = measureCommits(dir, base, head2);
+  g("checkout", "-q", base);
+  const r3 = measureCommits(dir, base, head);
   check(
-    "一時の木: head が HEAD でなければ記事の PR と判定しない（数える側）",
-    r3.exempt === null,
+    "一時の木: head が HEAD でなくても記事の PR と判定する（一時の作業ツリーに出す）",
+    r3.exempt !== null,
     JSON.stringify({ exempt: r3.exempt }),
+  );
+  check(
+    "一時の木: 一時の作業ツリーを残さない",
+    g("worktree", "list").trim().split("\n").length === 1,
+    g("worktree", "list"),
   );
 });
 

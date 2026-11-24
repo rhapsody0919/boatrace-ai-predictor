@@ -17,6 +17,9 @@
  * git から読んで数える入口は measureCommits（verify-pr-size.js と pr-lane.js が呼ぶ）。
  */
 import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { moveOnlyPaths } from "./prLaneMoveOnly.js";
 import { loadMoveOnly } from "./prLaneClassify.js";
@@ -230,28 +233,53 @@ export function collectSizeInput(git, mergeBase, head) {
   return { changes, patches, readText };
 }
 
-/**
- * 記事の PR か（scripts/content/check-content-pr.js をそのまま起動し、終了コード0なら記事の PR）。
- * 関門は repo の HEAD を見るので、head が HEAD と違えば判定せず false（数える側）
- */
-export function isContentPr(repo, base, headSha) {
-  const git = (args) =>
-    execFileSync("git", args, { cwd: repo, encoding: "utf8" }).trim();
-  if (git(["rev-parse", "HEAD"]) !== headSha) return false;
+/** check-content-pr.js を dir（HEAD が PR の head の作業ツリー）で起動し、終了コード0なら記事の PR */
+function runContentGate(dir, baseSha) {
   try {
-    execFileSync(process.execPath, [CHECK_CONTENT_PR, "--base", base], {
-      cwd: repo,
+    execFileSync(process.execPath, [CHECK_CONTENT_PR, "--base", baseSha], {
+      cwd: dir,
       stdio: ["ignore", "ignore", "ignore"],
       maxBuffer: 64 * 1024 * 1024,
     });
     return true;
   } catch (err) {
-    if (typeof err.status === "number") return false; // 1＝記事の PR でない、2＝判定できない（どちらも数える側）
+    // 1＝記事の PR でない、2＝判定できない（どちらも数える側）。起動できない等の失敗は投げる
+    if (typeof err.status === "number") return false;
     throw err;
   }
 }
 
-/** git から差分を読んで数える（repo の base と head の merge-base から head まで） */
+/**
+ * 記事の PR か（scripts/content/check-content-pr.js をそのまま当てる）。関門は作業ツリーの HEAD を見るので、
+ * head が repo の HEAD でなければ一時の作業ツリー（detach）に head を出して当てる（auto-merge-content-prs.js の contract と同じ）
+ */
+export function isContentPr(repo, baseSha, headSha) {
+  const git = (args) =>
+    execFileSync("git", args, {
+      cwd: repo,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  if (git(["rev-parse", "HEAD"]) === headSha)
+    return runContentGate(repo, baseSha);
+  const dir = mkdtempSync(join(tmpdir(), "pr-size-content-"));
+  try {
+    git(["worktree", "add", "-q", "--detach", dir, headSha]);
+    return runContentGate(dir, baseSha);
+  } finally {
+    try {
+      git(["worktree", "remove", "--force", dir]);
+    } catch {
+      rmSync(dir, { recursive: true, force: true }); // worktree add の前に落ちた等で git が知らない場所は消すだけ
+      git(["worktree", "prune"]);
+    }
+  }
+}
+
+/**
+ * git から差分を読んで数える（repo の base と head の merge-base から head まで）。
+ * 記事の PR の判定（作業ツリーを出すので重い）は、数えて線を超えたときだけ回す
+ */
 export function measureCommits(repo, base, head) {
   const git = (args) =>
     execFileSync("git", ["-c", "core.quotepath=false", ...args], {
@@ -260,13 +288,15 @@ export function measureCommits(repo, base, head) {
       maxBuffer: 1024 * 1024 * 1024,
       stdio: ["ignore", "pipe", "pipe"],
     });
-  const headSha = git(["rev-parse", "--verify", `${head}^{commit}`]).trim();
-  const mergeBase = git(["merge-base", base, headSha]).trim();
+  const sha = (ref) => git(["rev-parse", "--verify", `${ref}^{commit}`]).trim();
+  const headSha = sha(head);
+  const baseSha = sha(base);
+  const mergeBase = git(["merge-base", baseSha, headSha]).trim();
   const input = collectSizeInput(git, mergeBase, headSha);
   const moved = moveOnlyPaths(loadMoveOnly(), input.changes, input.readText);
-  return measurePrSize({
-    ...input,
-    moved,
-    contentPr: isContentPr(repo, base, headSha),
-  });
+  const counted = measurePrSize({ ...input, moved });
+  if (!counted.over) return counted;
+  return isContentPr(repo, baseSha, headSha)
+    ? measurePrSize({ ...input, moved, contentPr: true })
+    : counted;
 }
