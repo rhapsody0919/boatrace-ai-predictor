@@ -74,10 +74,8 @@ export function applyFullRuns({
   const gates = summarize(rangeShas, cleared).map((g) => {
     const { running, failedAtTip } = info.get(g.workflow);
     if (g.state !== "red") return g;
-    // 解く手が無い赤: 全件の run が同じ版で失敗した・S の後の push の run が赤（S より後は push の run のまま）
-    if (!running && (failedAtTip || info.get(g.workflow).success)) {
-      blockedByFull = true;
-    }
+    // 全件の run が同じ版（tip と base）で失敗していれば、起こし直さず止める
+    if (!running && failedAtTip) blockedByFull = true;
     if (running) {
       return {
         workflow: g.workflow,
@@ -102,7 +100,7 @@ export function applyFullRuns({
   const toDispatch = needDispatch
     ? FULL_WORKFLOWS.filter((w) => {
         const i = info.get(w);
-        return i && !i.running && !i.failedAtTip && !i.success;
+        return i && !i.running && !i.failedAtTip && i.success?.head_sha !== tip;
       })
     : [];
   return { gates, needDispatch: toDispatch.length > 0, toDispatch };

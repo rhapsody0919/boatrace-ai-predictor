@@ -137,12 +137,31 @@ async function startScenes() {
   });
   const r4 = await run(k);
   check(
-    r4.outcome === "error" &&
-      r4.error.includes("quality-gates.yml=failure") &&
-      hooks(k) === 0 &&
-      posts(k).length === 0,
-    "(f) S より後の push の run が赤なら解かずに止める（S より後は今までどおり）。起こし直さない",
+    r4.report?.action === "deferred" && hooks(k) === 0 && posts(k).length === 2,
+    "(f) S の後に新しい赤が入り、tip が S より新しく (tip, base) の全件の run が無ければ、tip で起こし直して待つ",
     j([r4, posts(k)]),
+  );
+  const m = fake({
+    pushRuns: {
+      ...red(),
+      [QG]: [pushRun(HEAD, "failure"), pushRun(MID, "failure")],
+    },
+    fullRuns: {
+      ...bothSuccess(MID),
+      [QG]: [
+        fullRun(QG, HEAD, "completed", "failure"),
+        fullRun(QG, MID, "completed", "success"),
+      ],
+    },
+  });
+  const r5 = await run(m);
+  check(
+    r5.outcome === "error" &&
+      r5.error.includes("quality-gates.yml=failure") &&
+      hooks(m) === 0 &&
+      posts(m).length === 0,
+    "(f) 同じ (tip, base) の全件の run が失敗なら、S に success があっても止めて起こし直さない",
+    j([r5, posts(m)]),
   );
 }
 
@@ -198,8 +217,7 @@ async function acceptScenes() {
   });
   const r3 = await run(h);
   check(
-    r3.report?.action === "deferred" &&
-      j(posts(h).map(([w]) => w)) === j([QG]),
+    r3.report?.action === "deferred" && j(posts(h).map(([w]) => w)) === j([QG]),
     "(f) post-merge-checks は base を問わず success を認める。認められない側（base が違う quality-gates）だけ起こす",
     j([r3, posts(h)]),
   );
