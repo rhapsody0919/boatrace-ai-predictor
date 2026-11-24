@@ -2975,7 +2975,7 @@
       "courseHeader": "水道",
       "exhibitionTrendHeader": "展示時間（平均、走勢，越上越快）",
       "wakuStatsExpand": "顯示全部6水道",
-      "wakuStatsNote": "💡 「水道」為此馬達實際進入的水道編號（沒有進入水道資料的過去比賽則直接使用艇號）。點擊列可查看在該水道使用過此馬達的各選手成績。",
+      "wakuStatsNote": "💡 「水道」為此馬達實際進入的水道編號（沒有進入水道資料的過去比賽則直接使用艇號）。點擊列可查看在該水道使用過此馬達的各選手成績。比賽詳情中強調的列，是將今天的艇號視為照號進場水道的位置（搶道時不適用）。",
       "racerWakuBackLabel": "← 返回各水道成績",
       "racerWakuHeading": "{{course}}水道的選手別成績",
       "racerWakuEmpty": "找不到此馬達、水道組合的出賽選手",
