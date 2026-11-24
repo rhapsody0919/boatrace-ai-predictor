@@ -30,7 +30,6 @@ const bundled = await bundle({
   format: "cjs",
   packages: "external",
   jsx: "automatic",
-  loader: { ".css": "empty" },
   plugins: [
     {
       name: "offline",
@@ -39,6 +38,10 @@ const bundled = await bundle({
           path: "i18n",
           namespace: "offline",
         }));
+        // 見た目の読み込み（JS でない import）は中身を見ないので空にする
+        b.onLoad({ filter: /\.[a-z]+$/ }, (args) =>
+          /\.jsx?$/.test(args.path) ? undefined : { contents: "", loader: "js" },
+        );
         b.onLoad({ filter: /.*/, namespace: "offline" }, () => ({
           contents:
             "export const useTranslation = () => ({ t: (k) => k, i18n: { language: 'ja' } });",
