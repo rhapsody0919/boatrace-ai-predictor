@@ -184,11 +184,20 @@ const hasAnyDataOf = (stats, view) =>
 function breakdownBlocks(t, vc, view, venueStats) {
   const { vcVenueFixed, vcBoatFixed, vcHistoryLoading, vcHistoryError } = vc;
   const settled = !vcHistoryLoading && !vcHistoryError;
+  // 全会場の会場別・枠番別の表はグレード・レース種別で集計し直していない。枠の中で「絞り込みが効く」と
+  // 言う以上、選んでいる間は出さない（効かない値を同じ顔で並べない。ファン評価 #3279 1周 P1）
+  const gradeOrStage = vc.vcGrade !== "all" || vc.vcStage !== "all";
+  const overview = !vcVenueFixed && !vcBoatFixed;
   return [
-    !vcVenueFixed && !vcBoatFixed && view.hasVenueStats && (
+    overview && gradeOrStage && (view.hasVenueStats || view.hasCourseStats) && (
+      <p key="overviewHidden" className="racer-stat-note" data-testid="racer-overview-hidden">
+        会場別・枠番別の表はグレード・レース種別で絞り込めないため、選んでいる間は出しません
+      </p>
+    ),
+    overview && !gradeOrStage && view.hasVenueStats && (
       <VenueBreakdown key="venue" t={t} vc={vc} venueStats={venueStats} />
     ),
-    !vcVenueFixed && !vcBoatFixed && view.hasCourseStats && (
+    overview && !gradeOrStage && view.hasCourseStats && (
       <CourseBreakdown key="course" vc={vc} courseStats={view.courseStats} />
     ),
     vcVenueFixed && !vcBoatFixed && settled && (

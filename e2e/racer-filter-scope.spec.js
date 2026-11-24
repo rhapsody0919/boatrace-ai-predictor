@@ -37,3 +37,18 @@ for (const viewport of [
     expect(order).toBe(true);
   });
 }
+
+// 全会場の会場別・枠番別の表はグレード・レース種別で集計し直していない。枠の中で「絞り込みが効きます」と言うので、
+// 選んでいる間は出さず理由を1行（効かない値を同じ顔で並べない。ファン評価 #3279 1周 P1）
+test("グレードを選ぶと、絞り込みの効かない会場別・枠番別の表を出さない", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/racer/4320");
+  const frame = page.locator("section.racer-filter-scope");
+  await expect(frame.locator("h3", { hasText: "会場名をクリックで絞り込み" })).toHaveCount(1, { timeout: 40000 });
+  await page.locator("#vc-grade").selectOption({ index: 1 });
+  await expect(frame.getByTestId("racer-overview-hidden")).toBeVisible();
+  await expect(frame.locator("h3", { hasText: "会場名をクリックで絞り込み" })).toHaveCount(0);
+  await page.locator("#vc-grade").selectOption("all");
+  await expect(frame.getByTestId("racer-overview-hidden")).toHaveCount(0);
+  await expect(frame.locator("h3", { hasText: "会場名をクリックで絞り込み" })).toHaveCount(1);
+});
