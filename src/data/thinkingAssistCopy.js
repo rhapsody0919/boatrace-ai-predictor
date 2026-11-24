@@ -638,10 +638,9 @@ export const ASSIST_COPY = Object.freeze({
   kvPretest: "前検タイム",
   kvTech: "勝ち決まり手",
   kvCourse: (c) => `${c}コースで走ったとき`,
-  // 展示進入が無いうちは艇番を枠なりのコースとみなす。前付けの日は外れる
-  courseAssumedChip: "枠なりの想定",
   courseWin: (k, n) => `1着 ${k}/${n}走`,
-  courseNote: "進入コース・直近2年",
+  // courseAssumedChip: 展示進入が無いうちは艇番を枠なりのコースとみなす（前付けの日は外れる）
+  courseNote: "進入コース・直近2年", courseAssumedChip: "枠なりの想定",
   // 走数を出す。5走未満は直近30走で補った値（BOA-815 方針4）
   stCourseChip: (v, n, filled) =>
     filled ? `このコース ${v}（全体で補った）` : `このコース ${v}（${n}走）`,

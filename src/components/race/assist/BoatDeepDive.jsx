@@ -16,6 +16,19 @@ import DeepKv from "./BoatDeepDiveKv";
 import { AllFacts, TopFacts } from "./BoatDeepDiveFacts";
 import { baseText, scopeLabelOf, topFactChips } from "./BoatDeepDiveModel";
 
+/** 成績から付けた札の1列（無ければ出さない） */
+function FeatRow({ feats, venue }) {
+  if (feats.length === 0) return null;
+  return (
+    <div className="ta-feat" aria-label={C.featTitle} role="group">
+      {feats.map((f) => (
+        <Feat key={f.id} chip={f} venue={venue} />
+      ))}
+      <TermButton term={C.featTitle} />
+    </div>
+  );
+}
+
 /** 見出し（艇・名前・級・体重・閉じる） */
 function DeepHead({ boat, racer, weight, onClose }) {
   return (
@@ -99,7 +112,7 @@ export default function BoatDeepDive({
   pretest,
   weight,
   course,
-  courseAssumed = false,
+  courseAssumed,
   onMetric,
   onClose,
   openAll = false,
@@ -128,14 +141,7 @@ export default function BoatDeepDive({
           target={target}
         />
       )}
-      {feats.length > 0 && (
-        <div className="ta-feat" aria-label={C.featTitle} role="group">
-          {feats.map((f) => (
-            <Feat key={f.id} chip={f} venue={venue} />
-          ))}
-          <TermButton term={C.featTitle} />
-        </div>
-      )}
+      <FeatRow feats={feats} venue={venue} />
       <DeepKv
         boat={boat}
         racer={racer}
