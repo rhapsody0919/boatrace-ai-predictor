@@ -44,56 +44,86 @@ async function writeQueryDay(db, date, rows, fetchedAt) {
   return true;
 }
 
-async function main() {
+/** 1日ぶんを、選んだ表へ取って書く。dry-run（db が null）は取るだけ。返すのはその日の API の行数の合計 */
+async function backfillDay(ctx, date) {
+  const { db, opts, searchconsole, siteUrl, fetchedAt } = ctx;
+  let total = 0;
+  if (opts.tables.includes("query")) {
+    const api = await fetchDay(searchconsole, siteUrl, date);
+    total += api.length;
+    const pruned = db ? await writeQueryDay(db, date, toRows(api, fetchedAt), fetchedAt) : false;
+    console.log(`query ${logLine(date, api.length, pruned)}`);
+  }
+  if (opts.tables.includes("page")) {
+    const api = await fetchPageDay(searchconsole, siteUrl, date);
+    total += api.length;
+    const pruned = db ? await writePageDay(db, date, toPageRows(api, fetchedAt), fetchedAt) : false;
+    console.log(`page ${logLine(date, api.length, pruned)}`);
+  }
+  return total;
+}
+
+/** 失敗の文。成功なら null */
+function failureMessage(failed, counts) {
+  const problems = [];
+  if (failed.length > 0) {
+    const shown = failed.slice(0, 10).join("・") + (failed.length > 10 ? "…" : "");
+    problems.push(`${failed.length}日が落ちた（${shown}）。同じ範囲を回し直せば埋まる`);
+  }
+  if (allDaysEmpty(counts)) {
+    problems.push("取った全日が0行。サービスアカウントの閲覧権限と SEARCH_CONSOLE_SITE_URL の形を確かめる");
+  }
+  return problems.length > 0 ? problems.join(" / ") : null;
+}
+
+async function setup() {
   const yesterdayPt = new Date(Date.parse(`${ptToday(new Date())}T00:00:00Z`) - DAY_MS)
     .toISOString()
     .slice(0, 10);
   const opts = parseBackfillArgs(process.argv.slice(2), yesterdayPt);
   const dates = dateRange(opts.from, opts.to);
   if (dates.length === 0) throw new Error(`範囲が空（from=${opts.from} が to=${opts.to} より後）`);
-  requireEnv(opts.dryRun ? ["SEARCH_CONSOLE_SITE_URL"] : ["SEARCH_CONSOLE_SITE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_KEY"]);
-
+  requireEnv(
+    opts.dryRun
+      ? ["SEARCH_CONSOLE_SITE_URL"]
+      : ["SEARCH_CONSOLE_SITE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_KEY"],
+  );
   const db = opts.dryRun
     ? null
     : createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
   // 表が無いなら、1日も取る前に止める
   if (db && opts.tables.includes("page")) await assertPageTableExists(db);
-
   const searchconsole = google.searchconsole({
     version: "v1",
     auth: getGoogleAuthClient(["https://www.googleapis.com/auth/webmasters.readonly"]),
   });
-  const siteUrl = process.env.SEARCH_CONSOLE_SITE_URL;
-  const fetchedAt = new Date().toISOString();
-  console.log(`補充: ${dates[0]}〜${dates.at(-1)}（${dates.length}日）tables=${opts.tables.join(",")}${opts.dryRun ? "（dry-run）" : ""}`);
+  const ctx = {
+    db,
+    opts,
+    searchconsole,
+    siteUrl: process.env.SEARCH_CONSOLE_SITE_URL,
+    fetchedAt: new Date().toISOString(),
+  };
+  return { ctx, dates };
+}
 
+async function main() {
+  const { ctx, dates } = await setup();
+  console.log(
+    `補充: ${dates[0]}〜${dates.at(-1)}（${dates.length}日）tables=${ctx.opts.tables.join(",")}${ctx.opts.dryRun ? "（dry-run）" : ""}`,
+  );
   const failed = [];
   const counts = [];
   for (const date of dates) {
     try {
-      let total = 0;
-      if (opts.tables.includes("query")) {
-        const api = await fetchDay(searchconsole, siteUrl, date);
-        total += api.length;
-        const pruned = db ? await writeQueryDay(db, date, toRows(api, fetchedAt), fetchedAt) : false;
-        console.log(`query ${logLine(date, api.length, pruned)}`);
-      }
-      if (opts.tables.includes("page")) {
-        const api = await fetchPageDay(searchconsole, siteUrl, date);
-        total += api.length;
-        const pruned = db ? await writePageDay(db, date, toPageRows(api, fetchedAt), fetchedAt) : false;
-        console.log(`page ${logLine(date, api.length, pruned)}`);
-      }
-      counts.push(total);
+      counts.push(await backfillDay(ctx, date));
     } catch (err) {
       failed.push(date);
       console.error(`${date}: ${err.message}`);
     }
   }
-  const problems = [];
-  if (failed.length > 0) problems.push(`${failed.length}日が落ちた（${failed.slice(0, 10).join("・")}${failed.length > 10 ? "…" : ""}）。同じ範囲を回し直せば埋まる`);
-  if (allDaysEmpty(counts)) problems.push("取った全日が0行。サービスアカウントの閲覧権限と SEARCH_CONSOLE_SITE_URL の形を確かめる");
-  if (problems.length > 0) throw new Error(problems.join(" / "));
+  const message = failureMessage(failed, counts);
+  if (message) throw new Error(message);
 }
 
 main().catch((err) => {
