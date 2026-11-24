@@ -31,6 +31,14 @@ node scripts/maintenance/session-start-check.js
 
 窓口はあわせて、記事の定時の作業（オーナーの Mac の定期の作業 `seo-article`、毎日 JST 06:02）の前の回を見る。`mcp__scheduled-tasks__list_task_runs`（taskId `seo-article`）で最新の回の状態を見て、24時間以内に記事の PR（枝が `claude/content-`、manifest の `author.lane` が `routine:seo-article`）が出たかを `gh pr list` で確かめる。出ていなければ、その回のセッションを `mcp__ccd_session_mgmt__list_events` で読んで止まった理由を見て、最初の応答に1行で書く（定期の作業の回は、作った会話にしか知らせが来ないため。2026-11-24 オーナー。クラウドの routine は push の鍵が無いので使わない）。同じ止まり方が2回続いたら、GitHub の側の見張りに上げる案をオーナーに出す
 
+窓口はあわせて、本番の版が master に追いついているかを見る（2026-11-24 オーナー。master の検査の赤が直った後も、ADR-0106 の決まりで定時が止まり続け、半日誰も気づかなかった）。本番の版は `gh api "repos/rhapsody0919/boatrace-ai-predictor/deployments?environment=Production&per_page=1"` の sha、master の先は `origin/master`。直前の定時（JST 05:45・11:45・17:45）から30分を過ぎても、本番の版の後にサイトに関わるマージが残っていれば、止まった理由（release-dispatch の Vercel のログ・範囲の Quality Gates の失敗）を調べ、最初の応答に1行で書く。手で出すのはオーナーなので、出す方法（Vercel の Create Deployment）を添えて頼む。master の検査を赤から直す PR を出したセッションは、本番の版が追いつくまでを持つ
+
+master の検査（Quality Gates・Post-merge Checks の push の run）が赤になったとき（2026-11-24 オーナー）:
+1. 窓口が赤にした最初のコミット（PR）を特定し、その PR を作ったセッションへ伝える。そのセッションが原因を調べ、「直す（直しの PR）」か「無視してよい（理由）」を窓口へ返す。作ったセッションがもう無い・hq 等の外の PR なら窓口が持つ
+2. 赤の後に同じ赤を引き継いだだけの PR（中身は壊れていない）を作ったセッションには、窓口が「引き継いだ赤で、直しは 1 の担当」と知らせる。その PR の側で直さない
+3. 赤の原因が複数の PR にまたがる・定時までに 1 の担当が直せないときは、窓口がまとめて直す PR を出し、出す前に本番に出る範囲を全部検査して（ADR-0106 の追記）から出す
+4. 直しが入ったら、上の「本番の版が追いついているか」で、次の定時に出たことまで確かめる
+
 **該当が1件以上あれば、ユーザーから話しかけられるのを待たずに最初の応答で提示する。**
 「いいえ」または反応が無ければその日はスキップし、催促しない。
 
