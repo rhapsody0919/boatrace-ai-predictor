@@ -638,6 +638,8 @@ export const ASSIST_COPY = Object.freeze({
   kvPretest: "前検タイム",
   kvTech: "勝ち決まり手",
   kvCourse: (c) => `${c}コースで走ったとき`,
+  // 展示進入が無いうちは艇番を枠なりのコースとみなす。前付けの日は外れる
+  courseAssumedChip: "枠なりの想定",
   courseWin: (k, n) => `1着 ${k}/${n}走`,
   courseNote: "進入コース・直近2年",
   // 走数を出す。5走未満は直近30走で補った値（BOA-815 方針4）
@@ -735,7 +737,7 @@ export const ASSIST_COPY = Object.freeze({
   theoryFactToday: (boat, pos) => `今日の${boat}号艇は6艇で${pos}`,
   theoryFactFinalOff:
     "優勝戦・準優勝戦の日は、点の順位がほぼ枠の順になるので「今日」は出さない",
-  theoryVenueTitle: (venue) => `${venue}のイン`,
+  theoryVenueTitle: (venue) => `${venue}のイン（1号艇）`,
   theoryVenueCond: (venue) => `${venue}の全レース`,
   theoryVenueLikely: "1号艇の1着の割合は会場ごとに違う",
   theoryVenueAll: (venue, n) =>
@@ -874,7 +876,7 @@ export const GLOSSARY = Object.freeze({
   平均ST: {
     lead: "スタートタイミング（合図からスタートラインを通るまでの遅れ）の平均。直近30走、Fを除く",
     items: [
-      "「このコース」は今日と同じコースを走ったときだけの平均",
+      "「このコース」は、枠なりのレースで今日と同じ枠を走ったときだけの平均",
       "0に近いほど早い",
     ],
     stScale: true,

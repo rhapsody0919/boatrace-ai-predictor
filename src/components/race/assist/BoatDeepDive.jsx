@@ -99,6 +99,7 @@ export default function BoatDeepDive({
   pretest,
   weight,
   course,
+  courseAssumed = false,
   onMetric,
   onClose,
   openAll = false,
@@ -149,6 +150,7 @@ export default function BoatDeepDive({
         technique={technique}
         pretest={pretest}
         course={course}
+        courseAssumed={courseAssumed}
         onMetric={onMetric}
         runsOpen={runsOpen}
         setRunsOpen={setRunsOpen}

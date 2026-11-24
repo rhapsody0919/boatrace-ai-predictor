@@ -206,6 +206,8 @@ export function AssistDeepDive({
           ?.today_weight ?? null
       }
       course={courseByBoat?.[deepBoat - 1] ?? deepBoat}
+      /* 展示進入が無いうちは艇番を枠なりのコースとみなす。画面に「枠なり想定」と出す */
+      courseAssumed={courseByBoat?.[deepBoat - 1] == null}
       onMetric={(metric, boat) => act({ type: "metric", metric, boat })}
       openAll={state.deepAll}
       onClose={() => dispatch({ type: "closeDeep" })}
