@@ -130,7 +130,7 @@ function scene3() {
       .filter((f) => /\.ya?ml$/.test(f))
       .map((f) => `.github/workflows/${f}`)
       .filter((f) =>
-        /^\s+environment:\s*(?:prod-jobs|ryujin-bot)\s*$|^\s+name:\s*(?:prod-jobs|ryujin-bot)\s*$/m.test(
+        /^\s+environment:\s*(?:prod-jobs|ryujin-bot|ryujin-maker)\s*$|^\s+name:\s*(?:prod-jobs|ryujin-bot|ryujin-maker)\s*$/m.test(
           yml(f),
         ),
       );
@@ -153,7 +153,7 @@ function scene3() {
     ].sort();
     const watched = [...config.watched].sort();
     check(
-      "prod-jobs・ryujin-bot を使う workflow は全部見張りの一覧にある（漏れも余りも無い）",
+      "prod-jobs・ryujin-bot・ryujin-maker を使う workflow は全部見張りの一覧にある（漏れも余りも無い）",
       JSON.stringify(watched) === JSON.stringify([...new Set(expected)]),
       `一覧に無い: ${expected.filter((f) => !watched.includes(f)).join(", ")} / 余分: ${watched.filter((f) => !expected.includes(f)).join(", ")}`,
     );

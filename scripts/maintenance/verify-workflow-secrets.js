@@ -62,6 +62,9 @@ export const RETIRED_SECRETS = [
   "CLAUDE_RO_DB_URL",
 ];
 export const RETIRED_ENVIRONMENTS = ["pr-review", "db-readonly"];
+// 作成の App の鍵（Workflows: write）を使ってよい workflow。鍵の job は checkout も npm もしない
+// （依存の postinstall から job の secret を読めるため。11/24 system-architect の審査）
+export const MAKER_KEY_WORKFLOWS = ["content-auto-merge.yml"];
 
 /** @returns {{ id: string, text: string }[]} */
 export function splitJobs(yamlText) {
@@ -141,6 +144,12 @@ export function checkWorkflow(file, yamlText) {
         `${key}: ${protectedUsed.join(", ")} を参照するが environment が master だけのもの（${[...MASTER_ONLY_ENVIRONMENTS].join("・")}）でない（${env ?? "なし"}）`,
       );
     }
+    if (used.includes("RYUJIN_MAKER_PRIVATE_KEY") || jobEnv === "ryujin-maker") {
+      if (!MAKER_KEY_WORKFLOWS.includes(path.basename(file)))
+        problems.push(`${key}: 作成の App の鍵（ryujin-maker）は ${MAKER_KEY_WORKFLOWS.join("・")} だけが使う`);
+      if (/actions\/checkout@|\bnpm\b|\bnpx\b|\byarn\b|\bpnpm\b/.test(job.text))
+        problems.push(`${key}: 作成の App の鍵の job で checkout・npm を使う（依存のコードから鍵を読める）`);
+    }
     if (onPullRequest) {
       const leaked = used.filter(
         (s) => !PUBLIC_SECRETS.has(s) && s !== "GITHUB_TOKEN",
@@ -167,6 +176,15 @@ function main() {
   // 検査そのものの検査
   const good =
     "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    environment: prod-jobs\n    runs-on: ubuntu-latest\n    steps:\n      - run: x\n        env:\n          K: ${{ secrets.SUPABASE_SERVICE_KEY }}\n";
+  const maker = (steps) =>
+    `on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  m:\n    environment: ryujin-maker\n    runs-on: ubuntu-latest\n    steps:\n${steps}      - uses: actions/create-github-app-token@v3\n        with:\n          private-key: \${{ secrets.RYUJIN_MAKER_PRIVATE_KEY }}\n`;
+  check(
+    "作成の App の鍵は決めた workflow の、checkout も npm もしない job でだけ使う",
+    checkWorkflow("content-auto-merge.yml", maker("")).length === 0 &&
+      checkWorkflow("other.yml", maker("")).length === 1 &&
+      checkWorkflow("content-auto-merge.yml", maker("      - run: npm ci\n")).length === 1 &&
+      checkWorkflow("content-auto-merge.yml", maker("      - uses: actions/checkout@v4\n")).length === 1,
+  );
   check(
     "environment つきの job は通る",
     checkWorkflow("x.yml", good).length === 0,

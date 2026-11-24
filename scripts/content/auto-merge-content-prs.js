@@ -5,8 +5,10 @@
  * 判定の道具（pr-lane.js・この本）は master の版を回す。PR のコードは実行しない（ファイルの一覧と manifest の JSON を読むだけ。
  * pr-lane は git の差分を読む）。マージは --match-head-commit で、確かめた head の後に push があれば入れない。
  *
- * 使い方: node scripts/content/auto-merge-content-prs.js [--dry-run]
- * 環境変数: GH_TOKEN（マージできる App のトークン）・GITHUB_REPOSITORY
+ * 使い方: node scripts/content/auto-merge-content-prs.js [--dry-run | --plan]
+ *   --plan: マージせず、入れてよい PR を1行ずつ「番号 head の SHA」で標準出力の末尾に出す（行の頭は MERGE）。
+ *           鍵の job と分けるため（判定の job は npm ci をするので、マージの鍵を同じ job に置かない）
+ * 環境変数: GH_TOKEN（--plan では読めるだけのトークン、それ以外はマージできる App のトークン）・GITHUB_REPOSITORY
  * 終了コード: 0 済み、1 読み書きの失敗
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -16,6 +18,7 @@ import { join } from "node:path";
 import { judge } from "../lib/contentAutoMerge.js";
 
 const DRY = process.argv.includes("--dry-run");
+const PLAN = process.argv.includes("--plan");
 const repo = process.env.GITHUB_REPOSITORY;
 
 const gh = (args) =>
@@ -96,6 +99,10 @@ function main() {
     });
     if (!merge) {
       console.log(`#${p.number}: 待つ（${reasons.join("・")}）`);
+      continue;
+    }
+    if (PLAN) {
+      console.log(`MERGE ${p.number} ${headSha}`);
       continue;
     }
     if (DRY) {

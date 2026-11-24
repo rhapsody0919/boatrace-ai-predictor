@@ -31,12 +31,17 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  merge:
+  # 判定: 鍵を持たない job（npm ci の依存の postinstall から鍵を読めないように、マージの鍵の job と分ける。11/24 system-architect の審査）
+  plan:
     if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # 鍵（RYUJIN_MAKER_PRIVATE_KEY）はこの環境の secret。環境は master の枝だけに限る（オーナーが置く）
-    environment: ryujin-maker
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+    outputs:
+      merges: ${{ steps.plan.outputs.merges }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,6 +50,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+      # 契約の関門（check-content-pr.js）が依存のパッケージを使うので npm ci をする
+      - run: npm ci
+      - name: Judge open article PRs
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          node scripts/content/auto-merge-content-prs.js --plan | tee plan.log
+          merges=$(grep -E '^MERGE [0-9]+ [0-9a-f]{40}$' plan.log | cut -d' ' -f2- | paste -sd, - || true)
+          echo "merges=$merges" >> "$GITHUB_OUTPUT"
+
+  # マージ: 鍵を持つ job。checkout も npm もしない（判定の結果の番号と SHA で gh を呼ぶだけ）
+  merge:
+    needs: plan
+    if: needs.plan.outputs.merges != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # 鍵（RYUJIN_MAKER_PRIVATE_KEY）はこの環境の secret。環境は master の枝だけに限る（オーナーが置く）
+    environment: ryujin-maker
+    steps:
       - name: App token
         id: app-token
         uses: actions/create-github-app-token@v3
@@ -54,15 +80,21 @@ jobs:
           private-key: ${{ secrets.RYUJIN_MAKER_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-      # 契約の関門（check-content-pr.js）が依存のパッケージを使うので npm ci をする
-      - run: npm ci
       - name: Merge passing article PRs
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          MERGES: ${{ needs.plan.outputs.merges }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            node scripts/content/auto-merge-content-prs.js --dry-run
-          else
-            node scripts/content/auto-merge-content-prs.js
-          fi
+          IFS=, read -ra items <<< "$MERGES"
+          for item in "${items[@]}"; do
+            read -r num sha <<< "$item"
+            if ! [[ "$num" =~ ^[0-9]+$ && "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::判定の結果の形が違う: $item"; exit 1
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "#$num: マージしてよい（試しなので入れない）"; continue
+            fi
+            gh pr merge "$num" --squash --match-head-commit "$sha" --repo "$GITHUB_REPOSITORY"
+            echo "#$num: マージした（${sha:0:9}）"
+          done
