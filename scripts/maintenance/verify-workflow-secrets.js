@@ -4,10 +4,10 @@
  *
  * repo の secret（Environment の外）は、同じリポジトリのどのブランチの workflow からも読める。workflow を書ける身元
  * （作成の App は Workflows: write を持つ）なら、ブランチを push するだけで審査を通らずに本番へ書ける。
- * そこで、下の鍵を参照する job は必ず master だけの Environment（prod-jobs・ryujin-bot・production-db・production-db-auto）を宣言する。
+ * そこで、下の鍵を参照する job は必ず master だけの Environment（prod-jobs・ryujin-bot・ryujin-maker・production-db・production-db-auto）を宣言する。
  *
  * 確認する観点:
- *   1. 下の鍵を参照する job は environment に prod-jobs・ryujin-bot・production-db・production-db-auto のどれかを持つ
+ *   1. 下の鍵を参照する job は environment に prod-jobs・ryujin-bot・ryujin-maker・production-db・production-db-auto のどれかを持つ
  *   2. pull_request で動く workflow は、anon（VITE_SUPABASE_*）以外の secret を参照しない
  *   3. 外した AI 審査（review.yml）の鍵（REVIEWER_APP_PRIVATE_KEY・OPENAI_API_KEY・ANTHROPIC_API_KEY・CLAUDE_RO_DB_URL）と
  *      Environment（pr-review・db-readonly）をどの workflow も使わない
@@ -35,10 +35,13 @@ export const PROTECTED_SECRETS = [
   "SEARCH_CONSOLE_SITE_URL",
   "SUPABASE_DB_URL",
   "RYUJIN_BOT_PRIVATE_KEY",
+  // 作成の App の鍵（content-auto-merge.yml が記事の PR をマージする）。Workflows: write を持つので枝から読めてはいけない
+  "RYUJIN_MAKER_PRIVATE_KEY",
 ];
 const MASTER_ONLY_ENVIRONMENTS = new Set([
   "prod-jobs",
   "ryujin-bot",
+  "ryujin-maker",
   "production-db",
   // 軽い SQL の自動の適用（db-apply.yml の apply-auto、ADR-0097 段取り D）。承認者なし・master だけ
   "production-db-auto",
