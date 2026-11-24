@@ -20,6 +20,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { moveOnlyPaths } from "./prLaneMoveOnly.js";
 import { loadMoveOnly } from "./prLaneClassify.js";
+import { parsePatch } from "./pr-lane.js";
 
 const CHECK_CONTENT_PR = fileURLToPath(
   new URL("../content/check-content-pr.js", import.meta.url),
@@ -200,39 +201,10 @@ export function measurePrSize({
   };
 }
 
-/** unified diff（-U0）を、ファイル（新しい側のパス）ごとの足した行・消した行に分ける */
-export function parseUnified(text) {
-  const patches = new Map();
-  let cur = null;
-  let inHunk = false;
-  for (const line of text.split("\n")) {
-    if (line.startsWith("diff --git ")) {
-      cur = null;
-      inHunk = false;
-    } else if (!inHunk && line.startsWith("+++ ")) {
-      const raw = line.slice(4).replace(/\t$/, "");
-      if (raw === "/dev/null") continue;
-      const path = (raw.startsWith('"') ? JSON.parse(raw) : raw).replace(
-        /^b\//,
-        "",
-      );
-      cur = { added: [], removed: [] };
-      patches.set(path, cur);
-    } else if (line.startsWith("@@")) {
-      inHunk = true;
-    } else if (inHunk && cur && line.startsWith("+")) {
-      cur.added.push(line.slice(1));
-    } else if (inHunk && cur && line.startsWith("-")) {
-      cur.removed.push(line.slice(1));
-    }
-  }
-  return patches;
-}
-
 /**
  * git の出力から measurePrSize の入力を作る（git は呼び手が渡す: 引数の配列 → 標準出力の文字列）。
  * 差分は merge-base から head まで、改名を見る（-M。verify-pr-shape.js と同じ）。
- * 消したファイルは本文の行を数えないので --- の側（/dev/null の +++）は patch に入れない
+ * patch は pr-lane.js の parsePatch（改名の元のパスにも空の行が入るが、changes に無いので数えない）
  */
 export function collectSizeInput(git, mergeBase, head) {
   const tokens = git(["diff", "--name-status", "-M", "-z", mergeBase, head])
@@ -245,7 +217,7 @@ export function collectSizeInput(git, mergeBase, head) {
     changes.push({ status, path: tokens[i + (twoPaths ? 2 : 1)] });
     i += twoPaths ? 3 : 2;
   }
-  const patches = parseUnified(
+  const patches = parsePatch(
     git(["diff", "-M", "-U0", "--no-color", "--no-ext-diff", mergeBase, head]),
   );
   const readText = (side, path) => {
