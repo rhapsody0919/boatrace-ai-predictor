@@ -12,6 +12,8 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import RacerLink from "../race/assist/RacerLink";
+import InCautionBadge from "../race/InCautionBadge";
+import { useTodayCaution } from "./DigestRaceCard";
 import "./FeaturedRaceCard.css";
 
 /** 何を分母に何を数えた割合か、文で書く（RateWithBaseline と同じ方針） */
@@ -41,6 +43,7 @@ function FeaturedRaceCard({ row }) {
   );
   // 過去に書き込んだ行には detail.baselineGrade が無い。その場合はグレードを書かない
   const gradeLabel = BASELINE_GRADE_LABEL[row.detail?.baselineGrade] ?? null;
+  const caution = useTodayCaution(row);
 
   return (
     <section className="featured-race" aria-labelledby="featured-race-title">
@@ -96,7 +99,20 @@ function FeaturedRaceCard({ row }) {
                 ).toFixed(1)}%`}
             </span>
           </div>
-          {row.volatility_percentile !== null && (
+          {caution.enabled && (
+            <div ref={caution.ref} className="featured-race__stat">
+              <span className="featured-race__stat-label">イン崩れ注意度</span>
+              <span className="featured-race__stat-value featured-race__stat-value--plain">
+                {row.in_caution_pct}
+                <span className="featured-race__stat-unit">%</span>
+              </span>
+              <span className="featured-race__stat-sub">
+                <InCautionBadge level={row.in_caution_level} />{" "}
+                勝率差が同じくらいの全国の過去レース{row.in_caution_n}件で、1号艇が1着を逃した割合
+              </span>
+            </div>
+          )}
+          {caution.showLegacy && row.volatility_percentile !== null && (
             <div className="featured-race__stat">
               <span className="featured-race__stat-label">イン崩れ指数</span>
               <span className="featured-race__stat-value featured-race__stat-value--plain">
@@ -119,6 +135,7 @@ function FeaturedRaceCard({ row }) {
         <Link
           to={localize(`/race/${row.race_id}`)}
           className="featured-race__cta"
+          onClick={caution.onClick}
         >
           このレースの詳細を見る
         </Link>

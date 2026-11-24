@@ -22,7 +22,47 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { isUnusedMotor } from "../../utils/motorUsage";
+import { isInCautionEnabled } from "../../config/featureFlags";
+import { useVisibleOnce } from "../../hooks/useVisibleOnce";
+import { trackEvent } from "../../utils/analytics";
+import {
+  cautionClickEvent,
+  cautionVisibleEvent,
+} from "../../utils/cautionEvents";
+import InCautionBadge from "../race/InCautionBadge";
 import "./DigestRaceCard.css";
+
+const sendEvent = (ev) => ev && trackEvent(ev.name, ev.params);
+
+/**
+ * /today のイン崩れ注意度（BOA-822 task 35、機能フラグの側）。朝の生成が写した in_caution_* を出す。
+ * 列の無い過去の行（156 の前・注意度を出さなかったレース）は欄を出さない（旧の指数にも戻さない）。
+ * 計測: 欄が画面に入ったら日ごとに1回 caution_visible、カードからレースへ移ったら caution_click（target=race）
+ *
+ * @returns {{enabled: boolean, showLegacy: boolean, ref: Function, onClick: Function|undefined}}
+ */
+export function useTodayCaution(row) {
+  const flag = isInCautionEnabled();
+  const enabled =
+    flag &&
+    typeof row.in_caution_pct === "number" &&
+    ["low", "mid", "high"].includes(row.in_caution_level);
+  const ref = useVisibleOnce(enabled ? `today|${row.digest_date}` : null, () =>
+    sendEvent(cautionVisibleEvent({ surface: "today" })),
+  );
+  const onClick = enabled
+    ? () =>
+        sendEvent(
+          cautionClickEvent({
+            surface: "today",
+            target: "race",
+            raceId: row.race_id,
+            inCaution: { level: row.in_caution_level },
+          }),
+        )
+    : undefined;
+  return { enabled, showLegacy: !flag, ref, onClick };
+}
 
 function cardClassName(highlight, collapsible) {
   return `digest-card${highlight ? " digest-card--highlight" : ""}${
@@ -66,7 +106,7 @@ function DigestCardRacer({ row }) {
   );
 }
 
-function DigestCardFoot({ row, t }) {
+function DigestCardFoot({ row, t, caution }) {
   return (
     <footer className="digest-card__foot">
       {row.motor_2rate !== null && (
@@ -82,7 +122,16 @@ function DigestCardFoot({ row, t }) {
             : `${Number(row.motor_2rate).toFixed(1)}%`}
         </span>
       )}
-      {row.volatility_percentile !== null && (
+      {caution.enabled && (
+        <span ref={caution.ref} className="digest-card__caution">
+          イン崩れ注意度{" "}
+          <InCautionBadge
+            level={row.in_caution_level}
+            pct={row.in_caution_pct}
+          />
+        </span>
+      )}
+      {caution.showLegacy && row.volatility_percentile !== null && (
         <span>
           イン崩れ指数 {Math.round(Number(row.volatility_percentile))}%
         </span>
@@ -119,12 +168,14 @@ function DigestRaceCard({
   const venueName = t(`venues.${row.venue_code}`);
   const open = collapsible ? expanded : true;
   const body = typeof children === "function" ? children(open) : children;
+  const caution = useTodayCaution(row);
 
   return (
     <article className={cardClassName(highlight, collapsible)}>
       <Link
         to={localize(`/race/${row.race_id}`)}
         className="digest-card__link"
+        onClick={caution.onClick}
         aria-label={`${venueName}${row.race_number}レースの詳細`}
       >
         <DigestCardHead row={row} venueName={venueName} />
@@ -133,7 +184,7 @@ function DigestRaceCard({
 
         {body}
 
-        {open && <DigestCardFoot row={row} t={t} />}
+        {open && <DigestCardFoot row={row} t={t} caution={caution} />}
       </Link>
 
       {collapsible && (
