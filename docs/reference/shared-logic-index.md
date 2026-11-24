@@ -191,6 +191,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
 | `scripts/lib/growth/gscDaily.js` | Search Console の日別の明細（query × page × date）を growth_gsc_daily の行にする（BOA-1706、hq 閉… | ptToday, windowDates, toRows, chunk, canPrune ほか13件 |
 | `scripts/lib/growth/gscPageDaily.js` | Search Console の date × page だけの取得（匿名化された語も入るページの合計）と、補充（バックフィル）の道具 | fetchPageDay, toPageRows, isMissingTable, missingTableMessage, assertPageTableExists ほか6件 |
+| `scripts/lib/growth/seoDetect.js` | 察知の純関数（SEO データの輪 PR3。設計 seo-data-loop-design §4）。 | normalizePage, weightedPosition, classifyIntent, isSeasonalTerm, isEventDriven ほか7件 |
 | `scripts/lib/harville.js` | — | — |
 | `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
 | `scripts/lib/inCaution.js` | BOA-822 イン崩れ注意度: 朝の生成（generate-unified-predictions.js）がレースごとの値を決める純関数。 | toInCautionRates, computeInCaution |
@@ -667,4 +668,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 625 ファイル / export 3354 件。
+対象 626 ファイル / export 3366 件。
