@@ -6,6 +6,8 @@
  * 取得の口（fetchDay）は searchanalytics.query を持つ client を受け取り、ここでは認証しない。
  */
 
+import { diffRows } from "../unchangedRows.js";
+
 // API の1回の上限。これより少なく返ったら最後のページ
 export const PAGE_SIZE = 25000;
 // API が1日・1検索タイプあたりに返す行の上限（公式ドキュメントの記載）。1日分を取るので確かな目安になる
@@ -101,4 +103,82 @@ export async function fetchDay(searchconsole, siteUrl, date) {
     rows.push(...batch);
     if (batch.length < PAGE_SIZE) return rows;
   }
+}
+
+// 表の主キー。変わらない行の比較と、消す行の特定に使う
+export const KEY_COLUMNS = ["date", "query", "page"];
+// position は REAL（float4）で、読み戻すと桁が落ちる。4桁に丸めて比べないと毎回「変更あり」になる
+const COMPARE_SCALES = { position: 4 };
+
+const keyOf = (row) => JSON.stringify(KEY_COLUMNS.map((c) => row[c]));
+
+/**
+ * 1日分の書き込みの計画。変わらない行は書かない（scripts/lib/unchangedRows.js の diffRows と同じ比較）。
+ * 全部を取り切れた日（canPrune）だけ、今回の取得に無い既存の行を stale として返す。
+ * 値が変わらない行は fetched_at を更新しないので、消す行は fetched_at でなく主キーで決める。
+ */
+export function planDay(existingRows, incomingRows) {
+  const { toWrite, stats } = diffRows(existingRows, incomingRows, {
+    keyColumns: KEY_COLUMNS,
+    ignoreColumns: ["fetched_at"],
+    scales: COMPARE_SCALES,
+  });
+  const incomingKeys = new Set(incomingRows.map(keyOf));
+  const stale = canPrune(incomingRows.length)
+    ? existingRows
+        .filter((r) => !incomingKeys.has(keyOf(r)))
+        .map((r) => Object.fromEntries(KEY_COLUMNS.map((c) => [c, r[c]])))
+    : [];
+  return { toWrite, stale, unchanged: stats.unchanged };
+}
+
+/**
+ * 取った窓の全日が0行なら失敗の文を返す（鍵の権限・プロパティの誤りで何も返らない朝を成功にしない）。
+ * counts は取れた日ごとの API の行数。1日も取れていない（全日が失敗）ときは別の文で扱うので null
+ */
+export function zeroWindowMessage(dates, counts) {
+  if (counts.length === 0 || counts.some((n) => n > 0)) return null;
+  return (
+    `Search Console が取った窓（${dates[0]}〜${dates.at(-1)}の${counts.length}日）の全日で0行だった。` +
+    "サービスアカウントがそのプロパティの閲覧者か・SEARCH_CONSOLE_SITE_URL の形（sc-domain:… か https://…/）が" +
+    "実際のプロパティと合うかを確かめる"
+  );
+}
+
+/**
+ * 窓の全日を順に取り、1日ずつ書く。1日が落ちても他の日は取る。
+ * 外との口（API・DB）は deps で受ける（試験で差し替える）。ログは日付と行数だけ。
+ * @returns {Promise<{counts: number[], failed: string[]}>}
+ */
+export async function collectWindow(deps) {
+  const { dates, fetchRows, readExisting, upsert, deleteRows, fetchedAt, log, logError } = deps;
+  const counts = [];
+  const failed = [];
+  for (const date of dates) {
+    try {
+      const apiRows = await fetchRows(date);
+      const incoming = toRows(apiRows, fetchedAt);
+      const plan = planDay(await readExisting(date), incoming);
+      await upsert(date, plan.toWrite);
+      if (plan.stale.length > 0) await deleteRows(date, plan.stale);
+      counts.push(apiRows.length);
+      log(
+        `${logLine(date, apiRows.length, canPrune(apiRows.length))}` +
+          `（書いた${plan.toWrite.length}・変更なし${plan.unchanged}・消した${plan.stale.length}）`,
+      );
+    } catch (err) {
+      failed.push(date);
+      logError(`${date}: ${err.message}`);
+    }
+  }
+  return { counts, failed };
+}
+
+/** 窓の結果を終了の失敗の文にする。成功なら null */
+export function windowFailure(dates, { counts, failed }) {
+  const parts = [];
+  if (failed.length > 0) parts.push(`${failed.length}日が落ちた（${failed.join("・")}）`);
+  const zero = zeroWindowMessage(dates, counts);
+  if (zero) parts.push(zero);
+  return parts.length > 0 ? parts.join(" / ") : null;
 }
