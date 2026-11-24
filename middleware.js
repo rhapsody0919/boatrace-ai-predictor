@@ -21,9 +21,13 @@
  *    API_GATE_MODE が未設定・observe の間は通す（would_deny もログだけ）。デコード後に「.」「..」のセグメント・
  *    「//」・「\」を含むパスだけは段階に依らず 400。enforce（段階4）は環境変数と Redeploy だけで入る。
  *    除外（/api/cron・/api/admin・/api/bot-page）はログも出さず、既存の守り（下の Basic 認証等）へ進む
+ *
+ * 4. 断るクローラー（Reflectionbot・meta-externalagent・Bytespider、src/config/aiCrawlerBots.js の
+ *    BLOCKED_CRAWLER_USER_AGENTS）は matcher の全パスで 403（robots.txt を守らない物への備え。Supabase の枠越え 11/19）。
+ *    matcher の外のパス（静的ファイル等）は middleware が起動しないので止まらない
  */
 import { ipAddress, rewrite } from "@vercel/functions";
-import { resolveSnapshotPath } from "./src/config/aiCrawlerBots.js";
+import { isBlockedCrawler, resolveSnapshotPath } from "./src/config/aiCrawlerBots.js";
 import { requireAdminAuth } from "./api/_lib/adminAuth.js";
 import {
   compileIpRanges,
@@ -145,6 +149,13 @@ const isApiPath = (pathname) =>
 
 export default async function middleware(request) {
   const url = new URL(request.url);
+
+  if (isBlockedCrawler(request.headers.get("user-agent"))) {
+    return new Response("Forbidden", {
+      status: 403,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
 
   if (isApiPath(url.pathname)) {
     const rejected = await handleApiGate(request);

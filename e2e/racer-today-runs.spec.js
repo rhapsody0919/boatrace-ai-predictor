@@ -1,5 +1,6 @@
 import { test, expect, e2eTodayJST } from "./fixtures.js";
 import { buildRacerTodayRuns, finishLabelOf, splitTodayRaceId, todayRunsMeetLabel } from "../src/pure/racerTodayRuns.js";
+import { courseCell, meetFinishes, pickContextRun, venueCell } from "../src/pure/racerTodayContext.js";
 
 /**
  * 選手ページの「今日の出走」（BOA-1691 R2）の固定。取得はスタブ（録画の当日の走は日で変わる）。
@@ -127,5 +128,96 @@ test.describe("純関数 racerTodayRuns", () => {
     expect(runs[1]).toMatchObject({ finish: null, deadline: "16:42" });
     expect(todayRunsMeetLabel(runs)).toBe("住之江 4日目");
     expect(todayRunsMeetLabel([{ venueName: "住之江", seriesDay: null }])).toBeNull();
+  });
+});
+
+// 会場別成績の節と同じ履歴の読み（getRacerRaceHistory: race_entries → races・race_results・exhibition_data・
+// race_conditions・race_start_timings）を差し替える。今日の走の読み（race_id=like.）は stubTodayRuns が答える。
+// runs: [{ id: "YYYY-MM-DD-VV-RR", boat: 4, order: [着順の艇番6つ] }]
+async function stubRaceHistory(page, runs) {
+  const ids = new Set(runs.map((r) => r.id));
+  const hit = (url) => [...ids].some((id) => url.includes(id));
+  await page.route("**/rest/v1/race_entries?*", (route) => {
+    const url = route.request().url();
+    if (url.includes("select=race_id%2Cboat_number") && !url.includes("like.")) {
+      return route.fulfill({ json: runs.map((r) => ({ race_id: r.id, boat_number: r.boat })) });
+    }
+    return route.fallback();
+  });
+  const tables = {
+    races: (r) => ({ race_id: r.id, venue_code: Number(r.id.slice(11, 13)), race_grade: "一般" }),
+    race_results: (r) => ({
+      race_id: r.id, ...Object.fromEntries(r.order.map((b, i) => [`rank${i + 1}`, b])),
+      winning_technique: "逃げ", payout_win: 200, payout_place_1: 110, payout_place_2: 150, race_status: null,
+      ...Object.fromEntries([1, 2, 3, 4, 5, 6].map((b) => [`actual_course_${b}`, b])),
+    }),
+    exhibition_data: (r) => ({ race_id: r.id, boat_number: r.boat, exhibition_time: 6.8 }),
+    race_conditions: (r) => ({ race_id: r.id, race_stage: null, race_title: "一般", weather: "晴", wind_speed: 1, wave_height: 1 }),
+    race_start_timings: (r) => ({ race_id: r.id, boat_number: r.boat, start_timing: 0.15, is_flying: false, finish_mark: null, entry_course: r.boat }),
+  };
+  for (const [table, row] of Object.entries(tables)) {
+    await page.route(`**/rest/v1/${table}?*`, (route) =>
+      hit(route.request().url()) ? route.fulfill({ json: runs.map(row) }) : route.fallback(),
+    );
+  }
+}
+
+// 今日の出走の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地・今節の着順。30走未満は件数で
+test.describe("今日の出走の手がかりの1段", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("次の走（4号艇・住之江）の4コースの公式成績・住之江の当地・今節の着順を並べる", async ({ page }) => {
+    const today = e2eTodayJST();
+    const { DONE, NEXT } = runIds(today);
+    await stubTodayRuns(page, [{ race_id: DONE, boat_number: 2 }, { race_id: NEXT, boat_number: 4 }]);
+    // 公式の期別: 4コースは20走で1着2回（30走未満なので件数）
+    const courseCols = Object.fromEntries(
+      [1, 2, 3, 4, 5, 6].flatMap((c) => [
+        [`c${c}_entries`, c === 4 ? 20 : 40], [`c${c}_p1`, c === 4 ? 2 : 8], [`c${c}_p2`, 3], [`c${c}_p3`, 3],
+        [`c${c}_avg_st`, 0.16], [`c${c}_f`, 0], [`c${c}_l0`, 0], [`c${c}_l1`, 0], [`c${c}_k0`, 0], [`c${c}_k1`, 0],
+      ]),
+    );
+    await page.route("**/rest/v1/racer_period_stats?*", (route) =>
+      route.fulfill({ json: [{ racer_id: 3941, period_year: 2026, period_no: 2, calc_from: "2025-11-01", calc_to: "2026-04-30",
+        grade: "A1", win_rate: 6.5, top2_rate: 40, starts: 220, first_count: 40, second_count: 20, finals: 0, wins: 0, avg_st: 0.16, ...courseCols }] }),
+    );
+    // 住之江（12）の走: 前々日は2着・前日は1着（今節）、30日前は別の節（2着。当地の数には入る）。戸田（2）の走は当地に入れない
+    const daysAgo = (n) => new Date(Date.parse(`${today}T00:00:00Z`) - n * 86400000).toISOString().slice(0, 10);
+    // 4号艇で出た走。order は着順の艇番
+    await stubRaceHistory(page, [
+      { id: `${daysAgo(30)}-12-05`, boat: 4, order: [1, 4, 2, 3, 5, 6] },
+      { id: `${daysAgo(10)}-02-03`, boat: 4, order: [4, 1, 2, 3, 5, 6] },
+      { id: `${daysAgo(2)}-12-04`, boat: 4, order: [3, 4, 1, 2, 5, 6] },
+      { id: `${daysAgo(1)}-12-06`, boat: 4, order: [4, 1, 2, 3, 5, 6] },
+    ]);
+    await page.goto("/racer/3941");
+    const ctx = page.getByTestId("racer-today-context");
+    await expect(page.getByTestId("racer-today-course")).toHaveText("4コース（公式1期）20走中1着2回");
+    await expect(page.getByTestId("racer-today-venue")).toHaveText("住之江の当地（直近2年）3走中1着1回2着以内3回");
+    await expect(page.getByTestId("racer-today-meet")).toHaveText("今節の着順2 1");
+    // 1段は今日の出走の節の中にあり、最初の画面の内
+    await expect(page.getByTestId("racer-today-runs").getByTestId("racer-today-context")).toHaveCount(1);
+    const box = await ctx.boundingBox();
+    expect(box.y + box.height).toBeLessThanOrEqual(812);
+  });
+
+  test("純関数: 30走以上は率、30走未満は件数、節は2日を超える間で切る", () => {
+    expect(courseCell({ course: 1, entries: 25, wins: 1, reliability: "reference", winRate: 4, top2Rate: 8 }))
+      .toEqual({ title: "1コース（公式3期）", main: "25走中1着1回", sub: null });
+    expect(courseCell({ course: 1, entries: 40, wins: 12, reliability: "firm", winRate: 30, top2Rate: 52.55 }))
+      .toEqual({ title: "1コース（公式3期）", main: "1着 30.0%", sub: "2連対率 52.5%・40走" });
+    expect(courseCell({ course: 6, entries: 5, wins: 0, reliability: "none", winRate: null, top2Rate: null })).toBeNull();
+    expect(venueCell({ n: 0, win: 0, top2: 0 }, "戸田")).toEqual({ title: "戸田の当地（直近2年）", main: "出走なし", sub: null });
+    // 浮動小数で 57.49999… にならず、整数で切り捨てる
+    expect(venueCell({ n: 40, win: 23, top2: 30 }, "戸田").main).toBe("1着 57.5%");
+    expect(venueCell({ n: 40, win: 4, top2: 10 }, "戸田").main).toBe("1着 10.0%");
+    const runs = [
+      { date: "2026-11-22", finishRank: 6, finishMark: null },
+      { date: "2026-11-20", finishRank: null, finishMark: "F" },
+      { date: "2026-11-01", finishRank: 1, finishMark: null },
+    ];
+    expect(meetFinishes(runs, "2026-11-23")).toEqual(["F", "6"]);
+    expect(meetFinishes([], "2026-11-23")).toBeNull();
+    expect(pickContextRun([{ finish: "2着" }, { finish: null, raceNo: 9 }])).toEqual({ finish: null, raceNo: 9 });
   });
 });

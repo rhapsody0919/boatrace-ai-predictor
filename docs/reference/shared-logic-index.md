@@ -26,11 +26,16 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
 | `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
+| `src/pure/dataFormat.js` | 表とグラフの数字の書き方（docs/reference/design-system.md「表とグラフ」決まり5・6、 | EMPTY, SMALL_SAMPLE_N, fixed, formatWinRate, rateParts ほか5件 |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
 | `src/pure/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
 | `src/pure/hitJudge.js` | 複勝的中判定（2着以内） | isPlaceHit, isShowHit |
+| `src/pure/indicatorMotor.js` | 指標の定義: 大分類「機力（モーター・ボート）」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は c… | MOTOR_INDICATORS |
+| `src/pure/indicatorRacerPower.js` | 指標の定義: 大分類「選手の力」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | RACER_POWER_INDICATORS |
+| `src/pure/indicatorRegistry.js` | 指標の登録簿（ADR-0108）。指標の定義の正はここに並ぶ定義だけ。 | bestOfIndicator, formatIndicatorParts, INDICATORS, ALIASES, getIndicator |
+| `src/pure/indicatorStart.js` | 指標の定義: 大分類「スタート」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | START_INDICATORS |
 | `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetCompareSideRows.js` | RaceMeetTab 比較表の注記（RaceMeetTabCompareSide.jsx）の人数の行の文言を作る純関数（副作用なし）。 | countLineText |
@@ -57,9 +62,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
+| `src/pure/racerLatestEntry.js` | 選手ページの冒頭の1行目「MM/DD の出走表」（#3258 の #2）。 | officialPeriodKey, latestEntryLine, F_COUNT_RELIABLE_FROM |
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか4件 |
 | `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
+| `src/pure/racerTodayContext.js` | 選手ページの「今日の出走」の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地成績・今節の着順。 | pickContextRun, courseCell, venueCell, meetFinishes, SMALL_RUNS |
 | `src/pure/racerTodayRuns.js` | — | splitTodayRaceId, finishLabelOf, buildRacerTodayRuns, todayRunsMeetLabel |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
@@ -77,6 +84,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/venueModel.js` | — | makeVenue |
 | `src/pure/visitDays.js` | — | VISIT_DAYS_KEY, VISIT_WINDOW_DAYS, nextVisitDays, favHolder |
 | `src/pure/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonInterval, wilsonLowerBoundFromRate, isSmallSample |
+| `src/pure/winningTechniqueSummary.js` | 決まり手タブの結論の一言と枠ごとの1着率（#3258 の #5）。 | winningTechniqueSummary, SMALL_WIN_COUNT |
 | `src/pure/winningTechniques.js` | — | COURSE_DEFAULT_DISTRIBUTION, COURSE_DEFAULT_DEFENSE |
 
 ## scripts/lib — バッチ・取得・集計の共通ロジック
@@ -638,7 +646,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/racerQueries3.js` | — | getRacerBoatReturnRate, getStDeviationTrend, getExhibitionTimeTrend, getTodaysRacerFormRanking |
 | `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords, fetchRacerScopedRunsOrNull, fetchRacerFrontTakingCountsOrNull |
 | `src/services/racerQueries5.js` | — | getRacerPageData, getRacerAllPeriodStats, getRacerStats |
-| `src/services/racerQueries6.js` | — | getRacerTodayRuns, getRaceFrontTakingByRacer |
+| `src/services/racerQueries6.js` | — | getRacerTodayRuns, getRaceFrontTakingByRacer, getRacerLatestEntry |
 | `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
@@ -654,4 +662,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 612 ファイル / export 3289 件。
+対象 620 ファイル / export 3318 件。

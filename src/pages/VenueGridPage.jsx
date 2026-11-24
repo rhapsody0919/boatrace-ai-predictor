@@ -27,6 +27,7 @@ import { getTopPageMeta } from "../utils/pageMeta";
 import { formatDate } from "../utils/formatters";
 import { getTodayJST } from "../utils/dateUtils";
 import { computeNextOpenDates } from "../utils/nextOpenDate";
+import SiteUpdatesBanner from "../components/siteUpdates/SiteUpdatesBanner";
 import "./VenueGridPage.css";
 // 過去日付ビューのレイアウト（.race-detail-page/.page-header/.back-link等）は
 // 旧RaceDetail.jsxのスタイルを流用する
@@ -177,6 +178,8 @@ function TodayVenueGridPage() {
 
       <div className="container">
         <main className="main-content">
+          {/* 更新のお知らせの帯（ja の今日のトップだけ。言語は部品の中で URL から決める） */}
+          <SiteUpdatesBanner />
           <TodayVenuesSection
             t={t}
             i18n={i18n}
