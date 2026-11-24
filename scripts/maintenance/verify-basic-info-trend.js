@@ -18,12 +18,9 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const bundled = await bundle({
-  stdin: {
-    contents:
-      'export { default as BasicInfoTrend } from "./BasicInfoTrend.jsx";',
-    resolveDir: path.join(ROOT, "src/components/race/basic-info"),
-    loader: "js",
-  },
+  entryPoints: [
+    path.join(ROOT, "src/components/race/basic-info/BasicInfoTrend.jsx"),
+  ],
   bundle: true,
   write: false,
   platform: "node",
@@ -56,7 +53,7 @@ new Function("require", "module", "exports", bundled.outputFiles[0].text)(
   mod,
   mod.exports,
 );
-const { BasicInfoTrend } = mod.exports;
+const BasicInfoTrend = mod.exports.default;
 
 const failures = [];
 const check = (name, ok, detail = "") => {
