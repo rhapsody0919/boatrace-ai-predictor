@@ -103,14 +103,40 @@ cases.push(
     assert.equal(legacy.race_id, nigeA.race_id);
     assert.match(legacy.detail.reason, /イン崩れ指数は10%/);
   }],
-  ["注意度が全レース null の日は、注意度で選ぶと注目レースは0件", () => {
+  ["注意度が全レース null の日は、注意度で選ぶときも旧の指数で選び直す（0件にしない）", () => {
     const empty = {
       nige: [nigeA, nigeB].map((r) => ({ ...r, ...inCautionColumns(null) })),
       makuri: [],
       nigashi: [],
     };
-    assert.equal(pickFeatured(empty, { useInCaution: true }), null);
-    assert.notEqual(pickFeatured(empty, { useInCaution: false }), null);
+    const featured = pickFeatured(empty, { useInCaution: true });
+    assert.deepEqual(featured, pickFeatured(empty, { useInCaution: false }));
+    assert.equal(featured.race_id, nigeA.race_id);
+    assert.equal(featured.detail.signal, "volatility");
+    assert.match(featured.detail.reason, /イン崩れ指数は10%/);
+  }],
+  ["注意度が一部のレースだけ null の日は、値のある候補の中から注意度で選ぶ", () => {
+    const partial = {
+      nige: [{ ...nigeA, ...inCautionColumns(null) }, nigeB],
+      makuri: [],
+      nigashi: [],
+    };
+    const featured = pickFeatured(partial, { useInCaution: true });
+    assert.equal(featured.race_id, nigeB.race_id);
+    assert.equal(featured.detail.signal, "in_caution");
+    assert.match(featured.detail.reason, /イン崩れ注意度は10%/);
+  }],
+  ["注意度も指数も全レース null の日は、注目レースは0件", () => {
+    const none = {
+      nige: [nigeA, nigeB].map((r) => ({
+        ...r,
+        ...inCautionColumns(null),
+        volatility_percentile: null,
+      })),
+      makuri: [],
+      nigashi: [],
+    };
+    assert.equal(pickFeatured(none, { useInCaution: true }), null);
   }],
   ["inCautionColumns は値の無いときも3列のキーを持つ", () => {
     assert.deepEqual(inCautionColumns(null), {

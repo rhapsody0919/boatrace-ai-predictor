@@ -222,7 +222,13 @@ export function warnNoVolatility(volatilityMap, inCautionMap = new Map()) {
       "  ⚠️ イン崩れ注意度が1件も取得できませんでした（predictions が未生成か、夜の表の欠け）。in_caution_* は NULL で書きます",
     );
   }
-  if (signal.size === 0) console.log("  ⚠️ 注目レースは生成しません");
+  if (signal.size > 0) return;
+  // 注意度が1件も無い日は、注目レースだけ旧の指数で選ぶ（pickFeatured）
+  if (MORNING_DIGEST_IN_CAUTION && volatilityMap.size > 0) {
+    console.log("  ⚠️ 注目レースは旧のイン崩れ指数で選びます");
+    return;
+  }
+  console.log("  ⚠️ 注目レースは生成しません");
 }
 
 function featuredSignal(row, useInCaution) {
@@ -245,6 +251,10 @@ function featuredSignalSentence(row, useInCaution) {
  * ベースレートが逃げ53%・まくり4%と桁違いなので、zスコアに標準化してから
  * 当日の値（イン崩れ指数か注意度。どちらも 0〜100）との方向一致度を掛ける（plan.md §3.3、レビュー指摘C-1）。
  *
+ * 注意度で選ぶとき、注意度の値が無い候補は外す（一部の欠け）。候補の全てで値が無い日は、
+ * 日の全体を旧の指数の選び方に戻す（全部の欠け。注目レースを0件にしない、BOA-822 task 33）。
+ * 候補ごとに指数と注意度を混ぜないのは、2つの値の分布が違い、点を同じ物差しで比べられないため。
+ *
  * @param {object} sections
  * @param {{useInCaution?: boolean}} [opts] 既定は MORNING_DIGEST_IN_CAUTION
  */
@@ -252,6 +262,12 @@ export function pickFeatured(
   sections,
   { useInCaution = MORNING_DIGEST_IN_CAUTION } = {},
 ) {
+  const picked = pickFeaturedBy(sections, useInCaution);
+  if (picked === null && useInCaution) return pickFeaturedBy(sections, false);
+  return picked;
+}
+
+function pickFeaturedBy(sections, useInCaution) {
   const candidates = [
     ...(sections.nigeAll ?? sections.nige),
     ...sections.makuri,
@@ -301,6 +317,7 @@ export function pickFeatured(
       reason,
       score: best.score,
       from: best.row.section,
+      signal: useInCaution ? "in_caution" : "volatility",
     },
   };
 }
