@@ -50,47 +50,18 @@ test.describe("レースページ再設計（BOA-168）", () => {
     });
   });
 
-  test("分析ツール6コンポーネントの埋め込みセクションがデフォルト閉で並び、開くと会場/レース選択プルダウン無しで実データが表示される（race-detail-analysis-integration FR-3〜9）", async ({
+  test("基本情報タブに分析ツールの畳みを出さない（出走表の行と重なるため既定の画面から外した、オーナー 2026-11-24）", async ({
     page,
   }) => {
-    // 結果確定済みのレースでも基本情報タブには同じ6セクションが出る（BOA-445）
     await openFixedRaceBasicTab(page);
-
-    // 「モーター調子」はBOA-308でアコーディオンからモータ情報タブへ昇格し、
-    // 重複表示を避けてアコーディオン版が撤去された（PredictionPanelAnalysisTools.jsx冒頭の
-    // コメント参照）。テストが7個のまま取り残されていたが、当日の未終了レースを
-    // 探すヘルパーが常にfalseを返して無言でskipしていたため検知できていなかった
-    const sections = page.locator(".embedded-analysis-section");
-    await expect(sections).toHaveCount(6);
-
-    const expectedTitles = [
-      "選手調子",
-      "STのズレ",
-      "展示タイム推移",
-      "選手別決まり手傾向",
-      "回収率分析",
-      "超展開データ",
-    ];
-    for (const title of expectedTitles) {
-      await expect(sections.filter({ hasText: title })).toHaveCount(1);
-    }
-
-    // デフォルトは全セクション閉（中身は一切マウントされない）
-    await expect(page.locator(".eas-content")).toHaveCount(0);
-
-    // 1つずつ開いて、会場/レース選択プルダウンが無いこと・中身が表示されることを確認し、
-    // 閉じたら再びアンマウントされることを確認する
-    const count = await sections.count();
-    for (let i = 0; i < count; i++) {
-      const section = sections.nth(i);
-      await section.locator(".eas-header").click();
-      const content = section.locator(".eas-content");
-      await expect(content).toBeVisible({ timeout: 15000 });
-      await expect(content.locator(".controls-section")).toHaveCount(0);
-      await expect(content.locator("h2")).toHaveCount(0);
-      await section.locator(".eas-header").click();
-      await expect(content).toHaveCount(0);
-    }
+    await expect(page.locator(".data-race-table")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".embedded-analysis-section")).toHaveCount(0);
+    // 図は分析ページに残り、出走表の行の名前から飛べる（調子の行 → racer タブ）
+    await expect(
+      page.locator(".data-race-table a[href*='/winning-technique'][href*='tab=racer']"),
+    ).toHaveCount(1);
   });
 
   test("過去日・結果確定済みレースのモータ情報タブが、無関係な「本日開催」レースにフォールバックせず当該レースのデータを表示する（race-detail-analysis-integration 回帰確認）", async ({
