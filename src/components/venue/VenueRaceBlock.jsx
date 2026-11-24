@@ -10,6 +10,7 @@ import RaceCardDataTable from "../race/RaceCardDataTable";
 import { RaceNumber, RaceCardInfo } from "../race/RaceCard";
 import RaceCardBadges from "../race/RaceCardBadges";
 import { deriveRaceCardState, aiTabHref } from "../race/RaceCardState";
+import { isInCautionEnabled } from "../../config/featureFlags";
 import { trackEvent } from "../../utils/analytics";
 import { cautionClickEvent } from "../../utils/cautionEvents";
 import "./VenueRaceBlock.css";
@@ -90,7 +91,11 @@ export default function VenueRaceBlock({ race, raceHref, nowHHMM }) {
         >
           {t("raceCard.view")}
         </Link>
-        <Link to={aiTabHref(raceHref)}>{t("raceTabs.aiPrediction")}</Link>
+        <Link to={aiTabHref(raceHref)}>
+          {t(
+            isInCautionEnabled() ? "raceTabs.inCaution" : "raceTabs.aiPrediction",
+          )}
+        </Link>
         <Link to={`${raceHref}?tab=${finished ? "result" : "beforeInfo"}`}>
           {t(finished ? "raceTabs.result" : "raceTabs.beforeInfo")}
         </Link>

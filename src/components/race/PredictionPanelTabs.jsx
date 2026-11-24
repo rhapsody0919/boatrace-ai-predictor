@@ -19,7 +19,10 @@
  * 長くなる（タブを跨ぐのは1タップだが、縦スクロールは何回もスワイプする）。
  */
 import { RACE_SONAR_PARAM, SONAR_RACE_TAB } from "../../utils/raceUrlState";
-import { isAnalogyFinderEnabled } from "../../config/featureFlags";
+import {
+  isAnalogyFinderEnabled,
+  isInCautionEnabled,
+} from "../../config/featureFlags";
 import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import MotorConditionChart from "../analysis/MotorConditionChart";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
@@ -73,7 +76,10 @@ function aiPredictionTab(c) {
     }));
   return {
     id: "aiPrediction",
-    label: c.t("raceTabs.aiPrediction"),
+    // 公開の後はイン崩れ注意度の場所なので「イン崩れ」（2026-11-24 オーナー決定）。id と ?tab=aiPrediction は変えない
+    label: c.t(
+      isInCautionEnabled() ? "raceTabs.inCaution" : "raceTabs.aiPrediction",
+    ),
     content: (
       <RaceAiPredictionTab
         prediction={prediction}
