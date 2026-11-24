@@ -22,6 +22,11 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { isUnusedMotor } from "../../utils/motorUsage";
+import {
+  useTodayCaution,
+  useTodayCautionVisible,
+} from "../../hooks/useTodayCaution";
+import InCautionBadge from "../race/InCautionBadge";
 import "./DigestRaceCard.css";
 
 function cardClassName(highlight, collapsible) {
@@ -66,7 +71,21 @@ function DigestCardRacer({ row }) {
   );
 }
 
-function DigestCardFoot({ row, t }) {
+/** 注意度の欄（BOA-822 task 35）。欄が画面に入ったら caution_visible */
+function DigestCardCaution({ row }) {
+  const visibleRef = useTodayCautionVisible(row);
+  return (
+    <span ref={visibleRef} className="digest-card__caution">
+      イン崩れ注意度{" "}
+      <InCautionBadge level={row.in_caution_level} pct={row.in_caution_pct} />
+      <span className="digest-card__caution-n">
+        （全国の過去レース{row.in_caution_n.toLocaleString("ja-JP")}件）
+      </span>
+    </span>
+  );
+}
+
+function DigestCardFoot({ row, t, caution }) {
   return (
     <footer className="digest-card__foot">
       {row.motor_2rate !== null && (
@@ -82,7 +101,8 @@ function DigestCardFoot({ row, t }) {
             : `${Number(row.motor_2rate).toFixed(1)}%`}
         </span>
       )}
-      {row.volatility_percentile !== null && (
+      {caution.enabled && <DigestCardCaution row={row} />}
+      {caution.showLegacy && row.volatility_percentile !== null && (
         <span>
           イン崩れ指数 {Math.round(Number(row.volatility_percentile))}%
         </span>
@@ -119,12 +139,14 @@ function DigestRaceCard({
   const venueName = t(`venues.${row.venue_code}`);
   const open = collapsible ? expanded : true;
   const body = typeof children === "function" ? children(open) : children;
+  const caution = useTodayCaution(row);
 
   return (
     <article className={cardClassName(highlight, collapsible)}>
       <Link
         to={localize(`/race/${row.race_id}`)}
         className="digest-card__link"
+        onClick={caution.onClick}
         aria-label={`${venueName}${row.race_number}レースの詳細`}
       >
         <DigestCardHead row={row} venueName={venueName} />
@@ -133,7 +155,7 @@ function DigestRaceCard({
 
         {body}
 
-        {open && <DigestCardFoot row={row} t={t} />}
+        {open && <DigestCardFoot row={row} t={t} caution={caution} />}
       </Link>
 
       {collapsible && (
