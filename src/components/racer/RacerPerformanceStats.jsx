@@ -17,6 +17,7 @@ import {
   trendChartsOf,
   vcLabelOf,
 } from "./racerPerformanceView";
+import FilterScopeFrame from "./RacerFilterScope";
 import { VcFilterBar, VcHistoryError } from "./RacerPerformanceFilters";
 import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
 import {
@@ -179,17 +180,33 @@ const hasAnyDataOf = (stats, view) =>
   view.hasCourseStats ||
   view.hasVenueStats;
 
+// 全会場の会場別・枠番別の表はグレード・レース種別で集計し直していない。枠の中で「絞り込みが効く」と
+// 言う以上、選んでいる間は出さない（効かない値を同じ顔で並べない。ファン評価 #3279 1周 P1）
+function overviewBlocks(t, vc, view, venueStats) {
+  if (vc.vcGrade !== "all" || vc.vcStage !== "all") {
+    if (!view.hasVenueStats && !view.hasCourseStats) return [];
+    return [
+      <p key="overviewHidden" className="racer-stat-note" data-testid="racer-overview-hidden">
+        全会場の会場別・枠番別の表はグレード・レース種別では絞れないため、選んでいる間は出しません。会場か枠番を選ぶと、絞った表が出ます
+      </p>,
+    ];
+  }
+  return [
+    view.hasVenueStats && (
+      <VenueBreakdown key="venue" t={t} vc={vc} venueStats={venueStats} />
+    ),
+    view.hasCourseStats && (
+      <CourseBreakdown key="course" vc={vc} courseStats={view.courseStats} />
+    ),
+  ];
+}
+
 /** 成績ブロック（会場・枠番の固定状況で4分岐、ADR-0063）。並びは元の4つの枠のまま */
 function breakdownBlocks(t, vc, view, venueStats) {
   const { vcVenueFixed, vcBoatFixed, vcHistoryLoading, vcHistoryError } = vc;
   const settled = !vcHistoryLoading && !vcHistoryError;
   return [
-    !vcVenueFixed && !vcBoatFixed && view.hasVenueStats && (
-      <VenueBreakdown key="venue" t={t} vc={vc} venueStats={venueStats} />
-    ),
-    !vcVenueFixed && !vcBoatFixed && view.hasCourseStats && (
-      <CourseBreakdown key="course" vc={vc} courseStats={view.courseStats} />
-    ),
+    ...(!vcVenueFixed && !vcBoatFixed ? overviewBlocks(t, vc, view, venueStats) : []),
     vcVenueFixed && !vcBoatFixed && settled && (
       <CrossBoatBreakdown key="crossBoat" vc={vc} vcLabel={view.vcLabel} />
     ),
@@ -281,42 +298,49 @@ export default function RacerPerformanceStats({
 
   return (
     <div
+      id="racer-stats"
       className="racer-performance-stats"
       data-snapshot-history={snapshotHistoryState}
     >
       <h2>{heading}</h2>
-      <VcFilterBar
-        t={t}
-        vc={vc}
-        vcData={vcData}
-        vcLabel={vcLabel}
-        todayVenueCode={todayVenueCode}
-      />
-      {vc.vcHistoryLoading && <p className="racer-stat-note">集計中…</p>}
-      <VcHistoryError vc={vc} />
+      {/* ここから枠の前までは絞り込みに連動しない（全会場・全条件、または出走表・公式の値） */}
       <SummaryCards
         formSummary={formSummary}
         officialAvgSt={stats?.officialAvgSt}
         aggregatedStats={aggregatedStats}
       />
       <WinRateChart chartData={view.chartData} />
-      {breakdownBlocks(t, vc, view, venueStats)}
       {/* レース条件別の成績（BOA-336）。フィルタには連動しない（全会場・全条件の履歴から集計） */}
       <RacerConditionStats history={vc.vcHistory} />
       <ReturnRateTable view={view} boatReturnRate={boatReturnRate} />
-      <BothFixedNoRuns vc={vc} vcData={vcData} vcLabel={vcLabel} />
-      <VcCards vc={vc} vcData={vcData} />
-      {view.showTechniqueSection && (
-        <TechniqueSection view={view} vcActive={vcActive} vcLabel={vcLabel} />
-      )}
-      {view.hasVcData && vcData.series.length === 0 && (
-        <p className="racer-stat-note">
-          推移を表示するにはデータが不足しています
-        </p>
-      )}
-      <ExhibitionChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
-      <StTrendChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
-      <RaceList vc={vc} view={view} vcLabel={vcLabel} />
+      {/* 絞り込みの欄と、それが効く節（会場別・枠番別の表、決まり手、推移、レース一覧）を1つの枠にまとめる */}
+      <FilterScopeFrame>
+        <VcFilterBar
+          t={t}
+          vc={vc}
+          vcData={vcData}
+          vcLabel={vcLabel}
+          todayVenueCode={todayVenueCode}
+        />
+        {vc.vcHistoryLoading && <p className="racer-stat-note">集計中…</p>}
+        <VcHistoryError vc={vc} />
+        {breakdownBlocks(t, vc, view, venueStats)}
+        <BothFixedNoRuns vc={vc} vcData={vcData} vcLabel={vcLabel} />
+        <VcCards vc={vc} vcData={vcData} />
+        {view.showTechniqueSection && (
+          <TechniqueSection view={view} vcActive={vcActive} vcLabel={vcLabel} />
+        )}
+        {view.hasVcData && vcData.series.length === 0 && (
+          <p className="racer-stat-note">
+            推移を表示するにはデータが不足しています
+          </p>
+        )}
+        <ExhibitionChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
+        <StTrendChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
+        <div id="racer-race-list">
+          <RaceList vc={vc} view={view} vcLabel={vcLabel} />
+        </div>
+      </FilterScopeFrame>
       <p className="racer-analysis-tools-link">
         <Link to="/winning-technique?tab=techprofile">
           データ分析ツールで本日開催中の会場・レース単位の傾向も見る →
