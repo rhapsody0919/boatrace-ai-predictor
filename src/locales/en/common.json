@@ -2477,6 +2477,24 @@
     "trendStAvgNote": "Avg. ST this meet (excluding false starts) and ranking from fastest among the 6 boats. Hidden for fewer than 3 starts. The effect of this meet's Avg. ST is unverified; for reference only."
   },
   "basicInfo": {
+    "trend": {
+      "view": {
+        "now": "Current",
+        "trend": "Trend"
+      },
+      "viewLabel": "View",
+      "title": "{{metric}} trend (rolling last 30 races)",
+      "nowTitle": "Current {{metric}}",
+      "latest": "Latest",
+      "gap": "{{days}}-day break",
+      "axisNote": "race dates (x-axis is each boat's race order; right end is latest)",
+      "unitSec": "sec",
+      "note": "💡 Each point is the {{metric}} over the 30 races up to that point. Source: our race records (last 2 years). For Avg. ST, lower is drawn higher",
+      "tapHint": "Tap to highlight",
+      "selectBoat": "Highlight boat {{boat}}",
+      "winRatePending": "Win rate trend (by official term) is coming soon",
+      "notEnough": "Racers with fewer than 30 races have no line"
+    },
     "title": "Racer record comparison",
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
     "metricLabel": "Metric",

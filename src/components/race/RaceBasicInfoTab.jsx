@@ -45,6 +45,7 @@ import {
 import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
+import BasicInfoTrend, { ViewToggle } from "./basic-info/BasicInfoTrend";
 import "./RaceBasicInfoTab.css";
 
 // 指標・範囲・グレード・期間の選択state。グレードと期間は互いに連動する
@@ -272,6 +273,8 @@ function RaceBasicInfoTab({
   const { t } = useTranslation();
   const filters = useBasicInfoFilters();
   const { metric, scope, grade, period } = filters;
+  // 「今の値｜推移」（オーナー 2026-11-24）。開いた最初は今の値
+  const [view, setView] = useState("now");
   // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
   // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
   // その艇が展開済みで開く
@@ -290,7 +293,8 @@ function RaceBasicInfoTab({
     raceId,
     sortedPlayers,
     expandedBoat,
-    needsOwnAggregation,
+    // 推移は6選手の走の記録を使うので、推移を開いたら6人ぶん取る
+    needsOwnAggregation: needsOwnAggregation || view === "trend",
   });
 
   if (sortedPlayers.length === 0) return null;
@@ -335,13 +339,36 @@ function RaceBasicInfoTab({
       {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
           平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
           読ませないよう書き添える（#1064 ファン評価2周目） */}
-      {scale.isRelativeScaleMetric && (
+      {view === "trend" ? (
+        <BasicInfoTrend
+          view={view}
+          setView={setView}
+          metric={metric}
+          scope={scope}
+          grade={grade}
+          venueCode={venueCode}
+          sortedPlayers={sortedPlayers}
+          recordsOf={src.recordsOf}
+          selectedBoat={expandedBoat}
+          onSelectBoat={onFocusBoat}
+        />
+      ) : (
+        <div className="trc-head">
+          <p className="trc-title">
+            {t("basicInfo.trend.nowTitle", {
+              metric: t(`basicInfo.metrics.${metric}`),
+            })}
+          </p>
+          <ViewToggle view={view} setView={setView} />
+        </div>
+      )}
+      {view === "now" && scale.isRelativeScaleMetric && (
         <p className="rbit-metric-caveat rbit-relative-note">
           {t("basicInfo.relativeBarNote")}
         </p>
       )}
       {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
-      <div className="race-split">
+      <div className="race-split" hidden={view === "trend"}>
         <div className="race-split__main">
           <div className="rbit-bars">
             {values.map((row) => (

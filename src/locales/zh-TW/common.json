@@ -2471,6 +2471,24 @@
     "trendStAvgNote": "本節平均ST（不含偷跑場次）與6艇中由快至慢的排名。少於3場不顯示。本節平均ST的效果未驗證，僅供參考。"
   },
   "basicInfo": {
+    "trend": {
+      "view": {
+        "now": "目前數值",
+        "trend": "推移"
+      },
+      "viewLabel": "顯示方式",
+      "title": "{{metric}}推移（每近30場）",
+      "nowTitle": "{{metric}}目前數值",
+      "latest": "最新",
+      "gap": "間隔{{days}}天",
+      "axisNote": "的出賽日期（橫軸為各艇的出賽順序，右端為最新）",
+      "unitSec": "秒",
+      "note": "💡 每個點為該時點近30場的{{metric}}。來源為本站的出賽紀錄（近2年）。平均ST越小畫得越上面",
+      "tapHint": "點選以加粗",
+      "selectBoat": "加粗{{boat}}號艇",
+      "winRatePending": "勝率推移（依官方期別）準備中",
+      "notEnough": "未滿30場的選手不顯示線"
+    },
     "title": "選手成績比較",
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場、擅長賽場、依條件）",
     "metricLabel": "指標",
