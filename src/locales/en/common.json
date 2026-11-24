@@ -2475,6 +2475,7 @@
     "trendStAvgNote": "Avg. ST this meet (excluding false starts) and ranking from fastest among the 6 boats. Hidden for fewer than 3 starts. The effect of this meet's Avg. ST is unverified; for reference only."
   },
   "basicInfo": {
+    "title": "Racer record comparison",
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
     "metricLabel": "Metric",
     "scopeLabel": "Venue",
