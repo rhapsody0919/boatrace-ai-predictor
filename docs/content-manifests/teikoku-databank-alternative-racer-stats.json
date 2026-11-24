@@ -1,62 +1,64 @@
 {
- "schema": "content-pr-manifest/v1",
- "id": "teikoku-databank-alternative-racer-stats",
- "kind": "new",
- "ticket": "OC-20261029T104134-seo-human-1",
- "paths": [
-  "public/blog/teikoku-databank-alternative-racer-stats.md",
-  "src/data/blog-posts/teikoku-databank-alternative-racer-stats.json"
- ],
- "files": {
-  "public/blog/teikoku-databank-alternative-racer-stats.md": "ecd70e86655e56c9c1307ff4b0bbff042dd72bff835cadff72873ff83092db0e",
-  "src/data/blog-posts/teikoku-databank-alternative-racer-stats.json": "01e06fa67a8b32f08eb12bba53e9058d65dff33266c3aa99e616e730e0a9e1a8"
- },
- "content_sha256": "b12d9e1708fcfe19ceb4d5a4f57bb437b3461f3be2771df8546df1eda557c874",
- "judgement_words": [],
- "reviews": [
-  {
-   "role": "content-qa",
-   "agent": "hq-review:article+content-qa",
-   "result": "pass",
-   "p0": 0,
-   "p1": 0,
-   "reviewed_sha256": "b12d9e1708fcfe19ceb4d5a4f57bb437b3461f3be2771df8546df1eda557c874",
-   "model": "opus",
-   "at": "2026-10-29T10:41:34+09:00"
+  "schema": "content-pr-manifest/v1",
+  "id": "teikoku-databank-alternative-racer-stats",
+  "kind": "revision",
+  "ticket": "owner-2026-11-24-teikoku-rewrite",
+  "paths": [
+    "public/blog/teikoku-databank-alternative-racer-stats.md",
+    "src/data/blog-posts/teikoku-databank-alternative-racer-stats.json"
+  ],
+  "files": {
+    "public/blog/teikoku-databank-alternative-racer-stats.md": "7f2ea185a7e1b1ccb46adf7cf944af79fff99e78b0608b60fb9832a7d0094869",
+    "src/data/blog-posts/teikoku-databank-alternative-racer-stats.json": "caf1f73722679e572a7ae481ae56e306e4b2803487b9616b2811f6dc6e499dd1"
   },
-  {
-   "role": "wording-editor",
-   "agent": "hq-review:wording",
-   "result": "pass",
-   "p0": 0,
-   "p1": 0,
-   "reviewed_sha256": "b12d9e1708fcfe19ceb4d5a4f57bb437b3461f3be2771df8546df1eda557c874",
-   "model": "opus",
-   "at": "2026-10-29T10:41:34+09:00"
+  "content_sha256": "65c850b705990a8ffba915464c52e94f13362cf42fd6b749ea2cd5e6c35db692",
+  "content_at": "2026-11-24T13:26:50.000Z",
+  "judgement_words": [],
+  "reviews": [
+    {
+      "role": "content-qa",
+      "agent": "content-qa",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "65c850b705990a8ffba915464c52e94f13362cf42fd6b749ea2cd5e6c35db692",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-24T13:55:50.000Z"
+    },
+    {
+      "role": "wording-editor",
+      "agent": "wording-editor",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "65c850b705990a8ffba915464c52e94f13362cf42fd6b749ea2cd5e6c35db692",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-24T13:55:50.000Z"
+    },
+    {
+      "role": "fan",
+      "agent": "boatrace-fan-reviewer",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "65c850b705990a8ffba915464c52e94f13362cf42fd6b749ea2cd5e6c35db692",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-24T13:55:50.000Z"
+    },
+    {
+      "role": "seo-marketer",
+      "agent": "seo-marketer",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "65c850b705990a8ffba915464c52e94f13362cf42fd6b749ea2cd5e6c35db692",
+      "model": "claude-sonnet-5-5",
+      "at": "2026-11-24T13:55:50.000Z"
+    }
+  ],
+  "author": {
+    "model": "claude-sonnet-5-5",
+    "lane": "claude-content-rewrite"
   },
-  {
-   "role": "fan",
-   "agent": "hq-review:fan",
-   "result": "pass",
-   "p0": 0,
-   "p1": 2,
-   "reviewed_sha256": "b12d9e1708fcfe19ceb4d5a4f57bb437b3461f3be2771df8546df1eda557c874",
-   "model": "opus",
-   "at": "2026-10-29T10:41:34+09:00"
-  },
-  {
-   "role": "seo-marketer",
-   "agent": "hq-review:seo+marketing",
-   "result": "pass",
-   "p0": 0,
-   "p1": 1,
-   "reviewed_sha256": "b12d9e1708fcfe19ceb4d5a4f57bb437b3461f3be2771df8546df1eda557c874",
-   "model": "opus",
-   "at": "2026-10-29T10:41:34+09:00"
-  }
- ],
- "author": "hq-employee:seo-human",
- "created_at": "2026-10-29T10:42:33+09:00",
- "run": "20261029T104134-seo-human",
- "engine": "claude"
+  "created_at": "2026-11-24T13:56:50.000Z"
 }
