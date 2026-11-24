@@ -17,6 +17,7 @@ export function useTodayCaution(row) {
   const enabled =
     flag &&
     typeof row.in_caution_pct === "number" &&
+    typeof row.in_caution_n === "number" &&
     ["low", "mid", "high"].includes(row.in_caution_level);
   const onClick = enabled
     ? () =>

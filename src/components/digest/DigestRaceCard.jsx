@@ -78,6 +78,9 @@ function DigestCardCaution({ row }) {
     <span ref={visibleRef} className="digest-card__caution">
       イン崩れ注意度{" "}
       <InCautionBadge level={row.in_caution_level} pct={row.in_caution_pct} />
+      <span className="digest-card__caution-n">
+        （全国の過去レース{row.in_caution_n.toLocaleString("ja-JP")}件）
+      </span>
     </span>
   );
 }

@@ -54,6 +54,8 @@ const ROWS = [
   metricRow("nige", 2, 3, 5, caution(65, "high", 12000)),
   // 156 の前の行: in_caution_* の列が無い
   metricRow("nige", 3, 4, 6, {}),
+  // 件数が欠けた行は欄を出さない（「null件」と出さない）
+  metricRow("nige", 4, 5, 7, { ...caution(50, "mid", 1), in_caution_n: null }),
 ];
 
 async function openDigest(page, query) {
@@ -94,7 +96,9 @@ test("フラグの側: 注目レースは注意度の割合と段の札、旧の
   });
   await expect(stat.locator(".featured-race__stat-value")).toHaveText("26%");
   await expect(stat.locator(".in-caution-badge--low")).toHaveText("堅め");
-  await expect(stat).toContainText("全国の過去レース34842件");
+  await expect(stat).toContainText(
+    "1号艇と、他の艇で一番高い全国勝率の差が同じくらいの全国の過去レース34,842件",
+  );
   await expect(featured).not.toContainText("高い（荒れやすい）");
   await expect(featured).not.toContainText("低い（堅い）");
 });
@@ -108,10 +112,13 @@ test("フラグの側: カードのフッターは注意度、列の無い過去
   await expect(high.locator(".in-caution-badge--high")).toHaveText(
     "!崩れやすい 65%",
   );
+  await expect(high).toContainText("（全国の過去レース12,000件）");
   await expect(high).not.toContainText("イン崩れ指数");
   const legacy = await openCard(page, 3);
   await expect(legacy).toContainText("モーター2連率");
   await expect(legacy).not.toContainText("イン崩れ");
+  const noN = await openCard(page, 4);
+  await expect(noN).not.toContainText("イン崩れ");
 });
 
 test("フラグの外: 今のまま旧の指数を出す", async ({ page }) => {
