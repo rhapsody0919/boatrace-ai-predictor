@@ -95,20 +95,12 @@ export function buildRowContext({
 
 // 指標ごとの候補値リスト（best共用）
 function buildCandidates(players, c, analysis) {
-  const { stPredictability, exhibitionTime, returnRate } = analysis;
+  const { returnRate } = analysis;
   const { statsByBoat } = c;
   const cand = {
-    // 勝率・当地勝率・2連率・モーター・平均ST・ST安定度は登録簿の定義へ移した（src/pure/indicator*.js、ADR-0108）
+    // 勝率・当地勝率・2連率・モーター・平均ST・ST安定度・展示ST・展示タイムは登録簿の定義へ移した（src/pure/indicator*.js、ADR-0108）
     // 展示でフライング・出遅れした艇（F.01 等）は最良の候補から外す。値は印を外した正の数で、
     // そのままだと F の艇が一番早く見えて金枠が付いた（BOA-759）
-    exSt: (stPredictability ?? []).map((r) => ({
-      boat: r.boat_number,
-      value: r.exhibition_start_flag ? null : toNumber(r.exhibition_st),
-    })),
-    exhibition: (exhibitionTime ?? []).map((r) => ({
-      boat: r.boat_number,
-      value: toNumber(r.exhibition_time),
-    })),
     returnRate: (returnRate ?? []).map((r) => ({
       boat: r.boat_number,
       value: r.sample_count > 0 ? toNumber(r.win_return_rate) : null,

@@ -12,6 +12,7 @@
  *   - 最良は表示の桁で比べ、hidden の艇は返さない。書き方は勝率2桁・率は % を分ける
  *   - モーターは自社の再計算を先に、取れないとき公式の値。調子は上がった艇の中の最良だけ
  *   - 平均ST は小さいほど良く、表示の桁（公式2桁・30走3桁）で比べる。ST のズレは走数0の艇を比べない
+ *   - 展示ST はフライング・出遅れの艇を外す（次に早い艇が最良）。展示タイムは値の無い艇を比べない
  */
 import * as dataFormat from "../../src/pure/dataFormat.js";
 import {
@@ -123,6 +124,13 @@ expectEq("直近30走の ST は3桁で比べる", sorted(bestOfIndicator(st30, s
 const gap = getIndicator("racer.exStGap.past");
 const gapRows = [[1, 0, 0.01], [2, 5, 0.04], [3, 3, 0.06]].map(([b, n, d]) => ({ boat_number: b, sample_count: n, avg_deviation: d }));
 expectEq("ST のズレは走数0の艇を比べない", sorted(bestOfIndicator(gap, gap.select({ analysis: { stPredictability: gapRows } }))), [2]);
+
+const exSt = getIndicator("boat.exhibitionSt.today");
+const exStRows = [[1, 0.01, true], [2, 0.08, false], [3, 0.12, false]].map(([b, st, f]) => ({ boat_number: b, exhibition_st: st, exhibition_start_flag: f }));
+expectEq("展示ST のフライングの艇は外し、次に早い艇が最良", sorted(bestOfIndicator(exSt, exSt.select({ analysis: { stPredictability: exStRows } }))), [2]);
+const exTime = getIndicator("boat.exhibitionTime.today");
+const exRows = [[1, 6.71], [2, 6.69], [3, null]].map(([b, v]) => ({ boat_number: b, exhibition_time: v }));
+expectEq("展示タイムは小さいほど良い（値の無い艇は比べない）", sorted(bestOfIndicator(exTime, exTime.select({ analysis: { exhibitionTime: exRows } }))), [2]);
 
 const hidden = new Map([[1, { value: 9, hidden: true }], [2, { value: 5, hidden: false }], [3, { value: 3 }]]);
 expectEq("hidden の艇は最良に返さない（繰り下げない）", sorted(bestOfIndicator(win, hidden)), []);
