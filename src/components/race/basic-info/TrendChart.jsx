@@ -30,7 +30,11 @@ function scaleOf(seriesByBoat, metric) {
     PAD.l + ((W - PAD.l - PAD.r) * (n - len + i)) / Math.max(1, n - 1);
   const tickStep = metric === "avgSt" ? 0.02 : 10;
   const ticks = [];
-  for (let g = Math.ceil(lo / tickStep) * tickStep; g <= hi + 1e-9; g += tickStep)
+  for (
+    let g = Math.ceil(lo / tickStep) * tickStep;
+    g <= hi + 1e-9;
+    g += tickStep
+  )
     ticks.push(g);
   return { x, y, ticks };
 }
@@ -55,13 +59,20 @@ function Badge({ cx, cy, boat, r = 7 }) {
 }
 
 function Line({ points, boat, selected, x, y }) {
-  const d = points.map((p, i) => `${x(i, points.length)},${y(p.value)}`).join(" ");
+  const d = points
+    .map((p, i) => `${x(i, points.length)},${y(p.value)}`)
+    .join(" ");
   const w = selected ? 3 : 1.4;
   return (
     <g className={`trc-line trc-line-${boat}`}>
       {/* 1号艇の白・2号艇の黒は地に溶けるので縁を付ける */}
       {(boat === 1 || boat === 2) && (
-        <polyline className="trc-halo" points={d} fill="none" strokeWidth={w + 1.4} />
+        <polyline
+          className="trc-halo"
+          points={d}
+          fill="none"
+          strokeWidth={w + 1.4}
+        />
       )}
       <polyline className="trc-stroke" points={d} fill="none" strokeWidth={w} />
     </g>
@@ -108,15 +119,30 @@ function EndLabels({ seriesByBoat, selected, x, y, metric }) {
 function SelectedAxis({ sel, selected, x }) {
   const { t } = useTranslation();
   if (sel.length === 0) return null;
-  const marks = [0, Math.floor(sel.length / 3), Math.floor((sel.length * 2) / 3)];
+  const marks = [
+    0,
+    Math.floor(sel.length / 3),
+    Math.floor((sel.length * 2) / 3),
+  ];
   return (
     <g>
       {marks.map((i) => (
-        <text key={i} x={x(i, sel.length)} y={H - 18} className="trc-tick" textAnchor="middle">
+        <text
+          key={i}
+          x={x(i, sel.length)}
+          y={H - 18}
+          className="trc-tick"
+          textAnchor="middle"
+        >
           {slash(sel[i].date)}
         </text>
       ))}
-      <text x={W - PAD.r} y={H - 18} className="trc-tick trc-latest" textAnchor="middle">
+      <text
+        x={W - PAD.r}
+        y={H - 18}
+        className="trc-tick trc-latest"
+        textAnchor="middle"
+      >
         {t("basicInfo.trend.latest")}
       </text>
       <Badge cx={PAD.l + 6} cy={H - 6} boat={selected} r={6} />
@@ -127,7 +153,13 @@ function SelectedAxis({ sel, selected, x }) {
         const gx = (x(i - 1, sel.length) + x(i, sel.length)) / 2;
         return (
           <g key={i}>
-            <line x1={gx} x2={gx} y1={PAD.t} y2={H - PAD.b} className="trc-gap" />
+            <line
+              x1={gx}
+              x2={gx}
+              y1={PAD.t}
+              y2={H - PAD.b}
+              className="trc-gap"
+            />
             <Badge cx={gx - 40} cy={PAD.t - 8} boat={selected} r={6} />
             <text x={gx - 31} y={PAD.t - 4} className="trc-axisnote">
               {t("basicInfo.trend.gap", { days: sel[i].gapDays })}
@@ -150,17 +182,36 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
       className="trc-svg"
       viewBox={`0 0 ${W} ${H}`}
       role="img"
-      aria-label={t("basicInfo.trend.title", { metric: t(`basicInfo.metrics.${metric}`) })}
+      aria-label={t("basicInfo.trend.title", {
+        metric: t(`basicInfo.metrics.${metric}`),
+      })}
     >
       {ticks.map((g) => (
         <g key={g}>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(g)} y2={y(g)} className="trc-grid" />
-          <text x={PAD.l - 4} y={y(g) + 4} className="trc-tick" textAnchor="end">
+          <line
+            x1={PAD.l}
+            x2={W - PAD.r}
+            y1={y(g)}
+            y2={y(g)}
+            className="trc-grid"
+          />
+          <text
+            x={PAD.l - 4}
+            y={y(g) + 4}
+            className="trc-tick"
+            textAnchor="end"
+          >
             {metric === "avgSt" ? g.toFixed(2) : Math.round(g)}
           </text>
         </g>
       ))}
-      <text x={PAD.l - 4} y={PAD.t - 6} className="trc-tick" textAnchor="end">
+      {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
+      <text
+        x={metric === "avgSt" ? 2 : PAD.l - 4}
+        y={PAD.t - 6}
+        className="trc-tick"
+        textAnchor={metric === "avgSt" ? "start" : "end"}
+      >
         {metric === "avgSt" ? t("basicInfo.trend.unitSec") : "%"}
       </text>
       <SelectedAxis sel={sel} selected={selected} x={x} />
@@ -174,7 +225,13 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
           y={y}
         />
       ))}
-      <EndLabels seriesByBoat={seriesByBoat} selected={selected} x={x} y={y} metric={metric} />
+      <EndLabels
+        seriesByBoat={seriesByBoat}
+        selected={selected}
+        x={x}
+        y={y}
+        metric={metric}
+      />
     </svg>
   );
 }

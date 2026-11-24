@@ -11,32 +11,61 @@ import { filterRecords } from "../../../pure/basicInfoStats.js";
 import { TREND_METRICS, trendSeries } from "../../../pure/racerTrendSeries.js";
 import "./TrendChart.css";
 
-/** 「今の値｜推移」の切り替え。題の行の右に置く */
-export function ViewToggle({ view, setView }) {
+/** 題（今の値／推移）と「今の値｜推移」の切り替えの行。指標の札のすぐ下に置く */
+export function ViewHead({ view, setView, metric }) {
   const { t } = useTranslation();
+  const metricName = t(`basicInfo.metrics.${metric}`);
   return (
-    <span className="trc-tabs" role="group" aria-label={t("basicInfo.trend.viewLabel")}>
-      {["now", "trend"].map((v) => (
-        <button
-          key={v}
-          type="button"
-          className="trc-tab"
-          aria-pressed={view === v}
-          onClick={() => setView(v)}
-        >
-          {t(`basicInfo.trend.view.${v}`)}
-        </button>
-      ))}
-    </span>
+    <div className="trc-head">
+      <p className="trc-title">
+        {t(
+          view === "trend"
+            ? "basicInfo.trend.title"
+            : "basicInfo.trend.nowTitle",
+          {
+            metric: metricName,
+          },
+        )}
+      </p>
+      <span
+        className="trc-tabs"
+        role="group"
+        aria-label={t("basicInfo.trend.viewLabel")}
+      >
+        {["now", "trend"].map((v) => (
+          <button
+            key={v}
+            type="button"
+            className="trc-tab"
+            aria-pressed={view === v}
+            onClick={() => setView(v)}
+          >
+            {t(`basicInfo.trend.view.${v}`)}
+          </button>
+        ))}
+      </span>
+    </div>
   );
 }
 
-function seriesOf({ sortedPlayers, recordsOf, metric, scope, grade, venueCode }) {
+function seriesOf({
+  sortedPlayers,
+  recordsOf,
+  metric,
+  scope,
+  grade,
+  venueCode,
+}) {
   const out = new Map();
   for (const p of sortedPlayers) {
     const records = recordsOf(p.racerId);
     if (!Array.isArray(records)) continue;
-    const scoped = filterRecords(records, { venueCode, scope, grade, period: "current" });
+    const scoped = filterRecords(records, {
+      venueCode,
+      scope,
+      grade,
+      period: "current",
+    });
     const s = trendSeries(scoped, metric);
     if (s.length > 0) out.set(p.number, s);
   }
@@ -44,8 +73,6 @@ function seriesOf({ sortedPlayers, recordsOf, metric, scope, grade, venueCode })
 }
 
 export default function BasicInfoTrend({
-  view,
-  setView,
   metric,
   scope,
   grade,
@@ -58,25 +85,34 @@ export default function BasicInfoTrend({
   const { t } = useTranslation();
   const metricName = t(`basicInfo.metrics.${metric}`);
   const supported = TREND_METRICS.includes(metric);
-  const loading = sortedPlayers.some((p) => p.racerId && recordsOf(p.racerId) === undefined);
-  const series = supported && !loading
-    ? seriesOf({ sortedPlayers, recordsOf, metric, scope, grade, venueCode })
-    : new Map();
-  const selected = series.has(selectedBoat) ? selectedBoat : [...series.keys()][0];
+  const loading = sortedPlayers.some(
+    (p) => p.racerId && recordsOf(p.racerId) === undefined,
+  );
+  const series =
+    supported && !loading
+      ? seriesOf({ sortedPlayers, recordsOf, metric, scope, grade, venueCode })
+      : new Map();
+  const selected = series.has(selectedBoat)
+    ? selectedBoat
+    : [...series.keys()][0];
   return (
     <div className="trc-wrap">
-      <div className="trc-head">
-        <p className="trc-title">{t("basicInfo.trend.title", { metric: metricName })}</p>
-        <ViewToggle view={view} setView={setView} />
-      </div>
-      {!supported && <p className="trc-note">{t("basicInfo.trend.winRatePending")}</p>}
-      {supported && loading && <p className="trc-note">{t("basicInfo.loading")}</p>}
+      {!supported && (
+        <p className="trc-note">{t("basicInfo.trend.winRatePending")}</p>
+      )}
+      {supported && loading && (
+        <p className="trc-note">{t("basicInfo.loading")}</p>
+      )}
       {supported && !loading && series.size === 0 && (
         <p className="trc-note">{t("basicInfo.trend.notEnough")}</p>
       )}
       {series.size > 0 && (
         <>
-          <TrendChart seriesByBoat={series} metric={metric} selected={selected} />
+          <TrendChart
+            seriesByBoat={series}
+            metric={metric}
+            selected={selected}
+          />
           <div className="trc-boats">
             {sortedPlayers.map((p) => (
               <button
@@ -93,7 +129,9 @@ export default function BasicInfoTrend({
             ))}
             <span className="trc-hint">{t("basicInfo.trend.tapHint")}</span>
           </div>
-          <p className="trc-note">{t("basicInfo.trend.note", { metric: metricName })}</p>
+          <p className="trc-note">
+            {t("basicInfo.trend.note", { metric: metricName })}
+          </p>
         </>
       )}
     </div>

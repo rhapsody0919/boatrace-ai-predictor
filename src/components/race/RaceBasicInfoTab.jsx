@@ -29,7 +29,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { parseRaceId } from "../../utils/raceId";
-import { recordsBeforeRace, currentTermStart } from "../../pure/basicInfoStats.js";
+import {
+  recordsBeforeRace,
+  currentTermStart,
+} from "../../pure/basicInfoStats.js";
 import {
   useOfficialRates,
   useOfficialAvgSt,
@@ -45,7 +48,7 @@ import {
 import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
-import BasicInfoTrend, { ViewToggle } from "./basic-info/BasicInfoTrend";
+import BasicInfoTrend, { ViewHead } from "./basic-info/BasicInfoTrend";
 import "./RaceBasicInfoTab.css";
 
 // 指標・範囲・グレード・期間の選択state。グレードと期間は互いに連動する
@@ -110,8 +113,12 @@ function useBasicInfoSources({
     racerIdsKey,
     raceDate,
   );
-  const { accidentRecords, accidentByRacer, accidentRangeLabel, retryAccident } =
-    useAccidentData(racerIdsKey, raceDate, sortedPlayers);
+  const {
+    accidentRecords,
+    accidentByRacer,
+    accidentRangeLabel,
+    retryAccident,
+  } = useAccidentData(racerIdsKey, raceDate, sortedPlayers);
   const scopedStatsByRacer = useScopedStats({
     sortedPlayers,
     raceId,
@@ -244,9 +251,19 @@ function BasicInfoLegends({ officialRates, accidentByRacer }) {
   );
 }
 
-function BasicInfoFilterBar({ filters, needsOwnAggregation, src }) {
+function BasicInfoFilterBar({
+  filters,
+  needsOwnAggregation,
+  src,
+  view,
+  setView,
+}) {
   return (
     <FilterControls
+      viewSlot={
+        <ViewHead view={view} setView={setView} metric={filters.metric} />
+      }
+      hidePeriod={view === "trend"}
       metric={filters.metric}
       setMetric={filters.setMetric}
       scope={filters.scope}
@@ -334,15 +351,15 @@ function RaceBasicInfoTab({
         filters={filters}
         needsOwnAggregation={needsOwnAggregation}
         src={src}
+        view={view}
+        setView={setView}
       />
 
       {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
           平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
           読ませないよう書き添える（#1064 ファン評価2周目） */}
-      {view === "trend" ? (
+      {view === "trend" && (
         <BasicInfoTrend
-          view={view}
-          setView={setView}
           metric={metric}
           scope={scope}
           grade={grade}
@@ -352,15 +369,6 @@ function RaceBasicInfoTab({
           selectedBoat={expandedBoat}
           onSelectBoat={onFocusBoat}
         />
-      ) : (
-        <div className="trc-head">
-          <p className="trc-title">
-            {t("basicInfo.trend.nowTitle", {
-              metric: t(`basicInfo.metrics.${metric}`),
-            })}
-          </p>
-          <ViewToggle view={view} setView={setView} />
-        </div>
       )}
       {view === "now" && scale.isRelativeScaleMetric && (
         <p className="rbit-metric-caveat rbit-relative-note">

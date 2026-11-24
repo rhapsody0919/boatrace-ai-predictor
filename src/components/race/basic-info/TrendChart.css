@@ -122,12 +122,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-1);
+  gap: 2px;
   margin: var(--spacing-2) 0 0;
 }
 
+/* 選ぶ札は見た目を大きく（径28px）、押せる範囲は40px 四方（visual-designer 11/24） */
+.trc-boat .rol-boat-badge {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
 .trc-boat {
-  min-width: 44px;
+  min-width: 40px;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -149,6 +156,24 @@
   color: var(--text-secondary);
 }
 
+.trc-hint {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .trc-note {
   margin: var(--spacing-2) 0 0;
+  padding: var(--spacing-2);
+  border-left: 3px solid var(--brand-accent-primary);
+  background: var(--surface-page);
+}
+
+/* ダークでは2号艇の黒い札が紺の地に溶けるので明るい縁を付ける */
+[data-theme="dark"] .trc-boat:nth-child(2) .rol-boat-badge {
+  box-shadow: 0 0 0 1px var(--color-gray-400);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .trc-boat:nth-child(2) .rol-boat-badge {
+    box-shadow: 0 0 0 1px var(--color-gray-400);
+  }
 }

@@ -2488,7 +2488,7 @@
       "latest": "Latest",
       "gap": "{{days}}-day break",
       "axisNote": "race dates (x-axis is each boat's race order; right end is latest)",
-      "unitSec": "sec",
+      "unitSec": "sec (higher = faster)",
       "note": "💡 Each point is the {{metric}} over the 30 races up to that point. Source: our race records (last 2 years). For Avg. ST, lower is drawn higher",
       "tapHint": "Tap to highlight",
       "selectBoat": "Highlight boat {{boat}}",
