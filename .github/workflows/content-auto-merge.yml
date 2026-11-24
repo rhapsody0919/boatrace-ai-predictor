@@ -3,8 +3,9 @@ name: Content Auto Merge
 # 記事の PR（claude/content-*）を、段階0 F の条件（4つの審査が pass・P0 は0・content-qa と言葉の P1 は0・判断の要る語が無い・
 # 置き場が記事だけ・必須の check が緑・pr-lane が light）を満たしたら人の手なしでマージする（オーナー 2026-11-23 yes）。
 # 判定は scripts/lib/contentAutoMerge.js（master の版）。PR のコードは実行しない。
-# マージは ryujin-bot の App の名義（GITHUB_TOKEN でマージすると master への push の workflow が起きないため）。
-# ryujin-bot は ruleset の bypass にいるので、必須の check の緑は判定の中で自分で確かめる。
+# マージは作成の App ryujin-maker の名義（GITHUB_TOKEN でマージすると master への push の workflow が起きないため）。
+# ryujin-maker は ruleset の bypass にいないので、必須の check が緑でなければ GitHub もマージを断る（判定の中でも確かめる）。
+# 11/23 まで ryujin-bot の名義だったが、bot の導入に pull-requests の書き込みが無く毎回落ちた。bypass にいる名義で記事を入れない（owner-session「自動マージ」）。
 on:
   schedule:
     # 予備。新設の日から GitHub の schedule が来なかった（11/23、key-canary の BOA-917 と同じ型）
@@ -30,11 +31,17 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  merge:
+  # 判定: 鍵を持たない job（npm ci の依存の postinstall から鍵を読めないように、マージの鍵の job と分ける。11/24 system-architect の審査）
+  plan:
     if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: ryujin-bot
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+    outputs:
+      merges: ${{ steps.plan.outputs.merges }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,23 +50,51 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+      # 契約の関門（check-content-pr.js）が依存のパッケージを使うので npm ci をする
+      - run: npm ci
+      - name: Judge open article PRs
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          node scripts/content/auto-merge-content-prs.js --plan | tee plan.log
+          merges=$(grep -E '^MERGE [0-9]+ [0-9a-f]{40}$' plan.log | cut -d' ' -f2- | paste -sd, - || true)
+          echo "merges=$merges" >> "$GITHUB_OUTPUT"
+
+  # マージ: 鍵を持つ job。checkout も npm もしない（判定の結果の番号と SHA で gh を呼ぶだけ）
+  merge:
+    needs: plan
+    if: needs.plan.outputs.merges != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # 鍵（RYUJIN_MAKER_PRIVATE_KEY）はこの環境の secret。環境は master の枝だけに限る（オーナーが置く）
+    environment: ryujin-maker
+    steps:
       - name: App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
-          private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
+          # App ID は秘密ではない（scripts/maintenance/ryujin-maker-token.js の DEFAULT_APP_ID と同じ）
+          app-id: "5377197"
+          private-key: ${{ secrets.RYUJIN_MAKER_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-      # 契約の関門（check-content-pr.js）が依存のパッケージを使うので npm ci をする
-      - run: npm ci
       - name: Merge passing article PRs
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          MERGES: ${{ needs.plan.outputs.merges }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            node scripts/content/auto-merge-content-prs.js --dry-run
-          else
-            node scripts/content/auto-merge-content-prs.js
-          fi
+          IFS=, read -ra items <<< "$MERGES"
+          for item in "${items[@]}"; do
+            read -r num sha <<< "$item"
+            if ! [[ "$num" =~ ^[0-9]+$ && "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::判定の結果の形が違う: $item"; exit 1
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "#$num: マージしてよい（試しなので入れない）"; continue
+            fi
+            gh pr merge "$num" --squash --match-head-commit "$sha" --repo "$GITHUB_REPOSITORY"
+            echo "#$num: マージした（${sha:0:9}）"
+          done

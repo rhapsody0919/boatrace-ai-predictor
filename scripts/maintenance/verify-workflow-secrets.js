@@ -4,10 +4,10 @@
  *
  * repo の secret（Environment の外）は、同じリポジトリのどのブランチの workflow からも読める。workflow を書ける身元
  * （作成の App は Workflows: write を持つ）なら、ブランチを push するだけで審査を通らずに本番へ書ける。
- * そこで、下の鍵を参照する job は必ず master だけの Environment（prod-jobs・ryujin-bot・production-db・production-db-auto）を宣言する。
+ * そこで、下の鍵を参照する job は必ず master だけの Environment（prod-jobs・ryujin-bot・ryujin-maker・production-db・production-db-auto）を宣言する。
  *
  * 確認する観点:
- *   1. 下の鍵を参照する job は environment に prod-jobs・ryujin-bot・production-db・production-db-auto のどれかを持つ
+ *   1. 下の鍵を参照する job は environment に prod-jobs・ryujin-bot・ryujin-maker・production-db・production-db-auto のどれかを持つ
  *   2. pull_request で動く workflow は、anon（VITE_SUPABASE_*）以外の secret を参照しない
  *   3. 外した AI 審査（review.yml）の鍵（REVIEWER_APP_PRIVATE_KEY・OPENAI_API_KEY・ANTHROPIC_API_KEY・CLAUDE_RO_DB_URL）と
  *      Environment（pr-review・db-readonly）をどの workflow も使わない
@@ -35,10 +35,13 @@ export const PROTECTED_SECRETS = [
   "SEARCH_CONSOLE_SITE_URL",
   "SUPABASE_DB_URL",
   "RYUJIN_BOT_PRIVATE_KEY",
+  // 作成の App の鍵（content-auto-merge.yml が記事の PR をマージする）。Workflows: write を持つので枝から読めてはいけない
+  "RYUJIN_MAKER_PRIVATE_KEY",
 ];
 const MASTER_ONLY_ENVIRONMENTS = new Set([
   "prod-jobs",
   "ryujin-bot",
+  "ryujin-maker",
   "production-db",
   // 軽い SQL の自動の適用（db-apply.yml の apply-auto、ADR-0097 段取り D）。承認者なし・master だけ
   "production-db-auto",
@@ -59,6 +62,9 @@ export const RETIRED_SECRETS = [
   "CLAUDE_RO_DB_URL",
 ];
 export const RETIRED_ENVIRONMENTS = ["pr-review", "db-readonly"];
+// 作成の App の鍵（Workflows: write）を使ってよい workflow。鍵の job は checkout も npm もしない
+// （依存の postinstall から job の secret を読めるため。11/24 system-architect の審査）
+export const MAKER_KEY_WORKFLOWS = ["content-auto-merge.yml"];
 
 /** @returns {{ id: string, text: string }[]} */
 export function splitJobs(yamlText) {
@@ -138,6 +144,12 @@ export function checkWorkflow(file, yamlText) {
         `${key}: ${protectedUsed.join(", ")} を参照するが environment が master だけのもの（${[...MASTER_ONLY_ENVIRONMENTS].join("・")}）でない（${env ?? "なし"}）`,
       );
     }
+    if (used.includes("RYUJIN_MAKER_PRIVATE_KEY") || jobEnv === "ryujin-maker") {
+      if (!MAKER_KEY_WORKFLOWS.includes(path.basename(file)))
+        problems.push(`${key}: 作成の App の鍵（ryujin-maker）は ${MAKER_KEY_WORKFLOWS.join("・")} だけが使う`);
+      if (/actions\/checkout@|\bnpm\b|\bnpx\b|\byarn\b|\bpnpm\b/.test(job.text))
+        problems.push(`${key}: 作成の App の鍵の job で checkout・npm を使う（依存のコードから鍵を読める）`);
+    }
     if (onPullRequest) {
       const leaked = used.filter(
         (s) => !PUBLIC_SECRETS.has(s) && s !== "GITHUB_TOKEN",
@@ -149,6 +161,18 @@ export function checkWorkflow(file, yamlText) {
     }
   }
   return problems;
+}
+
+// 作成の App の鍵の検査そのものの検査（決めた workflow の素の job は通し、ほかの workflow・checkout・npm は落とす）
+function makerKeySelfTest() {
+  const maker = (steps) =>
+    `on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  m:\n    environment: ryujin-maker\n    runs-on: ubuntu-latest\n    steps:\n${steps}      - uses: actions/create-github-app-token@v3\n        with:\n          private-key: \${{ secrets.RYUJIN_MAKER_PRIVATE_KEY }}\n`;
+  return (
+    checkWorkflow("content-auto-merge.yml", maker("")).length === 0 &&
+    checkWorkflow("other.yml", maker("")).length === 1 &&
+    checkWorkflow("content-auto-merge.yml", maker("      - run: npm ci\n")).length === 1 &&
+    checkWorkflow("content-auto-merge.yml", maker("      - uses: actions/checkout@v4\n")).length === 1
+  );
 }
 
 function main() {
@@ -164,6 +188,7 @@ function main() {
   // 検査そのものの検査
   const good =
     "on:\n  schedule:\n    - cron: '0 0 * * *'\njobs:\n  a:\n    environment: prod-jobs\n    runs-on: ubuntu-latest\n    steps:\n      - run: x\n        env:\n          K: ${{ secrets.SUPABASE_SERVICE_KEY }}\n";
+  check("作成の App の鍵は決めた workflow の、checkout も npm もしない job でだけ使う", makerKeySelfTest());
   check(
     "environment つきの job は通る",
     checkWorkflow("x.yml", good).length === 0,
