@@ -2323,7 +2323,7 @@
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:80`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:399`
 - table `growth_gsc_daily`: `scripts/lib/growth/gscDaily.js:168`, `scripts/lib/growth/gscDaily.js:181`, `scripts/lib/growth/gscDaily.js:187`
 - table `growth_gsc_page_daily`: `scripts/lib/growth/gscPageDaily.js:73`, `scripts/lib/growth/gscPageDaily.js:85`, `scripts/lib/growth/gscPageDaily.js:92`
-- table `growth_url_inspection`: `scripts/lib/growth/urlInspection.js:95`, `scripts/lib/growth/urlInspection.js:104`, `scripts/lib/growth/urlInspection.js:114`
+- table `growth_url_inspection`: `scripts/lib/growth/urlInspection.js:98`, `scripts/lib/growth/urlInspection.js:109`, `scripts/lib/growth/urlInspection.js:119`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`, `scripts/maintenance/verifyData/sns-send-runner-scenes-4.js:174`
 

@@ -30177,9 +30177,9 @@
       "kind": "table",
       "name": "growth_url_inspection",
       "refs": [
-        "scripts/lib/growth/urlInspection.js:95",
-        "scripts/lib/growth/urlInspection.js:104",
-        "scripts/lib/growth/urlInspection.js:114"
+        "scripts/lib/growth/urlInspection.js:98",
+        "scripts/lib/growth/urlInspection.js:109",
+        "scripts/lib/growth/urlInspection.js:119"
       ]
     },
     {
