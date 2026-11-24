@@ -4,7 +4,7 @@ import { TheoryButton } from "./SheetButtons";
 import { Dt, Val } from "./BoatDeepDiveParts";
 
 /** コース別の勝ちの行 */
-export function CourseRow({ course, cw, runs }) {
+export function CourseRow({ course, courseAssumed = false, cw, runs }) {
   return (
     <>
       <dt>{C.kvCourse(course)}</dt>
@@ -17,6 +17,9 @@ export function CourseRow({ course, cw, runs }) {
           C.loading
         )}{" "}
         <span className="ta-scopechip">{C.courseNote}</span>
+        {courseAssumed && (
+          <span className="ta-scopechip">{C.courseAssumedChip}</span>
+        )}
       </dd>
     </>
   );

@@ -26,6 +26,7 @@ export default function DeepKv({
   technique,
   pretest,
   course,
+  courseAssumed,
   onMetric,
   runsOpen,
   setRunsOpen,
@@ -50,7 +51,12 @@ export default function DeepKv({
           <dd className="ta-num">{(recent * 100).toFixed(1)}%</dd>
         </>
       )}
-      <CourseRow course={course} cw={cw} runs={runs} />
+      <CourseRow
+        course={course}
+        courseAssumed={courseAssumed}
+        cw={cw}
+        runs={runs}
+      />
       <StRow
         racer={racer}
         today={today}
