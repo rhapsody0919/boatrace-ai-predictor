@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { moveOnlyPaths } from "./prLaneMoveOnly.js";
 import { loadMoveOnly } from "./prLaneClassify.js";
-import { parsePatch } from "./pr-lane.js";
+import { parsePatch } from "./prLaneLines.js";
 import { measurePrSize } from "./prSize.js";
 
 const CHECK_CONTENT_PR = fileURLToPath(
@@ -19,7 +19,7 @@ const CHECK_CONTENT_PR = fileURLToPath(
 /**
  * git の出力から measurePrSize の入力を作る（git は呼び手が渡す: 引数の配列 → 標準出力の文字列）。
  * 差分は merge-base から head まで、改名を見る（-M。verify-pr-shape.js と同じ）。
- * patch は pr-lane.js の parsePatch（改名の元のパスにも空の行が入るが、changes に無いので数えない）
+ * patch は prLaneLines.js の parsePatch（改名の元のパスにも空の行が入るが、changes に無いので数えない）
  */
 export function collectSizeInput(git, mergeBase, head) {
   const tokens = git(["diff", "--name-status", "-M", "-z", mergeBase, head])

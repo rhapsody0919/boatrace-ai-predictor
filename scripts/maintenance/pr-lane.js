@@ -3,7 +3,7 @@
  * 設計: docs/proposal/dev-process-redesign-2026-11-05.md 1.2（#2277）。H の一覧は config/pr-path-rules.json。
  *
  * 使い方: node scripts/maintenance/pr-lane.js --base <sha> --head <sha> [--repo <git のディレクトリ>]
- *   標準出力: { "lane": "light"|"heavy", "hits": [{ "rule": "H1"〜"H9", "file", "reason" }],
+ *   標準出力: { "lane": "light"|"heavy", "hits": [{ "rule": "H1"〜"H10", "file", "reason" }],
  *     "human": [{ "kind", "file", "reason" }], "needs": [{ "kind", "file", "rule" }] }
  *   human・needs は出すだけで lane の判定には使わない（light なら空。heavy なら hits の全部のファイルがどちらかに入る。
  *   入らない物は human の unclassified）。当て方は config/pr-path-rules.json の human と各規則の needs
@@ -17,7 +17,8 @@
  *
  * hq との約束（段L の影、2026-11-05）: Node の組み込みと git だけを使う（npm の部品・DB・ネットワークなし。hq の写しは
  * この script・その部品 prLaneClassify.js・prLaneHuman.js・prLaneLines.js・config/pr-path-rules.json・scripts/lib/relativeImportGraph.js・
- * 移すだけの判定 prLaneMoveOnly*.js を同じ配置で持つ）。100秒（BUDGET_MS）で
+ * 移すだけの判定 prLaneMoveOnly*.js・大きさの数え prSize.js・prSizeGit.js を同じ配置で持つ）。大きさ（H10）が線を超えたときだけ
+ * 記事の関門 scripts/content/check-content-pr.js（npm の部品を読む）を子の過程で起動する。起動できなければ大きさを数えられないとして H10 を当てる（安全側）。100秒（BUDGET_MS）で
  * 打ち切り、0 以外で終える（hq の上限は 120秒）。lane が light なら hits は必ず空。
  */
 import { execFileSync } from "node:child_process";
@@ -26,6 +27,8 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { CODE } from "../lib/relativeImportGraph.js";
 import { moveOnlyPaths } from "./prLaneMoveOnly.js";
+import { parsePatch } from "./prLaneLines.js";
+import { measureCommits } from "./prSizeGit.js";
 import { anyMatch, weakenRowPatterns } from "./prLaneHuman.js";
 import {
   SELF_ROOT,
@@ -124,71 +127,6 @@ export function gitChanges(repo, from, to) {
 }
 
 /**
- * ---・+++ の行のパス（"a/"・"b/" を外す）。空白を含むパスは末尾にタブが付き、
- * 引用符・バックスラッシュ・制御文字を含むパスは C の形で引用される（core.quotepath=false でも）
- */
-export function headerPath(rest) {
-  const raw = rest.replace(/\t$/, "");
-  if (raw === "/dev/null") return null;
-  const unquoted = raw.startsWith('"') ? unquoteC(raw.slice(1, -1)) : raw;
-  return unquoted.replace(/^[ab]\//, "");
-}
-
-const C_ESCAPES = { n: 10, t: 9, r: 13, a: 7, b: 8, f: 12, v: 11 };
-
-/** git の C の形の引用を外す（\ooo はバイト、\n 等は制御文字、\" \\ はその文字） */
-function unquoteC(text) {
-  const body = Array.from(text); // コードポイントごと（サロゲートを割らない）
-  const bytes = [];
-  for (let i = 0; i < body.length; i += 1) {
-    const ch = body[i];
-    if (ch !== "\\") {
-      bytes.push(...Buffer.from(ch, "utf8"));
-      continue;
-    }
-    const octal = body.slice(i + 1, i + 4).join("");
-    if (/^[0-7]{3}$/.test(octal)) {
-      bytes.push(Number.parseInt(octal, 8));
-      i += 3;
-    } else {
-      const e = body[i + 1];
-      bytes.push(C_ESCAPES[e] ?? e.charCodeAt(0));
-      i += 1;
-    }
-  }
-  return Buffer.from(bytes).toString("utf8");
-}
-
-/** unified diff（-U0）を、ファイルごとの足した行・消した行に分ける */
-export function parsePatch(text) {
-  const patches = new Map();
-  let cur = null;
-  let inHunk = false;
-  const take = (p) => {
-    if (p === null) return;
-    if (!patches.has(p)) patches.set(p, { added: [], removed: [] });
-    cur = patches.get(p);
-  };
-  for (const line of text.split("\n")) {
-    if (line.startsWith("diff --git ")) {
-      cur = null;
-      inHunk = false;
-    } else if (!inHunk && line.startsWith("--- ")) {
-      take(headerPath(line.slice(4)));
-    } else if (!inHunk && line.startsWith("+++ ")) {
-      take(headerPath(line.slice(4)));
-    } else if (line.startsWith("@@")) {
-      inHunk = true;
-    } else if (inHunk && cur && line.startsWith("+")) {
-      cur.added.push(line.slice(1));
-    } else if (inHunk && cur && line.startsWith("-")) {
-      cur.removed.push(line.slice(1));
-    }
-  }
-  return patches;
-}
-
-/**
  * paths の足した行・消した行。バイナリと行の変わらない変更（空のファイルの追加・mode だけ）は
  * patch に ---・+++ が出ないので、numstat（-z）で見て空の行として入れる。それ以外で読めなかったファイルは
  * Map に入らず、classify が安全側で当てる
@@ -223,6 +161,19 @@ function readPatches(repo, from, to, paths) {
   for (const [path, patch] of parsePatch(diff(["-U0"])))
     patches.set(path, patch);
   return patches;
+}
+
+/**
+ * 大きさ（H10）。時間の上限は残りを渡す。数えられなければ { error }（classify が安全側で当てる）。
+ * 時間の上限を超えたことは判定そのものを止める（他の規則と同じく 0 以外で終える）
+ */
+function measureSize(repo, mb, headSha) {
+  try {
+    return measureCommits(repo, mb, headSha, { timeout: remaining });
+  } catch (error) {
+    remaining(); // 上限を超えていたら投げる
+    return { error: String(error?.message ?? error).split("\n")[0] };
+  }
 }
 
 /** git から差分と木を読んで判定する */
@@ -281,6 +232,7 @@ function classifyCommitsInner(repo, base, head) {
     }
   };
   const moved = moveOnlyPaths(loadMoveOnly(), changes, readText);
+  const size = rules.some((r) => r.size) ? measureSize(repo, mb, headSha) : null;
   const result = classify({
     changes,
     patches,
@@ -289,6 +241,7 @@ function classifyCommitsInner(repo, base, head) {
     moved,
     human,
     readBlob: readText,
+    size,
   });
   remaining(); // 辿り終えた時点で上限を超えていたら判定に使わない
   // light なのに hits がある出力は出さない（hq は矛盾として heavy に扱う。classify は hits の有無で lane を決めるので起きない）
@@ -340,7 +293,12 @@ if (
 )
   main();
 
-export { withoutMovedLines, globalSelectors } from "./prLaneLines.js";
+export {
+  withoutMovedLines,
+  globalSelectors,
+  parsePatch,
+  headerPath,
+} from "./prLaneLines.js";
 
 export { weakenRowPatterns } from "./prLaneHuman.js";
 

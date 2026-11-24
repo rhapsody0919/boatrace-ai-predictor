@@ -1096,6 +1096,11 @@
       "guards": "src/services/poirotService.js が races の行を makeRace に通す（DM02、BOA-1676）"
     },
     {
+      "script": "verify-pr-lane-size.js",
+      "tier": "ci",
+      "guards": "pr-lane の大きさの規則 H10（config/pr-path-rules.json の size、BOA-1718、オーナー 2026-11-24 の (ii)）: prSizeGit.js の measureCommits が数えて線（300行・5ファイル）を超えたら数えたファイルごとに H10 で heavy（human に size）、線の中は light、数えられなければ差分の最初のファイルに H10 で heavy（安全側）、size を渡さなければ当てない"
+    },
+    {
       "script": "verify-pr-lane.js",
       "tier": "ci",
       "guards": "軽い道／重い道の判定（pr-lane.js・config/pr-path-rules.json、#2277 段1。影で、どこからも呼ばない）: 設計 1.5 の振り分けの代表が期待どおりの lane と規則になる。src/utils の変更が SNS の入口（H2）と api（H6）に import でたどれる（#2236→#2251、消したファイルも元の木で辿る）、scripts/** は H1（新しい verify-*.js と台帳の行の追加だけは除く）、src/locales/ja は H8、既存の src の .css の変更・削除と新しい .css の全体のセレクタは H7（#2144・#2157 の形。新しい部品の CSS は軽い）、既存の e2e・verify・台帳の行の変更と判定の script・規則は H5、足した行に新しく入った語は H9。CLI は一時の git の木で merge-base からの差分を判定し、判定できなければ 0 以外で heavy。外部接続なし"

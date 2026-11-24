@@ -1,5 +1,5 @@
 /**
- * pr-lane.js の部品: 差分の行の中身を見る純関数（語の数え・字のまま移した行の除き・全体に効くセレクタ）。
+ * pr-lane.js の部品: 差分の行の中身を見る純関数（語の数え・字のまま移した行の除き・全体に効くセレクタ・unified diff の読み取り）。
  * 依存なし。hq の写しの一覧に入る（pr-lane.js の頭の注釈）。
  */
 
@@ -143,3 +143,70 @@ export function globalSelectors(lines) {
 }
 
 export { count };
+
+// ---- unified diff の読み取り（pr-lane.js と prSizeGit.js が使う。もとは pr-lane.js にあった） ----
+
+/**
+ * ---・+++ の行のパス（"a/"・"b/" を外す）。空白を含むパスは末尾にタブが付き、
+ * 引用符・バックスラッシュ・制御文字を含むパスは C の形で引用される（core.quotepath=false でも）
+ */
+export function headerPath(rest) {
+  const raw = rest.replace(/\t$/, "");
+  if (raw === "/dev/null") return null;
+  const unquoted = raw.startsWith('"') ? unquoteC(raw.slice(1, -1)) : raw;
+  return unquoted.replace(/^[ab]\//, "");
+}
+
+const C_ESCAPES = { n: 10, t: 9, r: 13, a: 7, b: 8, f: 12, v: 11 };
+
+/** git の C の形の引用を外す（\ooo はバイト、\n 等は制御文字、\" \\ はその文字） */
+function unquoteC(text) {
+  const body = Array.from(text); // コードポイントごと（サロゲートを割らない）
+  const bytes = [];
+  for (let i = 0; i < body.length; i += 1) {
+    const ch = body[i];
+    if (ch !== "\\") {
+      bytes.push(...Buffer.from(ch, "utf8"));
+      continue;
+    }
+    const octal = body.slice(i + 1, i + 4).join("");
+    if (/^[0-7]{3}$/.test(octal)) {
+      bytes.push(Number.parseInt(octal, 8));
+      i += 3;
+    } else {
+      const e = body[i + 1];
+      bytes.push(C_ESCAPES[e] ?? e.charCodeAt(0));
+      i += 1;
+    }
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
+/** unified diff（-U0）を、ファイルごとの足した行・消した行に分ける */
+export function parsePatch(text) {
+  const patches = new Map();
+  let cur = null;
+  let inHunk = false;
+  const take = (p) => {
+    if (p === null) return;
+    if (!patches.has(p)) patches.set(p, { added: [], removed: [] });
+    cur = patches.get(p);
+  };
+  for (const line of text.split("\n")) {
+    if (line.startsWith("diff --git ")) {
+      cur = null;
+      inHunk = false;
+    } else if (!inHunk && line.startsWith("--- ")) {
+      take(headerPath(line.slice(4)));
+    } else if (!inHunk && line.startsWith("+++ ")) {
+      take(headerPath(line.slice(4)));
+    } else if (line.startsWith("@@")) {
+      inHunk = true;
+    } else if (inHunk && cur && line.startsWith("+")) {
+      cur.added.push(line.slice(1));
+    } else if (inHunk && cur && line.startsWith("-")) {
+      cur.removed.push(line.slice(1));
+    }
+  }
+  return patches;
+}

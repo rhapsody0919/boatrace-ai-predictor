@@ -195,6 +195,18 @@ function ruleHits(rule, { changes, patches, trees, moved, changedSet }) {
   return found;
 }
 
+/** 大きさ（size の規則）: 線を超えたら数えたファイルに、数えられなければ差分の最初のファイルに当たる */
+function sizeHits(size, changes) {
+  if (!size) return [];
+  if (size.error)
+    return changes.length > 0
+      ? [[changes[0].path, `大きさを数えられない（安全側）: ${size.error}`]]
+      : [];
+  if (!size.over) return [];
+  const why = `PR が ${size.lines}行・${size.files}ファイル（線は 300行・5ファイル、prSize.js の数え方）`;
+  return size.counted.map((c) => [c.path, why]);
+}
+
 /**
  * 判定の本体（git に触れない）
  * @param {{
@@ -202,7 +214,9 @@ function ruleHits(rule, { changes, patches, trees, moved, changedSet }) {
  *   patches?: Map<string, { added: string[], removed: string[] }>,
  *   trees?: { files: string[], io: import("../lib/relativeImportGraph.js").GraphIo }[],
  *   rules?: object[],
+ *   size?: { over: boolean, lines: number, files: number, counted: { path: string }[] } | { error: string } | null,
  * }} input
+ * size: prSizeGit.js の measureCommits の結果（数えられなければ { error }）。null なら大きさの規則は当てない
  * @returns {{ lane: "light"|"heavy", hits: { rule: string, file: string, reason: string }[],
  *   human: { kind: string, file: string, reason: string }[], needs: { kind: string, file: string, rule: string }[] }}
  */
@@ -214,6 +228,7 @@ export function classify({
   moved = new Set(),
   human = loadHuman(),
   readBlob = () => null,
+  size = null,
 }) {
   const changedSet = new Set(changes.map((c) => c.path));
   const hits = [];
@@ -225,6 +240,9 @@ export function classify({
   for (const rule of rules) {
     const ctx = { changes, patches, trees, moved, changedSet };
     for (const [file, reason] of ruleHits(rule, ctx)) hit(rule, file, reason);
+    if (rule.size)
+      for (const [file, reason] of sizeHits(size, changes))
+        hit(rule, file, reason);
   }
   const order = (h) => Number(h.rule.slice(1));
   hits.sort((x, y) => order(x) - order(y) || x.file.localeCompare(y.file));
