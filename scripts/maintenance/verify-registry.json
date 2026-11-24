@@ -1417,6 +1417,11 @@
       "guards": "racerStats（中身は枠番、BOA-284 で枠番キー維持と決定）を画面が courseRaceCounts・courseRateOf・table.courseWinRate で読まないこと、境界の toWakuRacerStats が wakuRaceCounts に詰め替えること（BOA-302）"
     },
     {
+      "script": "verify-racer-trend-series.js",
+      "tier": "ci",
+      "guards": "選手の成績の推移の線（src/pure/racerTrendSeries.js）。窓は30走で30走未満は点なし、点は直近30走の率、平均ST は ST のある走で数える、点は最大60、30日以上の空きに印、勝率は推移を出さない"
+    },
+    {
       "script": "verify-races-derived-backfill.js",
       "tier": "ci",
       "guards": "races の導出列の埋め直し（build-races-derived-backfill-sql.js、BOA-630）が、generate-predictions.js と同じ式（丸めてから平均・母標準偏差）で計算し、6列とも NULL の行だけを更新し（既存の値を上書きしない・再実行は0件）、モデルの出力の列（volatility_* 等）に触れないこと"
