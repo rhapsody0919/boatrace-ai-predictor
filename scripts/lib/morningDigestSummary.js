@@ -168,16 +168,6 @@ export function logCompleteness(races, entries) {
   );
 }
 
-/** イン崩れ指数が1件も無い（predictions が未生成）ときの警告 */
-export function warnNoVolatility(volatilityMap) {
-  if (volatilityMap.size === 0) {
-    console.log(
-      "  ⚠️ イン崩れ指数が1件も取得できませんでした（predictions が未生成）。" +
-        "注目レースは生成せず、volatility_percentile は NULL で書きます",
-    );
-  }
-}
-
 /** 完全性チェックを満たさないときの出力と戻り値（書き込まない） */
 export function incompleteResult(date, problems) {
   console.log("\n完全性チェックを満たさないため、書き込まずに終了します:");
@@ -212,17 +202,61 @@ export function logDryRun(rows, byGradeReport) {
 }
 
 /**
+ * 注目レースの方向一致度に使う当日の値を、旧のイン崩れ指数（volatility_percentile）から
+ * イン崩れ注意度（in_caution_pct）に替えるか（BOA-822、plan §5）。digest のスクリプトはブラウザの
+ * 機能フラグを読めないので別の定数にし、公開の PR で IN_CAUTION_PUBLIC と一緒に true にする。
+ * false の間も in_caution_* の3列は書く（列が増えるだけで、注目レース・画面は旧の値のまま）。
+ */
+export const MORNING_DIGEST_IN_CAUTION = false;
+
+/** イン崩れ指数・注意度が1件も無い（predictions が未生成）ときの警告 */
+export function warnNoVolatility(volatilityMap, inCautionMap = new Map()) {
+  const signal = MORNING_DIGEST_IN_CAUTION ? inCautionMap : volatilityMap;
+  if (volatilityMap.size === 0) {
+    console.log(
+      "  ⚠️ イン崩れ指数が1件も取得できませんでした（predictions が未生成）。volatility_percentile は NULL で書きます",
+    );
+  }
+  if (inCautionMap.size === 0) {
+    console.log(
+      "  ⚠️ イン崩れ注意度が1件も取得できませんでした（predictions が未生成か、夜の表の欠け）。in_caution_* は NULL で書きます",
+    );
+  }
+  if (signal.size === 0) console.log("  ⚠️ 注目レースは生成しません");
+}
+
+function featuredSignal(row, useInCaution) {
+  return useInCaution ? row.in_caution_pct : row.volatility_percentile;
+}
+
+function featuredSignalSentence(row, useInCaution) {
+  if (useInCaution) {
+    return (
+      `イン崩れ注意度は${row.in_caution_pct}%（勝率差が同じくらいの全国の過去レース${row.in_caution_n}件で、` +
+      `1号艇が1着を逃した割合）で、`
+    );
+  }
+  return `AIが当日条件から算出したイン崩れ指数は${row.volatility_percentile}%で、`;
+}
+
+/**
  * 「今日の注目レース」。**地力(pt)のまま指標横断で比較しない**。
  * ベースレートが逃げ53%・まくり4%と桁違いなので、zスコアに標準化してから
- * イン崩れ指数との方向一致度を掛ける（plan.md §3.3、レビュー指摘C-1）。
+ * 当日の値（イン崩れ指数か注意度。どちらも 0〜100）との方向一致度を掛ける（plan.md §3.3、レビュー指摘C-1）。
+ *
+ * @param {object} sections
+ * @param {{useInCaution?: boolean}} [opts] 既定は MORNING_DIGEST_IN_CAUTION
  */
-export function pickFeatured(sections) {
+export function pickFeatured(
+  sections,
+  { useInCaution = MORNING_DIGEST_IN_CAUTION } = {},
+) {
   const candidates = [
     ...(sections.nigeAll ?? sections.nige),
     ...sections.makuri,
     // 逃がしは注目レースの候補にしない（抽出の当たりと1号艇の1着に差が無い。2026-11-04、digestMetrics.js NOT_FEATURED_METRICS）
   ]
-    .filter((r) => r.volatility_percentile !== null)
+    .filter((r) => (featuredSignal(r, useInCaution) ?? null) !== null)
     .map((r) => ({
       row: r,
       score: computeFeaturedScore({
@@ -230,7 +264,7 @@ export function pickFeatured(sections) {
         rate: r.metric_value,
         expected: r.metric_expected,
         n: r.sample_size,
-        volatilityPercentile: r.volatility_percentile,
+        volatilityPercentile: featuredSignal(r, useInCaution),
       }),
     }))
     .filter((c) => c.score !== null);
@@ -255,7 +289,7 @@ export function pickFeatured(sections) {
     `この選手が${best.row.course}コースに入ったとき${metricLabel}は、` +
     `全国${best.row.sample_size}走で${best.row.metric_value}%。` +
     `この会場の平均は${best.row.metric_venue_baseline}%です。` +
-    `AIが当日条件から算出したイン崩れ指数は${best.row.volatility_percentile}%で、` +
+    featuredSignalSentence(best.row, useInCaution) +
     `過去の実績と当日条件がどちらも「${direction}」方向を向いています。`;
 
   return {

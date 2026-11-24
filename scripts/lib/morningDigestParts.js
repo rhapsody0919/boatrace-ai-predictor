@@ -22,6 +22,18 @@ export function baselineKey(venueCode, grade, course) {
   return `${venueCode}|${grade}|${course}`;
 }
 
+/**
+ * morning_digest_rows の注意度の3列（156）。全行に同じキーを持たせる（バルク INSERT で行ごとにキーの集合を変えない）。
+ * @param {{pct: number, n: number, level: string}|null} inCaution fetchInCaution の値
+ */
+export function inCautionColumns(inCaution) {
+  return {
+    in_caution_pct: inCaution?.pct ?? null,
+    in_caution_n: inCaution?.n ?? null,
+    in_caution_level: inCaution?.level ?? null,
+  };
+}
+
 /** 本日の会場×グレード×コースのベースライン。母数不足なら ALL へフォールバック */
 export function lookupBaseline(baselineMap, venueCode, grade, course, metric) {
   const cell =
@@ -64,6 +76,7 @@ export function buildMetricRow({
   venueBaseline,
   baselineGrade = null,
   volatility,
+  inCaution = null,
   rate90d,
   runs90d,
 }) {
@@ -95,6 +108,7 @@ export function buildMetricRow({
     sample_size_90d: runs90d,
     motor_2rate: entry.motor_2rate === null ? null : Number(entry.motor_2rate),
     volatility_percentile: volatility ?? null,
+    ...inCautionColumns(inCaution),
     detail: {
       clampedPredicted: predicted ? predicted.clamped : false,
       // 会場平均に使ったセル（'ippan'/'G1'/…/'ALL'）。画面のラベルに出す
@@ -109,7 +123,7 @@ export function buildMetricRow({
  */
 export function sectionRow(
   section,
-  { race, entry, stat, course, baselineMap, volatility },
+  { race, entry, stat, course, baselineMap, volatility, inCaution },
 ) {
   const baseline = lookupBaseline(
     baselineMap,
@@ -131,6 +145,7 @@ export function sectionRow(
     venueBaseline: baseline.rate,
     baselineGrade: baseline.grade,
     volatility,
+    inCaution,
     rate90d: rate90d === null ? null : Number(rate90d),
     runs90d: stat.runs_90d,
   });
@@ -161,6 +176,7 @@ export function buildSections({
   statMap,
   baselineMap,
   volatilityMap,
+  inCautionMap = new Map(),
 }) {
   const raceById = new Map(races.map((r) => [r.race_id, r]));
   const nige = [];
@@ -171,12 +187,21 @@ export function buildSections({
     const race = raceById.get(entry.race_id);
     if (!race) continue;
     const volatility = volatilityMap.get(race.race_id) ?? null;
+    const inCaution = inCautionMap.get(race.race_id) ?? null;
 
     // 当日わかるのは枠番だけ。指標は「その選手が枠番と同じコースに進入した場合」で引く
     const stat = statMap.get(`${entry.racer_id}|${entry.boat_number}`);
     if (!stat || stat.runs < MIN_RUNS) continue;
     const course = entry.boat_number;
-    const ctx = { race, entry, stat, course, baselineMap, volatility };
+    const ctx = {
+      race,
+      entry,
+      stat,
+      course,
+      baselineMap,
+      volatility,
+      inCaution,
+    };
 
     if (course === 1 && Number(stat.nige_rate) >= EXTRACTION_THRESHOLDS.nige) {
       nige.push(sectionRow("nige", ctx));
@@ -286,6 +311,7 @@ export function returnedRow(venueCode, race, entry) {
     sample_size_90d: null,
     motor_2rate: null,
     volatility_percentile: null,
+    ...inCautionColumns(null),
     detail: { lastRaceId: race.race_id },
   };
 }
