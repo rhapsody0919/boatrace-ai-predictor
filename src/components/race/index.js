@@ -21,7 +21,6 @@ export { default as OutcomePatternPreview } from "./OutcomePatternPreview";
 export { default as PredictionSection } from "./PredictionSection";
 export { default as DataRaceTable } from "./DataRaceTable";
 export { default as VenueTendencyPanel } from "./VenueTendencyPanel";
-export { default as EmbeddedAnalysisSection } from "./EmbeddedAnalysisSection";
 export { default as TodaysVolatilityHighlights } from "./TodaysVolatilityHighlights";
 export { default as RaceTabs } from "./RaceTabs";
 export { default as RaceBasicInfoTab } from "./RaceBasicInfoTab";
