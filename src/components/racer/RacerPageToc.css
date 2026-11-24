@@ -32,3 +32,9 @@
   color: var(--text-primary);
   text-decoration: underline;
 }
+
+/* 目次が出ている間は、スクロールで寄せた要素（#st-trend への移動・scrollIntoView）が目次の下に
+   隠れないよう、目次の高さの分だけ上を空ける。ヘッダーの分は従来どおり各節の scroll-margin-top */
+html:has(.racer-toc) {
+  scroll-padding-top: var(--racer-toc-height, 0px);
+}

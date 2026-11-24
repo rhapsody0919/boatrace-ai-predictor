@@ -53,7 +53,7 @@ for (const viewport of [
       expect(await y("nav.racer-toc")).toBeGreaterThan(await y('[data-testid="racer-summary"]'));
     });
 
-    test("押すと節の頭が目次の下に出て、目次はヘッダーの下に貼り付く。#st-trend の余白に目次の高さが足される", async ({
+    test("押すと節の頭が目次の下に出て、目次はヘッダーの下に貼り付く。#st-trend へ移っても見出しが目次の下に出る", async ({
       page,
     }) => {
       await page.goto("/racer/4320");
@@ -76,14 +76,18 @@ for (const viewport of [
           )
           .toEqual({ stuck: true, visible: true });
       }
-      const margin = await page.evaluate(() => {
-        const st = document.querySelector(".racer-st-trend");
+      // #st-trend への移動（scrollIntoView・ハッシュ）でも、見出しが貼り付いた目次の下に出る
+      const st = await page.evaluate(() => {
+        const el = document.querySelector(".racer-st-trend");
+        if (!el) return null;
+        el.scrollIntoView({ block: "start", behavior: "instant" });
         return {
-          margin: st ? parseFloat(getComputedStyle(st).scrollMarginTop) : null,
-          toc: document.querySelector("nav.racer-toc").offsetHeight,
+          top: el.getBoundingClientRect().top,
+          tocBottom: document.querySelector("nav.racer-toc").getBoundingClientRect().bottom,
         };
       });
-      expect(margin.margin).toBeCloseTo(80 + margin.toc, 0);
+      expect(st).not.toBeNull();
+      expect(st.top).toBeGreaterThanOrEqual(st.tocBottom - 1);
     });
   });
 }
