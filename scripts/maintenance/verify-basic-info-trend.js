@@ -17,42 +17,44 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const bundled = await bundle({
+// 訳（react-i18next）は鍵をそのまま返す偽物に、見た目（JS でない import）は空に差し替える
+const STUBS = {
+  i18n: "export const useTranslation = () => ({ t: (k) => k, i18n: { language: 'ja' } });",
+  asset: "",
+};
+const stubPlugin = {
+  name: "stubs",
+  setup(build) {
+    build.onResolve({ filter: /^react-i18next$/ }, () => ({
+      path: "i18n",
+      namespace: "stub",
+    }));
+    build.onResolve({ filter: /^\.\/[A-Za-z]+\.[a-z]+$/ }, (args) =>
+      /\.jsx?$/.test(args.path)
+        ? undefined
+        : { path: "asset", namespace: "stub" },
+    );
+    build.onLoad({ filter: /.*/, namespace: "stub" }, (args) => ({
+      contents: STUBS[args.path],
+      loader: "js",
+    }));
+  },
+};
+const { outputFiles } = await bundle({
   entryPoints: [
     path.join(ROOT, "src/components/race/basic-info/BasicInfoTrend.jsx"),
   ],
+  plugins: [stubPlugin],
+  jsx: "automatic",
   bundle: true,
-  write: false,
+  packages: "external",
   platform: "node",
   format: "cjs",
-  packages: "external",
-  jsx: "automatic",
-  plugins: [
-    {
-      name: "offline",
-      setup(b) {
-        b.onResolve({ filter: /^react-i18next$/ }, () => ({
-          path: "i18n",
-          namespace: "offline",
-        }));
-        // 見た目の読み込み（JS でない import）は中身を見ないので空にする
-        b.onLoad({ filter: /\.[a-z]+$/ }, (args) =>
-          /\.jsx?$/.test(args.path) ? undefined : { contents: "", loader: "js" },
-        );
-        b.onLoad({ filter: /.*/, namespace: "offline" }, () => ({
-          contents:
-            "export const useTranslation = () => ({ t: (k) => k, i18n: { language: 'ja' } });",
-        }));
-      },
-    },
-  ],
+  write: false,
 });
 const mod = { exports: {} };
-new Function("require", "module", "exports", bundled.outputFiles[0].text)(
-  createRequire(import.meta.url),
-  mod,
-  mod.exports,
-);
+const load = new Function("require", "module", "exports", outputFiles[0].text);
+load(createRequire(import.meta.url), mod, mod.exports);
 const BasicInfoTrend = mod.exports.default;
 
 const failures = [];
@@ -72,7 +74,10 @@ const runs = (count) =>
     rank3: 5,
     startTiming: 0.15,
   }));
-const players = [1, 2, 3, 4, 5, 6].map((n) => ({ number: n, racerId: 4000 + n }));
+const players = [1, 2, 3, 4, 5, 6].map((n) => ({
+  number: n,
+  racerId: 4000 + n,
+}));
 const html = (metric, recordsByBoat) =>
   renderToStaticMarkup(
     createElement(BasicInfoTrend, {
@@ -97,10 +102,7 @@ check("取得中は読み込み中", loading.includes("basicInfo.loading"));
 
 const failed = html("top2Rate", { ...allOf(runs(10)), 3: null });
 check("失敗は alert", failed.includes('role="alert"'));
-check(
-  "失敗を記録不足にしない",
-  !failed.includes("basicInfo.trend.notEnough"),
-);
+check("失敗を記録不足にしない", !failed.includes("basicInfo.trend.notEnough"));
 
 const short = html("top2Rate", allOf(runs(29)));
 check("29走は記録不足", short.includes("basicInfo.trend.notEnough"));
