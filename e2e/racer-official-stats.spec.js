@@ -1,4 +1,22 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, fetchRecorded } from "./fixtures.js";
+
+/**
+ * 期別成績の全期の取得（c1_entries を含む問い合わせ）の応答の出走を全期0にする。
+ * 「全期出走なし」の選手を本番のデータに頼ると、その選手が新しい期に出走した時点で E2E Live が落ちる
+ * （3391 は 2027年前期に出走し、2026-11-24 から赤）。応答を書き換えて、データが変わっても同じ場面にする
+ */
+async function zeroAllStarts(page) {
+  await page.route("**/rest/v1/racer_period_stats*", async (route) => {
+    if (!route.request().url().includes("c1_entries")) return route.fallback();
+    const response = await fetchRecorded(route);
+    const body = await response.json();
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: body.map((r) => ({ ...r, starts: 0 })),
+    });
+  });
+}
 
 /**
  * 選手ページの公式の成績（期別成績の推移・進入コース別成績）（GS00、2026-10-28）の固定。
@@ -139,7 +157,7 @@ test("公式の期別成績のHTTP 500をデータなしにせず、失敗とし
 test("全期出走なしの選手は、空の折れ線を出さず「この N 期に出走はありません」と書く", async ({
   page,
 }) => {
-  // 3391 は 15期すべて出走なし（公式の期別成績も「-」）
+  await zeroAllStarts(page);
   await page.goto("/racer/3391");
   const section = page.locator(".racer-official-stats");
   await expect(section).toContainText(/この\d+期に出走はありません/);
@@ -170,11 +188,18 @@ test("折れ線のツールチップに集計期間を出す（今の半期と�
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/racer/3941");
+  // 最後の点は表の最新の期。期は半年ごとに増えるので、集計期間は注記の「この表の最新は…（集計 X）」から読む
+  const note = await page
+    .locator(".racer-official-stats .racer-official-note")
+    .first()
+    .innerText();
+  const latestRange = note.match(/集計\s*(\d{4}\/\d{2}\/\d{2}〜\d{4}\/\d{2}\/\d{2})/)?.[1];
+  expect(latestRange).toBeTruthy();
   const dot = page.locator(".racer-official-chart .recharts-line-dot").last();
   await dot.hover();
   await expect(
     page.locator(".racer-official-chart .recharts-tooltip-wrapper"),
-  ).toContainText("集計 2025/11/01〜2026/04/30");
+  ).toContainText(`集計 ${latestRange}`);
 });
 
 test("375px: 折れ線の中央の点のツールチップが画面の右端で切れない", async ({
@@ -208,6 +233,7 @@ test("進入コース別は公式サイトのコース別のページと期間�
   await expect(page.locator(".racer-official-stats")).toContainText(
     "公式サイトの選手のコース別成績のページとは集計の期間が違う",
   );
+  await zeroAllStarts(page);
   await page.goto("/racer/3391");
   await expect(page.locator(".racer-official-stats")).toContainText(
     /より後の走は、その期が終わって公式の期別成績が公開されると載ります/,
