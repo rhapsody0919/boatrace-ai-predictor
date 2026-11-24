@@ -10,7 +10,7 @@ import { test, expect } from "./fixtures.js";
 const DATE = "2026-09-22";
 const entries = [1, 2, 3, 4, 5, 6].map((i) => ({
   number: i,
-  name: `試験${i}　選手`,
+  name: `試験${i} 選手`,
   grade: "B1",
   age: 30,
   winRate: 5.0,
