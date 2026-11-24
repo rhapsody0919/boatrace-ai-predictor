@@ -193,6 +193,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/growth/gscPageDaily.js` | Search Console の date × page だけの取得（匿名化された語も入るページの合計）と、補充（バックフィル）の道具 | fetchPageDay, toPageRows, isMissingTable, missingTableMessage, assertPageTableExists ほか6件 |
 | `scripts/lib/growth/seoDetect.js` | 察知の純関数（SEO データの輪 PR3。設計 seo-data-loop-design §4）。 | normalizePage, weightedPosition, classifyIntent, isSeasonalTerm, isEventDriven ほか7件 |
 | `scripts/lib/growth/seoEffect.js` | 効きの測りの純関数（SEO データの輪 PR4。設計 seo-data-loop-design §5）。 | sumWindow, baselineBand, deploySlotOf, cannotSeparate, dueCheckpoints ほか4件 |
+| `scripts/lib/growth/urlInspection.js` | URL Inspection（索引の状態）の取得の部品（SEO データの輪 PR5。設計 seo-data-loop-design §3.1・§5）。 | latestDueCheckpoint, pendingInspections, canonicalOk, toInspectionRow, indexStatusOf ほか8件 |
 | `scripts/lib/harville.js` | — | — |
 | `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
 | `scripts/lib/inCaution.js` | BOA-822 イン崩れ注意度: 朝の生成（generate-unified-predictions.js）がレースごとの値を決める純関数。 | toInCautionRates, computeInCaution |
@@ -669,4 +670,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 627 ファイル / export 3375 件。
+対象 628 ファイル / export 3388 件。
