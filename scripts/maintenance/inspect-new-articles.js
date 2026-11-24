@@ -45,18 +45,8 @@ function requireEnv(names) {
   if (missing.length > 0) throw new Error(`環境変数が無い: ${missing.join("・")}（鍵は窓口が用意する）`);
 }
 
-async function main() {
-  const opts = parseArgs(process.argv.slice(2));
-  requireEnv(opts.dryRun ? ["SEARCH_CONSOLE_SITE_URL"] : ["SEARCH_CONSOLE_SITE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_KEY"]);
-  const articles = JSON.parse(fs.readFileSync(opts.articles, "utf8"));
-  const db = opts.dryRun
-    ? null
-    : createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
-  if (db) await assertInspectionTableExists(db);
-  const done = db ? await readDoneInspections(db, articles.map((a) => a.url)) : [];
-  const today = ptToday(new Date());
-  const todo = pendingInspections(articles, done, today).slice(0, opts.max);
-  console.log(`検査: 一覧${articles.length}件のうち${todo.length}件${opts.dryRun ? "（dry-run）" : ""}`);
+/** todo の URL を順に検査して行にする。1件が落ちても他は取り、落ちた URL を返す */
+async function inspectAll(todo, today) {
   const searchconsole = google.searchconsole({
     version: "v1",
     auth: getGoogleAuthClient(["https://www.googleapis.com/auth/webmasters.readonly"]),
@@ -74,6 +64,22 @@ async function main() {
       console.error(`${t.url}: 検査の失敗 ${err?.code ?? err?.status ?? "unknown"}`);
     }
   }
+  return { rows, failed };
+}
+
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  requireEnv(opts.dryRun ? ["SEARCH_CONSOLE_SITE_URL"] : ["SEARCH_CONSOLE_SITE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_KEY"]);
+  const articles = JSON.parse(fs.readFileSync(opts.articles, "utf8"));
+  const db = opts.dryRun
+    ? null
+    : createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
+  if (db) await assertInspectionTableExists(db);
+  const done = db ? await readDoneInspections(db, articles.map((a) => a.url)) : [];
+  const today = ptToday(new Date());
+  const todo = pendingInspections(articles, done, today).slice(0, opts.max);
+  console.log(`検査: 一覧${articles.length}件のうち${todo.length}件${opts.dryRun ? "（dry-run）" : ""}`);
+  const { rows, failed } = await inspectAll(todo, today);
   if (db) await writeInspections(db, rows);
   if (failed.length > 0) throw new Error(`${failed.length}件の検査が落ちた。回し直せば済みの分は飛ばす`);
 }
