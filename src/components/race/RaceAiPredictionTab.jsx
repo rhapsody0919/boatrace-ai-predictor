@@ -124,7 +124,13 @@ function RaceAiPredictionTab({
   if (isCancelled) {
     return (
       <div className="race-tabs-empty" data-testid="ai-prediction-cancelled">
-        <p>{t("aiPredictionTab.cancelled")}</p>
+        <p>
+          {t(
+            isInCautionEnabled()
+              ? "aiPredictionTab.cancelledInCaution"
+              : "aiPredictionTab.cancelled",
+          )}
+        </p>
       </div>
     );
   }
