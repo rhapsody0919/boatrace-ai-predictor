@@ -48,6 +48,26 @@ export function fakeGitHub({
         commit: { committer: { date: OLD_HEAD.committedAt } },
       });
     if (url.includes("/compare/")) return reply(compareStatus, compare);
+    // 範囲の赤を解く全件の run（releaseFullCheck.js）。検査が赤の場面は、全件の run も同じ版で失敗している
+    // （無いと release-dispatch が全件の検査を起こして「待つ」になる。起こす場面は scenes-3）
+    if (
+      url.includes("/actions/workflows/") &&
+      url.includes("event=workflow_dispatch")
+    )
+      return reply(200, {
+        workflow_runs: [
+          {
+            id: 98,
+            event: "workflow_dispatch",
+            head_branch: "master",
+            head_sha: HEAD,
+            status: "completed",
+            conclusion: gateConclusion,
+            display_title: `Quality Gates 全件 base=${DEPLOYED}`,
+            html_url: "https://github.com/runs/98",
+          },
+        ],
+      });
     if (url.includes("/actions/workflows/"))
       return reply(200, {
         workflow_runs: [
