@@ -192,7 +192,7 @@ test.describe("今日の出走の手がかりの1段", () => {
     ]);
     await page.goto("/racer/3941");
     const ctx = page.getByTestId("racer-today-context");
-    await expect(page.getByTestId("racer-today-course")).toHaveText("4コース（公式1期）20走中1着2回");
+    await expect(page.getByTestId("racer-today-course")).toHaveText("4コース想定（公式1期）20走中1着2回");
     await expect(page.getByTestId("racer-today-venue")).toHaveText("住之江の当地（直近2年）3走中1着1回2着以内3回");
     await expect(page.getByTestId("racer-today-meet")).toHaveText("今節の着順2 1");
     // 1段は今日の出走の節の中にあり、最初の画面の内
@@ -203,9 +203,9 @@ test.describe("今日の出走の手がかりの1段", () => {
 
   test("純関数: 30走以上は率、30走未満は件数、節は2日を超える間で切る", () => {
     expect(courseCell({ course: 1, entries: 25, wins: 1, reliability: "reference", winRate: 4, top2Rate: 8 }))
-      .toEqual({ title: "1コース（公式3期）", main: "25走中1着1回", sub: null });
+      .toEqual({ title: "1コース想定（公式3期）", main: "25走中1着1回", sub: null });
     expect(courseCell({ course: 1, entries: 40, wins: 12, reliability: "firm", winRate: 30, top2Rate: 52.55 }))
-      .toEqual({ title: "1コース（公式3期）", main: "1着 30.0%", sub: "2連対率 52.5%・40走" });
+      .toEqual({ title: "1コース想定（公式3期）", main: "1着 30.0%", sub: "2連対率 52.5%・40走" });
     expect(courseCell({ course: 6, entries: 5, wins: 0, reliability: "none", winRate: null, top2Rate: null })).toBeNull();
     expect(venueCell({ n: 0, win: 0, top2: 0 }, "戸田")).toEqual({ title: "戸田の当地（直近2年）", main: "出走なし", sub: null });
     // 浮動小数で 57.49999… にならず、整数で切り捨てる

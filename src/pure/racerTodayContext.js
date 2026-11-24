@@ -21,8 +21,8 @@ export function pickContextRun(runs) {
  */
 export function courseCell(row, periods = 3) {
   if (!row || row.reliability === "none" || !(row.entries > 0)) return null;
-  // 枠番どおりに入る前提の目安。期の数は合算に使った期から（3期に満たない選手もいる）
-  const title = `${row.course}コース（公式${periods}期）`;
+  // 枠番どおりに入る前提の目安なので「想定」と書く（前付けの日は外れる）。期の数は合算に使った期から（3期に満たない選手もいる）
+  const title = `${row.course}コース想定（公式${periods}期）`;
   if (row.entries < SMALL_RUNS) {
     return { title, main: `${row.entries}走中1着${row.wins}回`, sub: null };
   }
