@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2827,
+    "sourceFiles": 2829,
     "filesWithAccess": 324,
     "tableReaders": 957,
     "tableWriters": 197,
@@ -29754,7 +29754,7 @@
     {
       "job": "release_dispatch",
       "entry": "api/cron/release-dispatch.js",
-      "reachableFiles": 26,
+      "reachableFiles": 27,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
