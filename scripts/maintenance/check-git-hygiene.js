@@ -169,6 +169,34 @@ function tryAutoFastForward(mainPath, { ahead, behind }, lines) {
   return false;
 }
 
+/**
+ * メインの作業ツリーが master から外れて古い版にいるときの警告。
+ * アプリやサブエージェントは worktree を作るときにメインの作業ツリーの .worktreeinclude 等を読むので、
+ * メインが古いと直した設定が届かない（2026-11-24、master から外れた ef0b56f93 のままで、#3323 の後も
+ * 新しい worktree に .env.local が写り、作り手が6回止まった）。ローカルの master の遅れだけを見ていたので気づけなかった。
+ * 自動では戻さない（master から外れた理由は人が決める）。
+ */
+export function mainHeadLines({ mainPath, branch, headBehind }) {
+  if (branch === DEFAULT_BRANCH || !(headBehind > 0)) return [];
+  const where = branch ? `枝 ${branch}` : `${DEFAULT_BRANCH} から外れた状態`;
+  return [
+    `メインの作業ツリー（${mainPath}）が${where}で、origin/${DEFAULT_BRANCH} より ${headBehind} コミット古い版にいます。`,
+    `  新しい worktree は、ここの古い .worktreeinclude・.claude を元に作られます。戻すには:`,
+    `  git -C ${mainPath} checkout ${DEFAULT_BRANCH} && git -C ${mainPath} merge --ff-only origin/${DEFAULT_BRANCH}`,
+  ];
+}
+
+// メインの作業ツリーの HEAD の枝と、origin/master より何コミット古いか
+function readMainHead(mainPath) {
+  const mainGit = (args) => git(["-C", mainPath, ...args]);
+  const count = mainGit(["rev-list", "--count", `HEAD..origin/${DEFAULT_BRANCH}`]);
+  return {
+    mainPath,
+    branch: mainGit(["branch", "--show-current"]) ?? "",
+    headBehind: count === null ? null : Number(count),
+  };
+}
+
 function behindLines(behind) {
   if (!(behind && behind > 0)) return [];
   return [
@@ -217,6 +245,7 @@ function main() {
   if (mainPath && tryAutoFastForward(mainPath, divergence, lines)) behind = 0;
 
   lines.push(...behindLines(behind));
+  if (mainPath) lines.push(...mainHeadLines(readMainHead(mainPath)));
   if (porcelain) lines.push(...worktreeLines(porcelain));
 
   if (lines.length === 0) return;

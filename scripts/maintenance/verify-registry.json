@@ -654,6 +654,11 @@
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
     },
     {
+      "script": "verify-git-hygiene-main-head.js",
+      "tier": "ci",
+      "guards": "メインの作業ツリーが master から外れて古い版にいるときの、セッションの始めの警告（check-git-hygiene.js の mainHeadLines）"
+    },
+    {
       "script": "verify-git-hygiene.js",
       "tier": "ci",
       "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
