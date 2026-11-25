@@ -39,7 +39,8 @@ function scaleOf(seriesByBoat, metric) {
   return { x, y, ticks };
 }
 
-function Badge({ cx, cy, boat, r = 7 }) {
+// 艇番の丸（モーターの推移の線 MotorTrendChart も使う）
+export function Badge({ cx, cy, boat, r = 7 }) {
   const c = BOAT_COLORS[boat];
   return (
     <g>

@@ -3016,7 +3016,20 @@
       "partsCountNote": "更換N＝從本節首日至本場比賽展示為止所記錄的零件更換次數（不含螺旋槳）。點選可展開零件名稱。次數多寡不代表好壞（效果未驗證）。",
       "usageFinal": "晉級優勝戰",
       "usageChampion": "優勝",
-      "usageGradeNote": "顯示該節的比賽等級，以及在該節晉級優勝戰或獲得優勝的標記。"
+      "usageGradeNote": "顯示該節的比賽等級，以及在該節晉級優勝戰或獲得優勝的標記。",
+      "genTrend": {
+        "title": {
+          "top2Rate": "2連對率走勢（官方・按節）",
+          "top3Rate": "3連對率走勢（官方・按節）",
+          "exhibition": "展示時間走勢（近30場平均）"
+        },
+        "notYet": "累積{{n}}場前不繪製",
+        "faster": "↑ 較快",
+        "swapped": "{{date}} 更換",
+        "today": "今天",
+        "axisNote": "橫軸為更換後的日期（6台相同）",
+        "unitSec": "秒"
+      }
     },
     "motorRanking": {
       "title": "🏁 馬達排行榜",

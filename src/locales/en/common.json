@@ -3025,7 +3025,20 @@
       "partsCountNote": "Changes N = the number of recorded parts changes (excluding the propeller) from the first day of this meet through this race's exhibition. Tap to see the part names. More or fewer changes do not indicate better or worse performance (effects unverified).",
       "usageFinal": "Finals appearance",
       "usageChampion": "Championship",
-      "usageGradeNote": "The meet's race grade and marks showing whether the motor appeared in the final (finals appearance) or won it (championship)."
+      "usageGradeNote": "The meet's race grade and marks showing whether the motor appeared in the final (finals appearance) or won it (championship).",
+      "genTrend": {
+        "title": {
+          "top2Rate": "Top-2 rate trend (official, by meet)",
+          "top3Rate": "Top-3 rate trend (official, by meet)",
+          "exhibition": "Exhibition time trend (last 30 runs avg)"
+        },
+        "notYet": "Not drawn until {{n}} runs",
+        "faster": "↑ faster",
+        "swapped": "{{date}} new motors",
+        "today": "Today",
+        "axisNote": "Dates since the motor swap (same for all 6)",
+        "unitSec": "sec"
+      }
     },
     "motorRanking": {
       "title": "🏁 Motor Ranking",
