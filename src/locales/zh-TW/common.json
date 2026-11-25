@@ -2487,7 +2487,15 @@
       "tapHint": "點選以加粗",
       "selectBoat": "加粗{{boat}}號艇",
       "winRatePending": "勝率推移（依官方期別）準備中",
-      "notEnough": "未滿30場的選手不顯示線"
+      "notEnough": "未滿30場的選手不顯示線",
+      "winRateTitle": "勝率走勢（官方各期）",
+      "stepFrom": "{{from}}～",
+      "stepMonth": "{{month}}月",
+      "starts": "{{n}}場",
+      "noRecord": "無紀錄",
+      "startsLabel": "出賽數",
+      "winRateNote": "💡 各期的值為官方各期成績的勝率（最近5期、半年計算期間、全部比賽）。線條中斷的期表示沒有出賽紀錄。出賽表的全國勝率（目前值）是依近期成績計算的值，與最右邊的期不一致。",
+      "winRateNotYet": "最右邊的下一期（{{from}}～{{to}}）尚未匯入。"
     },
     "title": "選手成績比較",
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場、擅長賽場、依條件）",
