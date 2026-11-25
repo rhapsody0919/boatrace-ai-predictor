@@ -1129,7 +1129,7 @@ def _word_ok(s: str) -> bool:
 def data_targets(repo: Path, strings: Sequence[str]) -> Dict[str, object]:
     """verify の文字列が指すデータの場所（固定の表。見つからない種類は入れない）。
     dirs: 文字列を path.join の引数と見て、根から実在のディレクトリを辿って着いた所（同じ並びの文字列でつなぐ）。
-    json: locales の下の最初の .json（無ければ文字列が指す実在の .json）。css: 文字列が .css を含むとき、dirs の下（無ければ指された）最初の .css。
+    json: locales の下の最初の .json（無ければ文字列が指す実在の .json）。css: 文字列が .css を含むとき（拡張子だけの字 ".css" は除く）、dirs の下（無ければ指された）最初の .css。
     docs: dirs のうち docs の下の物。root: 根にある名前と同じ文字列が3つ以上（根の一覧を持つ verify）"""
     cur = repo
     seen: List[Path] = []
@@ -1167,7 +1167,9 @@ def data_targets(repo: Path, strings: Sequence[str]) -> Dict[str, object]:
         json_files = sorted(_rel(f, repo) for f in files if f.suffix == ".json" and (not root_kind or f.parent != repo))
     if json_files:
         t["json"] = json_files[0]
-    if any(".css" in x for x in strings):
+    # 拡張子だけの字（esbuild の loader の鍵 `".css": "empty"` 等。css の import を空にする設定で、css をデータとして読まない）は数えない。
+    # 数えると、関係の無い最初の .css に注入して「落ちない」と赤にしていた（2026-11-25 #3392・推移の線 2/3 の2回）
+    if any(".css" in x and x.strip() not in (".css", "*.css") for x in strings):
         css_files = [_rel(f, repo) for f in files if f.suffix == ".css"]
         for d in maximal:
             css_files += sorted(_rel(f, repo) for f in (repo / d).rglob("*.css") if not any(x in f.parts for x in DATA_SKIP_DIRS))
