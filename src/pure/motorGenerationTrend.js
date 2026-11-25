@@ -98,14 +98,23 @@ export function motorMeetTip(runs, date, meets, { today = null } = {}) {
   const k = all.findIndex((m) => m.start === date);
   if (k < 0) return null;
   const inMeet = rows.slice(all[k].runsBefore, all[k + 1]?.runsBefore ?? rows.length);
-  const head = meetHeadOf((meets ?? []).find((m) => m.start <= date && date <= m.end), date, inMeet);
+  const series = (meets ?? []).find((m) => m.start <= date && date <= m.end);
+  const head = meetHeadOf(series, date, inMeet);
   return {
     ...head,
     racerName: inMeet.find((r) => r.racerName)?.racerName ?? null,
     finishes: inMeet.map((r) => r.finish ?? null),
     byDay: resultsByDay(inMeet),
-    ongoing: today !== null && head.end >= today,
+    ongoing: isOngoing(series, head, today),
   };
+}
+
+// 開催中か。会場の節があれば終わりがこのレースの日以降。無ければ（節の行がまだ取れていない）、その基の最後の走が
+// このレースの日かその前日なら開催中とみなす（走は前日まで続いている。ファン評価の再確認 11/25 の P2）
+function isOngoing(series, head, today) {
+  if (today === null) return false;
+  if (series) return series.end >= today;
+  return dayOf(today) - dayOf(head.end) <= 1;
 }
 
 // 会場の節（race_series）があれば期間・日数・グレードをそこから、無ければ走の日で期間を作る
