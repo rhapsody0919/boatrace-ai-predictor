@@ -55,7 +55,7 @@
 -- 戻し方: 末尾の ROLLBACK-BEGIN〜ROLLBACK-END（集めたご意見も消える）。先に画面の PR を revert して定時で出してから当てる。
 --   行を残したいなら、オーナーが CSV に退避してリポジトリの外に置く（docs/knowledge/db-operations.md）。
 --
--- 検証: node scripts/maintenance/verify-site-feedback-migration.js（PGlite、本番には接続しない）
+-- 検証: scripts/maintenance の verify-site-feedback-migration.js（PGlite、本番には接続しない）
 
 BEGIN;
 
