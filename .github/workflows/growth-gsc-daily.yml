@@ -66,8 +66,8 @@ jobs:
     needs: gate
     if: needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
-    # 過去分の取り直し（2025-12-21 から約340日、1日1〜数回の API）は20分に収まらないので、手で起こしたときだけ伸ばす
-    timeout-minutes: ${{ github.event.inputs.backfill_from != '' && 120 || 20 }}
+    # 過去分の取り直し（2025-12-21 から約340日、1日1〜数回の API）は20分に収まらないので、手で起こしたときだけ伸ばす。毎日の回は取り込み（数分）＋検査（上限20分）で35分
+    timeout-minutes: ${{ github.event.inputs.backfill_from != '' && 120 || 35 }}
     environment: prod-jobs
     steps:
       - uses: actions/checkout@v4
@@ -106,6 +106,19 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: node scripts/maintenance/backfill-gsc-daily.js --from "$(date -u -d '9 days ago' +%F)" --tables page
+
+      # 索引の数を毎日測る（コアアップデートからの回復 打ち手 D。表 growth_url_inspection、マイグレーション 206）。
+      # sitemap から、レース詳細は各会場の 1R・6R・12R の標本（D+1・D+3・D+7）、ほかの ja のページは週1回。最大300件を順に検査する。
+      # 出力は URL と状態の名前と件数だけ。1件の検査の時間は未検証（目安 1〜2秒 → 300件で約5〜10分）なので、この手の上限は20分。50件ごとに書くので、切れても済んだ分は残る
+      - name: URL Inspection (sitemap sample)
+        if: github.event.inputs.backfill_from == ''
+        timeout-minutes: 20
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ./credentials/google-service-account.json
+          SEARCH_CONSOLE_SITE_URL: ${{ secrets.SEARCH_CONSOLE_SITE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/maintenance/inspect-new-articles.js --sitemap public/sitemap.xml --max 300
 
       # 手で起こしたときの過去分の取り直し（入力は env 経由で渡し、式を run に直接埋めない）
       - name: Backfill (workflow_dispatch)
