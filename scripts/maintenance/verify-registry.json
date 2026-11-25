@@ -1584,6 +1584,12 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js"
     },
     {
+      "script": "verify-run-heavy-bin.sh",
+      "tier": "ci",
+      "runner": "bash",
+      "guards": "run-heavy.sh が PATH に無い先頭のコマンド（playwright 等）をこのリポジトリの node_modules/.bin から解き、playwright なら --workers=1 を足すこと（2026-11-25、npm run の外の run-heavy.sh playwright が command not found で2回落ちた）。使い捨ての置き場と偽の playwright で回す"
+    },
+    {
       "script": "verify-run-heavy-lock.js",
       "tier": "manual",
       "guards": "scripts/maintenance/run-heavy.sh（BOA-769）。手元で同時に走らせる重い処理（playwright test・vite build）を最大枠数（既定2）に制限するロック。3本同時起動して、同時に走る（枠を確保した）本数が上限を超えないこと、全本が完走すること",
