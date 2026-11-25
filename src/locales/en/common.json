@@ -3122,7 +3122,7 @@
         "toMeet": "To the meet →",
         "tipDays": "{{n}} days",
         "tipRacer": "Racer {{name}}",
-        "tipFinishes": "Finishes this meet {{order}}",
+        "tipFinishes": "Finishes this meet {{order}} ({{n}} runs)",
         "tipValue": "Official {{metric}} on day 1 {{value}} ({{runs}} runs before)",
         "tipFinishesSoFar": "Finishes so far this meet {{order}} ({{n}} runs, in progress)"
       }

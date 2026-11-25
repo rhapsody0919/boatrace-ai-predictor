@@ -3113,7 +3113,7 @@
         "toMeet": "前往該節 →",
         "tipDays": "{{n}}天",
         "tipRacer": "騎乘選手 {{name}}",
-        "tipFinishes": "本節名次 {{order}}",
+        "tipFinishes": "本節名次 {{order}}（{{n}}場）",
         "tipValue": "該節首日的官方{{metric}} {{value}}（此前{{runs}}場累計）",
         "tipFinishesSoFar": "本節目前為止的名次 {{order}}（{{n}}場，進行中）"
       }

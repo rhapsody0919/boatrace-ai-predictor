@@ -3113,7 +3113,7 @@
         "toMeet": "시리즈로 →",
         "tipDays": "{{n}}일간",
         "tipRacer": "탄 선수 {{name}}",
-        "tipFinishes": "이 시리즈의 착순 {{order}}",
+        "tipFinishes": "이 시리즈의 착순 {{order}} ({{n}}주)",
         "tipValue": "시리즈 첫날의 공식 {{metric}} {{value}} (그때까지 {{runs}}주 누계)",
         "tipFinishesSoFar": "이 시리즈의 지금까지 착순 {{order}} ({{n}}주, 개최 중)"
       }
