@@ -39,7 +39,19 @@ function scaleOf(seriesByBoat, metric) {
   return { x, y, ticks };
 }
 
-function Badge({ cx, cy, boat, r = 7 }) {
+/** 横の目盛りの線と左の数字（走ごとの線と勝率の段で共通） */
+export function GridLines({ ticks, y, x1, x2, label }) {
+  return ticks.map((g) => (
+    <g key={g}>
+      <line x1={x1} x2={x2} y1={y(g)} y2={y(g)} className="trc-grid" />
+      <text x={x1 - 4} y={y(g) + 4} className="trc-tick" textAnchor="end">
+        {label(g)}
+      </text>
+    </g>
+  ));
+}
+
+export function Badge({ cx, cy, boat, r = 7 }) {
   const c = BOAT_COLORS[boat];
   return (
     <g>
@@ -186,25 +198,13 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
         metric: t(`basicInfo.metrics.${metric}`),
       })}
     >
-      {ticks.map((g) => (
-        <g key={g}>
-          <line
-            x1={PAD.l}
-            x2={W - PAD.r}
-            y1={y(g)}
-            y2={y(g)}
-            className="trc-grid"
-          />
-          <text
-            x={PAD.l - 4}
-            y={y(g) + 4}
-            className="trc-tick"
-            textAnchor="end"
-          >
-            {metric === "avgSt" ? g.toFixed(2) : Math.round(g)}
-          </text>
-        </g>
-      ))}
+      <GridLines
+        ticks={ticks}
+        y={y}
+        x1={PAD.l}
+        x2={W - PAD.r}
+        label={(g) => (metric === "avgSt" ? g.toFixed(2) : Math.round(g))}
+      />
       {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
       <text
         x={metric === "avgSt" ? 2 : PAD.l - 4}

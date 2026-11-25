@@ -177,3 +177,9 @@
     box-shadow: 0 0 0 1px var(--color-gray-400);
   }
 }
+
+/* 勝率の期ごとの段（WinRateStepChart）。期を1つおきに薄い帯で区切る */
+.trc-band {
+  fill: var(--text-primary);
+  opacity: 0.035;
+}

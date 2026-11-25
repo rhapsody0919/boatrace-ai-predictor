@@ -160,6 +160,7 @@ export default function FilterControls({
   currentTermFrom,
   viewSlot = null,
   hidePeriod = false,
+  hideScope = false,
 }) {
   const { t } = useTranslation();
 
@@ -191,28 +192,33 @@ export default function FilterControls({
       {/* 「今の値｜推移」の切り替えは指標の札のすぐ下（visual-designer 11/24） */}
       {viewSlot}
 
-      <ChipGroup
-        label={t("basicInfo.scopeLabel")}
-        values={SCOPES}
-        current={scope}
-        onSelect={setScope}
-        renderLabel={(s) => t(`basicInfo.scopes.${s}`)}
-      />
+      {/* 勝率の推移は公式の期の値なので、範囲・グレードの絞り込みが効かない。効かない札は出さない */}
+      {!hideScope && (
+        <>
+          <ChipGroup
+            label={t("basicInfo.scopeLabel")}
+            values={SCOPES}
+            current={scope}
+            onSelect={setScope}
+            renderLabel={(s) => t(`basicInfo.scopes.${s}`)}
+          />
 
-      <ChipGroup
-        label={t("basicInfo.gradeLabel")}
-        values={GRADES}
-        current={grade}
-        onSelect={setGrade}
-        renderLabel={(g) => t(`basicInfo.grades.${g}`)}
-      />
+          <ChipGroup
+            label={t("basicInfo.gradeLabel")}
+            values={GRADES}
+            current={grade}
+            onSelect={setGrade}
+            renderLabel={(g) => t(`basicInfo.grades.${g}`)}
+          />
 
-      <PresetRow
-        scope={scope}
-        grade={grade}
-        setScope={setScope}
-        setGrade={setGrade}
-      />
+          <PresetRow
+            scope={scope}
+            grade={grade}
+            setScope={setScope}
+            setGrade={setGrade}
+          />
+        </>
+      )}
 
       {/* 推移は期間を使わない（推移そのものが期間を表す）ので、推移の画面では出さない */}
       {!hidePeriod && (
