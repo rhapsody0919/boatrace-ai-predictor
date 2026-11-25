@@ -6,6 +6,11 @@
  * （scan はそこで fail＝process.exit(1) するので、process.exit も差し替えて例外にする）。本物の GitHub には繋がない。
  * check は呼ぶ verify の check(label, pass, detail)。
  */
+import { readFileSync } from "node:fs";
+
+const CONFIG = JSON.parse(
+  readFileSync(new URL("../../watch/job-watch.json", import.meta.url), "utf8"),
+);
 const REPO = "o/r";
 const WATCHED = ".github/workflows/e2e-live.yml";
 const NOW = Date.now();
@@ -164,27 +169,52 @@ async function runScan(s) {
 }
 
 /**
- * 場面: 鍵の Issue が開いていて、カナリアは緑、落ちた run は HTTP 401（鍵の誤り）。
- * その workflow が使う鍵が、カナリアの範囲内（SUPABASE_URL）か範囲外（GOOGLE_SERVICE_ACCOUNT_KEY）か、
- * その後に同じ workflow が成功したか（recovered）で分ける
+ * 場面: 鍵の Issue が開いていて、カナリアは緑、落ちた run（job collect）は HTTP 401（鍵の誤り）。
+ * workflow は gate（SLACK_WEBHOOK_URL、カナリアの範囲外）と collect（secret）の2つの job。数えるのは失敗した job collect の段だけ。
+ * later は、その後の同じ workflow の run の job: success は collect が success、gate-only は gate が success で collect が skipped
+ * （growth-gsc-daily は10時台以外 gate だけ動き run 全体が success になる）。rerun は、許可の一覧の workflow の範囲内の失敗を足す
  */
-function keyIssueScene({ secret, recovered = false }) {
+function keyIssueScene({ secret, later = null, rerun = false }) {
   const canary = ".github/workflows/key-canary.yml";
+  const allowed = CONFIG.rerunAllowed[0];
+  const wf = (key) =>
+    `jobs:\n  gate:\n    steps:\n      - env:\n          S: \${{ secrets.SLACK_WEBHOOK_URL }}\n  collect:\n    steps:\n      - env:\n          K: \${{ secrets.${key} }}\n`;
+  const collect = (id, conclusion) => ({
+    ...job(id, conclusion, 4),
+    name: "collect",
+  });
   return {
     runs: [
-      run(7, "failure", { created_at: iso(100) }),
-      run(8, "success", { path: canary, created_at: iso(30) }),
-      ...(recovered ? [run(9, "success", { created_at: iso(40) })] : []),
+      run(7, "failure", { created_at: iso(12) }),
+      run(8, "success", { path: canary, created_at: iso(2) }),
+      ...(later ? [run(9, "success", { created_at: iso(6) })] : []),
+      ...(rerun
+        ? [run(10, "failure", { path: allowed, created_at: iso(11) })]
+        : []),
     ],
-    jobs: { 7: [job(71, "failure", 4)] },
-    logs: { 71: "::error::Supabase が HTTP 401 を返した（Invalid API key）" },
+    jobs: {
+      7: [collect(71, "failure")],
+      9:
+        later === "success"
+          ? [collect(91, "success")]
+          : [
+              { ...job(92, "success", 1), name: "gate" },
+              collect(93, "skipped"),
+            ],
+      10: [collect(101, "failure")],
+    },
+    logs: {
+      71: "::error::Supabase が HTTP 401 を返した（Invalid API key）",
+      101: "::error::Supabase が HTTP 401 を返した（Invalid API key）",
+    },
     open: {
       "job-watch-key": [
-        { number: 200, created_at: iso(90), body: "鍵の Issue" },
+        { number: 200, created_at: iso(10), body: "鍵の Issue" },
       ],
     },
     contents: {
-      [WATCHED]: "env:\n  K: ${{ secrets." + secret + " }}\n",
+      [WATCHED]: wf(secret),
+      [allowed]: wf("SUPABASE_URL"),
       [canary]: "env:\n  S: ${{ secrets.SUPABASE_URL }}\n",
     },
     closed: {},
@@ -201,32 +231,56 @@ async function checkKeyIssueClose({ check }) {
         q.path === "/issues/200" &&
         q.body?.state === "closed",
     );
-  const outside = await runScan(
-    keyIssueScene({ secret: "GOOGLE_SERVICE_ACCOUNT_KEY" }),
-  );
+  const GSC = "GOOGLE_SERVICE_ACCOUNT_KEY";
+  const outside = await runScan(keyIssueScene({ secret: GSC }));
   check(
-    "鍵の Issue: カナリアが緑でも、範囲外の鍵（GOOGLE_SERVICE_ACCOUNT_KEY）の run が残っていれば閉じず、コメントに範囲外の鍵を書く",
+    "鍵の Issue: カナリアが緑でも、範囲外の鍵（失敗した job の段の GOOGLE_SERVICE_ACCOUNT_KEY）の run が残っていれば閉じず、コメントに範囲外の鍵だけを書く（gate の SLACK_WEBHOOK_URL は書かない）",
     outside.error === null &&
       !closed(outside) &&
-      outside.posts.includes(
-        "カナリアの範囲外の鍵: GOOGLE_SERVICE_ACCOUNT_KEY",
-      ) &&
+      outside.posts.includes(`カナリアの範囲外の鍵: ${GSC}。`) &&
       outside.posts.includes(MARK(7, "uncovered")),
     outside.error ?? outside.posts,
   );
   const inside = await runScan(keyIssueScene({ secret: "SUPABASE_URL" }));
   check(
-    "鍵の Issue: 範囲内の鍵だけなら、カナリアが緑のとき従来どおり閉じる",
+    "鍵の Issue: 失敗した job の段が範囲内の鍵だけなら（別の job の SLACK_WEBHOOK_URL は数えない）、カナリアが緑のとき従来どおり閉じる",
     inside.error === null && closed(inside),
     inside.error ?? inside.posts,
   );
   const recovered = await runScan(
-    keyIssueScene({ secret: "GOOGLE_SERVICE_ACCOUNT_KEY", recovered: true }),
+    keyIssueScene({ secret: GSC, later: "success" }),
   );
   check(
-    "鍵の Issue: 範囲外の鍵でも、同じ workflow の後の run が成功していれば閉じる",
+    "鍵の Issue: 範囲外の鍵でも、後の run で失敗した job と同じ名前の job が success なら閉じる",
     recovered.error === null && closed(recovered),
     recovered.error ?? recovered.posts,
+  );
+  const gateOnly = await runScan(
+    keyIssueScene({ secret: GSC, later: "gate-only" }),
+  );
+  check(
+    "鍵の Issue: 後の run が success でも、gate が success で collect が skipped なら（失敗した job が動いていない）閉じない",
+    gateOnly.error === null &&
+      !closed(gateOnly) &&
+      gateOnly.posts.includes(MARK(7, "uncovered")),
+    gateOnly.error ?? gateOnly.posts,
+  );
+}
+
+async function checkKeyIssueRerun({ check }) {
+  const pass = await runScan(
+    keyIssueScene({ secret: "GOOGLE_SERVICE_ACCOUNT_KEY", rerun: true }),
+  );
+  const closed = pass.requests.some(
+    (q) => q.method === "PATCH" && q.path === "/issues/200",
+  );
+  check(
+    "鍵の Issue: 範囲外の run が残っていても、範囲内の run の rerun は通す（閉じることだけ止める）",
+    pass.error === null &&
+      !closed &&
+      pass.posts.includes(MARK(10, "recovered")) &&
+      !pass.posts.includes(MARK(7, "recovered")),
+    pass.error ?? pass.posts,
   );
 }
 
@@ -299,4 +353,5 @@ export async function checkJobWatchScan({ check }) {
     r.posts,
   );
   await checkKeyIssueClose({ check });
+  await checkKeyIssueRerun({ check });
 }

@@ -264,6 +264,23 @@ function sceneUncoveredKeys() {
       !gsc.some((n) => n.startsWith("SUPABASE_")),
     gsc.join(","),
   );
+  const two = (i) =>
+    `jobs:\n${i}gate:\n${i}  s: \${{ secrets.SLACK_WEBHOOK_URL }}\n${i}collect:\n${i}  k: \${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}\n`;
+  check(
+    "secretsOutsideCanary: 失敗した job の段だけで数える（gate の SLACK_WEBHOOK_URL は数えない）",
+    secretsOutsideCanary(two("  "), canary, ["collect"]).join(",") ===
+      "GOOGLE_SERVICE_ACCOUNT_KEY" &&
+      secretsOutsideCanary(
+        yml(".github/workflows/growth-gsc-daily.yml"),
+        canary,
+        ["gate"],
+      ).length === 0,
+  );
+  check(
+    "secretsOutsideCanary: 字下げが崩れて段が読めない YAML は、workflow の全体で数える（閉じない側に倒す）",
+    secretsOutsideCanary(two(" "), canary, ["collect"]).join(",") ===
+      "GOOGLE_SERVICE_ACCOUNT_KEY,SLACK_WEBHOOK_URL",
+  );
   check(
     "secretsOutsideCanary: カナリア自身は空",
     secretsOutsideCanary(canary, canary).length === 0,
