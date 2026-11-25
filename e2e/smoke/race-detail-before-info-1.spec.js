@@ -70,6 +70,11 @@ test.describe("レース詳細の直前情報タブ: ピットレポート", () 
     await expect(section).toContainText(
       "出典: BOAT RACE オフィシャルウェブサイト ピットレポート",
     );
+    // 部品の形（題・副題→本体→💡注記。2026-11-24）
+    await expect(section.locator(".rbi-heading")).toHaveText("選手コメント");
+    await expect(section.locator(".rpr-subtitle")).toBeVisible();
+    await expect(section.locator(".rbi-note").first()).toContainText("💡");
+    await expect(section.locator(".rol-boat-badge")).toHaveCount(2);
     // レポーター名は表示しない（2026-09-23のモック承認で決定）
     await expect(section).not.toContainText("テスト レポーター");
     await expect(section.locator(".rpr-source-link")).toHaveAttribute(
@@ -159,7 +164,9 @@ test.describe("レース詳細の直前情報タブ: ピットレポート", () 
     await expect(section).not.toContainText("まだ公開されていません");
   });
 
-  test("対象外のグレード（一般戦）では取得もセクションの描画もしない", async ({
+  // 2026-11-24 部品化: 対象外もカードにせず1行で「無い」と出す（取れていないのと見分けるため）。
+  // 取得はしない（グレードの規則で外れるレースは問い合わせない）
+  test("対象外のグレード（一般戦）では取得せず、カードでなく対象外の1行だけを出す", async ({
     page,
   }) => {
     const pitRequests = [];
@@ -171,7 +178,35 @@ test.describe("レース詳細の直前情報タブ: ピットレポート", () 
     await expect(page.locator(".race-before-info-tab")).toBeVisible({
       timeout: 20000,
     });
+    const out = page.locator('[data-state="not-target-grade"]');
+    await expect(out).toBeVisible();
+    await expect(out).toContainText("SG・G1・G2 のレースだけ");
     await expect(page.locator(".rpr-card")).toHaveCount(0);
     expect(pitRequests).toEqual([]);
+  });
+
+  test("公式が対象外と答えたレースは、カードでなく対象外の1行を出す", async ({
+    page,
+  }) => {
+    await routePitReport(page, {
+      report: [
+        {
+          status: "not_target",
+          target_from: 12,
+          target_to: 12,
+          reporter_name: null,
+          comment_count: 0,
+          created_at: "2026-09-21T06:42:00Z",
+          updated_at: null,
+        },
+      ],
+      comments: [],
+    });
+    await openBeforeInfoTab(page, G1_RACE);
+
+    const out = page.locator('[data-state="not-target-official"]');
+    await expect(out).toBeVisible({ timeout: 20000 });
+    await expect(out).toContainText("公式のピットレポートの対象外");
+    await expect(page.locator(".rpr-card")).toHaveCount(0);
   });
 });

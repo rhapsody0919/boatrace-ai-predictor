@@ -2286,6 +2286,14 @@
     "error": "Could not load the pit report.",
     "retry": "Reload",
     "note": "Comments are shown exactly as published on the official site (no summarising or editing). Check the official site for the latest version.",
+    "heading": "Racer comments",
+    "subtitle": "Racer comments from the official Pit Report, shown as published",
+    "cardNote": "Shown exactly as published on the official site (no summarising or editing). The ★ marks are the official notation; the official site does not define them. Boats without a comment are not listed. Check the official site for the latest version.",
+    "notTarget": {
+      "grade": "Racer comments: the official Pit Report covers SG, G1 and G2 races only",
+      "earlyRace": "Racer comments: for G1 and G2, the official Pit Report usually covers races 7R onwards only",
+      "official": "Racer comments: this race is not covered by the official Pit Report"
+    },
     "originalLanguageNote": "Comments are shown in the original Japanese."
   },
   "oddsList": {
