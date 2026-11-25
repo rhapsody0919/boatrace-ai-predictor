@@ -40,7 +40,7 @@ async function openWaku(page) {
   await expect(page.locator(".six-boat-course tbody tr").first()).toBeVisible({
     timeout: 30000,
   });
-  await expect(page.locator(".rwit-chip-row")).toBeVisible();
+  await expect(page.locator(".rwit-detail > .rwit-chip-row")).toBeVisible();
 }
 
 const boxOf = (page, selector) =>
@@ -92,7 +92,7 @@ test.describe("レイアウト: 枠別情報の PC の並び", () => {
     await openWaku(page);
     await expect(page.locator(".rwit-detail-title")).toBeHidden();
     const table = await boxOf(page, ".rwit-top > .six-boat-course");
-    const chips = await boxOf(page, ".rwit-chip-row");
+    const chips = await boxOf(page, ".rwit-detail > .rwit-chip-row");
     expect(chips.y, "チップは6艇表の下").toBeGreaterThanOrEqual(table.bottom - 1);
   });
 });
