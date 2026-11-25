@@ -50,8 +50,14 @@ for (const width of [375, 1440]) {
     await table.locator("tbody tr").nth(1).focus();
     await page.keyboard.press("Enter");
     await expect(page.locator(".rwit-boat-chip").nth(1)).toHaveAttribute("aria-pressed", "true");
-    expect(await table.evaluate((el) => el.getBoundingClientRect().bottom)).toBeLessThan(
-      await page.locator(".rwit-chip-row").first().evaluate((el) => el.getBoundingClientRect().top));
+    const tableBox = await table.evaluate((el) => el.getBoundingClientRect().toJSON());
+    const chipBox = await page.locator(".rwit-chip-row").first().evaluate((el) => el.getBoundingClientRect().toJSON());
+    if (width >= 1200) {
+      // 1200px 以上はチップが6艇表の右の列（オーナー承認 2026-11-25）
+      expect(tableBox.right).toBeLessThan(chipBox.left);
+    } else {
+      expect(tableBox.bottom).toBeLessThan(chipBox.top);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }

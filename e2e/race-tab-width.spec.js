@@ -110,8 +110,10 @@ for (const width of [1440, 1920]) {
     await expect(page.locator(".race-tabs-btn").first()).toBeVisible({
       timeout: 30000,
     });
-    // 基本情報（棒｜凡例）・今節（表｜注記）・枠別情報（表｜注意書き、逃げ｜決まり手）・結果（隊形｜着順、払戻｜水面傾向）
-    const expected = { 基本情報: 1, 今節: 1, 枠別情報: 2, 結果: 2 };
+    // 基本情報（棒｜凡例）・今節（表｜注記）・結果（隊形｜着順、払戻｜水面傾向）。
+    // 枠別情報は 1200px 以上で6艇表｜選んだ選手のカードの2列・下の3枚の3列に変えた（オーナー承認 2026-11-25）。
+    // その並びは e2e/layout/ の枠別の PC の並びの試験が見る
+    const expected = { 基本情報: 1, 今節: 1, 結果: 2 };
     for (const [tab, min] of Object.entries(expected)) {
       await page.locator(".race-tabs-btn", { hasText: tab }).first().click();
       const splits = page.locator(".race-tabs-panel .race-split");
@@ -242,7 +244,10 @@ for (const width of [375, 1024, 1440, 1920]) {
         parseFloat(style.borderRightWidth) +
         (mobile ? 0 : parseFloat(style.paddingRight));
       const main = el.closest(".race-split__main");
+      const detail = card.closest(".rwit-detail")?.getBoundingClientRect();
       return {
+        detailLeft: detail?.left ?? null,
+        detailRight: detail?.right ?? null,
         left: tableBox.left,
         width: tableBox.width,
         cardLeft: box.left,
@@ -263,10 +268,16 @@ for (const width of [375, 1024, 1440, 1920]) {
     const expectedWidth = width >= 1025 ? Math.min(720, room) : room;
     near(geometry.width, expectedWidth, "表の幅");
     if (width >= 1440) {
-      // カードは列いっぱい（BOA-881）
+      // 1200px 以上は、選んだ選手のカード（列の右半分）の中（オーナー承認 2026-11-25。BOA-881 の列いっぱいから変えた）
       const col = column(width);
-      near(geometry.cardLeft, col.left, "カードの左端");
-      near(geometry.cardWidth, col.right - col.left, "カードの幅");
+      expect(geometry.detailLeft, "選んだ選手のカードがある").not.toBeNull();
+      near(geometry.detailRight, col.right, "選んだ選手のカードの右端");
+      expect(geometry.detailLeft, "選んだ選手のカードは列の右半分").toBeGreaterThan(
+        (col.left + col.right) / 2 - 1,
+      );
+      expect(geometry.cardLeft, "表のカードは選んだ選手のカードの中").toBeGreaterThanOrEqual(
+        geometry.detailLeft,
+      );
     }
   });
 }
