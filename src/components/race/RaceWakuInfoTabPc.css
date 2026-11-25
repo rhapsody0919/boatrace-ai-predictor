@@ -1,0 +1,113 @@
+/* 枠別情報タブの PC の並び（オーナー承認 2026-11-25、side-session-notes の waku-pc/compare-*.png）。
+   1200px 以上で、上は6艇表（左）と選んだ選手のコース別成績（右）の2列、下の3枚は3列。
+   1199px 以下は囲み（.rwit-top・.rwit-detail）が無いのと同じで、今の縦並びのまま。
+   切り替える幅は RaceTabs.css の .race-split（1200px）とそろえる（docs/knowledge/ui-layout.md） */
+
+.rwit-top,
+.rwit-detail {
+  display: contents;
+}
+
+.rwit-detail-title {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .race-tabs-panel .rwit-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--spacing-4);
+    align-items: stretch;
+    margin-bottom: var(--spacing-3);
+  }
+
+  /* 左右のカード。見た目は .rwit-card とそろえる */
+  .race-tabs-panel .rwit-top > .six-boat-course,
+  .race-tabs-panel .rwit-detail {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin: 0;
+    background: var(--surface-card);
+    border: var(--border-width-1) solid var(--border-hairline);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+
+  .race-tabs-panel .rwit-top > .six-boat-course table,
+  .race-tabs-panel .rwit-top .six-boat-course-notes {
+    max-width: none;
+  }
+
+  .race-tabs-panel .rwit-top > .six-boat-course tbody tr {
+    height: 56px;
+  }
+
+  /* 行を押せることを PC のポインタで見せる */
+  .race-tabs-panel .rwit-top > .six-boat-course tbody tr:hover {
+    background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  }
+
+  .race-tabs-panel .rwit-top .six-boat-course-diff-head {
+    white-space: nowrap;
+  }
+
+  /* 右: 見出し → 選ぶ所 → 表 → 説明（説明は order で最後へ） */
+  .race-tabs-panel .rwit-detail-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin: 0 0 var(--spacing-2);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .race-tabs-panel .rwit-detail > .rwit-note {
+    order: 1;
+    margin: var(--spacing-2) 0 0;
+    font-size: var(--font-size-xs);
+  }
+
+  /* 6つのチップは 3×2（5＋1 の折れを出さない） */
+  .race-tabs-panel .rwit-detail > .rwit-chip-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .race-tabs-panel .rwit-detail .rwit-boat-chip {
+    justify-content: center;
+    min-width: 0;
+  }
+
+  /* 右のカードの中のコース別成績は枠を外し、題は右の見出しに任せる。表と注意書きは縦に積む */
+  .race-tabs-panel .rwit-detail > .rwit-card {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .race-tabs-panel .rwit-detail > .rwit-card > .rwit-card-title {
+    display: none;
+  }
+
+  .race-tabs-panel .rwit-detail > .rwit-card > .race-split {
+    display: block;
+  }
+
+  /* 下の3枚（まくられ・差され｜1コースが逃げたとき｜決まり手）を3列に、高さをそろえる */
+  .race-tabs-panel .race-waku-info-tab > .race-split {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--spacing-4);
+    align-items: stretch;
+  }
+
+  .race-tabs-panel .race-waku-info-tab > .race-split > .race-split__main {
+    display: contents;
+  }
+
+  .race-tabs-panel .race-waku-info-tab > .race-split > * > *,
+  .race-tabs-panel .race-waku-info-tab > .race-split > .race-split__side {
+    margin: 0;
+  }
+}

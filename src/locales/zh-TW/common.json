@@ -805,6 +805,7 @@
     "venueStatsAsOfToday": "※此為最新的統計（期間 {{start}}〜{{end}}），並非本場比賽當日的數值",
     "kimariteCaveat": "※本場館所有比賽、所有艇合計的獲勝方式比例（非選手個人實績）",
     "gridTitle": "各航道成績",
+    "detailTitle": "選手的各航道成績",
     "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",
     "gridCaveat": "航道指起跑時實際進入的航道，而非艇號。未取得資料的賽事已排除",
     "gridRows": {

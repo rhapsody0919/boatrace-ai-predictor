@@ -811,6 +811,7 @@
     "venueStatsAsOfToday": "* Latest figures ({{start}} to {{end}}), not as of this race's date",
     "kimariteCaveat": "* Share of each winning technique across all races and boats at this venue (not an individual racer's record)",
     "gridTitle": "Record by course",
+    "detailTitle": "— record by course",
     "gridSubtitle": "Based on the course actually taken. Tap a cell to see the last 10 starts from that course",
     "gridCaveat": "Course means the lane actually taken at the start, not the boat number. Races without this data are excluded",
     "gridRows": {
