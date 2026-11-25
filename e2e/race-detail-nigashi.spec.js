@@ -46,8 +46,9 @@ test("2号艇の進入2コースの走のうち、逃げで1着を取られた�
   await expect(card).toContainText("選手の特徴を表す率ではありません");
   // 事実の記録なので「結果を保証しない」の断りは付けない（オーナー 2026-11-25）
   await expect(card).not.toContainText("保証");
-  // 逃げのカード（1コースが逃げたとき）の直後に置く
-  await expect(card.locator("xpath=preceding-sibling::*[1]")).toHaveClass(/nsc-card/);
+  // 右の列（決まり手のカードと同じ列）の上に置く。PC の下の段は3列のまま、スマホでは逃げのカードの直後に来る
+  await expect(page.locator(".race-split__side > [data-testid=nigashi-card]")).toHaveCount(1);
+  await expect(card.locator("xpath=following-sibling::*[1]")).toHaveClass(/rwit-card/);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(375);

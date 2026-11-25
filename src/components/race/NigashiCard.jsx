@@ -103,7 +103,13 @@ export default function NigashiCard({ player, records, now }) {
     );
   };
   return (
-    <section className="rwit-card course1-loss" data-testid="nigashi-card">
+    // 右の列で決まり手のカードの上に積む。PC の下の段は子の余白を0にそろえる（RaceWakuInfoTabPc.css）ので、
+    // ここだけ下の余白を持つ（値はスマホの .rwit-card の margin-bottom と同じ）
+    <section
+      className="rwit-card course1-loss"
+      data-testid="nigashi-card"
+      style={{ marginBottom: "var(--spacing-3)" }}
+    >
       <h3 className="rwit-card-title">{text("title")}</h3>
       <p className="course1-loss-who">
         <BoatBadge n={COURSE} size="xs" />
