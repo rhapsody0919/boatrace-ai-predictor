@@ -17,7 +17,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
    - `.claude/` の全部と、このファイル `AGENTS.md`
    - `.github/workflows/` の全部
    - `package.json` の `scripts`、`scripts/maintenance/run-verify-registry.js`・`guard-pr-merge.js`、`playwright.config.*`、`e2e/fixtures.js`
-   - verify の期待値: 既存の `scripts/maintenance/verify-*.js`・`e2e/*.spec.js` の期待値・条件を緩めない（落ちる試験を通すために変えない。誤りだと思ったら止める）。`verify-registry.json` は、自分が足した `verify-*.js` の `"tier": "ci"` の1行を名前の順の位置に足すことだけ許す（`node scripts/maintenance/run-verify-registry.js --sort`）
+   - verify の期待値: 既存の `scripts/maintenance/verify-*.js`・`e2e/*.spec.js` の期待値・条件を緩めない（落ちる試験を通すために変えない。誤りだと思ったら止める）。新しい `verify-*.js` は `verify-registry.json` に行を足さない（行が無ければ既定で tier=ci、頭の注釈の1行目が guards。ADR-0072 の追記）。manual・args・timeoutSec が要るときだけ、自分が足した verify の1行を名前の順の位置に足す
    - 例外: 既存の `verify-*.js` を振る舞いの試験へ置き換える変更は、機械の変異検査（`scripts/maintenance/guard_weakening/`: 旧の verify が落とす変異 ⊆ 新の試験が落とす変異）を通したときだけ可
    - `vercel.json`（AI の枝の Preview を止める設定。`verify-codex-no-preview.js` が固定）
    - `docs/operation/codex-backlog.md`「回すもの・回さないもの」の (a)（`scripts/db/**`・`scripts/watch/**`・`scripts/lib/dbApplySql.js` 等の守りの本体）
@@ -52,7 +52,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 
 - `playwright`・`vite build` を `npm run` の外で回すときは `run-heavy.sh` を通し、playwright は `--workers=1`。書けない環境は `RYUJIN_HEAVY_LOCK_DIR` を向ける
 - Node の版は `.nvmrc`（24）と package.json の engines（24.x、Vercel の本番もこの版）。手元も CI もこの版で回す
-- E2E は録画を再生し時計を録画の時刻に固定する（`e2e/fixtures.js` の `test` と `fetchRecorded`）。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しする。Codex は手元で playwright を回さない
+- E2E は録画を再生し時計を録画の時刻に固定する（`e2e/fixtures.js` の `test` と `fetchRecorded`）。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しする。Codex は手元で playwright を回さない。verify も期待を今の時刻に依らせず、時刻の区切り（正時・日付）をまたぐ確かめは区切りに依る確かめの後に置く（#3424 が毎時0〜10分に master を赤にした）
 - 画面の確認は手元の dev サーバーと Playwright で行う（DOM の照合とスクリーンショット。ライトとダークの両方）。一時ファイルは消す
 
 ## 構造と依存の向き（リアーキテクチャ、オーナー 2026-11-10）
@@ -99,7 +99,7 @@ Node 側  api → api/_lib → scripts/lib → scripts/lib/pure → src/pure
 ## PR の決まり
 
 - コミットは `<type>: <日本語の説明>`。type は `feat`・`fix`・`content`・`refactor`・`docs`・`chore`。Claude の署名（`Co-Authored-By: Claude`）は付いてよい
-- 変更には再現の試験か検査を付け、CI が呼ぶ場所に置く: 画面の動きは `e2e/`、レイアウトは `e2e/layout/<面>-layout.spec.js`（共通は `e2e/layout/helpers.js`。件数で変わる並びは件数を差し替えて）、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（`verify-registry.json` に登録。未登録だと `verify:ci` が落ちる）。`scripts/tests/` 等 CI が呼ばない所に置かない
+- 変更には再現の試験か検査を付け、CI が呼ぶ場所に置く: 画面の動きは `e2e/`、レイアウトは `e2e/layout/<面>-layout.spec.js`（共通は `e2e/layout/helpers.js`。件数で変わる並びは件数を差し替えて）、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（頭の注釈の1行目に何を守るかを書く。無いと `verify:ci` が落ちる）。`scripts/tests/` 等 CI が呼ばない所に置かない
 - マイグレーション・ADR の番号は予約しない。PR を作るときに `origin/master` の最大＋1
 - 新しいページ・分析タブ・主要な機能には `docs/design/{slug}/content-index.json`（対象外なら `not_applicable: true`）
 - 必須の check は `verify`（`npm run verify` と本番の build）・`ml-tests`・`e2e`。落ちたら直して push する
