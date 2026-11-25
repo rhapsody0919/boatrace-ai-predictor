@@ -14,6 +14,23 @@ on:
     workflows: [Key Canary]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      backfill_from:
+        description: "過去分の取り直しの開始日（YYYY-MM-DD、2025-12-21 以降）。空なら毎日の取り込みだけ"
+        required: false
+        default: ""
+      backfill_to:
+        description: "過去分の取り直しの終了日（YYYY-MM-DD）。空なら PT の今日の3日前"
+        required: false
+        default: ""
+      backfill_tables:
+        description: "取り直す表（query・page のコンマ区切り）"
+        required: false
+        default: "page"
+      dry_run:
+        description: "取るだけで書かない（日付と行数だけ出す）"
+        type: boolean
+        default: true
 
 concurrency:
   group: growth-gsc-daily
@@ -49,7 +66,8 @@ jobs:
     needs: gate
     if: needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 過去分の取り直し（2025-12-21 から約340日、1日1〜数回の API）は20分に収まらないので、手で起こしたときだけ伸ばす
+    timeout-minutes: ${{ github.event.inputs.backfill_from != '' && 120 || 20 }}
     environment: prod-jobs
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +95,35 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: node scripts/growth/collect-gsc-daily.js
+
+      # ページ別（date × page、匿名の語も合計に入る。表 growth_gsc_page_daily、マイグレーション 205）も直近7日を取り直す。
+      # GSC は2〜3日遅れなので、9日前から取る（backfill-gsc-daily.js の既定の終端は PT の今日の3日前）
+      - name: Page daily (last 7 days)
+        if: github.event.inputs.backfill_from == ''
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ./credentials/google-service-account.json
+          SEARCH_CONSOLE_SITE_URL: ${{ secrets.SEARCH_CONSOLE_SITE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scripts/maintenance/backfill-gsc-daily.js --from "$(date -u -d '9 days ago' +%F)" --tables page
+
+      # 手で起こしたときの過去分の取り直し（入力は env 経由で渡し、式を run に直接埋めない）
+      - name: Backfill (workflow_dispatch)
+        if: github.event.inputs.backfill_from != ''
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ./credentials/google-service-account.json
+          SEARCH_CONSOLE_SITE_URL: ${{ secrets.SEARCH_CONSOLE_SITE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          FROM: ${{ github.event.inputs.backfill_from }}
+          TO: ${{ github.event.inputs.backfill_to }}
+          TABLES: ${{ github.event.inputs.backfill_tables }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          args=(--from "$FROM" --tables "$TABLES")
+          if [ -n "$TO" ]; then args+=(--to "$TO"); fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          node scripts/maintenance/backfill-gsc-daily.js "${args[@]}"
 
       - name: Clean up credentials
         if: always()
