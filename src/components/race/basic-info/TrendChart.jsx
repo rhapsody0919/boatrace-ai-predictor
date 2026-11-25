@@ -4,10 +4,12 @@
  * 偶然の幅の帯は付けない（オーナー決定）。軸は0から始めず値の幅に上下の余白を足す。
  * 見た目（trc- のクラス）は TrendChart.css。読み込みは使う側（BasicInfoTrend）が持つ。
  */
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { trendGapIndexes } from "../../../pure/racerTrendSeries.js";
 import { useChartWidth } from "./useChartWidth.js";
+import TrendTooltip from "./TrendTooltip";
 
 const H = 240;
 const PAD = { l: 30, r: 66, t: 18, b: 34 };
@@ -183,6 +185,112 @@ function SelectedAxis({ sel, selected, x, W }) {
   );
 }
 
+// 点に重ねる（マウス）／押す（指・クリック）と、選んだ艇の一番近い点を選ぶ（ファン4人の最終案）。
+// マウスはクリックで留め、指は動きの少ない押し離しで留める（縦のスクロールで出さない）。指で押したまま横に動かすと点が移る。
+// 留めている間は、図の外を押すか Esc で閉じる。同じ点をもう一度押しても閉じる（visual-designer 11/25）
+function usePick(sel, selected, x, W, boxRef) {
+  const [pick, setPick] = useState(null);
+  const start = useRef(null);
+  const len = sel.length;
+  const indexAt = (e) => {
+    const r = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    const sx = ((e.clientX - r.left) * W) / r.width;
+    let best = 0;
+    for (let i = 1; i < len; i += 1)
+      if (Math.abs(x(i, len) - sx) < Math.abs(x(best, len) - sx)) best = i;
+    return best;
+  };
+  const cur = pick && pick.boat === selected && pick.i < len ? pick : null;
+  const pinned = cur?.pinned === true;
+  useEffect(() => {
+    if (!pinned) return undefined;
+    const close = (e) => {
+      if (
+        e.type === "keydown"
+          ? e.key === "Escape"
+          : !boxRef.current?.contains(e.target)
+      )
+        setPick(null);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [pinned, boxRef]);
+  const toggle = (i) =>
+    setPick(pinned && cur.i === i ? null : { boat: selected, i, pinned: true });
+  return {
+    pick: cur,
+    close: () => setPick(null),
+    onPointerMove: (e) => {
+      if (e.pointerType === "mouse") {
+        if (!pinned) setPick({ boat: selected, i: indexAt(e), pinned: false });
+        return;
+      }
+      const s = start.current;
+      const dx = s ? Math.abs(e.clientX - s.x) : 0;
+      if (e.buttons && s && dx > 10 && dx > Math.abs(e.clientY - s.y))
+        setPick({ boat: selected, i: indexAt(e), pinned: true });
+    },
+    onPointerLeave: () => {
+      if (!pinned) setPick(null);
+    },
+    onPointerDown: (e) => {
+      if (e.pointerType === "mouse") toggle(indexAt(e));
+      else start.current = { x: e.clientX, y: e.clientY };
+    },
+    onPointerUp: (e) => {
+      const s = start.current;
+      start.current = null;
+      if (e.pointerType === "mouse" || !s) return;
+      if (Math.hypot(e.clientX - s.x, e.clientY - s.y) < 10) toggle(indexAt(e));
+    },
+  };
+}
+
+// 選んだ点の縦の点線と印、点を選ぶ当たりの面（図の中の全面、透明）。縦のスクロールは指に任せる
+function PickLayer({ picked, px, y, selected, W, pointer }) {
+  return (
+    <>
+      {picked && (
+        <g className="trc-pick">
+          <line
+            x1={px}
+            x2={px}
+            y1={PAD.t}
+            y2={H - PAD.b}
+            className="trc-pick-line"
+          />
+          <circle
+            cx={px}
+            cy={y(picked.value)}
+            r={7.5}
+            className="trc-pick-ring"
+          />
+          <circle
+            cx={px}
+            cy={y(picked.value)}
+            r={6}
+            fill={BOAT_COLORS[selected].bg}
+            className="trc-pick-dot"
+          />
+        </g>
+      )}
+      <rect
+        className="trc-hit"
+        x={PAD.l}
+        y={PAD.t}
+        width={W - PAD.l - PAD.r}
+        height={H - PAD.t - PAD.b}
+        fill="transparent"
+        {...pointer}
+      />
+    </>
+  );
+}
+
 export default function TrendChart({ seriesByBoat, metric, selected }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
@@ -190,51 +298,74 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
   const sel = seriesByBoat.get(selected) ?? [];
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
+  const boxRef = useRef(null);
+  const { pick, close, ...pointer } = usePick(sel, selected, x, W, boxRef);
+  const picked = pick ? sel[pick.i] : null;
+  const px = pick ? x(pick.i, sel.length) : 0;
   return (
-    <svg
-      ref={ref}
-      className="trc-svg"
-      viewBox={`0 0 ${W} ${H}`}
-      role="img"
-      aria-label={t("basicInfo.trend.title", {
-        metric: t(`basicInfo.metrics.${metric}`),
-      })}
-    >
-      <GridLines
-        ticks={ticks}
-        y={y}
-        x1={PAD.l}
-        x2={W - PAD.r}
-        label={(g) => (metric === "avgSt" ? g.toFixed(2) : Math.round(g))}
-      />
-      {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
-      <text
-        x={metric === "avgSt" ? 2 : PAD.l - 4}
-        y={PAD.t - 6}
-        className="trc-tick"
-        textAnchor={metric === "avgSt" ? "start" : "end"}
+    <div className="trc-chartbox" ref={boxRef}>
+      <svg
+        ref={ref}
+        className="trc-svg"
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={t("basicInfo.trend.title", {
+          metric: t(`basicInfo.metrics.${metric}`),
+        })}
       >
-        {metric === "avgSt" ? t("basicInfo.trend.unitSec") : "%"}
-      </text>
-      <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
-      {order.map((boat) => (
-        <Line
-          key={boat}
-          points={seriesByBoat.get(boat)}
-          boat={boat}
-          selected={boat === selected}
+        <GridLines
+          ticks={ticks}
+          y={y}
+          x1={PAD.l}
+          x2={W - PAD.r}
+          label={(g) => (metric === "avgSt" ? g.toFixed(2) : Math.round(g))}
+        />
+        {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
+        <text
+          x={metric === "avgSt" ? 2 : PAD.l - 4}
+          y={PAD.t - 6}
+          className="trc-tick"
+          textAnchor={metric === "avgSt" ? "start" : "end"}
+        >
+          {metric === "avgSt" ? t("basicInfo.trend.unitSec") : "%"}
+        </text>
+        <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
+        {order.map((boat) => (
+          <Line
+            key={boat}
+            points={seriesByBoat.get(boat)}
+            boat={boat}
+            selected={boat === selected}
+            x={x}
+            y={y}
+          />
+        ))}
+        <EndLabels
+          seriesByBoat={seriesByBoat}
+          selected={selected}
           x={x}
           y={y}
+          metric={metric}
+          W={W}
         />
-      ))}
-      <EndLabels
-        seriesByBoat={seriesByBoat}
-        selected={selected}
-        x={x}
-        y={y}
-        metric={metric}
-        W={W}
-      />
-    </svg>
+        <PickLayer
+          picked={picked}
+          px={px}
+          y={y}
+          selected={selected}
+          W={W}
+          pointer={pointer}
+        />
+      </svg>
+      {picked && (
+        <TrendTooltip
+          point={picked}
+          metric={metric}
+          leftPct={(px / W) * 100}
+          pinned={pick.pinned}
+          onClose={close}
+        />
+      )}
+    </div>
   );
 }
