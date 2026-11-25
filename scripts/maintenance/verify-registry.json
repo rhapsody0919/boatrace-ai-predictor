@@ -1669,6 +1669,11 @@
       "guards": "マイグレーション075・092（予定表 scrape_slots・claim_scrape_slots）をPGlite上で検証"
     },
     {
+      "script": "verify-scrape-status-summary.js",
+      "tier": "ci",
+      "guards": "scrape-monitor の結果の集計の面（api/scrape-status/summary.js・statusSummary.js。集計だけ・no-store・GET のみ）"
+    },
+    {
       "script": "verify-scraped-at-on-update.js",
       "tier": "ci",
       "guards": "scraped_at を持つテーブルへの upsert/update が scraped_at を載せること（DEFAULT now() は INSERT でしか効かず、載せないと初回挿入時の値が残り、鮮度の指標が壊れる。BOA-463）"
