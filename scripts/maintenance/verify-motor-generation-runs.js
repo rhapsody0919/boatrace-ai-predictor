@@ -9,6 +9,7 @@
  *   - 頼んだ号機の走だけを、古い順に1走1行。展示タイムは同じレース・同じ艇の行から
  *   - 1回の返す行が1000で切れても、走を取りこぼさない
  *   - 使用開始日が無ければ generationStart は null で走は空。取得の失敗は例外のまま
+ *   - 走に乗った選手と着順（結果の rank から。結果が無ければ null）を付け、会場の節（世代の初めからレースの日まで）を返す
  */
 import {
   createFakeSupabase,
@@ -35,11 +36,15 @@ for (let n = -4; n <= 108; n += 1) {
     races.push({ race_id: rid(n, no), race_date: day(n), venue_code: V });
     for (let boat = 1; boat <= 6; boat += 1) {
       const motor = ((n * 12 + no + boat * 7) % 60) + 1;
-      entries.push({ race_id: rid(n, no), boat_number: boat, motor_number: motor, motor_2rate: 30 + boat, motor_3rate: 50 + boat });
+      entries.push({ race_id: rid(n, no), boat_number: boat, motor_number: motor, motor_2rate: 30 + boat, motor_3rate: 50 + boat, player_name: `選手${motor}-${boat}` });
       exhibition.push({ race_id: rid(n, no), boat_number: boat, exhibition_time: 6.7 + boat / 100 });
     }
   }
 }
+// 結果は奇数のレース番号だけ。着順は艇番を逆に並べる（1着が6号艇）
+const results = races.filter((r) => Number(r.race_id.slice(-2)) % 2 === 1).map((r) => ({ race_id: r.race_id, rank1: 6, rank2: 5, rank3: 4, rank4: 3, rank5: 2, rank6: 1 }));
+const series = [-20, 0, 6, 30, 90, 101].map((n) => ({ venue_code: V, start_date: day(n), end_date: day(n + 5), total_days: 6, grade: "一般", title: `節${n}` }))
+  .concat([{ venue_code: 3, start_date: day(10), end_date: day(15), total_days: 6, grade: "G1", title: "他会場" }]);
 const tables = {
   venue_motor_start_dates: [
     { venue_code: V, start_date: "2025-08-01" },
@@ -50,6 +55,8 @@ const tables = {
   races,
   race_entries: entries,
   exhibition_data: exhibition,
+  race_results: results,
+  race_series: series,
 };
 const fake = setFakeSupabase(createFakeSupabase(tables, { scramble: true, project: true, maxRows: 1000 }));
 const { getMotorGenerationRuns } = await import("../../src/services/motorQueries8.js");
@@ -71,6 +78,15 @@ for (const m of motors) {
   check(`${m}号機の展示は同じ艇の行`, runs.every((r, i) => r.exhibitionTime === 6.7 + exp[i].boat_number / 100 && r.motor2Rate === exp[i].motor_2rate));
   check(`${m}号機に前の世代・このレース以降が無い`, runs.every((r) => r.date >= day(5) && r.raceId < target));
 }
+const run0 = got.runsByMotor[34][0];
+const e0 = want(34)[0];
+check("走に乗った選手", run0.racerName === e0.player_name, String(run0.racerName));
+check("着順は結果の rank から（無ければ null）", got.runsByMotor[34].every((r, i) => {
+  const e = want(34)[i];
+  return Number(r.raceId.slice(-2)) % 2 === 1 ? r.finish === 7 - e.boat_number : r.finish === null;
+}));
+check("会場の節は世代の初めからレースの日まで", got.meets.map((m) => m.start).join() === [6, 30, 90].map(day).join(), JSON.stringify(got.meets.map((m) => m.start)));
+check("節はグレード・日数つき", got.meets[0].grade === "一般" && got.meets[0].days === 6 && got.meets[0].end === day(11));
 check("頼んでいない号機は返さない", Object.keys(got.runsByMotor).sort().join() === "12,34,58");
 check("race_entries は1000行を超えない幅で読む", fake.queriesOn("race_entries").every((q) => q.range && q.range[1] - q.range[0] < 1000));
 

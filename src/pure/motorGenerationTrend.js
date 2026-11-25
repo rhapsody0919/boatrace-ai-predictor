@@ -78,3 +78,30 @@ export function motorExhibitionTrend(
   });
   return [...byDate.values()];
 }
+
+/**
+ * 節の点の吹き出しの中身（オーナー 2026-11-25 承認のモック）。点の日に始まるその基の節の走から、乗った選手と着順を、
+ * 会場の節（race_series）から期間・グレード・日数を取る。点の値（節の初日の公式の率）はその節に入る前までの累計で、
+ * 選手と着順はその節の中の物
+ * @param {Array<Object>} runs 1基の今の世代の走（racerName・finish つき）
+ * @param {string} date 点の日（節の初日）
+ * @param {Array<{start:string,end:string,days:number|null,grade:string|null,title:string|null}>} meets 会場の節
+ * @returns {{start:string,end:string,days:number|null,grade:string|null,racerName:string|null,finishes:Array<number|null>}|null}
+ *   start は節のページ（/venue/会場/meet/初日）の初日。その日に始まる節が無ければ null
+ */
+export function motorMeetTip(runs, date, meets) {
+  const rows = sortRuns(runs);
+  const all = motorMeets(rows);
+  const k = all.findIndex((m) => m.start === date);
+  if (k < 0) return null;
+  const inMeet = rows.slice(all[k].runsBefore, all[k + 1]?.runsBefore ?? rows.length);
+  const series = (meets ?? []).find((m) => m.start <= date && date <= m.end);
+  return {
+    start: series?.start ?? date,
+    end: series?.end ?? inMeet[inMeet.length - 1].date,
+    days: series?.days ?? null,
+    grade: series?.grade ?? null,
+    racerName: inMeet.find((r) => r.racerName)?.racerName ?? null,
+    finishes: inMeet.map((r) => r.finish ?? null),
+  };
+}

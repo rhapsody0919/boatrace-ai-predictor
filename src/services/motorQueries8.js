@@ -1,7 +1,7 @@
 // モーターの推移の線（レーン B、オーナー 2026-11-25 承認のモック改訂2）のための取得。
 // このレースの6基の、今の世代（そのレースの日以前で最新の使用開始日から）の走を1走1行で返す
 import { supabase } from "./supabaseClient";
-import { getRacesForVenueSince } from "./motorQueries.js";
+import { findBoatColumnIndex, getRacesForVenueSince } from "./motorQueries.js";
 import { chunkArray, fetchAllByIn, isPermissionDeniedError, withCache } from "./core.js";
 import { motorGenerationStartAsOf } from "../utils/motorGeneration";
 
@@ -30,7 +30,7 @@ async function fetchEntries(raceIds, motorNumbers) {
     chunkArray(raceIds, RACE_CHUNK).map((chunk) =>
       supabase
         .from("race_entries")
-        .select("race_id, boat_number, motor_number, motor_2rate, motor_3rate")
+        .select("race_id, boat_number, motor_number, motor_2rate, motor_3rate, player_name")
         .in("race_id", chunk)
         .in("motor_number", motorNumbers)
         .order("race_id")
@@ -41,30 +41,46 @@ async function fetchEntries(raceIds, motorNumbers) {
   return pages.flatMap(({ data }) => data ?? []);
 }
 
+/** 会場の、世代の初めからレースの日までに始まった節（吹き出しの期間・グレード） */
+async function fetchMeets(venueCode, from, to) {
+  const { data } = await supabase
+    .from("race_series")
+    .select("start_date, end_date, total_days, grade, title")
+    .eq("venue_code", venueCode)
+    .gte("start_date", from)
+    .lte("start_date", to)
+    .order("start_date");
+  return (data ?? []).map((m) => ({ start: m.start_date, end: m.end_date, days: m.total_days, grade: m.grade, title: m.title }));
+}
+
 /**
  * このレースの6基の、今の世代の走（このレースより前）。
  * @param {number} venueCode
  * @param {number[]} motorNumbers
  * @param {string} raceId YYYY-MM-DD-VV-RR（このレースより前の走だけを数える）
- * @returns {Promise<{generationStart: string|null, runsByMotor: Object<string, Array<{raceId:string,date:string,motor2Rate:number|null,motor3Rate:number|null,exhibitionTime:number|null}>>}>}
+ * 走には乗った選手（racerName）と着順（finish。結果が無い・着が付かなければ null）も付ける。meets は会場の節（吹き出し用）
+ * @returns {Promise<{generationStart: string|null, meets: Array<{start:string,end:string,days:number|null,grade:string|null,title:string|null}>, runsByMotor: Object<string, Array<{raceId:string,date:string,motor2Rate:number|null,motor3Rate:number|null,exhibitionTime:number|null,racerName:string|null,finish:number|null}>>}>}
  *   generationStart が null なら世代が分からない（推移を描かない）
  */
 export function getMotorGenerationRuns(venueCode, motorNumbers, raceId) {
   const motors = [...new Set(motorNumbers.filter((n) => Number.isInteger(n)))].sort((a, b) => a - b);
-  return withCache(`motor-generation-runs-v1-${venueCode}-${motors.join("_")}-${raceId}`, async () => {
+  return withCache(`motor-generation-runs-v2-${venueCode}-${motors.join("_")}-${raceId}`, async () => {
     const generationStart = await generationStartAsOf(venueCode, raceId);
     const runsByMotor = Object.fromEntries(motors.map((n) => [n, []]));
-    if (generationStart === null || motors.length === 0) return { generationStart, runsByMotor };
-    const races = await getRacesForVenueSince(venueCode, generationStart, raceId);
-    if (races.length === 0) return { generationStart, runsByMotor };
+    if (generationStart === null || motors.length === 0) return { generationStart, meets: [], runsByMotor };
+    const [races, meets] = await Promise.all([
+      getRacesForVenueSince(venueCode, generationStart, raceId),
+      fetchMeets(venueCode, generationStart, raceId.slice(0, 10)),
+    ]);
+    if (races.length === 0) return { generationStart, meets, runsByMotor };
     const dateById = new Map(races.map((r) => [r.race_id, r.race_date]));
     const entries = await fetchEntries(races.map((r) => r.race_id), motors);
-    const exhibition = await fetchAllByIn(
-      "exhibition_data",
-      "race_id, boat_number, exhibition_time",
-      "race_id",
-      [...new Set(entries.map((e) => e.race_id))],
-    );
+    const runIds = [...new Set(entries.map((e) => e.race_id))];
+    const [exhibition, results] = await Promise.all([
+      fetchAllByIn("exhibition_data", "race_id, boat_number, exhibition_time", "race_id", runIds),
+      fetchAllByIn("race_results", "race_id, rank1, rank2, rank3, rank4, rank5, rank6", "race_id", runIds),
+    ]);
+    const resultById = new Map(results.map((r) => [r.race_id, r]));
     const exByKey = new Map(exhibition.map((x) => [`${x.race_id}-${x.boat_number}`, x.exhibition_time]));
     entries
       .filter((e) => dateById.has(e.race_id) && runsByMotor[e.motor_number])
@@ -76,8 +92,10 @@ export function getMotorGenerationRuns(venueCode, motorNumbers, raceId) {
           motor2Rate: e.motor_2rate,
           motor3Rate: e.motor_3rate,
           exhibitionTime: exByKey.get(`${e.race_id}-${e.boat_number}`) ?? null,
+          racerName: e.player_name ?? null,
+          finish: findBoatColumnIndex(resultById.get(e.race_id), "rank", e.boat_number),
         }),
       );
-    return { generationStart, runsByMotor };
+    return { generationStart, meets, runsByMotor };
   });
 }
