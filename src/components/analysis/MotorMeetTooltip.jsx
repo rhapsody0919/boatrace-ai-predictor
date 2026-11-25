@@ -34,7 +34,8 @@ export default function MotorMeetTooltip({ tip, point, venueCode, metric, leftPc
         {tip.grade && ` ${GRADE_LABELS[tip.grade] ?? tip.grade}`}
         {tip.days && ` ${t("analysis.motor.genTrend.tipDays", { n: tip.days })}`}
       </p>
-      <p className="trc-tip-line">
+      {/* 選手名と着順の並びは長くなりうるので、この行だけ折り返す（3行の決まりは見出しの数で守る） */}
+      <p className="trc-tip-line mtc-tip-wrap">
         {tip.racerName && <span translate="no">{t("analysis.motor.genTrend.tipRacer", { name: tip.racerName.replace(/\s+/g, "") })} </span>}
         {t("analysis.motor.genTrend.tipFinishes", { order: tip.finishes.map((f) => f ?? "-").join("-") })}
       </p>
