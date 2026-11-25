@@ -13,7 +13,9 @@ for (const [label, viewport] of [
     test.use({ viewport });
 
     for (const path of ["/", BLOG_PATH]) {
-      test(`${path} で下へ読むと隠れ、上へ戻すと出る`, async ({ page }) => {
+      test(`${path} で下へ読むと隠れ、上へ戻すと出る${path === BLOG_PATH ? " @blog" : ""}`, async ({
+        page,
+      }) => {
         await page.goto(path);
         await expect(button(page)).toBeVisible({ timeout: 25000 });
         await page.mouse.wheel(0, 600);
@@ -29,7 +31,7 @@ for (const [label, viewport] of [
 test.describe("パソコンの幅（1280px）", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test("下へ読んでも隠さず、アイコンだけに縮む", async ({ page }) => {
+  test("下へ読んでも隠さず、アイコンだけに縮む @blog", async ({ page }) => {
     await page.goto(BLOG_PATH);
     await expect(button(page)).toBeVisible({ timeout: 25000 });
     await page.mouse.wheel(0, 600);
