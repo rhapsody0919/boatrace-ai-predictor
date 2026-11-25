@@ -333,6 +333,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racesInit/venueSteps.js` | 朝の初期化（job.js の runRacesInitJob）の会場の処理と、会場一覧の再確認。cursor（進捗）を書き換える。 | backoffMinutes, isBreakerOpenError, processVenues, recheckVenueList, remainingVenues |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか2件 |
+| `scripts/lib/releaseCheckDispatch.js` | release-dispatch が Deploy Hook を叩いた後に、出した master の先の sha で e2e-release.yml（本番の U… | releaseCheckTimeout, dispatchReleaseCheck, releaseCheckAlerts, releasedReport, RELEASE_CHECK_WORKFLOW ほか4件 |
 | `scripts/lib/releaseDecide.js` | 本番のデプロイをまとめて出すかどうかの判定（純関数、ADR-0106）。起動と GitHub の読み取りは releaseDispatch.js。 | freshnessBasis, decideRelease, COMPARE_FILES_CAP, FRESH_HEAD_MS, AUTOMATED_COMMIT_EMAIL ほか1件 |
 | `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | staleReleaseAlerts, summarizeGates, fetchMasterHead, fetchCompare, fetchGateRuns ほか8件 |
 | `scripts/lib/releaseFullCheck.js` | 範囲の赤を解く全件の検査（ADR-0106 の 2026-11-24 の追記）。releaseDispatch.js が、出す範囲に失敗した run がある・ | applyFullRuns, fetchFullRuns, readFullChecks, startFullChecks, fullRunTitle |
@@ -677,4 +678,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 635 ファイル / export 3426 件。
+対象 636 ファイル / export 3435 件。
