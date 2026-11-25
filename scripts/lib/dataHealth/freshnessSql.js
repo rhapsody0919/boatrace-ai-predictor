@@ -51,6 +51,16 @@ export const NIGHTLY_FRESHNESS_ITEMS = Object.freeze([
     observed: `(select max(window_end) from ${t})`,
     applicable: "y.had_results",
   })),
+  // Search Console の日別（growth-gsc-daily。毎日 JST 10 時台に直近7日を取り直す）。GSC は PT の日付で2〜3日遅れる。
+  // 06:35 JST の評価（p_to = 前日 D-1）の時点で、前回（D-1 の 10 時台）が取れていれば max(date) は D-3。
+  // max(date)+2 >= p_to - 1（= max(date) >= D-4）で1日の余裕を見る。止まった日は2日続けて遅れた時点で鳴る
+  // （11/25 06:35 の時点の max(date) は 11/23＝D-2。余裕の日数は目安・根拠なし。数日の値を見て直す）
+  {
+    key: "growth_gsc_daily",
+    table: "growth_gsc_daily",
+    kind: "date_prev",
+    observed: "(select max(date) + 2 from growth_gsc_daily)",
+  },
   // calculate-accuracy の5本のうち、画面が読むキャッシュ（models は画面の代わりの経路だけが読むので見ない）
   ...[
     ["accuracy_summary", "accuracy_cache"],
