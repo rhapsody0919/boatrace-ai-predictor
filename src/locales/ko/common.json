@@ -562,6 +562,7 @@
       "data": "데이터 오류",
       "other": "기타"
     },
+    "dataHint": "어느 경주의 어떤 숫자인지도 적어 주세요 (예: 키류 11/23 3R, 2호정 모터 연대율).",
     "ratingLabel": "용신 레이더 만족도",
     "ratingAria": "{{max}}단계 중 {{n}} ({{label}})",
     "ratings": {
