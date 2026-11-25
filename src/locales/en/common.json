@@ -2332,6 +2332,7 @@
       "earlyRace": "Racer comments: for G1 and G2, the official Pit Report usually covers races 7R onwards only",
       "official": "Racer comments: this race is not covered by the official Pit Report"
     },
+    "noCommentForBoat": "No comment for boat {{n}}",
     "originalLanguageNote": "Comments are shown in the original Japanese."
   },
   "oddsList": {

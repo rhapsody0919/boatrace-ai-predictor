@@ -1832,6 +1832,7 @@
       "earlyRace": "選手コメント: G1・G2 の公式のピットレポートは、通常7R以降のレースだけに付きます",
       "official": "選手コメント: このレースは公式のピットレポートの対象外です"
     },
+    "noCommentForBoat": "{{n}}号艇のコメントはありません",
     "originalLanguageNote": ""
   },
   "oddsList": {

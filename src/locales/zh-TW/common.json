@@ -2326,6 +2326,7 @@
       "earlyRace": "選手留言：G1、G2 的官方維修區報告通常只提供 7R 以後的賽事",
       "official": "選手留言：本場比賽不在官方維修區報告的範圍內"
     },
+    "noCommentForBoat": "{{n}}號艇沒有留言",
     "originalLanguageNote": "留言以日文原文顯示。"
   },
   "oddsList": {
