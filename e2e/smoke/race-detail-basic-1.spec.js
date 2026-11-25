@@ -62,6 +62,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(
       page.locator(".data-race-table a[href*='/winning-technique'][href*='tab=racer']"),
     ).toHaveCount(1);
+    // 外した超展開データは、出走表の注記の下の1行から分析ツールへ飛べる（オーナー 2026-11-25）
+    await expect(
+      page.locator(
+        ".data-race-table a.drt-attack-defense-link[href*='/winning-technique'][href*='tab=attackdefense'][href*='race_id=']",
+      ),
+    ).toHaveCount(1);
   });
 
   test("過去日・結果確定済みレースのモータ情報タブが、無関係な「本日開催」レースにフォールバックせず当該レースのデータを表示する（race-detail-analysis-integration 回帰確認）", async ({

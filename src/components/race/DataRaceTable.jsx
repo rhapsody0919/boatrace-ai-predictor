@@ -28,6 +28,7 @@ import BoatCompareTable from "../dataDisplay/BoatCompareTable";
 import { useRaceUrlState } from "./PredictionPanelState";
 import "./DataRaceTable.css";
 import { splitRacerName } from "../../utils/racerName";
+import { localizePath } from "../../pure/localizePath.js";
 
 const nameParts = (name) =>
   splitRacerName(name).map((part, i) => (
@@ -60,6 +61,35 @@ function NameHeader({ p }) {
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * データ出走表の注記の下の案内のリンク。縦に並べる（幅のある画面で2本が隙間なく横につながらないように）。
+ * 超展開データ（分析ツール）への入口は、基本情報タブの畳みを外した後の行き先（オーナー 2026-11-25）
+ */
+function GuideLinks({ deepLink }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <div className="drt-guide-links">
+      <Link
+        to={localizePath(deepLink("attackdefense"), i18n.language)}
+        className="drt-guide-link drt-attack-defense-link"
+        onClick={() =>
+          trackEvent("deep_link_click", {
+            tab: "attackdefense",
+            link_source: "data_race_table_note",
+          })
+        }
+      >
+        {"\u2694\ufe0f"} {t("dataTable.attackDefenseLink")}{"\u00a0"}→
+      </Link>
+      {i18n.language === "ja" && (
+        <Link to="/blog/data-race-table-guide" className="drt-guide-link">
+          📖 {t("dataTable.guideLink")} →
+        </Link>
+      )}
+    </div>
   );
 }
 
@@ -103,7 +133,7 @@ function RowLabel({ row, deepLink }) {
 }
 
 function DataRaceTable({ raceId, prediction, venueCode }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   // 選んだ艇（?boat=）はほかのタブと同じ URL の値（BOA-492、オーナー 2026-11-23 承認の5）
   const { focusedBoat, handleFocusBoat } = useRaceUrlState();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
@@ -184,11 +214,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       </div>
 
       <p className="drt-note">💡 {t("dataTable.noteExpectedCourse")}</p>
-      {i18n.language === "ja" && (
-        <Link to="/blog/data-race-table-guide" className="drt-guide-link">
-          📖 {t("dataTable.guideLink")} →
-        </Link>
-      )}
+      <GuideLinks deepLink={deepLink} />
     </div>
   );
 }
