@@ -10,6 +10,7 @@
  *   - 推移を出さない指標は例外にする
  *   - 節の点の吹き出しは、その節の走の選手と着順、会場の節の期間・グレード・日数。その日に始まる節が無ければ null
  *   - 吹き出しの着は日ごとに区切り、公式の記号（F・欠 等）があれば着順より先に出す。節の終わりがレースの日以降なら開催中
+ *   - 会場の節の行が無いときは、その基の最後の走がレースの日かその前日なら開催中
  */
 import {
   motorMeets,
@@ -85,6 +86,9 @@ check("着は日ごとに区切る（1日2走で6日）", byDay.length === 6 && 
 check("記号は着順より先に", byDay[0].results[0] === "F" && byDay[1].results[0] === "欠", JSON.stringify(byDay.slice(0, 2)));
 check("記号も着順も無ければ null", motorMeetTip(tipRuns, day(16), seriesMeets).byDay.flatMap((d) => d.results).includes(null));
 check("節の終わりがレースの日以降なら開催中", motorMeetTip(tipRuns, day(16), seriesMeets, { today: day(20) }).ongoing === true);
+check("会場の節が無く最後の走が前日なら開催中", motorMeetTip(tipRuns, day(16), [], { today: day(22) }).ongoing === true);
+check("会場の節が無く最後の走がレースの日なら開催中", motorMeetTip(tipRuns, day(16), [], { today: day(21) }).ongoing === true);
+check("会場の節が無く最後の走が2日前なら終わった節", motorMeetTip(tipRuns, day(16), [], { today: day(23) }).ongoing === false);
 check("終わった節は開催中でない", motorMeetTip(tipRuns, day(16), seriesMeets, { today: day(30) }).ongoing === false && motorMeetTip(tipRuns, day(16), seriesMeets).ongoing === false);
 
 let threw = false;
