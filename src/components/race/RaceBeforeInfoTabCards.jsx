@@ -51,6 +51,7 @@ export default function RaceBeforeInfoTabCards({
         raceId={raceId}
         raceGrade={raceGrade}
         players={sortedPlayers}
+        focusedBoat={focusedBoat}
       />
 
       <Link

@@ -33,9 +33,13 @@ function ConfidenceStars({ stars, t }) {
   );
 }
 
-function PitCommentCard({ comment, player, t }) {
+function PitCommentCard({ comment, player, selected, t }) {
   return (
-    <li className="rpr-comment" data-boat={comment.boatNumber}>
+    <li
+      className={selected ? "rpr-comment is-selected" : "rpr-comment"}
+      data-boat={comment.boatNumber}
+      aria-current={selected ? "true" : undefined}
+    >
       <div className="rpr-comment-head">
         <BoatBadge n={comment.boatNumber} />
         {player?.name ? (
@@ -69,6 +73,7 @@ function PitCommentCard({ comment, player, t }) {
 export function PitReportPublished({
   report,
   players,
+  focusedBoat,
   heading,
   officialLink,
   t,
@@ -101,6 +106,7 @@ export function PitReportPublished({
             key={comment.boatNumber}
             comment={comment}
             player={playerByBoat.get(comment.boatNumber)}
+            selected={comment.boatNumber === focusedBoat}
             t={t}
           />
         ))}
