@@ -61,6 +61,7 @@ import SnsHubLibraryPage from "./pages/admin/sns-hub/LibraryPage";
 import ResponsibleGambling from "./pages/ResponsibleGambling";
 import Poirot from "./pages/Poirot";
 import CookieConsent from "./components/CookieConsent";
+import SiteFeedback from "./components/siteFeedback/SiteFeedback";
 import HreflangTags from "./components/HreflangTags";
 
 // 旧ハッシュURLからのリダイレクトを処理するコンポーネント
@@ -405,6 +406,7 @@ export default function AppRouter() {
       <AdRefresh />
       <PageViewTracker />
       <CookieConsent />
+      <SiteFeedback />
       <HreflangTags />
       <InitialLanguageRedirect />
       <Routes>

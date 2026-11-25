@@ -1751,6 +1751,11 @@
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
     },
     {
+      "script": "verify-site-feedback-gate.js",
+      "tier": "ci",
+      "guards": "ご意見ボックスを全画面につなぐ前の関門。画面の列挙・上限（src/pure/siteFeedback.js）と表（docs/db-migration/NNN_site_feedback.sql）の CHECK が同じこと、台帳（APPLIED.md）で表が適用済みであること（表より先に画面を出すと全員の送信が失敗する）"
+    },
+    {
       "script": "verify-site-feedback.js",
       "tier": "ci",
       "guards": "サイト全体のご意見ボックスの画面の決まり（src/pure/siteFeedback.js: ページの種類・出さない画面・送る1行の形）と、ブラウザごとの識別番号（src/pure/clientKey.js: uuid v4・壊れた保存値の作り直し・保存できない環境。龍神ソナーの声と共通）"
