@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2903,
+    "sourceFiles": 2905,
     "filesWithAccess": 329,
     "tableReaders": 972,
     "tableWriters": 200,
@@ -15,7 +15,7 @@
     "rpcsWithoutCallers": 7,
     "external": 1,
     "notInSnapshot": 13,
-    "unresolved": 37,
+    "unresolved": 38,
     "parseErrors": 0,
     "uncoveredFiles": 57
   },
@@ -30351,6 +30351,11 @@
     {
       "file": "scripts/lib/fanPeriodJob.js",
       "line": 247,
+      "reason": "表の名前が変数（.from(式)）"
+    },
+    {
+      "file": "scripts/lib/growth/sitemapInspection.js",
+      "line": 70,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

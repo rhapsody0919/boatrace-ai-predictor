@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2903 |
+| 読んだファイル | 2905 |
 | 読み書きのあるファイル | 329 |
 | 表の読み手（箇所） | 972 |
 | 表の書き手（箇所） | 200 |
@@ -20,7 +20,7 @@
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
 | コードが使うのに写しに無い名前 | 13 |
-| 名前が式で拾えなかった箇所 | 37 |
+| 名前が式で拾えなかった箇所 | 38 |
 | 構文木にできなかったファイル | 0 |
 | 対象外の言語のファイル（Python 等） | 57 |
 
@@ -2339,7 +2339,7 @@
 
 ## 拾えなかったもの
 
-- 名前が式（変数・テンプレートの式）の箇所: 37
+- 名前が式（変数・テンプレートの式）の箇所: 38
   - `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:50` 表の名前が変数（.from(式)）
   - `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:15` 表の名前が変数（.from(式)）
   - `scripts/analysis/original-exhibition/check-rewrite.mjs:20` 表の名前が変数（.from(式)）
@@ -2349,6 +2349,7 @@
   - `scripts/lib/fanPeriodJob.js:86` 表の名前が変数（.from(式)）
   - `scripts/lib/fanPeriodJob.js:159` 表の名前が変数（.from(式)）
   - `scripts/lib/fanPeriodJob.js:247` 表の名前が変数（.from(式)）
+  - `scripts/lib/growth/sitemapInspection.js:70` 表の名前が変数（.from(式)）
   - `scripts/lib/pitReportSchema.js:40` 表の名前が変数（.from(式)）
   - `scripts/lib/raceResultSchema.js:84` 表の名前が変数（.from(式)）
   - `scripts/lib/raceSeriesSync.js:75` 表の名前が変数（.from(式)）
