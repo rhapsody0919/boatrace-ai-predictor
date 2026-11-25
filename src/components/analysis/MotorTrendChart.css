@@ -1,0 +1,27 @@
+/* 6基のモーターの推移の線（MotorTrendChart）に固有の見た目。共通の線・目盛りは TrendChart.css の trc- */
+
+/* 描き始めの走数に届く前の区間 */
+.mtc-before {
+  fill: var(--surface-page);
+  opacity: 0.8;
+}
+
+.mtc-leader {
+  stroke: var(--text-secondary);
+  stroke-width: 0.7;
+  stroke-dasharray: 2 2;
+  opacity: 0.6;
+}
+
+/* 5号艇の黄はライトの地に溶けるので濃い黄の縁。ダークでは縁を付けない（モック改訂2） */
+.mtc-chart .trc-line-5 .trc-halo {
+  stroke: #a16207;
+}
+[data-theme="dark"] .mtc-chart .trc-line-5 .trc-halo {
+  stroke: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mtc-chart .trc-line-5 .trc-halo {
+    stroke: none;
+  }
+}
