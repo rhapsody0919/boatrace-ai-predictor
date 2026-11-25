@@ -9,6 +9,29 @@ import { runPointRankJob } from "../../lib/pointRankJob.js";
 let check, show, G1_TABLE, createFakeClient, tablesFor, fetchFor, opts, DAILY, AT_2200;
 
 async function scene1() {
+  // --- 2026-11-25 以降の公式の書式「３日目終了時点」（R なし、常滑SG）: 日の終わりとして写しを書く ----------
+  {
+    const c = createFakeClient(tablesFor("2026-09-18", 3));
+    const res = await runPointRankJob({
+      targetDate: "2026-09-18",
+      client: c,
+      politeFetch: fetchFor(
+        3,
+        G1_TABLE.replace("４日目１２R終了時点", "３日目終了時点"),
+      ),
+      mode: "live",
+      shouldStop: () => false,
+      now: AT_2200,
+    });
+    check(
+      "注記が「３日目終了時点」（R なし）: failure にせず as_of_race=12 で52行書く",
+      res.outcome !== "error" &&
+        !res.incomplete &&
+        (c.data[DAILY] ?? []).length === 52 &&
+        c.data[DAILY].every((r) => r.as_of_race === 12),
+      show(res.report?.daily),
+    );
+  }
   // --- 22:00 に表が前の日（2日目）のまま: 書かずに incomplete --------------------------------
   {
     const c = createFakeClient(tablesFor("2026-09-18", 3));

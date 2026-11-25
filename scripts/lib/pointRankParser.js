@@ -106,7 +106,7 @@ export function parseHayamiSeriesDay(text) {
 }
 
 /**
- * ページの注記「４日目１２R終了時点」から、表がどの時点の値か（節の日目・レース番号）を読む（BOA-1210）。
+ * ページの注記「４日目１２R終了時点」（2026-11-25 以降は「２日目終了時点」）から、表がどの時点の値か（節の日目・レース番号）を読む（BOA-1210）。
  * 過去の日付（hd）で開いても、その日の時点ではなく節の最新の表が返るため（2026-11-02、尼崎SG hd=20261027・
  * 20261029 がどちらも「４日目１２R終了時点」）、日ごとの写しはこの値で「その日の値か」を確かめてから書く。
  *
@@ -121,11 +121,13 @@ export function parsePointRankAsOf($) {
     .first()
     .text();
   const m = toHalfWidthDigits(note).match(
-    /(初日|\d{1,2}\s*日目)\s*(\d{1,2})\s*[RＲ]\s*終了時点/u,
+    /(初日|\d{1,2}\s*日目)\s*(?:(\d{1,2})\s*[RＲ])?\s*終了時点/u,
   );
   if (!m) return null;
   const seriesDay = m[1] === "初日" ? 1 : Number.parseInt(m[1], 10);
-  const raceNumber = Number(m[2]);
+  // 2026-11-25 から公式の注記は「２日目終了時点」とレース番号を書かない（常滑SG、hd=20261124・20261125）。
+  // 番号が無い書式は日の終わり（12R 後）として読む。日の途中の書式は未確認（as_of_race は NOT NULL 1〜12）
+  const raceNumber = m[2] === undefined ? 12 : Number(m[2]);
   if (seriesDay < 1 || seriesDay > 9 || raceNumber < 1 || raceNumber > 12)
     return null;
   return { seriesDay, raceNumber };
