@@ -19,6 +19,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { runPushGuardScenes } from "./verifyData/ryujin-maker-push-guard-scenes.js";
 import {
   buildJwt,
   loadPrivateKey,
@@ -323,6 +324,8 @@ try {
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }
+
+await runPushGuardScenes(check);
 
 if (failures > 0) {
   console.error(`verify-ryujin-maker-token: ${failures} 件失敗`);
