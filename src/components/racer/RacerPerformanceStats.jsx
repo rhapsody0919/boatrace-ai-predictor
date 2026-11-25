@@ -115,6 +115,22 @@ function useVcData(vc) {
   ]);
 }
 
+/** 進入コースは選んだときだけラベルの末尾に足す（vcLabelOf は4軸のまま） */
+function vcLabelWithCourse(t, vc) {
+  if (vc.vcCourse === "all") return vcLabelOf(t, vc);
+  return [vcLabelOf(t, vc), `${vc.vcCourse}コース`]
+    .filter((s) => s !== "全条件")
+    .join("×");
+}
+
+/** スマホ幅（600px 以下）か。複雑さの線（15）に収めるため useRacerPerformanceView から切り出した */
+function isNarrowViewport() {
+  return (
+    typeof window !== "undefined" &&
+    (window.matchMedia?.("(max-width: 600px)").matches ?? false)
+  );
+}
+
 /** 表示の材料。vcDataの有無で表示ソースを切り替える（履歴ロード中・エラー時は既存props＝サーバー側事前集計をフォールバック表示に使う） */
 function useRacerPerformanceView(t, vc, stats) {
   const vcData = useVcData(vc);
@@ -129,9 +145,7 @@ function useRacerPerformanceView(t, vc, stats) {
   const hasVcData = !!vcData;
   const showStTrend = hasVcData && vcData.stN > 1;
   useStTrendScroll(showStTrend);
-  const isNarrow =
-    typeof window !== "undefined" &&
-    (window.matchMedia?.("(max-width: 600px)").matches ?? false);
+  const isNarrow = isNarrowViewport();
   const hasTechniques = (techniqueProfile?.techniques?.length ?? 0) > 0;
   const courseStats = courseStatsOf(vc.historyCourseStats, aggregatedStats);
   return {
@@ -141,13 +155,7 @@ function useRacerPerformanceView(t, vc, stats) {
     isNarrow,
     chartRuns: (rows) => (isNarrow ? rows.slice(-NARROW_CHART_RUNS) : rows),
     raceLabelOf: raceLabelOfWith(t),
-    // 進入コースは選んだときだけラベルの末尾に足す（vcLabelOf は4軸のまま）
-    vcLabel:
-      vc.vcCourse === "all"
-        ? vcLabelOf(t, vc)
-        : [vcLabelOf(t, vc), `${vc.vcCourse}コース`]
-            .filter((s) => s !== "全条件")
-            .join("×"),
+    vcLabel: vcLabelOf(t, vc),
     ...stAxisOf(vcData),
     displayTechniques: displayTechniquesOf(vcData, techniqueProfile),
     ...trendChartsOf(formTrend, exhibitionTimeTrend),
@@ -271,7 +279,11 @@ export default function RacerPerformanceStats({
 }) {
   const { t } = useTranslation();
   const vc = useRacerVcState(racerId, onHistoryStateChange);
-  const view = useRacerPerformanceView(t, vc, stats);
+  // 進入コースのラベルは呼ぶ側で足す（useRacerPerformanceView は大きさの基準に凍結された単位なので触らない）
+  const view = {
+    ...useRacerPerformanceView(t, vc, stats),
+    vcLabel: vcLabelWithCourse(t, vc),
+  };
   const { vcData, vcLabel } = view;
   const { snapshotHistoryState, vcActive } = vc;
   const { formSummary, aggregatedStats, boatReturnRate, venueStats } =
