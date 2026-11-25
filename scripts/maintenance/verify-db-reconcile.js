@@ -154,7 +154,6 @@ const base = () => ({
       reviews: [{ ...f.reviews[0], state: "DISMISSED" }],
     }),
     "4: 台帳が適用済み": (f) => ({ ...f, ledgerState: "適用済み" }),
-    "4: 台帳に行が無い": (f) => ({ ...f, ledgerState: null }),
     "4: 台帳の行が別のコミットで足された": (f) => ({
       ...f,
       ledgerRowAddedInCommit: false,
@@ -169,6 +168,13 @@ const base = () => ({
       JSON.stringify(r.reasons),
     );
   }
+  // 4: 行が無いのは未適用とみなして通す（PR は台帳に行を足さない、ADR-0097 の 2026-11-25 の追記）
+  const noRow = evaluateCandidate({
+    ...base(),
+    ledgerState: null,
+    ledgerRowAddedInCommit: false,
+  });
+  check("通す: 4: 台帳に行が無い（未適用とみなす）", noRow.ok, JSON.stringify(noRow.reasons));
   const many = evaluateCandidate({
     ...base(),
     runbookExists: true,
@@ -226,8 +232,8 @@ const base = () => ({
     },
   ]);
   check(
-    "台帳に行が無い新しいファイルも止める（黙って飛ばさない）",
-    nullState.status === "blocked",
+    "台帳に行が無い新しいファイルは未適用として選ぶ（黙って飛ばさない）",
+    nullState.status === "selected" && nullState.file === d("171_b"),
   );
   const gone = { file: d("170_a"), ledgerState: null, existsAtHead: false, evaluation: null };
   const afterGone = pickNext([gone, ok(d("171_b"))]);
