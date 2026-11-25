@@ -126,16 +126,18 @@ export default function RaceWakuInfoTabBody({
         currentMeetFlyingBoats={currentMeetFlyingBoats}
       />
 
-      <LowerCards
-        t={t}
-        raceId={raceId}
-        players={sortedPlayers}
-        scopedBefore={scopedBefore}
-        periodAnchor={periodAnchor}
-        sixBoatPeriod={sixBoatPeriod}
-        nigeRows={nigeRows}
-        techniqueStats={techniqueStats}
-      />
+      <div className="rwit-lower">
+        <LowerCards
+          t={t}
+          raceId={raceId}
+          players={sortedPlayers}
+          scopedBefore={scopedBefore}
+          periodAnchor={periodAnchor}
+          sixBoatPeriod={sixBoatPeriod}
+          nigeRows={nigeRows}
+          techniqueStats={techniqueStats}
+        />
+      </div>
     </div>
   );
 }

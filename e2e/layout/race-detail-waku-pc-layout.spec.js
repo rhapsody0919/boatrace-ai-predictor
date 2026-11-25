@@ -72,7 +72,7 @@ test.describe("レイアウト: 枠別情報の PC の並び", () => {
 
     // 下の3枚は同じ行に並ぶ
     const lower = await page
-      .locator(".race-waku-info-tab > .race-split")
+      .locator(".rwit-lower > .race-split")
       .evaluate((split) =>
         [...split.querySelectorAll(":scope > .race-split__main > *, :scope > .race-split__side")]
           .filter((e) => e.getBoundingClientRect().height > 0)
