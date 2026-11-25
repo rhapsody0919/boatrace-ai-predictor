@@ -7,11 +7,14 @@ name: E2E Release (配備先)
 # 1) GitHub の Deployments（environment=Production の最新の success）の sha を読み、入力の sha があれば一致まで待つ
 # 2) e2e/release-check/ の読むだけの spec（GET と画面の表示だけ。書き込み・送信・page.route なし）を本番の URL で流す
 #
-# e2e-live.yml とは concurrency・job 名・ワークフロー名を分ける。hq の deploy-guard は e2e-live.yml の
-# workflow_dispatch の run と job 名「e2e-live (」で読むので、ここの run を取り違えない。
-# schedule は release の30分後に置くが、GitHub の schedule は遅れることがある（ADR-0106）。schedule の起動は sha を持たないので
-# 「配備先が生きているか・いちばん新しい配備が落ちていないか」の確かめに留まり、どの release が出たかは照らさない。
-# 正確な時刻は hq が release の後に workflow_dispatch（inputs.sha）で起動する（BOA-1496 の sha の取り方と合わせる）。
+# e2e-live.yml とは concurrency・job 名・ワークフロー名を分ける。
+# 正確な時刻は release-dispatch が Deploy Hook の後に workflow_dispatch（inputs.sha＝判定した master の先）で起動する
+# （scripts/lib/releaseCheckDispatch.js、ADR-0106 の 2026-11-25 の追記。前は hq の deploy-guard）。Hook の後に master が進むと
+# 進んだ先が出るので、期待の sha の子孫の配備も受ける。
+# schedule は release の30分後に置く保険（GitHub の schedule は遅れることがある、ADR-0106）。sha を持たないので
+# 「配備先が生きているか・いちばん新しい配備が落ちていないか」の確かめに留まる。
+# 赤のたびの Slack は、前の完了 run の赤と比べて新しい赤（か24時間ぶりの続く赤・比べられない落ち）のときだけ
+# （scripts/maintenance/e2e-new-reds.js、設計 docs/design/harness-migration/design.md §2）。赤の記録は job-watch の Issue に残る。
 
 on:
   schedule:
@@ -25,13 +28,17 @@ on:
         default: ''
 
 concurrency:
-  group: e2e-release
+  # 起動の種類ごとに列を分ける。待ちに入れるのは列ごとに1本で、後から来た run が待っている run を取り消すため、
+  # 数時間遅れた schedule が sha つきの dispatch を消さないようにする（e2e-live.yml と同じ形）
+  group: e2e-release-${{ github.event_name }}
   # 確かめの途中で次の起動が来ても取り消さない（取り消しの赤を作らない）。次は前が終わってから走る
   cancel-in-progress: false
 
 permissions:
   contents: read
   deployments: read
+  # 前の run の artifact（赤の鍵、e2e-red-keys）を基準に読む
+  actions: read
 
 jobs:
   release-check:
@@ -61,13 +68,19 @@ jobs:
               if [ "$state" = "success" ]; then echo "$sha"; return 0; fi
             done
           }
+          # 出た版が期待の sha そのもの（前方一致）か、その子孫（compare の status が ahead）なら release が出たとみる
+          landed() {
+            [ -n "$1" ] || return 1
+            [[ "$1" == "$WANT"* ]] && return 0
+            [ "$(gh api "repos/${GITHUB_REPOSITORY}/compare/${WANT}...$1" --jq .status 2>/dev/null || true)" = "ahead" ]
+          }
           if [ -n "$WANT" ] && ! [[ "$WANT" =~ ^[0-9a-f]{7,40}$ ]]; then
             echo "::error::inputs.sha が sha の形でない: ${WANT}"; exit 1
           fi
           got=""
           for i in $(seq 1 40); do
             got=$(latest_ok || true)
-            if [ -z "$WANT" ] || [[ "$got" == "$WANT"* ]]; then break; fi
+            if [ -z "$WANT" ] || landed "$got"; then break; fi
             echo "待つ（${i}/40）: 本番の最新の success は ${got:-なし}、期待は ${WANT}"
             sleep 30
           done
@@ -80,8 +93,8 @@ jobs:
             echo "::error::いちばん新しい本番の配備（id ${newest}）が ${newest_state}。本番は前の版（${got}）のまま"
             exit 1
           fi
-          if [ -n "$WANT" ] && [[ "$got" != "$WANT"* ]]; then
-            echo "::error::20分待っても本番の配備が ${WANT} にならない（最新の success は ${got}）。release が出ていないか、配備が落ちている"
+          if [ -n "$WANT" ] && ! landed "$got"; then
+            echo "::error::20分待っても本番の配備が ${WANT} かその子孫にならない（最新の success は ${got}）。release が出ていないか、配備が落ちている"
             exit 1
           fi
           echo "sha=${got}" >> "$GITHUB_OUTPUT"
@@ -101,7 +114,29 @@ jobs:
           CI: true
           RELEASE_BASE_URL: https://www.boat-ai.jp
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-        run: npx playwright test --config=e2e/release-check/playwright.release.config.js
+          # 新しい赤の判定（下の step）が JSON から赤の鍵を取る
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-release-results.json
+        run: npx playwright test --config=e2e/release-check/playwright.release.config.js --reporter=list,json
+
+      # 前の完了 run の赤（artifact e2e-red-keys）と比べ、Slack に出すかを決める。試験の前に落ちた run（レポートが無い）は鳴らす側
+      - name: 新しい赤か決める
+        id: reds
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED: ${{ job.status != 'success' }}
+        run: |
+          set -euo pipefail
+          node scripts/maintenance/e2e-new-reds.js --workflow=e2e-release.yml --report=e2e-release-results.json \
+            --out=red-keys.json --failed="$FAILED" --incomplete=false | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: 赤の鍵を次の run の基準に残す
+        if: always() && hashFiles('red-keys.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-red-keys
+          path: red-keys.json
+          retention-days: 14
 
       - name: Upload Playwright trace on failure
         if: failure()
@@ -111,14 +146,16 @@ jobs:
           path: test-results/
           retention-days: 7
 
-      - name: Notify Slack (失敗時のみ)
-        if: failure()
+      # 前と同じ赤だけなら鳴らさない。判定の step が答えを出せなかった（notify が空）ときは鳴らす側
+      - name: Notify Slack (新しい赤のときだけ)
+        if: failure() && steps.reds.outputs.notify != 'false'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SHA: ${{ steps.deploy.outputs.sha }}
+          REDS: ${{ steps.reds.outputs.text }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          PAYLOAD=$(jq -n --arg sha "${SHA:-不明}" --arg url "$RUN_URL" '
+          PAYLOAD=$(jq -n --arg sha "${SHA:-不明}" --arg url "$RUN_URL" --arg reds "${REDS:-}" '
             {
               attachments: [{
                 color: "#c0392b",
@@ -126,7 +163,7 @@ jobs:
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: (":rotating_light: *配備先（本番の URL）の確かめが失敗しました*\n本番の配備の sha: `" + $sha + "`\ne2e-live は手元ビルドを相手にするので、vercel.json・middleware・api/ の配備の誤りはここでしか見えません。\n<" + $url + "|実行ログ>")
+                    text: (":rotating_light: *配備先（本番の URL）の確かめが失敗しました*\n本番の配備の sha: `" + $sha + "`\n" + $reds + "\ne2e-live は手元ビルドを相手にするので、vercel.json・middleware・api/ の配備の誤りはここでしか見えません。\n<" + $url + "|実行ログ>")
                   }
                 }]
               }]
