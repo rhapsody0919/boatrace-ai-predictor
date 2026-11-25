@@ -61,15 +61,19 @@ function Steps({ steps, boat, selected, x0, cw, y }) {
   );
 }
 
-// 右端の値の札（TrendChart と同じ、重なれば下へずらして引き出し線）
-function EndLabels({ stepsByBoat, selected, xEnd, y }) {
+// 右端の値の札（TrendChart と同じ、重なれば下へずらして引き出し線）。
+// 直前の期に記録が無い艇（休み明け等）も、記録のある最後の期の終わりから札を引く（ファン評価 11/25）
+function EndLabels({ stepsByBoat, selected, xEndOf, y }) {
   const ends = [...stepsByBoat.entries()]
-    .map(([boat, s]) => ({ boat, last: s[s.length - 1] }))
+    .map(([boat, s]) => {
+      const i = s.findLastIndex(Boolean);
+      return { boat, last: s[i], xEnd: xEndOf(i) };
+    })
     .filter((e) => e.last)
     .sort((a, b) => y(a.last.winRate) - y(b.last.winRate));
   let prev = -99;
   const lx = W - PAD.r + 14;
-  return ends.map(({ boat, last }) => {
+  return ends.map(({ boat, last, xEnd }) => {
     const py = y(last.winRate);
     const yy = Math.max(py, prev + 16);
     prev = yy;
@@ -194,7 +198,7 @@ export default function WinRateStepChart({ stepsByBoat, periods, selected }) {
       <EndLabels
         stepsByBoat={stepsByBoat}
         selected={selected}
-        xEnd={x0(n)}
+        xEndOf={(i) => x0(i + 1)}
         y={y}
       />
     </svg>

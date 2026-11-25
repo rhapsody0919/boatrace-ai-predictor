@@ -7,7 +7,7 @@
  *   - 段は艇ごとに1組。選んだ艇だけ太線（3）、ほかは細線
  *   - 期の変わり目の縦は、選んでいない艇では細く薄く（値の横を主役にする）
  *   - 記録の無い期で線を切る（その期の横を描かず、前後をつながない）
- *   - 右端の値は小数2桁。期は1つおきに帯を敷く
+ *   - 右端の値は小数2桁。直前の期に記録が無い艇も、記録のある最後の期から札と値を出す。期は1つおきに帯を敷く
  *   - 札は算出期間（同じ年は終わりの月、年またぎは YY/MM）、その下に選んだ艇の走数（記録なしはその旨）
  */
 import { createElement } from "react";
@@ -138,6 +138,22 @@ check(
 );
 check("選んだ艇の走数", svg.includes(">116走<") && !svg.includes(">117走<"));
 check("選んだ艇の記録なし", svg.includes(">basicInfo.trend.noRecord<"));
+
+const resting = new Map(stepsByBoat);
+resting.set(5, [s(3.95), s(4.1), s(4.05), s(4.32), null]);
+const restSvg = renderToStaticMarkup(
+  createElement(WinRateStepChart, {
+    stepsByBoat: resting,
+    periods,
+    selected: 3,
+  }),
+);
+check("直前の期に記録の無い艇も札と値", restSvg.includes(">4.32<"));
+check(
+  "札は6艇",
+  (restSvg.match(/class="trc-leader"/g) ?? []).length === 6,
+  String((restSvg.match(/class="trc-leader"/g) ?? []).length),
+);
 
 if (failures.length > 0) {
   console.error(`verify-winrate-step-chart: NG\n- ${failures.join("\n- ")}`);
