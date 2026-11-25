@@ -47,6 +47,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/meetTrendRows.js` | RaceMeetTab の推移（6艇）の行と、選んだ1艇の走りの値を作る純関数（副作用なし）。 | buildTrendRowsRaw, buildTrendStats, buildSelectedModel, mdOf |
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
 | `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses, computePeriodClip ほか4件 |
+| `src/pure/motorGenerationTrend.js` | モーターの推移の線（今の世代＝会場の入れ替えの後だけ。オーナー 2026-11-25 承認のモック改訂2）。 | motorMeets, motorRateTrend, motorExhibitionTrend, MOTOR_RATE_MIN_RUNS, MOTOR_EXHIBITION_WINDOW ほか1件 |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
 | `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
@@ -673,4 +674,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 631 ファイル / export 3402 件。
+対象 632 ファイル / export 3408 件。
