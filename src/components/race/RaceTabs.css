@@ -202,3 +202,33 @@
     --race-split-main: 480px;
   }
 }
+
+/*
+ * モータ情報の PC の並び（オーナー承認 2026-11-26、side-session-notes の motor-pc/）。1200px 以上で、表の下の注記
+ * （.table-note、最大 720px）が左に縦に積まれ右が空いていたので、2列に流す。押して出る部品の名前（.mcc-parts-names）は
+ * 押した結果なので表のすぐ下に全幅で残す（2列の中に入れると押すたびに後ろの注記が左右に入れ替わる。visual-designer 2026-11-25）。
+ * 高さはそろえない（短い注記が左の線つきの空の箱に見えるため）。.motor-condition-container は分析ページでも使うので
+ * タブの中に限る。表の無い「推移」の表示は .table-wrapper が無いので、注記は今の縦のまま
+ */
+@media (min-width: 1200px) {
+  .race-tabs-panel > .motor-condition-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--spacing-4);
+    align-items: start;
+  }
+
+  .race-tabs-panel > .motor-condition-container > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .race-tabs-panel > .motor-condition-container > .table-wrapper ~ .table-note {
+    grid-column: auto;
+    max-width: none;
+  }
+
+  .race-tabs-panel > .motor-condition-container > .table-wrapper ~ .mcc-parts-names {
+    grid-column: 1 / -1;
+  }
+}
