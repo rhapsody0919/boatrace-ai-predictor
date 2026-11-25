@@ -1,4 +1,5 @@
 /** MotorConditionChart のドリルダウンの画面と下の注記（MotorConditionChart.jsx から本文を字のまま移した） */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import MotorRecordStatCards from "../MotorRecordStatCards";
@@ -16,6 +17,7 @@ import {
   UsageHistorySection,
 } from "./MotorConditionDrillSections";
 import { DrillPreGenerationView, MotorListView } from "./MotorConditionList";
+import MotorGenerationTrend, { MotorMetricChips, MotorViewHead } from "./MotorGenerationTrend";
 
 // 走数が少ないときは評価の言葉を出さず、参考値と書く（BOA-549）
 function powerIndexVerdict(t, tone) {
@@ -250,6 +252,11 @@ export function MotorMain({ m, v, scroll, scrollRef }) {
   const { t } = useTranslation();
   const { loading, error, drillDownMotor, drillPreGeneration, breakdown, setDrillDownMotor } = m;
   const ready = !loading && !error;
+  // 「今の値｜推移」はレース詳細のタブだけ（オーナー 2026-11-25 承認のモック改訂2）。開いた最初は今の値
+  const [view, setView] = useState("now");
+  const [metric, setMetric] = useState("top2Rate");
+  const listReady = ready && drillDownMotor === null && breakdown.length > 0;
+  const trend = listReady && m.embedded && view === "trend";
   return (
     <>
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
@@ -259,8 +266,11 @@ export function MotorMain({ m, v, scroll, scrollRef }) {
         </div>
       )}
 
-      {ready && drillDownMotor === null && breakdown.length > 0 && (
-        <MotorListView m={m} v={v} scroll={scroll} scrollRef={scrollRef} />
+      {trend && <MotorMetricChips metric={metric} setMetric={setMetric} />}
+      {listReady && m.embedded && <MotorViewHead view={view} setView={setView} metric={metric} />}
+      {listReady && !trend && <MotorListView m={m} v={v} scroll={scroll} scrollRef={scrollRef} />}
+      {trend && (
+        <MotorGenerationTrend venueCode={m.selectedVenue} raceId={m.selectedRace} rows={breakdown} metric={metric} onShowNow={() => setView("now")} focusedBoat={m.focusedBoat} onFocusBoat={m.onFocusBoat} />
       )}
 
       {ready && drillDownMotor !== null && drillPreGeneration && (
