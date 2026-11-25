@@ -26,8 +26,10 @@ function pureScenes(check) {
   check(
     t(["origin", "--delete", "claude/a"]) === null &&
       t(["origin", ":claude/a"]) === null &&
+      t(["--all", "origin"]) === null &&
+      t(["--tags", "origin"]) === null &&
       pushTargetBranch([...pin, "status"], "claude/a") === null,
-    "枝を消す push と push でない命令は確かめない",
+    "枝を消す push・枝を1つに決められない push・push でない命令は確かめない",
   );
   check(
     mergedPrOf([
@@ -35,8 +37,12 @@ function pureScenes(check) {
       { number: 2, merged_at: "2026-11-25T06:00:00Z" },
     ])?.number === 2 &&
       mergedPrOf([{ number: 1, merged_at: null }]) === null &&
-      mergedPrOf(undefined) === null,
-    "マージ済みの PR だけを拾う（閉じただけの PR は止めない）",
+      mergedPrOf(undefined) === null &&
+      mergedPrOf([
+        { number: 3, merged_at: "2026-11-25T06:00:00Z", state: "closed" },
+        { number: 4, merged_at: null, state: "open" },
+      ]) === null,
+    "マージ済みの PR だけを拾う（閉じただけの PR・同じ名で開いた PR があるときは止めない）",
   );
 }
 

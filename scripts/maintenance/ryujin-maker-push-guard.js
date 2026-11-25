@@ -4,7 +4,9 @@
  *
  * 型: #3377。PR のマージ（squash）の後に同じ枝へ直しを push しても master に入らず、直しが消える。
  * 止めたら「origin/master から新しい枝で作り直す」と出す。
- * - 枝を消す push（--delete・`:枝`）は止めない
+ * - 枝を消す push（--delete・`:枝`）と、枝を1つに決められない push（--all・--mirror・--tags）は止めない
+ * - 同じ枝の名で開いている PR があれば止めない（名前を使い回した新しい PR）
+ * - refspec が無く上流の名前が今の枝と違う push は、今の枝の名で見る（読み違えても止める側には倒れない）
  * - GitHub を読めないときは止めずに警告だけ（push の道そのものを壊さない）
  * - push の後にマージされる競り合いは止められない（マージの後の push だけを止める）
  *
@@ -22,7 +24,9 @@ export function pushTargetBranch(gitArgs, currentBranch) {
   const at = gitArgs.indexOf("push");
   if (at < 0) return null;
   const rest = gitArgs.slice(at + 1);
-  if (rest.some((a) => a === "--delete" || a === "-d")) return null;
+  // 消す push と、枝を1つに決められない push（--all・--mirror・--tags）は確かめない
+  const skip = new Set(["--delete", "-d", "--all", "--mirror", "--tags"]);
+  if (rest.some((a) => skip.has(a))) return null;
   const positional = rest.filter((a) => !a.startsWith("-"));
   const refspecs = positional.slice(1); // 先頭は remote
   if (refspecs.length === 0) return currentBranch || null;
@@ -33,9 +37,14 @@ export function pushTargetBranch(gitArgs, currentBranch) {
   return name || null;
 }
 
-/** PR の一覧（GET /pulls?head=…&state=all）から、マージ済みの PR（無ければ null） */
+/**
+ * PR の一覧（GET /pulls?head=…&state=all）から、止める元のマージ済みの PR（無ければ null）。
+ * 同じ枝の名で開いている PR があれば止めない（名前を使い回した新しい PR への push）
+ */
 export function mergedPrOf(pulls) {
-  return (pulls ?? []).find((p) => p?.merged_at) ?? null;
+  const list = pulls ?? [];
+  if (list.some((p) => p?.state === "open")) return null;
+  return list.find((p) => p?.merged_at) ?? null;
 }
 
 /** 止めるときの文 */
