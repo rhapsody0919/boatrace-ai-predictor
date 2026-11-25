@@ -144,18 +144,20 @@ const formatCounts = (counts) =>
     .map(([r, n]) => `${r}=${n}`)
     .join(" ") || "違反なし";
 
-/** base の例外の表（git show）。base に無い（表を足す PR）ときは null */
+/** base の例外の表。base の木に無いとき（表を足す PR）だけ null。ほかの失敗は throw して赤にする */
 function readBaseExceptions(cwd, base) {
-  try {
-    return JSON.parse(git(cwd, "show", `${base}:${EXCEPTIONS_PATH}`)).edges;
-  } catch {
+  const has = spawnSync("git", ["cat-file", "-e", `${base}:${EXCEPTIONS_PATH}`], { cwd }).status === 0;
+  if (!has) {
+    git(cwd, "rev-parse", "--verify", `${base}^{commit}`); // base そのものが読めないなら throw
     return null;
   }
+  return JSON.parse(git(cwd, "show", `${base}:${EXCEPTIONS_PATH}`)).edges;
 }
 
 /**
  * 全体で0の関所（2026-11-25、点検の案 B-1）。HEAD だけに dependency-cruiser を回し、
- * 違反の辺が例外の表 dependency-exceptions.json に全部あるかを見る。表は減る向きだけ（base の表より行が増えたら赤）。
+ * 違反の辺が例外の表 dependency-exceptions.json にちょうどあるかを見る（ADR-0110）。表は減る向きだけ（base の表より行が増えたら赤）、
+ * 今は違反でない行が残っても赤。
  * 以前は base と HEAD の違反の差で見ていたので、master に一度入った違反がそのまま基準になった。
  * @returns {{ errors: string[], warnings: string[], log: string[] }}
  */
@@ -189,8 +191,9 @@ export function runDepTreeGate({ cwd, base, changed }) {
       exceptions,
     );
     judged.problems.forEach((p) => errors.push(`依存の向き ${p}`));
+    // 消せる行を残すと、直した違反を後で戻しても通る（減る向きだけが名前だけになる）。直した PR の中で表も縮める
     judged.stale.forEach((r) =>
-      warnings.push(`依存の向き: 例外の表の行が今は違反でない（消せる）: ${r}`),
+      errors.push(`依存の向き: 例外の表の行が今は違反でない（この PR で行を消す）: ${r}`),
     );
 
     const baseExceptions = readBaseExceptions(cwd, base);

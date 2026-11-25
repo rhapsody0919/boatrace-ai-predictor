@@ -5,6 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import {
   isDataLayer,
   compareEdgesToBaseline,
@@ -241,6 +242,15 @@ test("全体で0の関所: 例外の表に無い辺は赤、和の中でもま�
     "和の中で別のファイルから同じ先を読むのも表に要る",
   );
   assert.deepEqual(judgeAgainstExceptions([], exc).stale, ["node-to-src api/_lib/a.js src/utils/x.js"]);
+  const twice = judgeAgainstExceptions([edge("api/_lib/b.js", "src/utils/x.js", "node-to-src"), edge("api/_lib/b.js", "src/utils/x.js", "node-to-src")], exc);
+  assert.equal(twice.problems.length, 1, "同じ辺が2度出ても1件");
+});
+
+test("runDepTreeGate: 表の余り（今は違反でない行）は赤、base の表が無いときだけ増えを見ない（ADR-0110）", () => {
+  const src = readFileSync(new URL("./lintDepTree.js", import.meta.url), "utf8");
+  assert.match(src, /judged\.stale\.forEach\(\(r\) =>\s*errors\.push/, "stale は errors へ");
+  assert.match(src, /cat-file", "-e"/, "base の表の有無は git cat-file -e で分ける");
+  assert.doesNotMatch(src, /catch \{\s*return null;/, "読みの失敗を null（表が無い）にしない");
 });
 
 test("例外の表 dependency-exceptions.json は形が正しく、行を足すと compareBaselines が赤", () => {
