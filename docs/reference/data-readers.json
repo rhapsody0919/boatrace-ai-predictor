@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2859,
-    "filesWithAccess": 327,
-    "tableReaders": 963,
+    "sourceFiles": 2862,
+    "filesWithAccess": 328,
+    "tableReaders": 966,
     "tableWriters": 199,
     "rpcCallers": 57,
     "nameMentions": 285,
@@ -16502,6 +16502,15 @@
           ]
         },
         {
+          "ref": "scripts/lib/scrapeJobs/statusSummary.js:69",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date",
+            "race_id"
+          ]
+        },
+        {
           "ref": "scripts/lib/sns/todayDigestStatus.js:35",
           "op": "rest",
           "via": "rest",
@@ -17525,6 +17534,7 @@
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
             "scripts/lib/scrapeJobs/resultHandlers.js:166",
+            "scripts/lib/scrapeJobs/statusSummary.js:69",
             "scripts/lib/sns/todayDigestStatus.js:35",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:81",
@@ -17642,6 +17652,7 @@
             "scripts/lib/scrapeJobs/monitorInput.js:68",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
             "scripts/lib/scrapeJobs/resultHandlers.js:166",
+            "scripts/lib/scrapeJobs/statusSummary.js:69",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:126",
             "scripts/lib/snsTodayDigestV3.js:81",
@@ -18424,6 +18435,14 @@
           ]
         },
         {
+          "ref": "scripts/lib/scrapeJobs/statusSummary.js:58",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "?"
+          ]
+        },
+        {
           "ref": "scripts/lib/scrapeJobs/storeBreaker.js:37",
           "op": "select",
           "via": "client",
@@ -18919,6 +18938,16 @@
           ]
         },
         {
+          "ref": "scripts/lib/scrapeJobs/statusSummary.js:76",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date",
+            "race_id",
+            "status"
+          ]
+        },
+        {
           "ref": "scripts/maintenance/check-morning-init-shadow.js:279",
           "op": "select",
           "via": "client",
@@ -19129,6 +19158,7 @@
             "scripts/lib/pitReportJob.js:267",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
+            "scripts/lib/scrapeJobs/statusSummary.js:76",
             "scripts/lib/scrapeJobs/storeParts.js:206",
             "scripts/lib/scrapeJobs/storeParts.js:242",
             "scripts/maintenance/check-morning-init-shadow.js:279",
@@ -19169,6 +19199,7 @@
             "scripts/lib/scrapeJobs/cleanup.js:52",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
+            "scripts/lib/scrapeJobs/statusSummary.js:76",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
@@ -19186,6 +19217,7 @@
             "scripts/lib/boatcast/oritenJob.js:253",
             "scripts/lib/scrapeJobs/cleanup.js:33",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
+            "scripts/lib/scrapeJobs/statusSummary.js:76",
             "scripts/lib/scrapeJobs/storeParts.js:206",
             "scripts/lib/scrapeJobs/storeParts.js:242",
             "scripts/maintenance/check-morning-init-shadow.js:279",

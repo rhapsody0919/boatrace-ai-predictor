@@ -379,6 +379,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/resultHandlerParts.js` | resultHandlers.js の catch-up（createResultCatchupRun）と Kファイル同期（createKFileSyncRun… | catchupCandidates, summarizeCatchupResults, expiredResultSlots, racesWithoutConfirmedCancellation, openResultSlots ほか9件 |
 | `scripts/lib/scrapeJobs/resultHandlers.js` | 結果取得（A6）まわりの Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseRaceId, addDays, overdueWindows, createResultSlotHandler, createResultOnTick ほか5件 |
 | `scripts/lib/scrapeJobs/schemaErrors.js` | 「予定表のテーブル・関数がDBに無い」エラーの判定。 | isScrapeSchemaMissingError, isClaimByOffsetMissingError, SCRAPE_SCHEMA_OBJECTS |
+| `scripts/lib/scrapeJobs/statusSummary.js` | scrape-monitor の結果を、鍵なし・集計だけで読める形にする（BOA-1480、ZB15 票4）。 | summarizeStatus, readStatusSummary, MONITOR_JOB |
 | `scripts/lib/scrapeJobs/store.js` | 予定表（scrape_slots）・ジョブ状態（scrape_job_state）へのアクセス（Supabase実装）。 | createSupabaseStore |
 | `scripts/lib/scrapeJobs/storeBreaker.js` | store.js（createSupabaseStore）から移したサーキットブレーカーの保存（createBreakerMethods。振る舞いは元のまま）。 | createBreakerMethods, BREAKER_RPC_RECHECK_MS, FETCH_STOP_RECHECK_MS |
 | `scripts/lib/scrapeJobs/storeParts.js` | store.js（createSupabaseStore）から移したメソッドの群の工場（振る舞いは元のまま）。 | createStateMethods, createSlotMethods, TICK_WRITE_INTERVAL_MS, wrap |
@@ -672,4 +673,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 630 ファイル / export 3399 件。
+対象 631 ファイル / export 3402 件。
