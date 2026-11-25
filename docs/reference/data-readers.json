@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2898,
+    "sourceFiles": 2900,
     "filesWithAccess": 329,
-    "tableReaders": 969,
+    "tableReaders": 971,
     "tableWriters": 200,
     "rpcCallers": 57,
     "nameMentions": 286,
@@ -1687,7 +1687,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries8.js:62",
+          "ref": "src/services/motorQueries8.js:80",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -7973,6 +7973,7 @@
             "motor_2rate",
             "motor_3rate",
             "motor_number",
+            "player_name",
             "race_id"
           ]
         },
@@ -8699,6 +8700,7 @@
             "src/services/motorQueries3.js:240",
             "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
+            "src/services/motorQueries8.js:32",
             "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:169",
             "src/services/raceQueries.js:278",
@@ -11582,6 +11584,12 @@
           "columns": []
         },
         {
+          "ref": "src/services/motorQueries8.js:81",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
+        },
+        {
           "ref": "src/services/raceQueries.js:84",
           "op": "select",
           "via": "helper:fetchAllByIn",
@@ -12762,6 +12770,19 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries8.js:47",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "end_date",
+            "grade",
+            "start_date",
+            "title",
+            "total_days",
+            "venue_code"
+          ]
+        },
+        {
           "ref": "src/services/raceQueries2.js:254",
           "op": "select",
           "via": "client",
@@ -12818,6 +12839,7 @@
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
+            "src/services/motorQueries8.js:47",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12837,6 +12859,7 @@
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
+            "src/services/motorQueries8.js:47",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12856,6 +12879,7 @@
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
+            "src/services/motorQueries8.js:47",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12870,6 +12894,7 @@
             "api/_lib/botPage.js:244",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
+            "src/services/motorQueries8.js:47",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
           ],
@@ -12882,6 +12907,7 @@
             "scripts/lib/snsTodayDigestV3.js:96",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
+            "src/services/motorQueries8.js:47",
             "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
@@ -12904,6 +12930,7 @@
             "scripts/lib/snsTodayDigestV3.js:96",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
+            "src/services/motorQueries8.js:47",
             "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
