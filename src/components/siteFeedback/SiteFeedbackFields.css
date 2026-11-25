@@ -1,0 +1,156 @@
+/*
+ * ご意見ボックスの入力（SiteFeedbackFields.jsx）: 種類・満足度・送る・注記と、送った後のお礼。
+ * 内容の欄は SiteFeedbackComment.css、パネルの枠は SiteFeedbackPanel.css。
+ */
+/* ラジオ（見た目は隠してある）は、キーボードで来たときだけ隣の見た目に枠を出す */
+.site-fb-chip input:focus-visible + .site-fb-chip-face,
+.site-fb-star input:focus-visible + .site-fb-star-icon {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.site-fb-form,
+.site-fb-thanks {
+  display: grid;
+  gap: var(--spacing-3-5);
+}
+
+/* 本物のラジオを見た目だけ隠す（キーボードと読み上げはラジオのまま） */
+.site-fb-chip input,
+.site-fb-star input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.site-fb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.site-fb-chip {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.site-fb-chip-face {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--spacing-3-5);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.site-fb-chip input:checked + .site-fb-chip-face {
+  border-color: var(--brand-accent-primary);
+  background: color-mix(in srgb, var(--brand-accent-primary) 10%, transparent);
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.site-fb-stars {
+  display: flex;
+  align-items: center;
+}
+
+.site-fb-star {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.site-fb-star-icon {
+  fill: none;
+}
+
+.site-fb-star.is-on {
+  color: var(--brand-accent-primary);
+}
+
+.site-fb-star.is-on .site-fb-star-icon {
+  fill: currentColor;
+}
+
+.site-fb-star-cap {
+  min-width: 6em;
+  margin-left: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.site-fb-send,
+.site-fb-ghost {
+  min-height: 48px;
+  padding: 0 var(--spacing-5);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.site-fb-send {
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  background: var(--brand-accent-primary);
+  color: var(--surface-card);
+}
+
+.site-fb-send[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.site-fb-ghost {
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: none;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-normal);
+}
+
+.site-fb-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.site-fb-link {
+  color: var(--brand-accent-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-fb-link:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.site-fb-thanks-body {
+  margin: 0;
+}
+
+.site-fb-btnrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.site-fb-btnrow .site-fb-send {
+  flex: 1;
+}
