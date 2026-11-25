@@ -37,8 +37,8 @@
 --   新しい表を作るだけで、既存の表・関数・読み手には触れない（既存の表のロックを取らない）。
 --
 -- 適用前の確認（読み取り。claude_ro）:
---   SELECT to_regclass('public.site_feedback'), to_regprocedure('public.site_feedback_guard()');
---   → NULL, NULL（同じ名前の別物があると CREATE TABLE IF NOT EXISTS が黙って何もしないため）
+--   SELECT to_regclass('public.site_feedback'), to_regprocedure('public.site_feedback_guard()'), to_regrole('claude_ro');
+--   → NULL, NULL, claude_ro（同じ名前の別物があると CREATE TABLE IF NOT EXISTS が黙って何もしない。REVOKE の相手のロールが在ること）
 --
 -- 適用後の確認（読み取り）:
 --   SELECT relrowsecurity FROM pg_class WHERE oid = 'public.site_feedback'::regclass;
@@ -52,6 +52,13 @@
 --          has_table_privilege('service_role', 'public.site_feedback', 'SELECT'),
 --          has_table_privilege('claude_ro', 'public.site_feedback', 'SELECT');
 --   → false, true, true, false
+--   SELECT has_table_privilege('authenticated', 'public.site_feedback', 'INSERT'),
+--          has_table_privilege('anon', 'public.site_feedback', 'UPDATE'),
+--          has_table_privilege('anon', 'public.site_feedback', 'DELETE'),
+--          has_function_privilege('claude_ro', 'public.site_feedback_guard()', 'EXECUTE');
+--   → true, false, false, false
+--   SELECT prosecdef, proconfig FROM pg_proc WHERE oid = 'public.site_feedback_guard()'::regprocedure;
+--   → true, {"search_path=public, pg_temp"}
 --
 -- 戻し方: 末尾の ROLLBACK-BEGIN〜ROLLBACK-END（集めたご意見も消える）。先に画面をつなぐ PR（とフッターの入口の PR）を revert して定時で出してから当てる。
 --   行を残したいなら、オーナーが CSV に退避してリポジトリの外に置く（docs/knowledge/db-operations.md）。

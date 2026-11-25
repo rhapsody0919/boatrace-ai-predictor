@@ -13,8 +13,10 @@
  *   (h) ロールバック SQL（末尾のコメント）で表と関数が消える
  *   (i) db-apply の検査（scripts/lib/dbApplySql.js）を通る: 拒否が無く、ファイル自身の BEGIN〜COMMIT で1つのトランザクション、
  *       触る表は site_feedback だけ、承認つきの heavy に分けられる（オーナーが db-apply を起動して弾かれないように）
+ *   (j) anon の INSERT … RETURNING は拒否（画面は返り値を求めない）、authenticated も INSERT できる、
+ *       claude_ro・anon は制限の関数を EXECUTE できない、31行の一括 INSERT は全体の上限で全部戻る、lock は件数より前
  *
- * 画面の列挙（src/pure/siteFeedback.js）との突き合わせは、画面の PR の verify-site-feedback.js が行う
+ * 画面の列挙（src/pure/siteFeedback.js）との突き合わせは、画面を全画面につなぐ PR の verify-site-feedback-gate.js が行う
  * （この PR は画面より先に当てるので、画面のファイルをまだ持たない）。ここに書く列挙は画面の決まりの写し。
  *
  * 実行: node scripts/maintenance/verify-site-feedback-migration.js（@electric-sql/pglite は devDependency）
@@ -302,6 +304,71 @@ check(
   (await asRole(db, "anon", insert({ ...BASE, client_key: key(3000) }))) ===
     null,
 );
+
+// (j) 画面の前提と一括の送信（system-architect の審査、2026-11-25）
+await db.exec(
+  "UPDATE public.site_feedback SET created_at = now() - interval '25 hours'",
+);
+{
+  const err = await asRole(
+    db,
+    "anon",
+    `${insert({ ...BASE, client_key: key(4000) })} RETURNING id`,
+  );
+  check(
+    "(j) anon の INSERT … RETURNING は拒否される（画面は .insert() に .select() を付けない）",
+    err !== null && /permission denied/.test(err.message),
+    err?.message ?? "通ってしまった",
+  );
+}
+check(
+  "(j) authenticated も画面と同じ列の1行を INSERT できる",
+  (await asRole(
+    db,
+    "authenticated",
+    insert({ ...BASE, client_key: key(4001) }),
+  )) === null,
+);
+{
+  const fn = await db.query(
+    "SELECT has_function_privilege('claude_ro', 'public.site_feedback_guard()', 'EXECUTE') AS ro, has_function_privilege('anon', 'public.site_feedback_guard()', 'EXECUTE') AS anon",
+  );
+  check(
+    "(j) claude_ro・anon は連投の制限の関数を EXECUTE できない",
+    fn.rows[0].ro === false && fn.rows[0].anon === false,
+    JSON.stringify(fn.rows[0]),
+  );
+}
+{
+  const before31 = await count(db);
+  const values = Array.from(
+    { length: 31 },
+    (_, i) => `('feature', 'x', NULL, 'home', 'ja', ${lit(key(5000 + i))})`,
+  ).join(", ");
+  const err = await asRole(
+    db,
+    "anon",
+    `INSERT INTO public.site_feedback (kind, comment, rating, page_type, lang, client_key) VALUES ${values}`,
+  );
+  check(
+    "(j) 31行の一括 INSERT は全体の上限で全部戻る",
+    err !== null &&
+      /too many overall/.test(err.message) &&
+      (await count(db)) === before31,
+    err?.message ?? "通ってしまった",
+  );
+}
+{
+  const body = sql.slice(
+    sql.indexOf("CREATE OR REPLACE FUNCTION public.site_feedback_guard"),
+  );
+  const lock = body.indexOf("pg_advisory_xact_lock");
+  const firstCount = body.indexOf("count(*)");
+  check(
+    "(j) 関数の本文で advisory lock が件数を出す前にある",
+    lock > 0 && firstCount > 0 && lock < firstCount,
+  );
+}
 
 // (g)
 const before = await count(db);
