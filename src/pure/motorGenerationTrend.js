@@ -82,6 +82,27 @@ export function motorExhibitionTrend(
 }
 
 /**
+ * 展示タイムの差（exhibitionDiff）の、節ごとの点。検証（analyze.py の exh_r30）と同じ時点にそろえる:
+ * 節の初日より前の直近 window 走（展示の無い走も数える）のうち、差のある走が minRuns 以上なら、その平均を節の初日の点にする。
+ * 節の中では値を変えない。右の端は today まで最後の値を延ばす（公式の率の推移と同じ形）
+ * @returns {Array<{date:string, value:number, runs:number, extended:boolean}>}
+ */
+export function motorExhibitionMeetTrend(
+  runs,
+  { today, window = MOTOR_EXHIBITION_WINDOW, minRuns = MOTOR_EXHIBITION_MIN_RUNS, field = "exhibitionDiff" },
+) {
+  const rows = sortRuns(runs);
+  const points = motorMeets(rows).flatMap((m) => {
+    const vals = rows.slice(Math.max(0, m.runsBefore - window), m.runsBefore).map((r) => r[field]).filter((v) => typeof v === "number");
+    if (vals.length < minRuns) return [];
+    return [{ date: m.start, value: vals.reduce((a, v) => a + v, 0) / vals.length, runs: m.runsBefore, extended: false }];
+  });
+  const last = points[points.length - 1];
+  if (last && today > last.date) points.push({ ...last, date: today, runs: rows.length, extended: true });
+  return points;
+}
+
+/**
  * 節の点の吹き出しの中身（オーナー 2026-11-25 承認のモック）。点の日に始まるその基の節の走から、乗った選手と着順を、
  * 会場の節（race_series）から期間・グレード・日数を取る。点の値（節の初日の公式の率）はその節に入る前までの累計で、
  * 選手と着順はその節の中の物

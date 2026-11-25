@@ -11,6 +11,7 @@
  *   - 節の点の吹き出しは、その節の走の選手と着順、会場の節の期間・グレード・日数。その日に始まる節が無ければ null
  *   - 吹き出しの着は日ごとに区切り、公式の記号（F・欠 等）があれば着順より先に出す。節の終わりがレースの日以降なら開催中
  *   - 展示はレース内の平均との差（exhibitionDiff、負もある）でも同じ窓で平均できる
+ *   - 画面の展示の差は節ごとの点（検証と同じ時点）: 節の初日より前の直近30走のうち差のある走が24以上なら平均、右端は今日まで延ばす
  *   - 会場の節の行が無いときは、その基の最後の走がレースの日かその前日なら開催中
  */
 import {
@@ -18,6 +19,7 @@ import {
   motorRateTrend,
   motorExhibitionTrend,
   motorMeetTip,
+  motorExhibitionMeetTrend,
 } from "../../src/pure/motorGenerationTrend.js";
 
 const failures = [];
@@ -96,6 +98,17 @@ const diffRuns = runs.map((r, i) => ({ ...r, exhibitionDiff: i % 2 === 0 ? -0.02
 const exd = motorExhibitionTrend(diffRuns, { field: "exhibitionDiff" });
 check("展示の差は負も平均に入れる", ex.length === exd.length && Math.abs(exd[exd.length - 1].value - -0.005) < 1e-12, JSON.stringify(exd[exd.length - 1]));
 check("展示の差の無い走は数えない", motorExhibitionTrend(diffRuns.map((r, i) => (i < 10 ? { ...r, exhibitionDiff: null } : r)), { field: "exhibitionDiff" })[0]?.runs === 24);
+
+// 節は8日ごとに12走ずつ（day(0),day(8),day(16),… の 0,12,24,36,48 走目から）。差は走 i で i/1000
+const meetDiffRuns = runs.map((r, i) => ({ ...r, exhibitionDiff: i / 1000 }));
+const emt = motorExhibitionMeetTrend(meetDiffRuns, { today: day(40) });
+const avg = (a, b) => (a + b - 1) / 2 / 1000; // 走 a〜b-1 の i/1000 の平均
+check("展示の差の点は節の初日で、前の30走（24走以上）の平均", emt.length === 4 && emt[0].date === day(16) && Math.abs(emt[0].value - avg(0, 24)) < 1e-12 && emt[1].date === day(24) && Math.abs(emt[1].value - avg(6, 36)) < 1e-12 && Math.abs(emt[2].value - avg(18, 48)) < 1e-12, JSON.stringify(emt));
+check("展示の差の右端は今日まで延ばす", emt[3].extended && emt[3].date === day(40) && emt[3].value === emt[2].value);
+// 走 20〜22 の差が無い: day(16) は前の24走のうち21走で描かない、day(24) は前の30走のうち27走で描く
+const holes = meetDiffRuns.map((r, i) => (i >= 20 && i < 23 ? { ...r, exhibitionDiff: null } : r));
+const ht = motorExhibitionMeetTrend(holes, { today: day(40) });
+check("前の30走に差が24走そろわない節は描かない", ht[0]?.date === day(24) && Math.abs(ht[0].value - (avg(6, 36) * 30 - (20 + 21 + 22) / 1000) / 27) < 1e-12, JSON.stringify(ht[0]));
 
 let threw = false;
 try { motorRateTrend(runs, "winRate", { today }); } catch { threw = true; }
