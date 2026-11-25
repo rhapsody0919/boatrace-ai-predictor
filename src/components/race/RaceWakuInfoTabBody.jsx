@@ -19,6 +19,27 @@ function recordsBeforeEachRace(scopedByRacer, raceId) {
   );
 }
 
+// 選んだ選手のコース別成績（PC は右の列のカード。見出しは PC だけ出す）
+function DetailCard({ t, players, selectedPlayer, onFocusBoat, children }) {
+  return (
+    <section className="rwit-detail">
+      <h3 className="rwit-detail-title">
+        <BoatBadge n={selectedPlayer.number} size="sm" />
+        <span translate="no">{selectedPlayer.name?.replace(/\s+/g, "")}</span>
+        {t("wakuInfo.detailTitle")}
+      </h3>
+      <p className="rwit-note">{t("wakuInfo.note")}</p>
+      <BoatChipRow
+        t={t}
+        players={players}
+        selectedNumber={selectedPlayer.number}
+        onFocusBoat={onFocusBoat}
+      />
+      {children}
+    </section>
+  );
+}
+
 // hooks を呼び終えた後の描画。props は RaceWakuInfoTab が集めた値
 export default function RaceWakuInfoTabBody({
   t,
@@ -72,23 +93,12 @@ export default function RaceWakuInfoTabBody({
           focusedBoat={selectedBoat}
           onFocusBoat={onFocusBoat}
         />
-        <section className="rwit-detail">
-          <h3 className="rwit-detail-title">
-            <BoatBadge n={selectedPlayer.number} size="sm" />
-            <span translate="no">
-              {selectedPlayer.name?.replace(/\s+/g, "")}
-            </span>
-            {t("wakuInfo.detailTitle")}
-          </h3>
-          <p className="rwit-note">{t("wakuInfo.note")}</p>
-
-          <BoatChipRow
-            t={t}
-            players={sortedPlayers}
-            selectedNumber={selectedPlayer.number}
-            onFocusBoat={onFocusBoat}
-          />
-
+        <DetailCard
+          t={t}
+          players={sortedPlayers}
+          selectedPlayer={selectedPlayer}
+          onFocusBoat={onFocusBoat}
+        >
           <CourseGridCard
             t={t}
             scopedRecords={scopedRecords}
@@ -100,7 +110,7 @@ export default function RaceWakuInfoTabBody({
             toggleCell={toggleCell}
             {...fold}
           />
-        </section>
+        </DetailCard>
       </div>
 
       {/* ST考察（FR-1）。6艇分を並べるため選択中の選手に依存しない。
