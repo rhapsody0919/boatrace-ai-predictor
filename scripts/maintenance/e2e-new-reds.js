@@ -19,7 +19,9 @@
  *   GITHUB_OUTPUT があれば notify（true/false）・text（Slack に載せる文）を書く。終了コードは常に0
  *   （成否は workflow の他の step が決める。ここは知らせるかだけ）
  *
- * 検証: scripts/maintenance/verify-e2e-new-reds.js
+ * 判定と書き出す物は runCli（I/O を受け取る形）で決め、ファイル・gh・GITHUB_OUTPUT への書き出しは main だけが行う。
+ *
+ * 検証: scripts/maintenance/verify-e2e-new-reds.js（判定）・verify-e2e-new-reds-cli.js（runCli）
  */
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -52,13 +54,13 @@ export function redKeysOf(report) {
   return [...new Set(keys)].sort();
 }
 
-function readJson(file, what) {
-  if (!file || !existsSync(file)) return null;
+/** JSON の文を読む。無い・読めない物は null（知らせる側に倒す。理由は log に残す） */
+function parseJson(text, what, log) {
+  if (text === null || text === undefined) return null;
   try {
-    return JSON.parse(readFileSync(file, "utf8"));
+    return JSON.parse(text);
   } catch (error) {
-    // 読めない基準・レポートは「無い」と同じに扱い、知らせる側に倒す（理由はログに残す）
-    console.error(`${what} を読めない（${file}）: ${error.message}`);
+    log(`${what} を読めない: ${error.message}`);
     return null;
   }
 }
@@ -96,7 +98,7 @@ function fetchBaseline(workflow) {
   return null;
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = Object.fromEntries(
     argv
       .filter((a) => a.startsWith("--"))
@@ -112,34 +114,58 @@ function parseArgs(argv) {
   };
 }
 
-function main() {
-  const args = parseArgs(process.argv.slice(2));
-  const report = readJson(args.report, "レポート");
+/**
+ * CLI の本体（ファイル・gh に触らない）。読む・探す口を受け取り、書き出す物を返す。
+ * @param {{args: ReturnType<typeof parseArgs>, readText: (file: string) => string|null,
+ *   fetchBaseline: (workflow: string) => string|null, now: Date, delim: string, log?: (s: string) => void}} io
+ * @returns {{decision: object, text: string, keysFile: {path: string, body: string}|null, output: string}}
+ */
+export function runCli({
+  args,
+  readText,
+  fetchBaseline: find,
+  now,
+  delim,
+  log = console.error,
+}) {
+  const read = (file, what) =>
+    file ? parseJson(readText(file), what, log) : null;
+  const report = read(args.report, "レポート");
   const current = report ? redKeysOf(report) : null;
   const baseFile =
-    args.baseline || (args.workflow ? fetchBaseline(args.workflow) : null);
-  const baseBody = readJson(baseFile, "基準");
+    args.baseline || (args.workflow ? find(args.workflow) : null);
+  const baseBody = read(baseFile, "基準");
   const baseline = Array.isArray(baseBody?.keys) ? baseBody : null;
-  const decision = decideNotify({
-    ...args,
-    current,
-    baseline,
-    now: new Date(),
-  });
+  const decision = decideNotify({ ...args, current, baseline, now });
   // 組が欠けた run の鍵は基準に残さない（次の run は一つ前の完全な run と比べる）
-  if (current !== null && !args.incomplete && args.out) {
-    const body = { keys: current, notifiedAt: decision.notifiedAt };
-    writeFileSync(args.out, `${JSON.stringify(body, null, 1)}\n`);
-  }
+  const keysFile =
+    current !== null && !args.incomplete && args.out
+      ? {
+          path: args.out,
+          body: `${JSON.stringify({ keys: current, notifiedAt: decision.notifiedAt }, null, 1)}\n`,
+        }
+      : null;
   const text = noticeText(decision);
-  console.log(`notify=${decision.notify} reason=${decision.reason}\n${text}`);
-  if (process.env.GITHUB_OUTPUT) {
-    const delim = `EOF_${randomBytes(16).toString("hex")}`;
-    appendFileSync(
-      process.env.GITHUB_OUTPUT,
-      `notify=${decision.notify}\ntext<<${delim}\n${text}\n${delim}\n`,
-    );
-  }
+  const output = `notify=${decision.notify}\ntext<<${delim}\n${text}\n${delim}\n`;
+  return { decision, text, keysFile, output };
+}
+
+function main() {
+  const readText = (file) =>
+    existsSync(file) ? readFileSync(file, "utf8") : null;
+  const r = runCli({
+    args: parseArgs(process.argv.slice(2)),
+    readText,
+    fetchBaseline,
+    now: new Date(),
+    delim: `EOF_${randomBytes(16).toString("hex")}`,
+  });
+  if (r.keysFile) writeFileSync(r.keysFile.path, r.keysFile.body);
+  console.log(
+    `notify=${r.decision.notify} reason=${r.decision.reason}\n${r.text}`,
+  );
+  if (process.env.GITHUB_OUTPUT)
+    appendFileSync(process.env.GITHUB_OUTPUT, r.output);
 }
 
 if (
