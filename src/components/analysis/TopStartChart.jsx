@@ -16,35 +16,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import BandWrapAxisTick from "../BandWrapAxisTick";
+import AnalysisVenueSelect from "./AnalysisVenueSelect";
+import { STADIUM_NAMES } from "../../constants/index.js";
 import { getTopStartStats } from "../../services/venueQueries2.js";
 import "./WinningTechniqueChart.css";
-
-const VENUES = [
-  { code: "01", name: "桐生" },
-  { code: "02", name: "戸田" },
-  { code: "03", name: "江戸川" },
-  { code: "04", name: "平和島" },
-  { code: "05", name: "多摩川" },
-  { code: "06", name: "浜名湖" },
-  { code: "07", name: "蒲郡" },
-  { code: "08", name: "常滑" },
-  { code: "09", name: "津" },
-  { code: "10", name: "三国" },
-  { code: "11", name: "びわこ" },
-  { code: "12", name: "住之江" },
-  { code: "13", name: "尼崎" },
-  { code: "14", name: "鳴門" },
-  { code: "15", name: "丸亀" },
-  { code: "16", name: "児島" },
-  { code: "17", name: "宮島" },
-  { code: "18", name: "徳山" },
-  { code: "19", name: "下関" },
-  { code: "20", name: "若松" },
-  { code: "21", name: "芦屋" },
-  { code: "22", name: "福岡" },
-  { code: "23", name: "唐津" },
-  { code: "24", name: "大村" },
-];
 
 const BOATS = [1, 2, 3, 4, 5, 6];
 
@@ -52,28 +27,6 @@ function StateBox({ className, children }) {
   return (
     <div className="winning-technique-container">
       <div className={className}>{children}</div>
-    </div>
-  );
-}
-
-function TopStartVenueSelect({ selectedVenue, onChange, t }) {
-  return (
-    <div className="controls-section">
-      <label htmlFor="top-start-venue-select">
-        {t("analysis.venueSelectLabel")}
-      </label>
-      <select
-        id="top-start-venue-select"
-        value={selectedVenue}
-        onChange={(e) => onChange(e.target.value)}
-        className="venue-select"
-      >
-        {VENUES.map((venue) => (
-          <option key={venue.code} value={venue.code}>
-            {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }
@@ -222,7 +175,7 @@ function TopStartChart({ initialVenueCode = null }) {
   }
 
   const { data } = statsData;
-  const venueName = VENUES.find((v) => v.code === selectedVenue)?.name;
+  const venueName = STADIUM_NAMES[parseInt(selectedVenue, 10)];
   const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venueName);
 
   const chartData = BOATS.map((boatNumber) =>
@@ -242,8 +195,9 @@ function TopStartChart({ initialVenueCode = null }) {
         {t("analysis.topStart.description")}
       </p>
 
-      <TopStartVenueSelect
-        selectedVenue={selectedVenue}
+      <AnalysisVenueSelect
+        id="top-start-venue-select"
+        value={selectedVenue}
         onChange={setSelectedVenue}
         t={t}
       />
