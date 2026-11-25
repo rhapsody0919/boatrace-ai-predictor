@@ -418,7 +418,7 @@
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
   - `src/services/motorQueries7.js:78` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
-  - `src/services/motorQueries8.js:80` select(helper:fetchAllByIn)
+  - `src/services/motorQueries8.js:100` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:35` select [boat_number, race_id, start_flag]
   - `src/services/raceQueries.js:239` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:288` select [boat_number, race_id, start_timing]
@@ -1243,7 +1243,7 @@
   - `src/services/motorQueries2.js:358` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries3.js:312` select [race_id, rank1]
   - `src/services/motorQueries5.js:53` select(helper:fetchAllByIn)
-  - `src/services/motorQueries8.js:81` select(helper:fetchAllByIn)
+  - `src/services/motorQueries8.js:101` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:84` select(helper:fetchAllByIn)
   - `src/services/raceQueries3.js:125` select [race_id, race_status, rank1, rank2, rank3, winning_technique]
   - `src/services/raceQueries3.js:255` select(helper:fetchAllByIn)
@@ -1290,7 +1290,7 @@
   - `scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207` rest(rest) [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
   - `src/services/meetQueries3.js:35` select [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
   - `src/services/motorQueries7.js:21` select [end_date, start_date, venue_code]
-  - `src/services/motorQueries8.js:47` select [end_date, grade, start_date, title, total_days, venue_code]
+  - `src/services/motorQueries8.js:67` select [end_date, grade, start_date, title, total_days, venue_code]
   - `src/services/raceQueries2.js:254` select [end_date, start_date, venue_code]
   - `src/services/scheduleQueries.js:71` select [class_code, end_date, kind, start_date, total_days, venue_code]
   - `src/services/scheduleQueries.js:99` select [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
@@ -1337,7 +1337,7 @@
   - `src/services/meetQueries.js:79` select [boat_number, is_flying, race_id]
   - `src/services/meetQueries.js:111` select [boat_number, entry_course, finish_mark, race_id]
   - `src/services/meetQueries2.js:165` select [boat_number, finish_mark, is_flying, race_id, start_timing]
-  - `src/services/motorQueries8.js:83` select(helper:fetchAllByIn)
+  - `src/services/motorQueries8.js:103` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:97` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:233` select(helper:fetchAllByIn)
   - `src/services/raceQueries4.js:22` select [boat_number, entry_course, finish_mark, finish_rank, is_flying, is_late_start, race_id, start_timing]

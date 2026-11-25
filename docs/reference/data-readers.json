@@ -1687,7 +1687,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries8.js:80",
+          "ref": "src/services/motorQueries8.js:100",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -11584,7 +11584,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/motorQueries8.js:81",
+          "ref": "src/services/motorQueries8.js:101",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -12770,7 +12770,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries8.js:47",
+          "ref": "src/services/motorQueries8.js:67",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12839,7 +12839,7 @@
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
-            "src/services/motorQueries8.js:47",
+            "src/services/motorQueries8.js:67",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12859,7 +12859,7 @@
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
-            "src/services/motorQueries8.js:47",
+            "src/services/motorQueries8.js:67",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12879,7 +12879,7 @@
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
-            "src/services/motorQueries8.js:47",
+            "src/services/motorQueries8.js:67",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12894,7 +12894,7 @@
             "api/_lib/botPage.js:244",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
-            "src/services/motorQueries8.js:47",
+            "src/services/motorQueries8.js:67",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
           ],
@@ -12907,7 +12907,7 @@
             "scripts/lib/snsTodayDigestV3.js:96",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
-            "src/services/motorQueries8.js:47",
+            "src/services/motorQueries8.js:67",
             "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
@@ -12930,7 +12930,7 @@
             "scripts/lib/snsTodayDigestV3.js:96",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
-            "src/services/motorQueries8.js:47",
+            "src/services/motorQueries8.js:67",
             "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
@@ -13279,7 +13279,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries8.js:83",
+          "ref": "src/services/motorQueries8.js:103",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
