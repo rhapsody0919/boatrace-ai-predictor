@@ -2927,6 +2927,8 @@
       "summary": "{{count}} races in the past 90 days",
       "summary_one": "{{count}} race in the past 90 days",
       "firstHeading": "Boat {{n}} wins",
+      "firstCount": " ({{wins}} of {{total}} races)",
+      "noteDenominator": "💡 The rate is the share of all {{count}} races at this venue in which the combination came in. Higher payouts mean harder-to-hit patterns.",
       "note": "💡 The rate is the share of all races at this venue (the count above) in which that combination occurred. Higher payouts mean harder-to-hit patterns.",
       "empty": "No outcome distribution data found"
     },
