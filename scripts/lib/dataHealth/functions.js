@@ -128,7 +128,7 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
     args: [{ name: "p_to", type: "date" }],
     shape: "object",
     description:
-      "データ健全性の日次監視: 夜の集計（前日22時〜当日1時 JST）が書く表の鮮度（最終の更新時刻・日付が締めまでに進んだか）。p_to は前日。項目は scripts/lib/dataHealth/functions.js の NIGHTLY_FRESHNESS_ITEMS",
+      "データ健全性の日次監視: 夜の集計（前日22時〜当日1時 JST）と、前日までに取り込む日次の表の鮮度（最終の更新時刻・日付が締めまでに進んだか）。p_to は前日。項目は scripts/lib/dataHealth/functions.js の NIGHTLY_FRESHNESS_ITEMS",
     migration: "207_data_health_growth_gsc_freshness.sql",
     items: NIGHTLY_FRESHNESS_ITEMS,
     body: nightlyFreshnessSql,

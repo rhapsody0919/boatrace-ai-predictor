@@ -10,13 +10,16 @@
 --   `node scripts/maintenance/render-data-health-functions.js data_health_nightly_freshness` の出力（手で書き写さない）。
 --
 -- 判定: GSC は PT の日付で2〜3日遅れ、毎日 JST 10 時台に直近7日を取り直す。06:35 JST の評価（p_to = 前日）で
---   max(date) + 2 >= p_to - 1（= max(date) が4日前以降）。余裕の日数は目安・根拠なし（11/25 の max(date) は前々日）。
+--   max(date) >= p_to - 3（kind=date_lag、lagDays=3。= max(date) が4日前以降）。平常の max(date) は D-3 の見込みで
+--   余裕は1日（目安・根拠なし。11/25 の max(date) は手で取り直した前々日）。observed は実際の max(date)。
 --
 -- 変更: CREATE OR REPLACE FUNCTION・REVOKE・GRANT・COMMENT のみ（読み取りの関数。表・データは変えない。ロックなし・冪等）。
 --   170 の data_health_nightly_freshness を上書きする。
 --
--- 適用の前提: lib の差分が master に入っていること（db-apply は master の SQL を当てる）。適用までの 06:35 JST の実行では
---   関数が growth_gsc_daily の項目を返さない。
+-- 適用の前提: lib の差分が master に入っていること（db-apply は master の SQL を当てる）。コードが本番に出た後、適用まで
+--   の 06:35 JST の実行では関数が項目を返さず「検査を実行できませんでした: Search Console の日別…」が1回通知され、適用の
+--   後の最初の実行で消える。マージの後、次の定時のデプロイ（05:45・11:45・17:45 JST）の前に当てれば出ない。
+--   SQL が先に当たっても、古いコードは増えた項目を読まないだけで害はない。
 -- 適用後の確認（読み取りのみ）:
 --   SELECT data_health_nightly_freshness(current_date - 1) -> 'growth_gsc_daily';   -- ok が true
 --   SELECT has_function_privilege('anon', 'data_health_nightly_freshness(date)', 'EXECUTE');  -- false
@@ -68,7 +71,7 @@ select jsonb_build_object(
   'venue_technique_period_stats', jsonb_build_object('applicable', true, 'ok', coalesce((select max(last_updated) from venue_technique_period_stats) >= p_to::date + 1, false), 'observed', (select max(last_updated) from venue_technique_period_stats)),
   'st_course_baseline', jsonb_build_object('applicable', y.had_results, 'ok', coalesce((select max(window_end) from st_course_baseline) >= p_to::date - 1, false), 'observed', (select max(window_end) from st_course_baseline)),
   'nige_second_by_course', jsonb_build_object('applicable', y.had_results, 'ok', coalesce((select max(window_end) from nige_second_by_course) >= p_to::date - 1, false), 'observed', (select max(window_end) from nige_second_by_course)),
-  'growth_gsc_daily', jsonb_build_object('applicable', true, 'ok', coalesce((select max(date) + 2 from growth_gsc_daily) >= p_to::date - 1, false), 'observed', (select max(date) + 2 from growth_gsc_daily)),
+  'growth_gsc_daily', jsonb_build_object('applicable', true, 'ok', coalesce((select max(date) from growth_gsc_daily) >= p_to::date - 3, false), 'observed', (select max(date) from growth_gsc_daily)),
   'accuracy_summary', jsonb_build_object('applicable', true, 'ok', coalesce((select max(updated_at) from accuracy_cache where key = 'accuracy_summary') >= (select since from w), false), 'observed', (select max(updated_at) from accuracy_cache where key = 'accuracy_summary')),
   'unified_model_accuracy', jsonb_build_object('applicable', true, 'ok', coalesce((select max(updated_at) from accuracy_cache where key = 'unified_model_accuracy') >= (select since from w), false), 'observed', (select max(updated_at) from accuracy_cache where key = 'unified_model_accuracy')),
   'unified_volatility_accuracy', jsonb_build_object('applicable', true, 'ok', coalesce((select max(updated_at) from accuracy_cache where key = 'unified_volatility_accuracy') >= (select since from w), false), 'observed', (select max(updated_at) from accuracy_cache where key = 'unified_volatility_accuracy')),
@@ -88,4 +91,4 @@ $data_health$;
 
 REVOKE ALL ON FUNCTION data_health_nightly_freshness(date) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION data_health_nightly_freshness(date) TO service_role;
-COMMENT ON FUNCTION data_health_nightly_freshness(date) IS 'データ健全性の日次監視: 夜の集計（前日22時〜当日1時 JST）が書く表の鮮度（最終の更新時刻・日付が締めまでに進んだか）。p_to は前日。項目は scripts/lib/dataHealth/functions.js の NIGHTLY_FRESHNESS_ITEMS';
+COMMENT ON FUNCTION data_health_nightly_freshness(date) IS 'データ健全性の日次監視: 夜の集計（前日22時〜当日1時 JST）と、前日までに取り込む日次の表の鮮度（最終の更新時刻・日付が締めまでに進んだか）。p_to は前日。項目は scripts/lib/dataHealth/functions.js の NIGHTLY_FRESHNESS_ITEMS';

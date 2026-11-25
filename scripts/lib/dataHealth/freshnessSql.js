@@ -9,12 +9,13 @@
  *     date_end  日付の列が、評価の終端（前日）以降（その日のレースまで集計した）
  *     date_prev 日付の列が、評価の終端の前日（前々日）以降（材料が翌朝に確定するため、夜の集計の時点では前日分が入らない表）
  *     date_next 日付の列が、評価の終端の翌日（当日）以降（当日の 0 時台に動いた集計が書く日付）
+ *     date_lag  日付の列が、評価の終端の lagDays 日前以降（元のデータそのものが数日遅れる表。Search Console 等）
  *     count     件数が1以上
  *   observed   観測値の式（スカラーの副問い合わせ。表は必ず1つ）
  *   applicable 書かれるはずかの式（既定 true）。y.* は前日の開催の有無（nightlyFreshnessSql の y）
  *   table      読む表（PGlite の検証で最小のスキーマを作るため・説明用）
  *
- * @typedef {{key: string, table: string, kind: "since"|"date_end"|"date_prev"|"date_next"|"count", observed: string, applicable?: string}} FreshnessItem
+ * @typedef {{key: string, table: string, kind: "since"|"date_end"|"date_prev"|"date_next"|"date_lag"|"count", lagDays?: number, observed: string, applicable?: string}} FreshnessItem
  */
 
 /** 夜の集計（前日 22:00〜当日 01:00 JST）が書く表。締めは 06:30（data_health の 06:35 の実行で見る） */
@@ -53,13 +54,15 @@ export const NIGHTLY_FRESHNESS_ITEMS = Object.freeze([
   })),
   // Search Console の日別（growth-gsc-daily。毎日 JST 10 時台に直近7日を取り直す）。GSC は PT の日付で2〜3日遅れる。
   // 06:35 JST の評価（p_to = 前日 D-1）の時点で、前回（D-1 の 10 時台）が取れていれば max(date) は D-3。
-  // max(date)+2 >= p_to - 1（= max(date) >= D-4）で1日の余裕を見る。止まった日は2日続けて遅れた時点で鳴る
-  // （11/25 06:35 の時点の max(date) は 11/23＝D-2。余裕の日数は目安・根拠なし。数日の値を見て直す）
+  // max(date) >= p_to - 3（= D-4）で1日の余裕を見る。止まった日は2日続けて遅れた時点で鳴る
+  // （11/25 06:35 の時点の max(date) は 11/23＝D-2。余裕の日数は目安・根拠なし。数日の値を見て直す）。
+  // ずれは observed でなく判定の側に持たせる（通知の「最終」に実際の日付を出すため）
   {
     key: "growth_gsc_daily",
     table: "growth_gsc_daily",
-    kind: "date_prev",
-    observed: "(select max(date) + 2 from growth_gsc_daily)",
+    kind: "date_lag",
+    lagDays: 3,
+    observed: "(select max(date) from growth_gsc_daily)",
   },
   // calculate-accuracy の5本のうち、画面が読むキャッシュ（models は画面の代わりの経路だけが読むので見ない）
   ...[
@@ -153,6 +156,7 @@ const okExpr = (item, toDate) => {
   if (item.kind === "date_end") return `${o} >= ${toDate}::date`;
   if (item.kind === "date_prev") return `${o} >= ${toDate}::date - 1`;
   if (item.kind === "date_next") return `${o} >= ${toDate}::date + 1`;
+  if (item.kind === "date_lag") return `${o} >= ${toDate}::date - ${item.lagDays}`;
   return `${o} > 0`;
 };
 
