@@ -203,7 +203,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/inCautionHealth.js` | BOA-822 イン崩れ注意度の監視（tasks 12、plan §9。完了の定義C）。DB は読み取りだけ。 | evaluateInCautionTable, evaluateInCautionToday, readInCautionTable, readInCautionToday, runInCautionHealth ほか1件 |
 | `scripts/lib/isDirectRun.js` | そのモジュールが `node <path>` で直接実行されたかを判定する。 | isDirectRun |
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
-| `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, jobTimeouts, cancelledByTimeout, decideRun, rerunBlockers ほか8件 |
+| `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, jobTimeouts, cancelledByTimeout, secretsOutsideCanary, keyScope ほか13件 |
 | `scripts/lib/kbArchiveBoundary.js` | K/B の長期アーカイブ（kb_archive_*）と本体テーブル（races ほか）の境目の日。 | MAIN_TABLES_START, KB_LAST_DATE, KB_FIRST_DATE |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
 | `scripts/lib/kbBackfillPlan.js` | kb（公式の成績・番組のアーカイブ）の取得の計画の純粋関数（日付の列・取得の窓・応答の分類・計画と見積り）。 | jstToday, parseWindow, inWindow, windowDayKey, classifyResponse ほか3件 |
@@ -674,4 +674,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 632 ファイル / export 3408 件。
+対象 632 ファイル / export 3413 件。
