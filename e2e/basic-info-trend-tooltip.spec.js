@@ -106,3 +106,25 @@ test("留めた吹き出しの「レースへ」でその走のレース詳細�
   await link.click();
   await expect(page).toHaveURL(new RegExp(`${href}$`));
 });
+
+test.describe("スマホ", () => {
+  test.use({ viewport: { width: 375, height: 812 }, hasTouch: true });
+
+  test("押すと図の下に帯で出て、帯を開いたまま艇の丸を押すとその艇が選ばれる", async ({
+    page,
+  }) => {
+    const hit = await openTrend(page);
+    const box = await hit.boundingBox();
+    await hit.tap({ position: { x: box.width * 0.4, y: box.height / 2 } });
+    const tip = page.locator(".race-basic-info-tab .trc-tip.is-pinned");
+    await expect(tip).toBeVisible();
+    const link = await tip.locator(".trc-tip-link").boundingBox();
+    expect(link.height, "リンクの押せる高さ").toBeGreaterThanOrEqual(44);
+    // 吹き出しの外を押す（押した瞬間に閉じて丸が動くと、押した艇が選ばれなかった。ファン評価 11/25）
+    await page.locator(".race-basic-info-tab .trc-boat").nth(2).tap();
+    await expect(
+      page.locator(".race-basic-info-tab .trc-boat").nth(2),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".race-basic-info-tab .trc-tip")).toHaveCount(0);
+  });
+});

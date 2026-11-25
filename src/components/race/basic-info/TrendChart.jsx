@@ -4,12 +4,13 @@
  * 偶然の幅の帯は付けない（オーナー決定）。軸は0から始めず値の幅に上下の余白を足す。
  * 見た目（trc- のクラス）は TrendChart.css。読み込みは使う側（BasicInfoTrend）が持つ。
  */
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { trendGapIndexes } from "../../../pure/racerTrendSeries.js";
 import { useChartWidth } from "./useChartWidth.js";
 import TrendTooltip from "./TrendTooltip";
+import { useChartPick } from "./useChartPick.js";
 
 const H = 240;
 const PAD = { l: 30, r: 66, t: 18, b: 34 };
@@ -185,71 +186,6 @@ function SelectedAxis({ sel, selected, x, W }) {
   );
 }
 
-// 点に重ねる（マウス）／押す（指・クリック）と、選んだ艇の一番近い点を選ぶ（ファン4人の最終案）。
-// マウスはクリックで留め、指は動きの少ない押し離しで留める（縦のスクロールで出さない）。指で押したまま横に動かすと点が移る。
-// 留めている間は、図の外を押すか Esc で閉じる。同じ点をもう一度押しても閉じる（visual-designer 11/25）
-function usePick(sel, selected, x, W, boxRef) {
-  const [pick, setPick] = useState(null);
-  const start = useRef(null);
-  const len = sel.length;
-  const indexAt = (e) => {
-    const r = e.currentTarget.ownerSVGElement.getBoundingClientRect();
-    const sx = ((e.clientX - r.left) * W) / r.width;
-    let best = 0;
-    for (let i = 1; i < len; i += 1)
-      if (Math.abs(x(i, len) - sx) < Math.abs(x(best, len) - sx)) best = i;
-    return best;
-  };
-  const cur = pick && pick.boat === selected && pick.i < len ? pick : null;
-  const pinned = cur?.pinned === true;
-  useEffect(() => {
-    if (!pinned) return undefined;
-    const close = (e) => {
-      if (
-        e.type === "keydown"
-          ? e.key === "Escape"
-          : !boxRef.current?.contains(e.target)
-      )
-        setPick(null);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [pinned, boxRef]);
-  const toggle = (i) =>
-    setPick(pinned && cur.i === i ? null : { boat: selected, i, pinned: true });
-  return {
-    pick: cur,
-    close: () => setPick(null),
-    onPointerMove: (e) => {
-      if (e.pointerType === "mouse") {
-        if (!pinned) setPick({ boat: selected, i: indexAt(e), pinned: false });
-        return;
-      }
-      const s = start.current;
-      const dx = s ? Math.abs(e.clientX - s.x) : 0;
-      if (e.buttons && s && dx > 10 && dx > Math.abs(e.clientY - s.y))
-        setPick({ boat: selected, i: indexAt(e), pinned: true });
-    },
-    onPointerLeave: () => {
-      if (!pinned) setPick(null);
-    },
-    onPointerDown: (e) => {
-      if (e.pointerType === "mouse") toggle(indexAt(e));
-      else start.current = { x: e.clientX, y: e.clientY };
-    },
-    onPointerUp: (e) => {
-      const s = start.current;
-      start.current = null;
-      if (e.pointerType === "mouse" || !s) return;
-      if (Math.hypot(e.clientX - s.x, e.clientY - s.y) < 10) toggle(indexAt(e));
-    },
-  };
-}
-
 // 選んだ点の縦の点線と印、点を選ぶ当たりの面（図の中の全面、透明）。縦のスクロールは指に任せる
 function PickLayer({ picked, px, y, selected, W, pointer }) {
   return (
@@ -299,7 +235,16 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
   const boxRef = useRef(null);
-  const { pick, close, ...pointer } = usePick(sel, selected, x, W, boxRef);
+  const {
+    pick,
+    close,
+    handlers: pointer,
+  } = useChartPick({
+    xs: sel.map((_, i) => x(i, sel.length)),
+    key: selected,
+    W,
+    boxRef,
+  });
   const picked = pick ? sel[pick.i] : null;
   const px = pick ? x(pick.i, sel.length) : 0;
   return (
