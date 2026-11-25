@@ -126,6 +126,12 @@ export function FeedbackForm({ t, form, textRef }) {
           kind={form.kind}
           setKind={form.setKind}
         />
+        {/* データの誤りは、どのレースのどの数字かが無いと運営が確かめられない（送るのはページの種類だけ。オーナー 2026-11-25） */}
+        {form.kind === "data" && (
+          <p className="site-fb-hint" data-testid="site-feedback-data-hint">
+            {t(`${K}.dataHint`)}
+          </p>
+        )}
       </fieldset>
       <fieldset className="site-fb-field">
         <legend className="site-fb-q">
