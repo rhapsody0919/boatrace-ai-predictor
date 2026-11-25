@@ -18,6 +18,7 @@ import {
   vcLabelOf,
 } from "./racerPerformanceView";
 import FilterScopeFrame from "./RacerFilterScope";
+import RacerNigashiCourses from "./RacerNigashiCourses";
 import { VcFilterBar, VcHistoryError } from "./RacerPerformanceFilters";
 import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
 import {
@@ -342,6 +343,8 @@ export default function RacerPerformanceStats({
         />
         {vc.vcHistoryLoading && <p className="racer-stat-note">集計中…</p>}
         <VcHistoryError vc={vc} />
+        {/* 逃し率（進入コース別、オーナー 2026-11-25）。絞り込みが効く履歴から数える */}
+        <RacerNigashiCourses history={vc.vcHistory} />
         {breakdownBlocks(t, vc, view, venueStats)}
         <BothFixedNoRuns vc={vc} vcData={vcData} vcLabel={vcLabel} />
         <VcCards vc={vc} vcData={vcData} />
