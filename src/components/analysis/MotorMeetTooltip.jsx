@@ -9,8 +9,20 @@ import { useTranslation } from "react-i18next";
 import { localizePath } from "../../pure/localizePath.js";
 import { GRADE_LABELS } from "../race/raceGradeLabels";
 import { venueNameOf } from "../../utils/raceListDisplay";
+import { finishMarkKeyOf } from "../../utils/prevResult";
 
 const md = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
+
+// 1走の着。公式の記号（F・欠 等）は訳した1字、着順は数字、どちらも無ければ「-」
+function resultText(t, r) {
+  if (typeof r === "number") return String(r);
+  if (r == null) return "-";
+  const key = finishMarkKeyOf(r);
+  return key ? t(`dataTable.prevMark.${key}`) : r;
+}
+
+// 日ごとに空白で区切り、同じ日の走は続けて書く（ハイフンでつなぐと3連単の目に見える。ファン評価 11/25）
+const orderText = (t, byDay) => byDay.map((d) => d.results.map((r) => resultText(t, r)).join("")).join(" ");
 
 /**
  * @param {{tip: ReturnType<import("../../pure/motorGenerationTrend.js").motorMeetTip>, point: {value:number, runs:number},
@@ -37,9 +49,13 @@ export default function MotorMeetTooltip({ tip, point, venueCode, metric, leftPc
       {/* 選手名と着順の並びは長くなりうるので、この行だけ折り返す（3行の決まりは見出しの数で守る） */}
       <p className="trc-tip-line mtc-tip-wrap">
         {tip.racerName && <span translate="no">{t("analysis.motor.genTrend.tipRacer", { name: tip.racerName.replace(/\s+/g, "") })} </span>}
-        {t("analysis.motor.genTrend.tipFinishes", { order: tip.finishes.map((f) => f ?? "-").join("-") })}
+        {t(tip.ongoing ? "analysis.motor.genTrend.tipFinishesSoFar" : "analysis.motor.genTrend.tipFinishes", {
+          order: orderText(t, tip.byDay),
+          n: tip.byDay.reduce((a, d) => a + d.results.length, 0),
+        })}
       </p>
-      <p className="trc-tip-line trc-tip-value">
+      {/* 走数が3桁になると狭い幅ではみ出すので、この行も折り返す（ファン評価 11/25） */}
+      <p className="trc-tip-line trc-tip-value mtc-tip-wrap">
         {t("analysis.motor.genTrend.tipValue", {
           metric: t(`analysis.motor.genTrend.metric.${metric}`),
           value: `${point.value.toFixed(1)}%`,

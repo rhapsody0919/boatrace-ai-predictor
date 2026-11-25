@@ -6,7 +6,10 @@
  * 守ること（オーナー 2026-11-25 承認のモック mock-motor-trend/tip/tip-mock.png）:
  *   - 吹き出しは3行（節の期間・会場・グレード・日数／乗った選手とこの節の着順／節の初日の公式の率とそれまでの走数）
  *   - 頭の「節へ →」はその節のページ（/venue/会場/meet/初日）。言語の接頭辞を付ける（en は /en/venue/…）
- *   - 着順の無い走は「-」。率は1桁と %
+ *   - 着は日ごとに空白で区切り、同じ日は続けて書く（ハイフンでつながない。3連単の目に見えるため）。
+ *     公式の記号は訳した1字（F・欠）、着順も記号も無い走は「-」。率は1桁と %
+ *   - 開催中の節は「ここまでの着順（N走、開催中）」と書く
+ *   - 3行目（率と走数）も折り返す印を付ける
  *   - 留めたときだけ閉じる印を出す。右寄りの点は左へ出す
  *   - グレード・日数・選手が分からなければ、その語を出さない
  */
@@ -39,7 +42,7 @@ const {
         b.onLoad({ filter: /.*/, namespace: "i18n" }, () => ({
           loader: "js",
           contents:
-            "export const useTranslation = () => ({ t: (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k), i18n: { resolvedLanguage: globalThis.__mtipLang.current } });",
+            "export const useTranslation = () => ({ t: (k, v) => (k.startsWith('dataTable.prevMark.') ? { flying: 'F', absent: '欠' }[k.slice(19)] : v ? `${k}:${JSON.stringify(v)}` : k), i18n: { resolvedLanguage: globalThis.__mtipLang.current } });",
         }));
       },
     },
@@ -61,6 +64,12 @@ const tip = (over = {}) => ({
   grade: "G1",
   racerName: "山田 太郎",
   finishes: [3, 1, null, 5, 1, 4],
+  byDay: [
+    { date: "2026-09-26", results: [3, 1] },
+    { date: "2026-09-27", results: [null, "F"] },
+    { date: "2026-09-28", results: [5, "欠"] },
+  ],
+  ongoing: false,
   ...over,
 });
 const html = (props) =>
@@ -86,7 +95,21 @@ check("3行", (base.match(/class="trc-tip-line/g) ?? []).length === 3, base);
 check("飛び先はその節のページ", base.includes('href="/venue/2/meet/2026-09-26"'), base);
 check("期間・会場・グレード・日数", base.includes("9/26〜10/01") && base.includes("venues.2") && base.includes("G1") && base.includes('tipDays:{&quot;n&quot;:6}'), base);
 check("選手名は空白を詰める", base.includes("山田太郎"), base);
-check("着順の無い走は -", base.includes("3-1---5-1-4"), base);
+check("着は日ごとに空白で区切り、同じ日は続ける", base.includes("31 -F 5欠"), base);
+check("着をハイフンでつながない", !base.includes("3-1"), base);
+check("終わった節はこの節の着順と走数", base.includes("analysis.motor.genTrend.tipFinishes:") && base.includes("&quot;n&quot;:6"), base);
+check("3行目も折り返す", /trc-tip-value mtc-tip-wrap/.test(base), base);
+check("吹き出しは点の横の位置に置く", base.includes("left:30%"), base);
+check("飛び先は吹き出しの見出しの印", /class="trc-tip-link"[^>]*>analysis\.motor\.genTrend\.toMeet</.test(base), base);
+check("55% ちょうどは返さず、56% で返す", !html({ leftPct: 55 }).includes("is-flip") && html({ leftPct: 56 }).includes("is-flip"));
+const closeBtn = html({ pinned: true });
+check("閉じる印は名前つきの × のボタン", /<button[^>]*class="trc-tip-close"[^>]*aria-label="basicInfo\.trend\.tipClose"[^>]*>×<\/button>/.test(closeBtn), closeBtn);
+check("知らない記号はそのまま", html({ tip: tip({ byDay: [{ date: "2026-09-26", results: ["？", 2] }] }) }).includes("？2"));
+const odd = html({ tip: tip({ byDay: [{ date: "2026-09-26", results: [1] }, { date: "2026-09-27", results: [6, 2, null] }] }) });
+check("走数は日をまたいで数える", odd.includes("&quot;n&quot;:4") && odd.includes("1 62-"), odd);
+check("3行目は率と走数（3連率も）", html({ metric: "top3Rate" }).includes("analysis.motor.genTrend.metric.top3Rate"));
+const ongoing = html({ tip: tip({ ongoing: true }) });
+check("開催中はここまでの着順", ongoing.includes("tipFinishesSoFar") && !ongoing.includes("tipFinishes:"), ongoing);
 check("率は1桁と % とそれまでの走数", base.includes("39.6%") && base.includes("&quot;runs&quot;:82"), base);
 check("重ねただけは閉じる印なし", !base.includes("trc-tip-close"));
 check("左寄りの点は右へ出す", !base.includes("is-flip"));
