@@ -49,6 +49,15 @@
                         "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-branch-check.sh\""
                     }
                 ]
+            },
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session-progress-file.sh\" --start",
+                        "timeout": 10
+                    }
+                ]
             }
         ],
         "PreToolUse": [
@@ -98,6 +107,17 @@
                     {
                         "type": "command",
                         "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/track-session-progress.sh\"",
+                        "timeout": 10
+                    }
+                ]
+            }
+        ],
+        "Stop": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session-progress-file.sh\" --stop",
                         "timeout": 10
                     }
                 ]
