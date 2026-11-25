@@ -118,12 +118,12 @@
 
 /* 1200px 以上は右の列の一覧（選手の推移の .trc-split と同じ並び）。号機を艇番の右に並べる */
 @media (min-width: 1200px) {
-  .trc-split .mtc-boat {
+  .mtc-wrap .mtc-boat {
     flex-direction: row;
     min-height: 44px;
   }
 
-  .trc-split .mtc-boat .trc-boat-name {
+  .mtc-wrap .mtc-boat .trc-boat-name {
     flex: 1;
     font-size: var(--font-size-sm);
     color: var(--text-primary);
