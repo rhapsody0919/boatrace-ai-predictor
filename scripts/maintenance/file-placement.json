@@ -1,6 +1,6 @@
 {
   "$comment": "置き場の表（HR74、hq の drafts/hr74-file-placement-20261121.md 3節）。正本はこの1ファイル（AGENTS.md の表は人向けの要約）。読むのは scripts/maintenance/verify-doc-placement.js。一覧は git ls-files と --others --exclude-standard（fs は歩かない）。上から最初に当たった行で判定し、どの行にも当たらないパス・git が ignore の行に当たる物・ext の外が frozen を越えた行は外れ。mode が shadow の間は外れを標準出力に placement-shadow: の行で出すだけで赤にしない（根の一覧と docs の kebab-case は前からの赤のまま）。根に置ける名前は git が track の行の glob の最初の段（ROOT_FROZEN の後継）。緩める差分（行の追加・frozen の増・ext を足す・track から ignore・red から shadow）は base（origin/master）の表と比べて見つけ、PR 本文に「置き場の表: <理由>」の行を求める（根に名前が増える差分は shadow でも理由が無ければ赤）。ext は小文字・点なし、拡張子の無い名前は空文字。** を含む行に ext \"*\" は置けない（粗さの線）。frozen は数だけ（入れ替えと並行の PR の足し引きの打ち消しは通る、設計 3節で許した弱さ）",
-  "mode": "shadow",
+  "mode": "red",
   "rows": [
     {"glob": ".env.example", "kind": "鍵の見本", "owner": "人", "ext": ["example"], "git": "track", "frozen": 0},
     {"glob": ".gitignore", "kind": "ignore", "owner": "作り手", "ext": [""], "git": "track", "frozen": 0},
@@ -33,6 +33,7 @@
     {"glob": "config/*.json", "kind": "設定", "owner": "作り手", "ext": ["json"], "git": "track", "frozen": 0},
     {"glob": "data/*", "kind": "data 直下（新しく置かない）", "owner": "作り手", "ext": [], "git": "track", "frozen": 3},
     {"glob": "data/**", "kind": "データ・分析の出力", "owner": "作り手", "ext": ["json", "csv", "md", "txt", "html", ""], "git": "track", "frozen": 0},
+    {"glob": "docs/*", "kind": "docs 直下（新しく置かない。文書は docs/<種類>/ へ、AGENTS.md の docs の表）", "owner": "作り手", "ext": [], "git": "track", "frozen": 0},
     {"glob": "docs/db-migration/**", "kind": "DB の移行", "owner": "人", "ext": ["sql", "md"], "git": "track", "frozen": 0},
     {"glob": "docs/design/**", "kind": "採用した設計（コードと sql は凍結）", "owner": "作り手", "ext": ["md", "json", "html", "png", "jpg", "csv", "txt", "css"], "git": "track", "frozen": 177},
     {"glob": "docs/archive/**", "kind": "古い文書（sql は凍結）", "owner": "作り手", "ext": ["md"], "git": "track", "frozen": 4},
