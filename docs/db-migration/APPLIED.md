@@ -1,10 +1,11 @@
 # マイグレーション適用状況の台帳
 
-`docs/db-migration/` のマイグレーションSQLは Supabase に手動で適用している（Dashboard の SQL Editor や Management API）。Supabase 側の `list_migrations` は空で、適用履歴が残らないため、この台帳で「どのマイグレーションが本番DBに反映されているか」を記録する。番号の重複検査は `npm run verify:migration-numbers`（`scripts/maintenance/verify-migration-numbers.js`）が担い、このファイルの表に行が無い新規マイグレーション（`origin/master` に無いファイル）があれば失敗にし、既存ファイルの記載漏れは警告する。
+`docs/db-migration/` のマイグレーションSQLは Supabase に手動で適用している（Dashboard の SQL Editor や Management API）。Supabase 側の `list_migrations` は空で、適用履歴が残らないため、この台帳で「どのマイグレーションが本番DBに反映されているか」を記録する。番号の重複検査は `npm run verify:migration-numbers`（`scripts/maintenance/verify-migration-numbers.js`）が担い、既存ファイルの記載漏れは警告する（新規ファイルは行が無くてよい。行が無い＝未適用）。
 
 ## 運用ルール
 
-- 新規マイグレーションを追加するPRでは、この表に行を追加する（適用前は「未適用」、本番へ適用したら「適用済み」に更新し、根拠を書く）
+- 新規マイグレーションを追加するPRでは、この表に行を足さない。行が無いものは「未適用」とみなし、db-apply が本番へ適用したときに「適用済み」の行を足す（2026-11-25、ADR-0097 の追記。並走の PR と db-apply の記録の commit が表の同じ所を変えて衝突していたため）。足す行の根拠の欄は定型文になるので、人が読む要約は SQL の頭の注釈に書く
+- 例外: 手で先に本番へ当てたマイグレーションは、PR で「適用済み」の行を足す（行が無いと自動の適用がもう一度当てうる）
 - 番号は着手時とPR作成前に `origin/master` の最大番号を確認する（`npm run verify:migration-numbers` が最大番号と次の番号を表示する）
 - 既存の番号重複は、参照が壊れるためリネームしない。新規の重複は `verify-migration-numbers.js` が失敗にする
 
