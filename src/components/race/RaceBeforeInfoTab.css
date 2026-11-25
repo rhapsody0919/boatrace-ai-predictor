@@ -180,6 +180,12 @@
   .race-before-info-tab > * {
     grid-column: 1 / -1;
     min-width: 0;
+  }
+
+  /* 間は gap で取る。.mft-card の margin-top（MeetFormTrendCard.css、詳細度 0,1,0）は束ねた CSS の順で
+     勝ち負けが決まり、左右の上端が16pxずれた（#3488 の e2e）ので、詳細度 0,2,0 で消す */
+  .race-before-info-tab > .rbi-card,
+  .race-before-info-tab > .rbi-motor-link {
     margin: 0;
   }
 
