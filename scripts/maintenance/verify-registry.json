@@ -1766,6 +1766,11 @@
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
     },
     {
+      "script": "verify-site-feedback-hourly.js",
+      "tier": "ci",
+      "guards": "マイグレーション209（ご意見ボックスの時間ごとの件数 site_feedback_hourly）を 208 の後に PGlite に当て、当てる前の行の数え直しと冪等、受け付けた行ごとに1増える、拒否した送信（CHECK・連投の制限）は数えない、claude_ro は件数の表を読めてご意見の表は読めない、anon・authenticated は件数の表を読めない、戻しで消えて 208 の形で送れる、db-apply の検査で拒否が無いことを確かめる"
+    },
+    {
       "script": "verify-site-feedback-migration.js",
       "tier": "ci",
       "guards": "マイグレーション208（サイト全体のご意見ボックス site_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・claude_ro は読めない・画面の列挙値（種類・ページの種類・言語・満足度）が全部入る・列挙の外と空白だけと501文字と満足度の外は名前つきの制約で拒否・created_at の上書き・同じブラウザ24時間10行と全体10分30行の連投制限・冪等・ロールバックを確かめる"
