@@ -858,6 +858,19 @@
       "fetchError": "Could not load Makuri (taken) / Sashi (taken) in starting course 1.",
       "note2Local": "* For how often the racer finishes 1st, see the 1st-place rate in \"Course records of the 6 racers themselves\" above. \"This venue\" in the table above covers only this venue, while this card uses our data {{from}} – {{to}} at all venues, so the scopes differ. With this number of races, rates cannot be compared between racers of the same class."
     },
+    "nigashi": {
+      "title": "Races lost to a Course 1 Nige (Escape) (Boat 2 racer)",
+      "sub": "Of today's Boat 2 racer's past runs from starting course 2, the runs where the course 1 boat won by Nige (Escape) (our data {{from}} to {{to}})",
+      "empty": "Today's Boat 2 racer has no runs from starting course 2 in this period (our data {{from}} to {{to}})",
+      "row": "Course 2",
+      "value": "{{count}} of {{n}} runs",
+      "valuePct": " ({{pct}}%)",
+      "baseline": "Nationwide, the course 1 boat won by nige in {{pct}}% of runs from course 2 ({{from}} to {{to}}).",
+      "baselineError": "Could not load the nationwide figure.",
+      "note1": "*The denominator is every run from starting course 2. Today's Boat 2 is assumed to start from course 2; this may differ from the actual entry when a boat moves in.",
+      "note2": "*With this many runs, most of the difference between racers is chance. This rate does not describe a racer's trait.",
+      "fetchError": "Could not load the runs lost to a nige from course 2."
+    },
     "sixBoat": {
       "title": "Course records of the 6 racers themselves",
       "sub": "Each racer's own record in the expected starting course (assuming entry in boat-number order). Results are aggregated by actual starting course.",

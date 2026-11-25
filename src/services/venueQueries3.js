@@ -193,3 +193,21 @@ export function getVenuesWithGradeStats() {
       );
     });
   }
+
+/**
+ * 全国の逃し率の基準の材料（逃し率のカード、オーナー 2026-11-25）。venue_course_technique_baseline の
+ * グレードを問わない行（race_grade='ALL'）の、指定コースの会場ごとの行（24行）。合わせ方は src/pure/nigashiStats.js
+ */
+export function getNigashiBaselineRows(course) {
+  return withCache(`nigashi-baseline-v1-${course}`, async () => {
+    if (!supabase) {
+      throw new Error("Supabase client not initialized");
+    }
+    const { data } = await supabase
+      .from("venue_course_technique_baseline")
+      .select("venue_code, runs, nigashi_rate, window_start, window_end")
+      .eq("race_grade", "ALL")
+      .eq("course", course);
+    return data ?? [];
+  });
+}
