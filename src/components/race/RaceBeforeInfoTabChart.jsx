@@ -178,7 +178,7 @@ export default function RaceBeforeInfoTabChart({ sortedPlayers, analysis }) {
     t,
   );
   return (
-    <section className="rbi-card">
+    <section className="rbi-card rbi-chart-card">
       <h3 className="rbi-heading">
         {t("beforeInfo.exhibitionChartTitle")}
         {analysis.loading && (

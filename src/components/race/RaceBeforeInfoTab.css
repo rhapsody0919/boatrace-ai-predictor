@@ -162,3 +162,79 @@
   white-space: normal;
   word-break: keep-all;
 }
+
+/* PC の並び（1200px 以上）。列 1200 に全カードを1列に積むと、展示タイムの棒・今節の足の推移・
+   進入コースの棒が横に伸び、短い選手コメントが1件ずつ全幅に並んでいた。
+   気象｜展示タイム、展示情報の表は全幅、今節の足の推移｜進入コース、選手コメントは2列。
+   片方のカードが無いとき・展示タイムがまだ無いとき（.rbi-chart-note が無い）は全幅のまま。
+   上はそろえ、高さはそろえない（枠別情報の PC と同じ。RaceWakuInfoTabPc.css）。
+   切り替える幅は RaceTabs.css の .race-split（1200px）とそろえる（docs/knowledge/ui-layout.md） */
+@media (min-width: 1200px) {
+  .race-before-info-tab {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--spacing-4);
+    align-items: start;
+  }
+
+  .race-before-info-tab > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .race-before-info-tab:has(> .rbi-chart-card > .rbi-chart-note):has(> .rbi-weather-card) > .rbi-weather-card,
+  .race-before-info-tab:has(> .ecd-card) > .mft-card {
+    grid-column: 1;
+  }
+
+  .race-before-info-tab:has(> .rbi-chart-card > .rbi-chart-note):has(> .rbi-weather-card) > .rbi-chart-card,
+  .race-before-info-tab:has(> .mft-card) > .ecd-card {
+    grid-column: 2;
+  }
+
+  /* 気象は名前が左・値が右の縦の一覧にし、棒グラフ（高さ固定）と同じ高さで行の間に余りを配る */
+  .race-before-info-tab:has(> .rbi-chart-card > .rbi-chart-note) > .rbi-weather-card {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+  }
+
+  .race-before-info-tab:has(> .rbi-chart-card > .rbi-chart-note) > .rbi-weather-card .rbi-weather-grid {
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 1fr;
+    gap: var(--spacing-1);
+  }
+
+  .race-before-info-tab:has(> .rbi-chart-card > .rbi-chart-note) > .rbi-weather-card .rbi-weather-item {
+    flex-direction: row;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    text-align: left;
+  }
+
+  .race-before-info-tab:has(> .rbi-chart-card > .rbi-chart-note) > .rbi-weather-card .rbi-weather-label {
+    order: 1;
+    font-size: var(--font-size-sm);
+  }
+
+  .race-before-info-tab:has(> .rbi-chart-card > .rbi-chart-note) > .rbi-weather-card .rbi-weather-value {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .race-before-info-tab > .rbi-chart-card {
+    align-self: stretch;
+  }
+
+  /* 選手コメントは2列（読み順は 1・2／3・4／5・6 で艇番の順） */
+  .race-before-info-tab .rpr-comment-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .race-before-info-tab > .rbi-motor-link {
+    justify-self: start;
+  }
+}
