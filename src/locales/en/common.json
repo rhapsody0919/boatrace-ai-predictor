@@ -2729,7 +2729,7 @@
     "winCount": "{{n}}W",
     "note": "Win rate, local and top-2 rate are the official race card values. Avg ST, motor top-2 rate and lane win rate use the period in their row names; other analytics cover the last 90 days (return rate: 180 days). Highlights mark the best value in this race. For reference only — results are not guaranteed",
     "guideLink": "Read the full guide to the Data Race Card",
-    "attackDefenseLink": "See each boat's attack moves and Boat 1's defense (Advanced Race Data, analysis tools)",
+    "attackDefenseLink": "Attack moves by lane and Boat 1's defense (Advanced Race Data)",
     "rowLocalWinRate": "Local win rate",
     "rowTwoRate": "National top-2 rate",
     "rowAvgSt": "Avg ST",
