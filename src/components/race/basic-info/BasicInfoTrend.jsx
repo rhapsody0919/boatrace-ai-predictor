@@ -52,6 +52,10 @@ export function ViewHead({ view, setView, metric }) {
   );
 }
 
+// 右端（最新）の値の字（図の右の札と同じ桁）
+const endValue = (s, metric) =>
+  s?.length ? s[s.length - 1].value.toFixed(metric === "avgSt" ? 2 : 1) : null;
+
 function seriesOf({
   sortedPlayers,
   recordsOf,
@@ -76,11 +80,26 @@ function seriesOf({
   return out;
 }
 
-/** 太線にする艇を選ぶ行（線の無い艇は押せない） */
-export function BoatPicker({ sortedPlayers, has, selected, onSelectBoat }) {
+/**
+ * 太線にする艇を選ぶ札（線の無い艇は押せない）。1200px 以上は右の列で6艇の一覧（艇番・選手名・右端の値）になる。
+ * 1199px 以下は名前と値を隠し、今までの札の横並び（オーナー 11/25 の案 A）
+ */
+export function BoatPicker({
+  sortedPlayers,
+  has,
+  selected,
+  onSelectBoat,
+  valueOf,
+  valueLabel,
+}) {
   const { t } = useTranslation();
   return (
     <div className="trc-boats">
+      {/* 1200px 以上の一覧の見出し（案内と値の札）。それ未満は隠す（visual-designer 11/25） */}
+      <div className="trc-boats-head" aria-hidden="true">
+        <span>{t("basicInfo.trend.pickHint")}</span>
+        <span>{valueLabel ?? t("basicInfo.trend.latest")}</span>
+      </div>
       {sortedPlayers.map((p) => (
         <button
           key={p.number}
@@ -92,6 +111,10 @@ export function BoatPicker({ sortedPlayers, has, selected, onSelectBoat }) {
           aria-label={t("basicInfo.trend.selectBoat", { boat: p.number })}
         >
           <BoatBadge n={p.number} />
+          <span className="trc-boat-name" translate="no">
+            {p.name?.replace(/\s+/g, "")}
+          </span>
+          <span className="trc-boat-value">{valueOf?.(p.number) ?? "—"}</span>
         </button>
       ))}
       <span className="trc-hint">{t("basicInfo.trend.tapHint")}</span>
@@ -117,12 +140,14 @@ export default function BasicInfoTrend({
         {...winRate}
         sortedPlayers={sortedPlayers}
         selectedBoat={selectedBoat}
-        renderPicker={(has, selected) => (
+        renderPicker={(has, selected, valueOf) => (
           <BoatPicker
             sortedPlayers={sortedPlayers}
             has={has}
             selected={selected}
             onSelectBoat={onSelectBoat}
+            valueOf={valueOf}
+            valueLabel={t("basicInfo.trend.lastPeriod")}
           />
         )}
       />
@@ -144,7 +169,7 @@ export default function BasicInfoTrend({
     ? selectedBoat
     : [...series.keys()][0];
   return (
-    <div className="trc-wrap">
+    <div className="trc-wrap trc-wrap--wide">
       {supported && loading && (
         <p className="trc-note">{t("basicInfo.loading")}</p>
       )}
@@ -153,22 +178,28 @@ export default function BasicInfoTrend({
         <p className="trc-note">{t("basicInfo.trend.notEnough")}</p>
       )}
       {series.size > 0 && (
-        <>
-          <TrendChart
-            seriesByBoat={series}
-            metric={metric}
-            selected={selected}
-          />
-          <BoatPicker
-            sortedPlayers={sortedPlayers}
-            has={(boat) => series.has(boat)}
-            selected={selected}
-            onSelectBoat={onSelectBoat}
-          />
-          <p className="trc-note">
-            {t("basicInfo.trend.note", { metric: metricName })}
-          </p>
-        </>
+        // 1200px 以上は左に図・右に6艇の一覧と注記（.race-split、オーナー 11/25 の案 A）。それ未満は縦に並ぶ
+        <div className="race-split trc-split">
+          <div className="race-split__main">
+            <TrendChart
+              seriesByBoat={series}
+              metric={metric}
+              selected={selected}
+            />
+          </div>
+          <div className="race-split__side">
+            <BoatPicker
+              sortedPlayers={sortedPlayers}
+              has={(boat) => series.has(boat)}
+              selected={selected}
+              onSelectBoat={onSelectBoat}
+              valueOf={(boat) => endValue(series.get(boat), metric)}
+            />
+            <p className="trc-note">
+              {t("basicInfo.trend.note", { metric: metricName })}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

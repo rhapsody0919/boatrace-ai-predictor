@@ -6,7 +6,8 @@
  *   1. 切り替えのコミットより後に、master の first-parent のコミット（squash のマージ）で足された（A だけ）
  *   2. そのコミットを merge_commit_sha に持つ PR が merged・base master で、ファイルの blob が PR の head と今の master HEAD で同じ
  *   3. その PR の head SHA に審査の App の APPROVE がある
- *   4. 台帳 APPLIED.md の「適用状況」が「未適用」で始まり、その行も同じコミットで足されている
+ *   4. 台帳 APPLIED.md に行が無い（＝未適用。PR は行を足さず、db-apply の記録が足す）か、行の「適用状況」が「未適用」で始まり、
+ *      その行も同じコミットで足されている（ADR-0097 の 2026-11-25 の追記）
  *   5. 同じ番号の NNN-runbook.md が無い
  */
 import { migrationNumber } from "./dbApplySql.js";
@@ -105,8 +106,9 @@ function approvalReasons(facts, pr) {
 }
 
 function ledgerReasons(facts, name) {
+  // 4。行が無いのは未適用（PR は台帳に行を足さない。並走の PR と記録の commit の衝突を避けるため、ADR-0097 の追記）
+  if (facts.ledgerState === null) return [];
   const reasons = [];
-  // 4
   if (facts.ledgerState !== "未適用") {
     reasons.push(
       `台帳の状態が「未適用」でない（${facts.ledgerState ?? "行が無いか、決まった語で始まらない"}）`,

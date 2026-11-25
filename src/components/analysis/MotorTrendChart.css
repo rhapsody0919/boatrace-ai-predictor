@@ -109,3 +109,23 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* 号機は狭い幅でも艇番の下に出す（選手の推移では名前を隠すが、モーターは号機を常に見せる。オーナー 11/25 の号機を足した形） */
+.mtc-boat .trc-boat-name {
+  display: block;
+  flex: none;
+}
+
+/* 1200px 以上は右の列の一覧（選手の推移の .trc-split と同じ並び）。号機を艇番の右に並べる */
+@media (min-width: 1200px) {
+  .mtc-wrap .mtc-boat {
+    flex-direction: row;
+    min-height: 44px;
+  }
+
+  .mtc-wrap .mtc-boat .trc-boat-name {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+  }
+}

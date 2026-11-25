@@ -12,7 +12,8 @@
  *
  * やること:
  *   1. verify-registry.json と実ファイルを突き合わせる
- *      - 未登録の verify-*.js があれば失敗（新規スクリプトの分類漏れを止める）
+ *      - 台帳に行の無い verify-* は既定で tier=ci として回す（ADR-0072 の 2026-11-25 の追記、scripts/lib/verifyRegistryDefaults.js）。
+ *        頭の注釈（何を守るかの1行）が無ければ失敗
  *      - 登録されているがファイルが無ければ失敗（削除時の台帳更新漏れを止める）
  *      - tier=manual に reason / command が無ければ失敗
  *   2. tier=ci のスクリプトを並列実行し、1本でも失敗したら非ゼロで終了する
@@ -24,7 +25,8 @@
  *   node scripts/maintenance/run-verify-registry.js --sort     # entries を script の名前の順に並べ直して書く（BOA-938）
  *   node scripts/maintenance/run-verify-registry.js --jobs=2   # 並列度を指定（既定: CPU数と4の小さい方）
  */
-import { promises as fs } from "node:fs";
+import { promises as fs, readdirSync, readFileSync } from "node:fs";
+import { withDefaultEntries } from "../lib/verifyRegistryDefaults.js";
 import { spawn } from "node:child_process";
 import { cpus } from "node:os";
 import path from "node:path";
@@ -120,13 +122,10 @@ async function checkRegistry(entries) {
   const files = (await fs.readdir(HERE))
     .filter((f) => /^verify-.*\.(js|mjs|cjs|sh)$/.test(f))
     .sort();
-  const registered = new Set(entries.map((e) => e.script));
-  const unregistered = files
-    .filter((f) => !registered.has(f))
-    .map(
-      (f) =>
-        `未登録: ${f} が verify-registry.json にありません。tier（ci / manual）と guards を追記してください`,
-    );
+  // 台帳に行の無い verify は既定で ci（頭の注釈が無ければ問題）。ここでは台帳の行だけを突き合わせる
+  const { problems: unregistered } = withDefaultEntries(entries, files, (f) =>
+    readFileSync(path.join(HERE, f), "utf8"),
+  );
   const dup = entries
     .map((e) => e.script)
     .filter((s, i, a) => a.indexOf(s) !== i);
@@ -264,8 +263,15 @@ if (!entries) {
   console.error(`NG: ${REGISTRY_PATH} に entries 配列がありません`);
   process.exit(2);
 }
-const ciEntries = entries.filter((e) => e.tier === "ci");
-const manualEntries = entries.filter((e) => e.tier === "manual");
+// 台帳に行の無い verify を既定の ci として足した一覧で回す（行の突き合わせは台帳の行だけで行う）
+const verifyFiles = readdirSync(HERE).filter((f) =>
+  /^verify-.*\.(js|mjs|cjs|sh)$/.test(f),
+);
+const allEntries = withDefaultEntries(entries, verifyFiles, (f) =>
+  readFileSync(path.join(HERE, f), "utf8"),
+).entries;
+const ciEntries = allEntries.filter((e) => e.tier === "ci");
+const manualEntries = allEntries.filter((e) => e.tier === "manual");
 
 if (listOnly) {
   console.log(`# tier=ci（PRごとに自動実行、${ciEntries.length}本）\n`);
