@@ -1,3 +1,5 @@
+import { addMin, isIso, jstDate, jstTime } from "./researchSchedule.js";
+export { addMin, isIso, jstDate, jstTime };
 /**
  * YouTube Shorts の口（push-setsu-kiryoku-short.js・push-upset-win-short.js）の時刻・日の上限とクォータの純粋な部分
  * （定数・JST/PT の日付・schedule・checkTiming・youtubeRoomReason・dryRunClock）。push-setsu-kiryoku-short.js から移した（字は同じ）
@@ -23,25 +25,12 @@ export const DEFAULT_SEND_TIME = "21:30";
 export const QUOTA_UPLOAD_UNITS = 1;
 export const QUOTA_GENERAL_UNITS = 104;
 
-export const addMin = (iso, min) =>
-  new Date(Date.parse(iso) + min * 60000).toISOString();
-export const jstTime = (iso) =>
-  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
-export const jstDate = (date) =>
-  new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
 export const ptDate = (date) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(
     date,
   );
 export const isHhmm = (v) =>
   typeof v === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-/** 時差（Z か ±HH:MM）つきの ISO だけ（push-research-image.js と同じ） */
-export const isIso = (v) =>
-  typeof v === "string" &&
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(
-    v,
-  ) &&
-  Number.isFinite(Date.parse(v));
 /** フォルダの中のファイル名だけ（区切り・. と .. を拒否する） */
 
 /**

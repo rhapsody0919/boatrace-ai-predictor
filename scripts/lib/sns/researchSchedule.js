@@ -13,6 +13,10 @@ export const SEND_TIME_LATEST = "21:30";
 /** hq の集計の as_of（「2026-11-03 12R まで」） */
 export const AS_OF = /^(\d{4}-\d{2}-\d{2}) \d{1,2}R まで$/;
 
+// minutesBefore・addMin・jstTime・jstDate・isIso は SNS の送り手の共通の時刻の関数（finalsImageBase・fullPictureShape・shortSchedule が
+// ここから読む。4ファイルに字のまま同じ物があったのを 2026-11-25 に寄せた）
+export const minutesBefore = (iso, min) =>
+  new Date(Date.parse(iso) - min * 60000).toISOString();
 export const addMin = (iso, min) =>
   new Date(Date.parse(iso) + min * 60000).toISOString();
 export const jstTime = (iso) =>
