@@ -4,46 +4,53 @@
  * rbi-note）を再利用する。ここで定義するのは、出典ブロック・コメントカード・★の
  * 表示に固有のものだけ（docs/design/pit-comments/screens.md §7）。 */
 
-.rpr-source {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
-  background: var(--surface-page);
-  border: var(--border-width-1) solid var(--border-hairline);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-3);
+.rpr-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
 }
 
-.rpr-source-text {
+/* 出典の1行（名前・公式へのリンク・取得時刻）。リンクは押せる高さ44px */
+.rpr-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--spacing-2);
   margin: 0;
   font-size: var(--font-size-xs);
   line-height: 1.5;
   color: var(--text-secondary);
 }
 
+.rpr-source-part {
+  display: inline-block;
+  word-break: keep-all; /* 1行に収まらない塊は空白で折る（「ピットレポ／ート」を防ぐ） */
+}
+
 .rpr-source-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  /* タップ領域44px以上（モバイルで全幅ボタン） */
   min-height: 44px;
-  margin-top: var(--spacing-1);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   color: var(--brand-accent-primary);
-  background: var(--surface-card);
-  border: var(--border-width-1) solid var(--brand-accent-primary);
-  border-radius: var(--radius-md);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .rpr-source-link:hover {
   text-decoration: underline;
 }
 
+/* 対象外の1行（カードにしない） */
+.rpr-out {
+  margin: 0;
+}
+
 .rpr-comment-list {
   list-style: none;
-  margin: var(--spacing-3) 0 0;
+  margin: var(--spacing-1) 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -61,20 +68,6 @@
   align-items: center;
   gap: var(--spacing-2);
   flex-wrap: wrap;
-}
-
-.rpr-boat-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  /* 1号艇（白）がカード背景に埋もれないよう、常に輪郭を付ける */
-  border: var(--border-width-1) solid var(--border-hairline);
 }
 
 .rpr-racer-name {
@@ -167,10 +160,6 @@
 
 @media (max-width: 480px) {
   .rpr-comment {
-    padding: var(--spacing-2);
-  }
-
-  .rpr-source {
     padding: var(--spacing-2);
   }
 }

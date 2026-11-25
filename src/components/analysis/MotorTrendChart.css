@@ -1,0 +1,111 @@
+/* 6基のモーターの推移の線（MotorTrendChart）に固有の見た目。共通の線・目盛りは TrendChart.css の trc- */
+
+/* 描き始めの走数に届く前の区間 */
+.mtc-before {
+  fill: var(--surface-page);
+  opacity: 0.8;
+}
+
+.mtc-leader {
+  stroke: var(--text-secondary);
+  stroke-width: 0.7;
+  stroke-dasharray: 2 2;
+  opacity: 0.6;
+}
+
+/* 5号艇の黄はライトの地に溶けるので濃い黄の縁。ダークでは縁を付けない（モック改訂2） */
+.mtc-chart .trc-line-5 .trc-halo {
+  stroke: #a16207;
+}
+[data-theme="dark"] .mtc-chart .trc-line-5 .trc-halo {
+  stroke: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mtc-chart .trc-line-5 .trc-halo {
+    stroke: none;
+  }
+}
+
+/* モータ情報タブの推移（MotorGenerationTrend）: 指標の札・号機つきの艇の札・選んだ艇の行・空の状態 */
+.mtc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin: var(--spacing-2) 0;
+}
+
+.mtc-chip {
+  min-height: 36px;
+  padding: var(--spacing-1) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-full);
+  border: var(--border-width-1) solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.mtc-chip[aria-pressed="true"] {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--color-white);
+  font-weight: var(--font-weight-bold);
+}
+
+.mtc-boat {
+  flex-direction: column;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 56px;
+}
+
+.mtc-motor-no {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.mtc-boat[aria-pressed="true"] .mtc-motor-no {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.mtc-selected {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.mtc-empty {
+  margin: var(--spacing-2) 0 0;
+  padding: var(--spacing-5) var(--spacing-2);
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-line;
+}
+
+/* 題が長い指標（展示タイム）でも「今の値｜推移」を折り返さない */
+.mtc-tab {
+  white-space: nowrap;
+}
+
+.mtc-empty p {
+  margin: 0;
+}
+
+/* 空の状態から今の値へ移る導線（モックの下線のリンク） */
+.mtc-to-now {
+  min-height: 44px;
+  margin-top: var(--spacing-1);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  background: none;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}

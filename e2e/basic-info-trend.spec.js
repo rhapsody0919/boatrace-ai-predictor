@@ -21,7 +21,7 @@ test("推移に切り替えると題が変わり、期間の絞り込みと棒�
   await expect(page.locator(".rbit-bar-row")).toHaveCount(0);
 
   await page.locator(".rbit-chip", { hasText: "勝率" }).first().click();
-  await expect(page.locator(".trc-note")).toContainText("準備中");
+  await expect(head.locator(".trc-title")).toHaveText("勝率の推移（公式の期ごと）");
 
   await head.locator(".trc-tab", { hasText: "今の値" }).click();
   await expect(page.locator(".rbit-bar-row").first()).toBeVisible();

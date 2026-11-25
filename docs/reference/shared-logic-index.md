@@ -25,6 +25,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/blogChartAnswers.js` | ブログの図の契約の検査のうち、答えの文（description）の数字の照合。 | checkAnswers |
 | `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
 | `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
+| `src/pure/clientKey.js` | ブラウザごとの匿名の識別番号（乱数の uuid v4）。個人と結びつけず、匿名の声の重複除外と連投の制限だけに使う | newUuidV4, readOrCreateClientKey |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
 | `src/pure/dataFormat.js` | 表とグラフの数字の書き方（docs/reference/design-system.md「表とグラフ」決まり5・6、 | EMPTY, SMALL_SAMPLE_N, fixed, formatWinRate, rateParts ほか5件 |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
@@ -77,6 +78,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか20件 |
 | `src/pure/seriesPointsParts.js` | — | prelimEndDayOf, noRaceDaysOf, semifinalRaceIdsOf, semifinalSlotsOf, isAbsentStartRow ほか10件 |
+| `src/pure/siteFeedback.js` | サイト全体のご意見ボックス（site_feedback）の決まり。画面（src/components/siteFeedback/）と | feedbackPageType, isFeedbackHiddenPath, canSendFeedback, buildSiteFeedbackRow, FEEDBACK_KINDS ほか4件 |
 | `src/pure/siteUpdates.js` | — | BANNER_DAYS, NEW_DAYS, MAKING_MAX, isWithinJstDays, visibleUpdates ほか3件 |
 | `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
 | `src/pure/snsObservationChecks.js` | SNS観測の入力の検査（src/utils/snsObservations.js の validateObservationInput の中の検査を、順を変えず… | assertObservationEnvelope, assertMetricAndSource, assertObservedAt, assertPeriodBounds, assertDataThrough ほか7件 |
@@ -203,7 +205,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/inCautionHealth.js` | BOA-822 イン崩れ注意度の監視（tasks 12、plan §9。完了の定義C）。DB は読み取りだけ。 | evaluateInCautionTable, evaluateInCautionToday, readInCautionTable, readInCautionToday, runInCautionHealth ほか1件 |
 | `scripts/lib/isDirectRun.js` | そのモジュールが `node <path>` で直接実行されたかを判定する。 | isDirectRun |
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
-| `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, jobTimeouts, cancelledByTimeout, decideRun, rerunBlockers ほか8件 |
+| `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, jobTimeouts, cancelledByTimeout, secretsOutsideCanary, keyScope ほか13件 |
 | `scripts/lib/kbArchiveBoundary.js` | K/B の長期アーカイブ（kb_archive_*）と本体テーブル（races ほか）の境目の日。 | MAIN_TABLES_START, KB_LAST_DATE, KB_FIRST_DATE |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
 | `scripts/lib/kbBackfillPlan.js` | kb（公式の成績・番組のアーカイブ）の取得の計画の純粋関数（日付の列・取得の窓・応答の分類・計画と見積り）。 | jstToday, parseWindow, inWindow, windowDayKey, classifyResponse ほか3件 |
@@ -643,6 +645,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/motorQueries5.js` | — | getMotorWakuStats, getMotorRacerWakuStats, getMotorConditionTrend |
 | `src/services/motorQueries6.js` | — | getMotorPartsHistory, getRaceMotorMaintenanceBreakdown |
 | `src/services/motorQueries7.js` | — | getRacerCurrentMotorStatus |
+| `src/services/motorQueries8.js` | — | getMotorGenerationRuns |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/predictionQueries.js` | — | buildFetchFailedPredictions, buildRaceResult, generateReasoning, VENUE_NAMES |
@@ -674,4 +677,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 632 ファイル / export 3408 件。
+対象 635 ファイル / export 3425 件。

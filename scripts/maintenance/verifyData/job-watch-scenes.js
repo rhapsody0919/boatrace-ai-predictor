@@ -3,7 +3,11 @@
  * 判定と期待値は分ける前の verify-job-watch.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import { classifyLog } from "../../lib/jobWatch.js";
+import {
+  classifyLog,
+  decideRun,
+  secretsOutsideCanary,
+} from "../../lib/jobWatch.js";
 
 let check, config, yml, nameOf, WORKFLOW_FILES;
 
@@ -126,8 +130,7 @@ function scene2({ jobs }) {
 
 function scene3() {
   {
-    const uses = WORKFLOW_FILES
-      .filter((f) => /\.ya?ml$/.test(f))
+    const uses = WORKFLOW_FILES.filter((f) => /\.ya?ml$/.test(f))
       .map((f) => `.github/workflows/${f}`)
       .filter((f) =>
         /^\s+environment:\s*(?:prod-jobs|ryujin-bot|ryujin-maker)\s*$|^\s+name:\s*(?:prod-jobs|ryujin-bot|ryujin-maker)\s*$/m.test(
@@ -214,8 +217,86 @@ function scene3() {
   }
 }
 
+/** カナリアが見ない鍵（GOOGLE_SERVICE_ACCOUNT_KEY 等）の誤りは、カナリアが緑でも直ったと言えない（2026-11-25） */
+function sceneUncoveredKeys() {
+  const wf = ".github/workflows/update-outcome-distribution.yml";
+  const ctx = {
+    rerunAllowed: new Set([wf]),
+    now: new Date("2026-10-20T03:00:00Z"),
+  };
+  const run = (o) => ({
+    id: 1,
+    path: wf,
+    attempt: 1,
+    createdAt: "2026-10-19T15:30:00Z",
+    category: "config",
+    newerRun: false,
+    ...o,
+  });
+  const outside = { outsideCanary: ["GOOGLE_SERVICE_ACCOUNT_KEY"] };
+  check(
+    "カナリアが見ない鍵の誤りは、カナリアが緑でも緑でなくても key-issue-uncovered（失敗の Issue に逃がさない）",
+    decideRun(run(outside), { ...ctx, canaryOkAfter: true }).action ===
+      "key-issue-uncovered" &&
+      decideRun(run(outside), { ...ctx, canaryOkAfter: false }).action ===
+        "key-issue-uncovered",
+  );
+  check(
+    "範囲外の鍵が空なら従来どおり（カナリアが緑なら failure-issue・緑でなければ key-issue）",
+    decideRun(run({ outsideCanary: [] }), { ...ctx, canaryOkAfter: true })
+      .action === "failure-issue" &&
+      decideRun(run({ outsideCanary: [] }), ctx).action === "key-issue",
+  );
+  check(
+    "範囲外の鍵があっても、config 以外の分類は変えない（一時的な失敗は rerun）",
+    decideRun(run({ category: "transient", outsideCanary: ["X"] }), ctx)
+      .action === "rerun",
+  );
+  const canary = yml(".github/workflows/key-canary.yml");
+  const gsc = secretsOutsideCanary(
+    yml(".github/workflows/growth-gsc-daily.yml"),
+    canary,
+  );
+  check(
+    "secretsOutsideCanary: growth-gsc-daily.yml は GSC の2つの鍵がカナリアの範囲外（SUPABASE_* は含まない）",
+    gsc.includes("GOOGLE_SERVICE_ACCOUNT_KEY") &&
+      gsc.includes("SEARCH_CONSOLE_SITE_URL") &&
+      !gsc.some((n) => n.startsWith("SUPABASE_")),
+    gsc.join(","),
+  );
+  const two = (i) =>
+    `jobs:\n${i}gate:\n${i}  s: \${{ secrets.SLACK_WEBHOOK_URL }}\n${i}collect:\n${i}  k: \${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}\n`;
+  check(
+    "secretsOutsideCanary: 失敗した job の段だけで数える（gate の SLACK_WEBHOOK_URL は数えない）",
+    secretsOutsideCanary(two("  "), canary, ["collect"]).join(",") ===
+      "GOOGLE_SERVICE_ACCOUNT_KEY" &&
+      secretsOutsideCanary(
+        yml(".github/workflows/growth-gsc-daily.yml"),
+        canary,
+        ["gate"],
+      ).length === 0,
+  );
+  check(
+    "secretsOutsideCanary: 字下げが崩れて段が読めない YAML は、workflow の全体で数える（閉じない側に倒す）",
+    secretsOutsideCanary(two(" "), canary, ["collect"]).join(",") ===
+      "GOOGLE_SERVICE_ACCOUNT_KEY,SLACK_WEBHOOK_URL",
+  );
+  check(
+    "secretsOutsideCanary: カナリア自身は空",
+    secretsOutsideCanary(canary, canary).length === 0,
+  );
+  check(
+    "secretsOutsideCanary: GITHUB_TOKEN・コメントの中の書き方は数えない",
+    secretsOutsideCanary(
+      "# ${{ secrets.COMMENTED }}\nenv:\n  T: ${{ secrets.GITHUB_TOKEN }}\n  K: ${{secrets.REAL_KEY}}\n",
+      "env:\n  S: ${{ secrets.SUPABASE_URL }}\n",
+    ).join(",") === "REAL_KEY",
+  );
+}
+
 /** verify から呼ぶ入口。env は verify 側の束縛（check・config・yml・nameOf・WORKFLOW_FILES） */
 export function runJobWatchScenes1(env) {
   ({ check, config, yml, nameOf, WORKFLOW_FILES } = env);
   scene3();
+  sceneUncoveredKeys();
 }

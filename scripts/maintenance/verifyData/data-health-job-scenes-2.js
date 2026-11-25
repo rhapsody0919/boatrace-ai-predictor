@@ -85,6 +85,28 @@ async function scene1() {
       night.st_course_baseline.applicable === true,
     show([night.racer_series_points, night.racer_aggregated_stats]),
   );
+  check(
+    "鮮度の関数（夜）: Search Console の日別は行が無ければ未達で observed=null",
+    okOf(night, "growth_gsc_daily") === false &&
+      night.growth_gsc_daily.observed === null,
+    show(night.growth_gsc_daily),
+  );
+  // 境界: p_to=09-18、lagDays=3 なので 09-15 は ok、09-14 は未達。observed は実際の max(date)（ずれを足さない）
+  const gscAt = async (d) => {
+    await db.exec(`BEGIN; INSERT INTO growth_gsc_daily (date) VALUES ('${d}');`);
+    const n = await call("data_health_nightly_freshness", "2026-09-18");
+    await db.exec("ROLLBACK;");
+    return n.growth_gsc_daily;
+  };
+  const gscOk = await gscAt("2026-09-15");
+  const gscStale = await gscAt("2026-09-14");
+  check(
+    "鮮度の関数（夜）: Search Console の日別は評価の終端の3日前まで進んだら ok（09-15 は ok・09-14 は未達）、observed は実際の最終日",
+    gscOk.ok === true &&
+      gscStale.ok === false &&
+      String(gscOk.observed).startsWith("2026-09-15"),
+    show([gscOk, gscStale]),
+  );
   return { morning, morningNoRace };
 }
 

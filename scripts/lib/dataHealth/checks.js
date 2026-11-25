@@ -155,6 +155,12 @@ export const NIGHTLY_FRESHNESS_CHECKS = Object.freeze([
     "top_start_stats",
   ]),
   nightly(
+    "growth_gsc",
+    "Search Console の日別（query × page）",
+    "growth-gsc-daily.yml",
+    ["growth_gsc_daily"],
+  ),
+  nightly(
     "accuracy",
     "的中率・レース履歴・級別のキャッシュ",
     "calculate-accuracy.yml",
