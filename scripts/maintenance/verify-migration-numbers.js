@@ -17,7 +17,8 @@
  *      同じ番号の既存ファイルとの重複は、1 の重複の検査がそのまま落とす
  *      git fetch はしない。baseを取得できなければスキップして注意を出す。
  *      baseのコミット日時を表示し、24時間より古ければ fetch を促す警告を出す
- *   4. APPLIED.md（適用状況の台帳）に、新規追加ファイルの行があること（無ければ失敗）。
+ *   4. APPLIED.md（適用状況の台帳）の行。新規追加ファイルは行が無くてよい（＝未適用。db-apply の記録が適用のときに足す。
+ *      並走の PR と記録の commit が台帳の同じ所を変えて衝突するため、ADR-0097 の 2026-11-25 の追記）。行の無い既存ファイルは警告。
  *      既存ファイルの記載漏れは警告のみ
  *   5. NNN_*.sql の命名規則に合わない .sql（UNNUMBERED_ALLOWED を除く）は失敗
  *      （番号が付かないと上記の検査をすり抜けるため）
@@ -296,8 +297,8 @@ function checkAgainstBase(sqlFiles, ledgerText, report) {
   return newFiles;
 }
 
-/** 4. 台帳（APPLIED.md）に、ファイル名の行（表の行）があること */
-async function checkLedgerRows(sqlFiles, newFiles, { errors, warnings }) {
+/** 4. 台帳（APPLIED.md）の行。新規のファイルは行が無くてよい（未適用とみなす）。既存のファイルで行が無ければ警告 */
+async function checkLedgerRows(sqlFiles, newFiles, { warnings }) {
   try {
     const ledger = await fs.readFile(
       path.join(MIGRATION_DIR, LEDGER_FILE),
@@ -308,13 +309,13 @@ async function checkLedgerRows(sqlFiles, newFiles, { errors, warnings }) {
     const unlistedNew = unlisted.filter((f) => newSet.has(f));
     const unlistedOld = unlisted.filter((f) => !newSet.has(f));
     if (unlistedNew.length > 0) {
-      errors.push(
-        `新規マイグレーションの行が ${LEDGER_FILE} の表にありません（適用状況を追記すること）: ${unlistedNew.join(", ")}`,
+      console.log(
+        `新規マイグレーション（${LEDGER_FILE} に行が無い＝未適用。適用のときに db-apply が行を足す）: ${unlistedNew.join(", ")}`,
       );
     }
     if (unlistedOld.length > 0) {
       warnings.push(
-        `${LEDGER_FILE} の表に未記載のマイグレーション${newFiles === null ? "（--base 未指定のため新規/既存を区別できません）" : ""}: ${unlistedOld.join(", ")}`,
+        `${LEDGER_FILE} の表に未記載のマイグレーション（未適用とみなす）${newFiles === null ? "（--base 未指定のため新規/既存を区別できません）" : ""}: ${unlistedOld.join(", ")}`,
       );
     }
   } catch (err) {

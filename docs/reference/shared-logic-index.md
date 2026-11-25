@@ -487,6 +487,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueParameters.js` | 会場別パラメータ | getVolatilityThreshold, getVenueType, VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG, VENUE_VOLATILITY_THRESHOLD ほか2件 |
 | `scripts/lib/venueTechniquePeriod.js` | 会場の決まり手を期間（直近90日・直近365日）ごとに数える（BOA-430 思考アシスト、ADR 0088、マイグレーション 134）。 | addDays, periodRange, sourceRanges, fromLiveRow, fromArchiveRow ほか6件 |
 | `scripts/lib/vercelIgnoreBuild.js` | Vercel の Ignored Build Step（vercel.json の ignoreCommand）の判定（BOA-908）。 | isSiteIrrelevant, shouldSkipBuild, IGNORED_DIRS, ALWAYS_BUILD |
+| `scripts/lib/verifyRegistryDefaults.js` | verify-registry.json に行の無い verify-*（scripts/maintenance/ 直下）を、既定で tier=ci の項目として… | headGuards, withDefaultEntries |
 | `scripts/lib/verifyRegistryOrder.js` | verify-registry.json の entries を script の名前の順に保つ（BOA-938）。 | registryOrderProblems, sortRegistryText |
 | `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | boat1StReason, calculateVolatilityComposite, toVolatilityPercentile |
 | `scripts/lib/winningTechniques.js` | — | toTechniqueKey, getDefaultDistribution, TECHNIQUES, TECHNIQUE_NAMES |
@@ -678,4 +679,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 636 ファイル / export 3435 件。
+対象 637 ファイル / export 3437 件。

@@ -8,11 +8,13 @@
  *   - 右の端は今日まで最後の値を延ばし、走数は全部の走
  *   - 展示タイムは直近30走の平均で、展示のある走が24たまってから。日ごとに1点
  *   - 推移を出さない指標は例外にする
+ *   - 節の点の吹き出しは、その節の走の選手と着順、会場の節の期間・グレード・日数。その日に始まる節が無ければ null
  */
 import {
   motorMeets,
   motorRateTrend,
   motorExhibitionTrend,
+  motorMeetTip,
 } from "../../src/pure/motorGenerationTrend.js";
 
 const failures = [];
@@ -64,6 +66,17 @@ const want = runs.slice(-30).reduce((a, r) => a + r.exhibitionTime, 0) / 30;
 check("展示は直近30走の平均", Math.abs(ex[ex.length - 1]?.value - want) < 1e-12, String(ex[ex.length - 1]?.value));
 const noEx = runs.map((r, i) => (i % 2 === 0 ? { ...r, exhibitionTime: null } : r));
 check("展示の無い走は数えない", motorExhibitionTrend(noEx)[0]?.runs === 24 && motorExhibitionTrend(noEx).length > 0);
+
+// 吹き出し: 節 k は選手 k、着順は走の順に 1〜6 を繰り返す。会場の節は前日の前検を含む7日間
+const tipRuns = runs.map((r, i) => ({ ...r, racerName: `選手${Math.floor(i / 12)}`, finish: i % 7 === 6 ? null : (i % 6) + 1 }));
+const seriesMeets = [0, 1, 2, 3, 4].map((k) => ({ start: day(k * 8 - 1), end: day(k * 8 + 5), days: 7, grade: k === 2 ? "G1" : "一般", title: `節${k}` }));
+const tip = motorMeetTip(tipRuns, day(16), seriesMeets);
+check("吹き出しは会場の節の期間・グレード", tip?.start === day(15) && tip?.end === day(21) && tip?.grade === "G1" && tip?.days === 7, JSON.stringify(tip));
+check("吹き出しはその節の選手", tip?.racerName === "選手2", String(tip?.racerName));
+check("吹き出しはその節の走の着順（無ければ null）", tip?.finishes.length === 12 && tip.finishes[0] === tipRuns[24].finish && tip.finishes.includes(null), JSON.stringify(tip?.finishes));
+const noSeries = motorMeetTip(tipRuns, day(16), []);
+check("会場の節が無ければ走の日で期間", noSeries?.start === day(16) && noSeries?.end === day(21) && noSeries?.grade === null);
+check("その日に始まる節が無ければ null", motorMeetTip(tipRuns, day(17), seriesMeets) === null);
 
 let threw = false;
 try { motorRateTrend(runs, "winRate", { today }); } catch { threw = true; }

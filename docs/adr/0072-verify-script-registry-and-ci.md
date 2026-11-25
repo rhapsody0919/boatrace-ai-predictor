@@ -79,3 +79,10 @@ PRごとに走る検証ワークフローは他に `e2e-smoke-test.yml` と `ver
 - **当面は自作のランナー（`run-verify-registry.js`）を続ける。** 239本は今も verify:ci の1つの入口で回っており、手元の `npm run verify:*` の個別実行の流儀（理由 a）も変わらない。移行の費用（239本の入口の付け替え）を、効きの見えない今払わない
 - **新しい純関数の試験だけ、新しい verify ファイルにする。** `docs/design/dev-efficiency/plan.md` の 3+2 で pure の根（`src/pure/**`・`scripts/lib/pure/**`）に移す関数は、関数（かファイル）ごとに `scripts/maintenance/verify-*.js` を足し、台帳に `ci` で登録する。既存の verify に足し込まない（どの試験がどの関数を守るかを台帳の `guards` で追えるように）
 - **vitest・`node:test` への移行は、3件の切り出しの後に見直す。** 3件で、新しい verify の書き方（偽物・期待値の2種類・変異の検証）の手間と、ランナーの不足（パス絞り・失敗の注記）が実際に効いたかを見て決める
+
+## 追記（2026-11-25）: 台帳に行の無い verify は既定で ci
+
+- 決定: `verify-registry.json` に行の無い `scripts/maintenance/verify-*`（.js・.mjs・.cjs・.sh）は、既定で tier=ci として回す。guards（何を守るか）はファイルの頭の注釈の最初の文の行を使い、注釈が無ければ `run-verify-registry.js --check` が落ちる（`scripts/lib/verifyRegistryDefaults.js`）。manual・args・timeoutSec・runner が要る物だけ台帳に行を足す。決定の「台帳は1つ」は、行の無い物を既定の ci とみなす形で保つ
+- 背景: 新しい verify ごとに名前の順の台帳（2,291行）へ5行足すと、名前の近い verify を並走で足した PR が隣の行で衝突し、作り直しが出ていた（2026-11-25 #3410、AGENTS.md は衝突したら新しい枝で作り直す）。窓口の依頼・オーナー「開発効率のハーネスを龍神へ」、設計 docs/design/harness-migration/dev-friction-2026-11-25.md §1b、system-architect の審査
+- 守りが崩れない訳: 既定は厳しい側（分類が漏れても CI で回る）。manual へ下げる道は台帳の行だけのままなので、guard_weakening（registry の行の変更）と pr-lane の weaken（config/pr-path-rules.json）の見張りは変えずに効く
+- 採らなかった案: tier を頭の注釈に書く（注釈だけの変更は guard_weakening が同じ AST とみなして通すので、ci→manual の書き換えが機械で通る）・1 verify 1 JSON（読み手を全部直す）・台帳を生成物にする（PR の間は新しい verify が未登録になる）・`.gitattributes` の `merge=union`（JSON のカンマが壊れうる）

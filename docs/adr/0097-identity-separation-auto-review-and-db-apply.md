@@ -59,6 +59,7 @@ repo の secret（Environment の外）は、同じリポジトリのどのブ�
   2. その PR が merged・base master で、ファイルの blob が、PR の head と **当てる時点の master HEAD** で同じ
   3. その PR の head SHA に審査の App の APPROVE がある（ryujin-bot の直接 push で足されたものは対象外）
   4. 台帳 APPLIED.md の行の「適用状況」が `未適用` で始まり、その行も同じ PR で足されている
+     - 追記（2026-11-25、窓口の依頼・オーナー「開発効率のハーネスを龍神へ」、設計 docs/design/harness-migration/dev-friction-2026-11-25.md §1a、system-architect の審査）: **台帳に行が無いファイルも通す（行が無い＝未適用）**。マイグレーションの PR は APPLIED.md に行を足さず、db-apply の record が適用のときに「適用済み」の行を足す（今もそう動く、`scripts/lib/dbApplySql.js` の台帳の更新）。並走の PR が足す N+1 の行と、record の `[automated]` の commit が書き換える N の行が隣り合って衝突し、作り直しが出ていた（#3380・#3402）。行がある場合の決まり（`未適用` で始まり同じ PR で足された）は今のまま。手で先に本番へ当てたマイグレーションは PR で「適用済み」の行を足す（行が無いと自動の適用がもう一度当てうる。この書き忘れは決まりで防ぐだけで、機械では捕まえない）
   5. 同じ番号の `NNN-runbook.md` が無い（あれば当てずに通知）
 - db-apply が実行中・承認待ちなら、突き合わせは何もせず終わる
 - PR のコメントにある判定の結果は信用しない（e2e-smoke-test は PR のコードを pull-requests: write で動かすので、見せかけのコメントを書ける）。当てる時点で判定し直す

@@ -226,6 +226,19 @@ check(
   !wr.includes("basicInfo.trend.note"),
 );
 
+// 一覧の値は「右端の期」。右端の期に記録の無い艇は前の期の値でなく「—」（ファン評価 11/25）
+const restRows = wrRows.map((r) =>
+  r.racer_id === 4001 ? { ...r, period_year: 2026, period_no: 2 } : r,
+);
+const rest = winRateHtml({
+  periodStats: { rows: restRows, latestImported: true },
+});
+const values = [...rest.matchAll(/class="trc-boat-value">([^<]*)</g)].map(
+  (m) => m[1],
+);
+check("右端の期に記録の無い艇は —", values[0] === "—", JSON.stringify(values));
+check("ほかの艇は右端の期の値", values[1] === "5.00", JSON.stringify(values));
+
 if (failures.length > 0) {
   console.error(`verify-basic-info-trend: NG\n- ${failures.join("\n- ")}`);
   process.exit(1);

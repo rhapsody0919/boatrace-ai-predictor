@@ -35,6 +35,10 @@ import { readFileSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  checkPushTarget,
+  pushTargetBranch,
+} from "./ryujin-maker-push-guard.js";
 
 export const REPO = "rhapsody0919/boatrace-ai-predictor";
 export const DEFAULT_APP_ID = "5377197";
@@ -123,7 +127,11 @@ export function loadPrivateKeyFromKeychain({
   const res = run(
     "security",
     ["find-generic-password", "-s", service, "-a", account, "-w"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: TIMEOUT_MS },
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: TIMEOUT_MS,
+    },
   );
   if (res.error || res.status !== 0 || !res.stdout?.trim()) throw missing;
   try {
@@ -256,6 +264,22 @@ async function main() {
     privateKey: loadPrivateKeyWithFallback(keyFile),
     workflows,
   });
+  // マージ済みの PR の枝への push は止める（ryujin-maker-push-guard.js、#3377 の型）
+  if (command === "git" && args.includes("push")) {
+    const current = spawnSync("git", ["branch", "--show-current"], {
+      encoding: "utf8",
+    }).stdout?.trim();
+    const branch = pushTargetBranch(args, current);
+    const verdict = await checkPushTarget({
+      fetchImpl: fetch,
+      token,
+      repo: REPO,
+      branch,
+    });
+    if (verdict.warning)
+      console.error(`ryujin-maker-token: ${verdict.warning}`);
+    if (!verdict.ok) throw new Error(verdict.message);
+  }
   const child = spawnSync(command, args, {
     stdio: "inherit",
     env: { ...process.env, GH_TOKEN: token },

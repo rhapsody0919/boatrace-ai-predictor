@@ -87,18 +87,27 @@ function seriesOf(rows, runsByMotor, metric, today) {
   return out;
 }
 
-function BoatMotorPicker({ rows, series, runsByMotor, selected, onSelect, showRuns }) {
+// 右端（最新）の値の字（図の右の札と同じ桁）
+const endValue = (s, metric) => (s?.length ? s[s.length - 1].value.toFixed(metric === "exhibition" ? 2 : 1) : "—");
+
+/** 太線にする艇を選ぶ札。1200px 以上は右の列で6基の一覧（艇番・号機・右端の値）になる（オーナー 11/25 の案 A、選手の推移と同じ形） */
+function BoatMotorPicker({ rows, series, runsByMotor, selected, onSelect, showRuns, metric }) {
   const { t } = useTranslation();
   return (
     <div className="trc-boats mtc-boats">
+      {!showRuns && (
+        <div className="trc-boats-head" aria-hidden="true">
+          <span>{t("basicInfo.trend.pickHint")}</span>
+          <span>{t("basicInfo.trend.latest")}</span>
+        </div>
+      )}
       {rows.map((r) => (
         <button key={r.boat_number} type="button" className="trc-boat mtc-boat" aria-pressed={r.boat_number === selected}
           disabled={showRuns || !series.has(r.boat_number)} onClick={() => onSelect(r.boat_number)}
           aria-label={t("basicInfo.trend.selectBoat", { boat: r.boat_number })}>
           <BoatBadge n={r.boat_number} />
-          <span className="mtc-motor-no">
-            {t("analysis.motor.genTrend.motorNo", { n: r.motor_number })}
-          </span>
+          <span className="trc-boat-name mtc-motor-no">{t("analysis.motor.genTrend.motorNo", { n: r.motor_number })}</span>
+          {!showRuns && <span className="trc-boat-value">{endValue(series.get(r.boat_number), metric)}</span>}
           {showRuns && (
             <span className="mtc-motor-no">{t("analysis.motor.genTrend.runs", { n: (runsByMotor[r.motor_number] ?? []).length })}</span>
           )}
@@ -129,17 +138,22 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect }) {
   const { t } = useTranslation();
   const selRow = rows.find((r) => r.boat_number === selected);
   const runs = (data.runsByMotor[selRow?.motor_number] ?? []).length;
+  // 1200px 以上は左に図・右に6基の一覧と注記（.race-split、オーナー 11/25 の案 A）。それ未満は縦に並ぶ
   return (
-    <>
-      <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} />
-      <BoatMotorPicker rows={rows} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={onSelect} />
-      {selRow && (
-        <p className="mtc-selected">
-          {t("analysis.motor.genTrend.selected", { boat: selected, n: selRow.motor_number, date: formatGenerationDate(data.generationStart), runs })}
-        </p>
-      )}
-      <p className="trc-note">{t(metric === "exhibition" ? "analysis.motor.genTrend.noteExhibition" : "analysis.motor.genTrend.noteRate", { n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) })}</p>
-    </>
+    <div className="race-split trc-split">
+      <div className="race-split__main">
+        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} />
+      </div>
+      <div className="race-split__side">
+        <BoatMotorPicker rows={rows} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={onSelect} metric={metric} />
+        {selRow && (
+          <p className="mtc-selected">
+            {t("analysis.motor.genTrend.selected", { boat: selected, n: selRow.motor_number, date: formatGenerationDate(data.generationStart), runs })}
+          </p>
+        )}
+        <p className="trc-note">{t(metric === "exhibition" ? "analysis.motor.genTrend.noteExhibition" : "analysis.motor.genTrend.noteRate", { n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) })}</p>
+      </div>
+    </div>
   );
 }
 
@@ -154,7 +168,7 @@ export default function MotorGenerationTrend({ venueCode, raceId, rows, metric, 
   const selected = series.has(want) ? want : [...series.keys()][0];
   const pick = (boat) => (onFocusBoat ? onFocusBoat(boat) : setLocalBoat(boat));
   return (
-    <div className="trc-wrap mtc-wrap">
+    <div className="trc-wrap trc-wrap--wide mtc-wrap">
       {status === "loading" && <p className="trc-note">{t("analysis.loading")}</p>}
       {status === "error" && <InlineFetchError />}
       {status === "ok" && series.size === 0 && <TrendEmpty rows={sorted} data={data} metric={metric} today={today} onShowNow={onShowNow} />}

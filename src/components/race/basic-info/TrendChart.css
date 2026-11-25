@@ -169,11 +169,11 @@
 }
 
 /* ダークでは2号艇の黒い札が紺の地に溶けるので明るい縁を付ける */
-[data-theme="dark"] .trc-boat:nth-child(2) .rol-boat-badge {
+[data-theme="dark"] .trc-boat:nth-of-type(2) .rol-boat-badge {
   box-shadow: 0 0 0 1px var(--color-gray-400);
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .trc-boat:nth-child(2) .rol-boat-badge {
+  :root:not([data-theme="light"]) .trc-boat:nth-of-type(2) .rol-boat-badge {
     box-shadow: 0 0 0 1px var(--color-gray-400);
   }
 }
@@ -182,4 +182,207 @@
 .trc-band {
   fill: var(--text-primary);
   opacity: 0.035;
+}
+
+/* PC の並べ方（オーナー 2026-11-25 の案 A）。枠は列いっぱいにし、図は useChartWidth で横に伸ばす。
+   1200px 以上は .race-split で左に図・右に6艇の一覧と注記。1199px 以下は縦に並び、札は今までの横並び */
+.trc-wrap--wide {
+  max-width: none;
+}
+
+.trc-boat-name,
+.trc-boat-value,
+.trc-boats-head {
+  display: none;
+}
+
+/* 768〜1199px は図が枠いっぱいに伸びるので、添え書きを右端へ飛ばさず札のすぐ右に置く（visual-designer 11/25） */
+@media (min-width: 768px) {
+  .trc-split .trc-hint {
+    margin-left: var(--spacing-3);
+  }
+}
+
+@media (min-width: 1200px) {
+  .trc-split {
+    --race-split-side: 300px;
+  }
+
+  .trc-split .trc-boats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    margin: 0;
+  }
+
+  .trc-split .trc-boat {
+    justify-content: flex-start;
+    gap: var(--spacing-3);
+    padding: 0 var(--spacing-2);
+    border-bottom: 1px solid var(--border-hairline);
+    border-radius: 0;
+    color: var(--text-primary);
+    text-align: left;
+  }
+
+  .trc-split .trc-boat {
+    border-left: 3px solid transparent;
+    cursor: pointer;
+  }
+
+  .trc-split .trc-boat:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--brand-accent-primary) 4%, transparent);
+  }
+
+  /* 選んだ行は左の帯と薄い地（枠と同じ地では見えない。visual-designer 11/25） */
+  .trc-split .trc-boat[aria-pressed="true"] {
+    border-left-color: var(--brand-accent-primary);
+    background: color-mix(
+      in srgb,
+      var(--brand-accent-primary) 12%,
+      transparent
+    );
+    font-weight: 700;
+  }
+
+  .trc-split .trc-boat:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .trc-split .trc-boats-head {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 var(--spacing-2) var(--spacing-1);
+    border-bottom: 1px solid var(--border-hairline);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+  }
+
+  /* PC では見出しの「艇を選ぶと太線」が案内になるので、「タップで太線」は出さない */
+  .trc-split .trc-hint {
+    display: none;
+  }
+
+  .trc-split .trc-boat-name {
+    display: block;
+    flex: 1;
+    font-size: var(--font-size-sm);
+  }
+
+  .trc-split .trc-boat-value {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* 点の吹き出し（ファン4人の最終案 2026-11-25）。図の上に重ね、点の左右どちらかに出す */
+.trc-chartbox {
+  position: relative;
+}
+
+.trc-hit {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.trc-pick-line {
+  stroke: var(--text-secondary);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.trc-tip {
+  position: absolute;
+  top: 4px;
+  z-index: 2;
+  max-width: 240px;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 6px;
+  background: var(--surface-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  transform: translateX(8px);
+  pointer-events: none;
+}
+
+.trc-tip.is-flip {
+  transform: translateX(calc(-100% - 8px));
+}
+
+.trc-tip.is-pinned {
+  pointer-events: auto;
+  border: 1.5px solid var(--brand-accent-primary);
+}
+
+.trc-pick-dot {
+  stroke: var(--surface-card);
+  stroke-width: 2;
+}
+
+.trc-pick-ring {
+  fill: none;
+  stroke: var(--text-primary);
+  stroke-width: 1;
+}
+
+.trc-tip-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.trc-tip-line {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.trc-tip-value {
+  font-weight: 700;
+}
+
+.trc-tip-link {
+  display: block;
+  margin-bottom: 2px;
+  padding-right: 20px;
+  color: var(--brand-accent-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* スマホは図の線を隠さないよう、吹き出しを図のすぐ下に幅いっぱいの帯で出す。リンクは押せる高さ 44px（visual-designer 11/25） */
+@media (max-width: 767px) {
+  .trc-tip,
+  .trc-tip.is-flip {
+    position: relative;
+    left: 0 !important;
+    max-width: none;
+    margin-top: var(--spacing-1);
+    transform: none;
+  }
+
+  .trc-tip-link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin: calc(-1 * var(--spacing-1)) calc(-1 * var(--spacing-2)) 2px;
+    padding: 0 32px 0 var(--spacing-2);
+    border-bottom: 1px solid var(--border-hairline);
+  }
+
+  .trc-tip-close {
+    width: 44px;
+    height: 44px;
+  }
 }
