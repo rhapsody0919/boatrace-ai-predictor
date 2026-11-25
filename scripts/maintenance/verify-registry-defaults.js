@@ -62,9 +62,15 @@ check(
   same(r.entries, [
     entries[0],
     { script: "verify-a.js", tier: "ci", guards: "a を守る", implicit: true },
-    { script: "verify-c.sh", tier: "ci", guards: "c を守る", implicit: true },
+    {
+      script: "verify-c.sh",
+      tier: "ci",
+      guards: "c を守る",
+      runner: "bash",
+      implicit: true,
+    },
   ]),
-  "台帳に行の無い物を既定の ci で足し、行のある物（manual）はそのまま",
+  "台帳に行の無い物を既定の ci で足し（.sh は runner: bash）、行のある物（manual）はそのまま",
   JSON.stringify(r.entries),
 );
 check(

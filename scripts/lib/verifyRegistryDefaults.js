@@ -45,7 +45,9 @@ export function withDefaultEntries(entries, files, readText) {
       );
       return [];
     }
-    return [{ script, tier: "ci", guards, implicit: true }];
+    // .sh は bash で回す（runner を付けないと run-verify-registry.js が node で回して落ちる）
+    const runner = script.endsWith(".sh") ? { runner: "bash" } : {};
+    return [{ script, tier: "ci", guards, ...runner, implicit: true }];
   });
   return { entries: [...entries, ...added], implicit, problems };
 }
