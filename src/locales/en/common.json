@@ -2313,7 +2313,6 @@
     "meetFormFinishFailed": "Could not load finishes"
   },
   "pitReport": {
-    "title": "Pit Report (racer comments)",
     "source": "Source: BOAT RACE Official Website, Pit Report",
     "capturedAt": "Retrieved: {{time}}",
     "officialLink": "View on the official site",
@@ -2323,7 +2322,6 @@
     "pending": "Not published yet. Comments will appear here once the official site publishes them.",
     "error": "Could not load the pit report.",
     "retry": "Reload",
-    "note": "Comments are shown exactly as published on the official site (no summarising or editing). Check the official site for the latest version.",
     "heading": "Racer comments",
     "subtitle": "Racer comments from the official Pit Report, shown as published",
     "cardNote": "Shown exactly as published on the official site (no summarising or editing). The ★ marks are the official notation; the official site does not define them. Boats without a comment are not listed. Check the official site for the latest version.",
