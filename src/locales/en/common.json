@@ -3052,7 +3052,27 @@
         "swapped": "{{date}} new motors",
         "today": "Today",
         "axisNote": "Dates since the motor swap (same for all 6)",
-        "unitSec": "sec"
+        "unitSec": "sec",
+        "nowTitle": "Current values of the 6 motors",
+        "view": {
+          "now": "Now",
+          "trend": "Trend"
+        },
+        "viewLabel": "View",
+        "metricLabel": "Metric",
+        "metric": {
+          "top2Rate": "Top-2 rate",
+          "top3Rate": "Top-3 rate",
+          "exhibition": "Exhibition time"
+        },
+        "motorNo": "Motor {{n}}",
+        "runs": "{{n}} runs",
+        "selected": "Selected: boat {{boat}}, motor {{n}} (in use since {{date}}, {{runs}} runs before this race)",
+        "noteRate": "💡 Each point is the official {{metric}} (cumulative since the motor swap) on the first day of each meet; the right end extends today's value. Not drawn before {{n}} runs because chance swings are large. The riders' skill is not adjusted for.",
+        "noteExhibition": "💡 Each point is the average exhibition time over the last 30 runs, drawn from 24 runs. Higher is faster. Values before this meet come from other riders. Equal values on the right are listed from the lower boat number.",
+        "empty": "New motors since {{date}} (day {{days}}).\nNo motor has reached {{n}} runs yet, so the trend will appear a little later.",
+        "noGeneration": "The trend cannot be shown because the motor start date for this venue is unknown.",
+        "toNow": "See current values"
       }
     },
     "motorRanking": {
