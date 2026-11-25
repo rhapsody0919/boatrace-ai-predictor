@@ -37,6 +37,16 @@ if [ $# -eq 0 ]; then
   exit 2
 fi
 
+# 先頭のコマンドが PATH に無く、このリポジトリの node_modules/.bin にあれば、そちらを使う。
+# npm run の外で `run-heavy.sh playwright test …`（AGENTS.md の表の形）と打つと、node_modules/.bin が PATH に無いため
+# command not found で落ちていた（2026-11-25 に2回）。npx と同じ解き方をここで1回だけ行う
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+if ! command -v "$1" >/dev/null 2>&1 && [ -x "$REPO_ROOT/node_modules/.bin/$1" ]; then
+  first="$REPO_ROOT/node_modules/.bin/$1"
+  shift
+  set -- "$first" "$@"
+fi
+
 # CIでは素通し（別マシンで動くためローカルの資源競合が無い）。ここで素通しする
 # コマンドそのものには手を入れない（--workers等はpackage.json側では固定せず、
 # 下のplaywright検出でローカル実行時にだけ付与する。CI専用ワークフロー
@@ -63,7 +73,7 @@ fi
 # 枠数×workers倍になり、制限の意味が薄れるため）。既に--workersが
 # 指定されている場合は上書きしない
 cmd_args=("$@")
-if [ "${cmd_args[0]:-}" = "playwright" ] || [ "${cmd_args[0]:-}" = "npx" ]; then
+if [ "$(basename "${cmd_args[0]:-}")" = "playwright" ] || [ "${cmd_args[0]:-}" = "npx" ]; then
   has_workers=0
   for a in "${cmd_args[@]}"; do
     case "$a" in
