@@ -567,6 +567,7 @@
       "data": "Wrong data",
       "other": "Other"
     },
+    "dataHint": "Please include which race and which number (e.g. Kiryu 11/23 R3, boat 2's motor top-2 rate).",
     "ratingLabel": "How satisfied are you with Ryujin Radar?",
     "ratingAria": "{{n}} of {{max}} ({{label}})",
     "ratings": {
