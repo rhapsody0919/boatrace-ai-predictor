@@ -459,6 +459,11 @@
       "guards": "E2E の /api の合言葉（BOA-1110）は live・record（BOA-1436）の、本番（boat-ai.jp）か本番へ転送する localhost の /api/ の要求だけに付き、replay・未知のモード・/api/ 以外・本番以外の host には付かず、鍵の値をログ・例外の文・録画に出さないこと。record が 401・403・5xx を録画しないこと（BOA-1436）"
     },
     {
+      "script": "verify-e2e-new-reds.js",
+      "tier": "ci",
+      "guards": "本番を相手にする E2E（e2e-release・e2e-live）の赤を前の完了 run の赤と比べ、新しい赤・24時間ぶりの続く赤・レポートが無い・組の欠け・試験の後の落ち・基準なしのときだけ知らせ、知らせて間もない同じ赤だけなら黙ること。基準を探す run は今の run を除く master の完了だけ（e2e-new-reds-decide.js、設計 docs/design/harness-migration/design.md §2）。固定の入力で回し、通信しない"
+    },
+    {
       "script": "verify-e2e-no-unroute.js",
       "tier": "ci",
       "guards": "E2Eで page のルートを途中で0件にする書き方（.unroute(・.unrouteAll(・第3引数に times のある、または第3引数がオブジェクトリテラルでない .route(）が e2e/**/*.js に入らないこと。0件になった瞬間の処理中の要求が context 側（録画の再生）へ送り直され「Route is already handled!」で落ちる（BOA-466・BOA-661、ADR-0077 決定4）。正当な例外は e2e-no-unroute-allowlist.json に理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する。#1084 修正前の書き方を検出できることを自己テストで毎回確かめる"
