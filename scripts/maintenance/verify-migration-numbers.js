@@ -298,7 +298,7 @@ function checkAgainstBase(sqlFiles, ledgerText, report) {
 }
 
 /** 4. 台帳（APPLIED.md）の行。新規のファイルは行が無くてよい（未適用とみなす）。既存のファイルで行が無ければ警告 */
-async function checkLedgerRows(sqlFiles, newFiles, { errors, warnings }) {
+async function checkLedgerRows(sqlFiles, newFiles, { warnings }) {
   try {
     const ledger = await fs.readFile(
       path.join(MIGRATION_DIR, LEDGER_FILE),
