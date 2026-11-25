@@ -23,7 +23,8 @@
  *   node scripts/maintenance/run-verify-pr.js --no-base    # 基準で回し直さない（赤は全部赤）
  *   node scripts/maintenance/run-verify-pr.js --list       # 回す物と除く物の数だけ出す
  */
-import { promises as fs, existsSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { promises as fs, existsSync, mkdtempSync, readdirSync, readFileSync as readTextSync, rmSync, symlinkSync } from "node:fs";
+import { withDefaultEntries } from "../lib/verifyRegistryDefaults.js";
 import { spawn, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -49,6 +50,13 @@ if (!Number.isInteger(jobs) || jobs < 1) {
 const readJson = async (p) => JSON.parse(await fs.readFile(p, "utf8"));
 
 /** 回す物と除く物。除く一覧の名が ci 層に無ければ警告（消した verify の残り） */
+/** 台帳に、行の無い verify を既定の ci の項目として足す（頭の注釈の無い物は registryCheck が赤にする） */
+function withDefaultEntriesOf(registry) {
+  const files = readdirSync(HERE).filter((f) => /^verify-.*\.(js|mjs|cjs|sh)$/.test(f));
+  const read = (f) => readTextSync(path.join(HERE, f), "utf8");
+  return { ...registry, entries: withDefaultEntries(registry.entries, files, read).entries };
+}
+
 function pickEntries(registry, skip) {
   const ci = registry.entries.filter((e) => e.tier === "ci");
   const names = new Set(ci.map((e) => e.script));
@@ -162,7 +170,8 @@ function registryCheck() {
 }
 
 const started = Date.now();
-const registry = await readJson(path.join(HERE, "verify-registry.json"));
+// 台帳に行の無い verify は既定で ci（run-verify-registry.js と同じ、scripts/lib/verifyRegistryDefaults.js）
+const registry = withDefaultEntriesOf(await readJson(path.join(HERE, "verify-registry.json")));
 const skip = await readJson(path.join(HERE, "verify-pr-skip.json"));
 const { run, skipped, stale } = pickEntries(registry, skip);
 for (const s of stale) console.log(`WARN: verify-pr-skip.json の ${s} が registry の ci 層に無い（一覧から消す）`);
