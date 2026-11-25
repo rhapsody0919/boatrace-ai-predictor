@@ -34,11 +34,11 @@ const PUBLIC_DIR = path.join(__dirname, "../public");
 // 静的ページの表（scripts/lib/sitemapStaticPages.js）。verify が同じ名で読むので re-export する
 export { staticPages };
 
-const JA_POST_DATE = new Map(blogPostsJa.map((p) => [p.id, p.date ?? null]));
+const JA_POST_DATE = new Map(blogPostsJa.map((p) => [p.id, p.updated ?? p.date ?? null]));
 const BLOG_MD_SUFFIX = { en: "-en", "zh-TW": "-zh-tw", ko: "-ko" };
 
 // 記事の lastmod。md の最終コミット日（本文の修正を拾う）と、記事データの日付
-// （公開日）の新しいほう。md は frontmatter を持たず、以前は mtime を使っていたため、
+// （更新日 updated、無ければ公開日 date）の新しいほう。md は frontmatter を持たず、以前は mtime を使っていたため、
 // CI の checkout 時刻＝毎日の生成日になっていた（BOA-599）
 function blogLastmod(id, mdSuffix) {
   return laterDate(
