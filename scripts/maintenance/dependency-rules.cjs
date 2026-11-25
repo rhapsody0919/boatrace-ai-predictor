@@ -6,6 +6,7 @@
 const DEPENDENCY_CRUISER = "dependency-cruiser@16.10.4";
 
 const UI_DIRS = "components|pages|hooks";
+const CONST_DIRS = "constants|config|data";
 const DOMAIN_QUERY = "^src/services/([A-Za-z]+)Queries[0-9]*\\.js$";
 
 const forbidden = [
@@ -60,17 +61,40 @@ const forbidden = [
     to: { path: "^(scripts/(?!lib/)|api/)" },
   },
   {
-    // 別の領域の Queries を直接読まない。同じ領域と predictionQueries・meetQueries は許す
+    // 別の領域の Queries を直接読まない。領域の間は core*.js を通す（AGENTS.md「構造と依存の向き」）。
+    // 2026-11-25 まで prediction・meet を誰からでも許していたが、跨ぐ辺が0になったので外した
     name: "domain-direct",
     severity: "error",
     from: { path: DOMAIN_QUERY },
     to: {
       path: "^src/services/([A-Za-z]+)Queries[0-9]*\\.js$",
-      pathNot: [
-        "^src/services/$1Queries[0-9]*\\.js$",
-        "^src/services/(prediction|meet)Queries[0-9]*\\.js$",
-      ],
+      pathNot: ["^src/services/$1Queries[0-9]*\\.js$"],
     },
+  },
+  {
+    // 計算層 src/pure は自分と定数（constants・config・data）だけを読む
+    name: "pure-no-up",
+    severity: "error",
+    from: { path: "^src/pure/" },
+    to: { path: "^src/", pathNot: `^src/(pure|${CONST_DIRS})/` },
+  },
+  {
+    // 定数（constants・config・data）は何も上を読まない
+    name: "constants-no-up",
+    severity: "error",
+    from: { path: `^src/(${CONST_DIRS})/` },
+    to: { path: "^src/", pathNot: `^src/(${CONST_DIRS})/` },
+  },
+  {
+    // Node 側（scripts・api・middleware）から src は計算層・定数・訳だけ（Vite の構文 import.meta.* は Node で落ちる）。
+    // 試験（verify-*.js・verifyData/）は画面とデータ層の関数を直に試すので除く
+    name: "node-to-src",
+    severity: "error",
+    from: {
+      path: "^(scripts|api)/|^middleware\\.js$",
+      pathNot: "^scripts/maintenance/(verify-[^/]+|verifyData/.+)$",
+    },
+    to: { path: "^src/", pathNot: `^src/(pure|${CONST_DIRS}|locales)/` },
   },
   {
     name: "no-circular",
