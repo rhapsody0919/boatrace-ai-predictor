@@ -133,19 +133,19 @@ const ruleOf = (name) =>
 
 test("domain-direct: 領域の間の Queries は赤（prediction・meet も）、同じ領域は緑（2026-11-25 に締めた）", () => {
   const r = ruleOf("domain-direct");
-  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/raceQueries.js"), false);
-  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/motorQueries.js"), true);
-  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/predictionQueries3.js"), true);
-  assert.equal(violates(r, "src/services/racerQueries5.js", "src/services/meetQueries2.js"), true);
-  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/core.js"), false);
+  assert.equal(violates(r, "src/services/zzaQueries2.js", "src/services/zzaQueries.js"), false);
+  assert.equal(violates(r, "src/services/zzaQueries2.js", "src/services/zzbQueries.js"), true);
+  assert.equal(violates(r, "src/services/zzaQueries2.js", "src/services/predictionQueries99.js"), true);
+  assert.equal(violates(r, "src/services/zzrQueries5.js", "src/services/meetQueries99.js"), true);
+  assert.equal(violates(r, "src/services/zzaQueries2.js", "src/services/coreZz.js"), false);
 });
 
 test("pure-no-up: src/pure は自分と定数だけ", () => {
   const r = ruleOf("pure-no-up");
-  for (const ok of ["src/pure/b.js", "src/constants/c.js", "src/config/languages.js", "src/data/d.js"]) {
+  for (const ok of ["src/pure/b.js", "src/constants/c.js", "src/config/zz.js", "src/data/d.js"]) {
     assert.equal(violates(r, "src/pure/a.js", ok), false, ok);
   }
-  for (const ng of ["src/utils/x.js", "src/services/raceQueries.js", "src/components/A.jsx", "src/locales/ja/common.json"]) {
+  for (const ng of ["src/utils/x.js", "src/services/zzaQueries.js", "src/components/A.jsx", "src/locales/zz/zz.json"]) {
     assert.equal(violates(r, "src/pure/a.js", ng), true, ng);
   }
 });
@@ -164,13 +164,36 @@ test("node-to-src: scripts・api から src は pure・定数・訳だけ、試�
   const r = ruleOf("node-to-src");
   for (const from of ["scripts/lib/a.js", "scripts/daily/b.js", "api/_lib/c.js", "api/cron/d.js", "middleware.js", "scripts/maintenance/fix-x.js"]) {
     assert.equal(violates(r, from, "src/pure/x.js"), false, from);
-    assert.equal(violates(r, from, "src/locales/ja/common.json"), false, from);
+    assert.equal(violates(r, from, "src/locales/zz/zz.json"), false, from);
     assert.equal(violates(r, from, "src/utils/x.js"), true, from);
-    assert.equal(violates(r, from, "src/services/raceQueries.js"), true, from);
+    assert.equal(violates(r, from, "src/services/zzaQueries.js"), true, from);
   }
-  assert.equal(violates(r, "scripts/maintenance/verify-x.js", "src/services/raceQueries.js"), false);
+  assert.equal(violates(r, "scripts/maintenance/verify-x.js", "src/services/zzaQueries.js"), false);
   assert.equal(violates(r, "scripts/maintenance/verifyData/x-scenes.js", "src/utils/x.js"), false);
   assert.equal(violates(r, "src/pages/P.jsx", "src/utils/x.js"), false);
+});
+
+test("新しい規則の境目: フォルダ名の前方一致で当てない・当て漏らさない", () => {
+  const dd = ruleOf("domain-direct");
+  assert.equal(violates(dd, "src/services/zzaQueries2.js", "src/services/zzaQueries10.js"), false, "同じ領域の番号違い");
+  assert.equal(violates(dd, "src/services/zzaHelpers.js", "src/services/zzbQueries.js"), false, "Queries でない from は見ない");
+  assert.equal(violates(dd, "src/services/zzaQueries.js", "src/services/zzaaQueries.js"), true, "名の前方一致は同じ領域でない");
+  const pu = ruleOf("pure-no-up");
+  assert.equal(violates(pu, "src/purely/a.js", "src/utils/x.js"), false, "src/pure/ の外");
+  assert.equal(violates(pu, "src/pure/a.js", "src/pure-old/x.js"), true, "src/pure/ でない兄弟");
+  assert.equal(violates(pu, "src/pure/a.js", "src/constantsX/x.js"), true);
+  const co = ruleOf("constants-no-up");
+  assert.equal(violates(co, "src/configs/a.js", "src/utils/x.js"), false, "src/config/ の外");
+  assert.equal(violates(co, "src/data/a.js", "src/database/x.js"), true, "src/data/ でない兄弟");
+  const nd = ruleOf("node-to-src");
+  assert.equal(violates(nd, "apix/a.js", "src/utils/x.js"), false, "api/ の外");
+  assert.equal(violates(nd, "src/a.js", "src/utils/x.js"), false, "src は見ない");
+  assert.equal(violates(nd, "scripts/a.js", "src/pure-old/x.js"), true, "src/pure/ でない兄弟");
+  assert.equal(violates(nd, "scripts/a.js", "srcx/utils/x.js"), false, "src/ の外");
+  assert.equal(violates(nd, "scripts/maintenance/fix-verify-x.js", "src/utils/x.js"), true, "verify- で始まらない maintenance の CLI");
+  assert.equal(violates(nd, "scripts/maintenance/sub/verify-x.js", "src/utils/x.js"), true, "maintenance の下のフォルダの verify は除かない");
+  assert.equal(violates(nd, "middleware.js", "src/services/zzaQueries.js"), true);
+  assert.equal(violates(nd, "xmiddleware.js", "src/services/zzaQueries.js"), false);
 });
 
 test("dependency-rules.cjs が読めて規則の名前が14個", () => {
