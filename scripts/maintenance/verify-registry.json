@@ -1007,6 +1007,11 @@
       "guards": "モーターの推移の線（src/pure/motorGenerationTrend.js）。節は日のあきか公式の率の変わり目で区切る、2連率・3連率は節の初日の公式の値で前の節まで20走未満は描かない、右端は今日まで延ばす、展示は直近30走の平均で24走から日ごとに1点"
     },
     {
+      "script": "verify-motor-meet-tooltip.js",
+      "tier": "ci",
+      "guards": "モーターの推移の節の点の吹き出し（MotorMeetTooltip.jsx、オーナー 2026-11-25 承認のモック）。3行（節の期間・会場・グレード・日数／乗った選手と着順／節の初日の公式の率とそれまでの走数）、節のページへの飛び先に言語の接頭辞、着順の無い走は -、留めたときだけ閉じる印、右寄りは左へ、分からない語は出さない"
+    },
+    {
       "script": "verify-motor-model.js",
       "tier": "ci",
       "guards": "motor の型 makeMotorStat（venue_motor_stats の行）・makeMotorPretest（motor_pretest_stats の行）（src/pure/motorModel.js、設計図 §10 DM13）。主キー（会場1〜24・motor_number の整数・取得日の実在する日／前検日・会場・racer_id）と、取った列だけ source_template の文字列・回数7列の整数・集計期間の日付・racer_class 4値・pretest_rank は null か1以上・pretest_time と pretest_rank の両方 null か両方あり（motor_pretest_stats の CHECK 4本と同じ）を検査して凍結すること。select で取らない列は落とさないこと"

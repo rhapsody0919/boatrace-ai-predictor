@@ -9,6 +9,7 @@
  *   - 展示タイムは直近30走の平均で、展示のある走が24たまってから。日ごとに1点
  *   - 推移を出さない指標は例外にする
  *   - 節の点の吹き出しは、その節の走の選手と着順、会場の節の期間・グレード・日数。その日に始まる節が無ければ null
+ *   - 吹き出しの着は日ごとに区切り、公式の記号（F・欠 等）があれば着順より先に出す。節の終わりがレースの日以降なら開催中
  */
 import {
   motorMeets,
@@ -77,6 +78,14 @@ check("吹き出しはその節の走の着順（無ければ null）", tip?.fin
 const noSeries = motorMeetTip(tipRuns, day(16), []);
 check("会場の節が無ければ走の日で期間", noSeries?.start === day(16) && noSeries?.end === day(21) && noSeries?.grade === null);
 check("その日に始まる節が無ければ null", motorMeetTip(tipRuns, day(17), seriesMeets) === null);
+// 記号: 節2の最初の走を F（rank も入っている）、3走目を欠（rank なし）にする
+const marked = tipRuns.map((r, i) => (i === 24 ? { ...r, finishMark: "F" } : i === 26 ? { ...r, finish: null, finishMark: "欠" } : r));
+const byDay = motorMeetTip(marked, day(16), seriesMeets).byDay;
+check("着は日ごとに区切る（1日2走で6日）", byDay.length === 6 && byDay.every((d) => d.results.length === 2) && byDay[0].date === day(16), JSON.stringify(byDay));
+check("記号は着順より先に", byDay[0].results[0] === "F" && byDay[1].results[0] === "欠", JSON.stringify(byDay.slice(0, 2)));
+check("記号も着順も無ければ null", motorMeetTip(tipRuns, day(16), seriesMeets).byDay.flatMap((d) => d.results).includes(null));
+check("節の終わりがレースの日以降なら開催中", motorMeetTip(tipRuns, day(16), seriesMeets, { today: day(20) }).ongoing === true);
+check("終わった節は開催中でない", motorMeetTip(tipRuns, day(16), seriesMeets, { today: day(30) }).ongoing === false && motorMeetTip(tipRuns, day(16), seriesMeets).ongoing === false);
 
 let threw = false;
 try { motorRateTrend(runs, "winRate", { today }); } catch { threw = true; }

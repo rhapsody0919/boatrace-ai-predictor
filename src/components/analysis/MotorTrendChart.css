@@ -129,3 +129,8 @@
     color: var(--text-primary);
   }
 }
+
+/* 節の吹き出し: 選手名と着順の並びの行だけ折り返す（共通の行は折り返さない。p を付けて詳細度で勝つ） */
+p.mtc-tip-wrap {
+  white-space: normal;
+}

@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2900,
+    "sourceFiles": 2903,
     "filesWithAccess": 329,
-    "tableReaders": 971,
+    "tableReaders": 972,
     "tableWriters": 200,
     "rpcCallers": 57,
     "nameMentions": 286,
@@ -13277,6 +13277,12 @@
             "race_id",
             "start_timing"
           ]
+        },
+        {
+          "ref": "src/services/motorQueries8.js:83",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
         },
         {
           "ref": "src/services/raceQueries.js:97",

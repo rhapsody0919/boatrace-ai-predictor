@@ -10,9 +10,9 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2900 |
+| 読んだファイル | 2903 |
 | 読み書きのあるファイル | 329 |
-| 表の読み手（箇所） | 971 |
+| 表の読み手（箇所） | 972 |
 | 表の書き手（箇所） | 200 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
@@ -77,7 +77,7 @@
 | [race_results](#t-race_results) | table | anon 可 | 113 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, result, result_catchup |  |
 | [race_series](#t-race_series) | table | anon 可 | 17 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
 | [race_special_notes](#t-race_special_notes) | table | service だけ | 1 | 1 | data_health_table_rows |  | race_notices |  |
-| [race_start_timings](#t-race_start_timings) | table | anon 可 | 28 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, result, result_catchup |  |
+| [race_start_timings](#t-race_start_timings) | table | anon 可 | 29 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, result, result_catchup |  |
 | [racer_aggregated_stats](#t-racer_aggregated_stats) | table | anon 可 | 12 | 1 | data_health_nightly_freshness |  |  |  |
 | [racer_course_technique_stats](#t-racer_course_technique_stats) | table | anon 可 | 4 | 1 |  |  | racer_course_technique_stats |  |
 | [racer_grade_cache](#t-racer_grade_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
@@ -1314,7 +1314,7 @@
 - 本体で読む RPC: compute_st_course_baseline, data_health_coverage, data_health_table_rows, get_race_st_predictability, get_racer_accident_records
 - 取得のジョブ: kfile_sync, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:11`, `scripts/lib/raceResultSchema.js:20`, `scripts/lib/raceResultSchema.js:35`, `scripts/maintenance/backfill-kb-gaps.js:80`, `scripts/maintenance/delete-phantom-races.js:76`, `scripts/maintenance/fix-opening-day-race-id-date.js:67`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:40`
-- 読み手（28）: 
+- 読み手（29）: 
   - `scripts/analysis/full-picture-answer-stage/actual.cjs:10` select [boat_number, entry_course, finish_rank, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/original-exhibition/fetch.mjs:64` select(helper:all)
   - `scripts/analysis/past-rate-check/poolContractRowChecks.mjs:65` select [boat_number, finish_mark, is_flying, is_late_start, race_id, start_timing]
@@ -1337,6 +1337,7 @@
   - `src/services/meetQueries.js:79` select [boat_number, is_flying, race_id]
   - `src/services/meetQueries.js:111` select [boat_number, entry_course, finish_mark, race_id]
   - `src/services/meetQueries2.js:165` select [boat_number, finish_mark, is_flying, race_id, start_timing]
+  - `src/services/motorQueries8.js:83` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:97` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:233` select(helper:fetchAllByIn)
   - `src/services/raceQueries4.js:22` select [boat_number, entry_course, finish_mark, finish_rank, is_flying, is_late_start, race_id, start_timing]

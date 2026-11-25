@@ -22,9 +22,16 @@ export async function mockGeneration(page, { start = "2026-08-06", fail = false 
     return route.fulfill({
       json: ids.flatMap((id) => {
         const week = Math.floor((Date.parse(id.slice(0, 10)) - Date.parse(start)) / (7 * 86400000));
-        return motors.map((m, i) => ({ race_id: id, boat_number: i + 1, motor_number: m, motor_2rate: week === 0 ? 0 : 25 + i * 3 + (week % 3), motor_3rate: week === 0 ? 0 : 45 + i * 3 }));
+        return motors.map((m, i) => ({ race_id: id, boat_number: i + 1, motor_number: m, motor_2rate: week === 0 ? 0 : 25 + i * 3 + (week % 3), motor_3rate: week === 0 ? 0 : 45 + i * 3, player_name: `選手 ${i + 1}` }));
       }),
     });
+  });
+  // 会場の節（吹き出しの期間・グレード）。入れ替えの日から7日ごと
+  await page.route((url) => url.pathname.endsWith("/race_series") && url.search.includes("grade"), (route) => {
+    const meets = [];
+    for (let k = 0; day(k * 7) <= raceId.slice(0, 10); k += 1)
+      meets.push({ start_date: day(k * 7), end_date: day(k * 7 + 6), total_days: 7, grade: "ippan", title: `節${k}` });
+    return route.fulfill({ json: meets.filter((m) => m.start_date >= start) });
   });
 }
 

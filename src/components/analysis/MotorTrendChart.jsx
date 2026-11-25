@@ -5,10 +5,12 @@
  * 線の色・目盛りの見た目は TrendChart.css（選手の推移の線）の trc- を使い、ここに固有の物は MotorTrendChart.css。
  * 2つの CSS の読み込みは使う側が持つ（TrendChart と同じ）。
  */
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { Badge, GridLines } from "../race/basic-info/TrendChart.jsx";
 import { useChartWidth } from "../race/basic-info/useChartWidth.js";
+import { useChartPick } from "../race/basic-info/useChartPick.js";
 
 const H = 250;
 const PAD = { l: 34, r: 76, t: 24, b: 36 };
@@ -118,15 +120,37 @@ function Axis({ generationStart, today, firstDate, minRuns, metric, x, W }) {
  * @param {{seriesByBoat: Map<number, Array<{date:string,value:number,extended?:boolean}>>,
  *   metric: "top2Rate"|"top3Rate"|"exhibition", selected: number, generationStart: string, today: string, minRuns: number}} props
  *   seriesByBoat は点のある艇だけ（空の系列を入れない）。1艇も無いときは使う側が空の状態を出す
+ *   renderTip を渡すと、選んだ艇の節の点（今日まで延ばした右端は除く）を拾い、吹き出しを描く（選手の推移と同じ useChartPick）
  */
-export default function MotorTrendChart({ seriesByBoat, metric, selected, generationStart, today, minRuns }) {
+// 選んだ点の縦の点線と印、点を拾う当たりの面（図の中の全面、透明）。縦のスクロールは指に任せる
+function PickLayer({ px, py, selected, W, pointer }) {
+  return (
+    <>
+      {px !== null && (
+        <g className="trc-pick">
+          <line x1={px} x2={px} y1={PAD.t} y2={H - PAD.b} className="trc-pick-line" />
+          <circle cx={px} cy={py} r={7.5} className="trc-pick-ring" />
+          <circle cx={px} cy={py} r={6} fill={BOAT_COLORS[selected].bg} className="trc-pick-dot" />
+        </g>
+      )}
+      <rect className="trc-hit" x={PAD.l} y={PAD.t} width={W - PAD.l - PAD.r} height={H - PAD.t - PAD.b} fill="transparent" {...pointer} />
+    </>
+  );
+}
+
+export default function MotorTrendChart({ seriesByBoat, metric, selected, generationStart, today, minRuns, renderTip = null }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
   const { x, y, ticks } = scaleOf(seriesByBoat, metric, generationStart, today, W);
   const firstDate = [...seriesByBoat.values()].map((s) => s[0].date).sort()[0];
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
+  const boxRef = useRef(null);
+  const sel = renderTip ? (seriesByBoat.get(selected) ?? []).filter((p) => !p.extended) : [];
+  const { pick, close, handlers } = useChartPick({ xs: sel.map((p) => x(p.date)), key: `${selected}-${metric}`, W, boxRef });
+  const picked = pick ? sel[pick.i] : null;
   return (
+    <div className="trc-chartbox" ref={boxRef}>
     <svg ref={ref} className="trc-svg mtc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t(`analysis.motor.genTrend.title.${metric}`)}>
       <GridLines ticks={ticks} y={y} x1={PAD.l} x2={W - PAD.r} label={(g) => (isEx(metric) ? g.toFixed(2) : Math.round(g))} />
       <text x={PAD.l - 4} y={PAD.t - 8} className="trc-tick" textAnchor="end">
@@ -137,6 +161,9 @@ export default function MotorTrendChart({ seriesByBoat, metric, selected, genera
         <Line key={boat} points={seriesByBoat.get(boat)} boat={boat} selected={boat === selected} showDots={!isEx(metric) && boat === selected} x={x} y={y} />
       ))}
       <EndLabels seriesByBoat={seriesByBoat} selected={selected} y={y} metric={metric} W={W} />
+      {renderTip && <PickLayer px={picked ? x(picked.date) : null} py={picked ? y(picked.value) : 0} selected={selected} W={W} pointer={handlers} />}
     </svg>
+    {picked && renderTip({ point: picked, leftPct: (x(picked.date) / W) * 100, pinned: pick.pinned, onClose: close })}
+    </div>
   );
 }

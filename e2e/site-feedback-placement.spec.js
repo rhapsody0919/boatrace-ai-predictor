@@ -218,10 +218,13 @@ test.describe("スマホの幅（375px）", () => {
     const sizes = await panel(page)
       .locator(".site-fb-x, .site-fb-chip-face, .site-fb-star, .site-fb-send")
       .evaluateAll((els) =>
-        els.map((el) => {
-          const r = el.getBoundingClientRect();
-          return { cls: el.className, h: r.height, w: r.width };
-        }),
+        // 測るのはレイアウトの大きさ（CSS px）。getBoundingClientRect は浮動小数の誤差で
+        // min-height: 44px の部品を 43.99997 と返し、44 の線を割ることがあった（2026-11-25、#3447 の CI）
+        els.map((el) => ({
+          cls: el.className,
+          h: el.offsetHeight,
+          w: el.offsetWidth,
+        })),
       );
     expect(sizes.length).toBe(11);
     for (const s of sizes) {

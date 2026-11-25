@@ -35,6 +35,13 @@
   gap: var(--spacing-2);
 }
 
+/* 「データの誤り」を選んだときの案内（どのレースのどの数字か） */
+.site-fb-hint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
 .site-fb-chip {
   position: relative;
   display: inline-flex;

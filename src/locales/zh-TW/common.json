@@ -562,6 +562,7 @@
       "data": "資料有誤",
       "other": "其他"
     },
+    "dataHint": "請一併寫下是哪一場比賽的哪個數字（例：桐生 11/23 第3場，2號艇的馬達2連率）。",
     "ratingLabel": "對龍神雷達的滿意度",
     "ratingAria": "{{n}} 分（滿分 {{max}} 分，{{label}}）",
     "ratings": {
@@ -3108,7 +3109,12 @@
         "noteExhibition": "💡 每個點是近30場展示時間的平均，累積24場後開始繪製。越上面越快。上一節以前是其他選手騎乘時的數值。右側數值相同時，從較小的艇號開始排列。",
         "empty": "{{date}}剛更換（第{{days}}天）。\n目前還沒有任何一台達到{{n}}場，走勢稍後才能看到。",
         "noGeneration": "不清楚此場地的馬達使用開始日，因此無法顯示走勢。",
-        "toNow": "查看目前數值"
+        "toNow": "查看目前數值",
+        "toMeet": "前往該節 →",
+        "tipDays": "{{n}}天",
+        "tipRacer": "騎乘選手 {{name}}",
+        "tipFinishes": "本節名次 {{order}}",
+        "tipValue": "該節首日的官方{{metric}} {{value}}（此前{{runs}}場累計）"
       }
     },
     "motorRanking": {

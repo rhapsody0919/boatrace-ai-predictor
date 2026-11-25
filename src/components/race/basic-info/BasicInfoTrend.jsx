@@ -9,7 +9,7 @@ import BoatBadge from "../BoatBadge";
 import InlineFetchError from "../../InlineFetchError";
 import TrendChart from "./TrendChart";
 import WinRateTrend from "./WinRateTrend";
-import { filterRecords } from "../../../pure/basicInfoStats.js";
+import { filterRecords, getRecentRaces } from "../../../pure/basicInfoStats.js";
 import { TREND_METRICS, trendSeries } from "../../../pure/racerTrendSeries.js";
 import "./TrendChart.css";
 
@@ -74,7 +74,14 @@ function seriesOf({
       grade,
       period: "current",
     });
-    const s = trendSeries(scoped, metric);
+    // 点ごとにその走の中身（吹き出しで出す日付・会場・R・コース・着順・ST）を持たせる
+    const runs = new Map(
+      getRecentRaces(scoped, scoped.length).map((r) => [r.raceId, r]),
+    );
+    const s = trendSeries(scoped, metric).map((pt) => ({
+      ...pt,
+      run: runs.get(pt.raceId) ?? null,
+    }));
     if (s.length > 0) out.set(p.number, s);
   }
   return out;
