@@ -91,6 +91,14 @@ if HAVE_NM:
     check("本に child_process を足す: 人へ（静的な語）", DC not in v.excused and any("child_process" in h for h in v.human), (v.excused, v.human))
     shutil.rmtree(d)
 
+# data_targets: css の import を空にする loader の鍵（".css" だけの字）では css をデータとみなさない（2026-11-25 の誤検出2回）
+d = mk({"src/a/Chart.css": ".x{}\n", "src/a/Chart.jsx": "export const C = 1;\n"})
+t_loader = vg.data_targets(d, ["src/a/Chart.jsx", ".css", "empty"])
+t_named = vg.data_targets(d, ["src/a/Chart.css"])
+check("data_targets: loader の鍵 \".css\" だけなら css を入れない", "css" not in t_loader, t_loader)
+check("data_targets: css のファイルを名指しすれば css を入れる", t_named.get("css") == "src/a/Chart.css", t_named)
+shutil.rmtree(d)
+
 if not HAVE_NM:
     skipped = 1
     print("   SKIP @babel/parser が無い（~/boatrace-ai-predictor/node_modules）。node を回す試験を飛ばした")
