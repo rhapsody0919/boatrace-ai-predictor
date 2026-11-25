@@ -2,12 +2,13 @@
  * 選手の成績比較の「今の値｜推移」の切り替えと、推移の中身（オーナー 2026-11-24 承認のモック改訂3）。
  * 推移は6艇の直近30走ごとの移動（src/pure/racerTrendSeries.js）。範囲（全国・当地）とグレードの絞り込みは
  * 今の値と同じものを使い、期間は使わない（推移そのものが期間を表すため）。
- * 勝率は公式の期ごとの段で出す予定で、まだ無い（準備中と出す）。
+ * 勝率は公式の期別成績の段で出す（WinRateTrend）。
  */
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../BoatBadge";
 import InlineFetchError from "../../InlineFetchError";
 import TrendChart from "./TrendChart";
+import WinRateTrend from "./WinRateTrend";
 import { filterRecords } from "../../../pure/basicInfoStats.js";
 import { TREND_METRICS, trendSeries } from "../../../pure/racerTrendSeries.js";
 import "./TrendChart.css";
@@ -20,9 +21,11 @@ export function ViewHead({ view, setView, metric }) {
     <div className="trc-head">
       <p className="trc-title">
         {t(
-          view === "trend"
-            ? "basicInfo.trend.title"
-            : "basicInfo.trend.nowTitle",
+          view === "now"
+            ? "basicInfo.trend.nowTitle"
+            : metric === "winRate"
+              ? "basicInfo.trend.winRateTitle"
+              : "basicInfo.trend.title",
           {
             metric: metricName,
           },
@@ -73,6 +76,29 @@ function seriesOf({
   return out;
 }
 
+/** 太線にする艇を選ぶ行（線の無い艇は押せない） */
+export function BoatPicker({ sortedPlayers, has, selected, onSelectBoat }) {
+  const { t } = useTranslation();
+  return (
+    <div className="trc-boats">
+      {sortedPlayers.map((p) => (
+        <button
+          key={p.number}
+          type="button"
+          className="trc-boat"
+          aria-pressed={p.number === selected}
+          disabled={!has(p.number)}
+          onClick={() => onSelectBoat(p.number)}
+          aria-label={t("basicInfo.trend.selectBoat", { boat: p.number })}
+        >
+          <BoatBadge n={p.number} />
+        </button>
+      ))}
+      <span className="trc-hint">{t("basicInfo.trend.tapHint")}</span>
+    </div>
+  );
+}
+
 export default function BasicInfoTrend({
   metric,
   scope,
@@ -82,8 +108,25 @@ export default function BasicInfoTrend({
   recordsOf,
   selectedBoat,
   onSelectBoat,
+  winRate,
 }) {
   const { t } = useTranslation();
+  if (metric === "winRate")
+    return (
+      <WinRateTrend
+        {...winRate}
+        sortedPlayers={sortedPlayers}
+        selectedBoat={selectedBoat}
+        renderPicker={(has, selected) => (
+          <BoatPicker
+            sortedPlayers={sortedPlayers}
+            has={has}
+            selected={selected}
+            onSelectBoat={onSelectBoat}
+          />
+        )}
+      />
+    );
   const metricName = t(`basicInfo.metrics.${metric}`);
   const supported = TREND_METRICS.includes(metric);
   const loading = sortedPlayers.some(
@@ -102,9 +145,6 @@ export default function BasicInfoTrend({
     : [...series.keys()][0];
   return (
     <div className="trc-wrap">
-      {!supported && (
-        <p className="trc-note">{t("basicInfo.trend.winRatePending")}</p>
-      )}
       {supported && loading && (
         <p className="trc-note">{t("basicInfo.loading")}</p>
       )}
@@ -119,22 +159,12 @@ export default function BasicInfoTrend({
             metric={metric}
             selected={selected}
           />
-          <div className="trc-boats">
-            {sortedPlayers.map((p) => (
-              <button
-                key={p.number}
-                type="button"
-                className="trc-boat"
-                aria-pressed={p.number === selected}
-                disabled={!series.has(p.number)}
-                onClick={() => onSelectBoat(p.number)}
-                aria-label={t("basicInfo.trend.selectBoat", { boat: p.number })}
-              >
-                <BoatBadge n={p.number} />
-              </button>
-            ))}
-            <span className="trc-hint">{t("basicInfo.trend.tapHint")}</span>
-          </div>
+          <BoatPicker
+            sortedPlayers={sortedPlayers}
+            has={(boat) => series.has(boat)}
+            selected={selected}
+            onSelectBoat={onSelectBoat}
+          />
           <p className="trc-note">
             {t("basicInfo.trend.note", { metric: metricName })}
           </p>

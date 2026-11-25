@@ -2492,7 +2492,6 @@
       "note": "💡 Each point is the {{metric}} over the 30 races up to that point. Source: our race records (last 2 years). For Avg. ST, lower is drawn higher",
       "tapHint": "Tap to highlight",
       "selectBoat": "Highlight boat {{boat}}",
-      "winRatePending": "Win rate trend (by official term) is coming soon",
       "notEnough": "Racers with fewer than 30 races have no line",
       "winRateTitle": "Win rate trend (by official term)",
       "stepFrom": "{{from}}–",

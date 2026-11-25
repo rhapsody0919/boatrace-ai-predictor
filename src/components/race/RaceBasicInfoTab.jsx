@@ -162,6 +162,7 @@ function useBasicInfoSources({
     currentMeetFlyingBoats,
     recordsOf,
     trendRecordsOf,
+    raceDate,
     periodAnchor,
     currentTermFrom,
   };
@@ -301,6 +302,7 @@ function BasicInfoFilterBar({
         <ViewHead view={view} setView={setView} metric={filters.metric} />
       }
       hidePeriod={view === "trend"}
+      hideScope={view === "trend" && filters.metric === "winRate"}
       metric={filters.metric}
       setMetric={filters.setMetric}
       scope={filters.scope}
@@ -401,6 +403,12 @@ function RaceBasicInfoTab({
           recordsOf={src.trendRecordsOf}
           selectedBoat={expandedBoat}
           onSelectBoat={onFocusBoat}
+          winRate={{
+            periodStats: src.periodStats,
+            periodFailed: src.periodFailed,
+            retryPeriod: src.retryPeriod,
+            raceDate: src.raceDate,
+          }}
         />
       )}
       {view === "now" && (
