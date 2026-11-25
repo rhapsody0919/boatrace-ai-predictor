@@ -1,10 +1,7 @@
 /**
  * lintDepTree.js - lint-changed --ci の依存の向きの関所（BOA-1435、BOA-1425 を割った 2/2）。
- * dependency-cruiser を base と HEAD に回し、違反(HEAD) − 違反(base) が空かを見る。
- * 加えて no-circular の全体 0・src/utils の新しいファイルの禁止。
- *
- * base の worktree には node_modules が無い。外の包み（npm の名前の import）は解けないが、
- * 規則は相対 import の辺（src・scripts・api の中）だけを見るので比べる辺には影響しない。
+ * dependency-cruiser を HEAD に回し、違反の辺が全部 dependency-exceptions.json（減る向きだけ）にあるかを見る
+ * （2026-11-25 に base との差から全体で0＋例外の表へ）。加えて no-circular の全体 0・src/utils の新しいファイルの禁止。
  * 外の包みの解けなさは「パースの失敗」に数えない（数えるのは相対 import が解けないものだけ）。
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -15,11 +12,14 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import {
   DATA_LAYER_KEY,
-  compareEdgesToBaseline,
+  compareBaselines,
   isDataLayer,
+  judgeAgainstExceptions,
   newServicesFileProblems,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
+
+export const EXCEPTIONS_PATH = "scripts/maintenance/dependency-exceptions.json";
 
 const require = createRequire(import.meta.url);
 const { DEPENDENCY_CRUISER, forbidden, options } = require("./dependency-rules.cjs");
@@ -56,14 +56,7 @@ export function countByRule(edges) {
   return counts;
 }
 
-/** 辺 a のうち b に無いもの（from・to・rule が同じなら同じ辺） */
-export function subtractEdges(a, b) {
-  const key = (e) => `${e.rule}\t${e.from}\t${e.to}`;
-  const seen = new Set(b.map(key));
-  return a.filter((e) => !seen.has(key(e)));
-}
-
-/** 辺 → 基準の形 { rule: { from: [to] } } */
+/** 辺 → 基準の形 { rule: { from: [to] } }（和の中の from は1つにまとめる。今の関所は使わず、試験だけが読む。消すのは別の PR） */
 export function baselineOfEdges(edges) {
   const out = {};
   for (const { rule, from: file, to } of edges) {
@@ -146,29 +139,24 @@ function sanity(label, cwd, result, errors) {
   }
 }
 
-function withBaseTree(root, sha, fn) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lint-deptree-base-"));
-  const wt = path.join(dir, "wt");
-  try {
-    git(root, "worktree", "add", "--detach", "--no-checkout", wt, sha);
-    git(wt, "checkout", sha, "--", ...DIRS);
-    return fn(wt, dir);
-  } finally {
-    try {
-      git(root, "worktree", "remove", "--force", wt);
-    } catch {
-      // worktree が作れなかったときは消すものが無い
-    }
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-}
-
 const formatCounts = (counts) =>
   Object.entries(counts)
     .map(([r, n]) => `${r}=${n}`)
     .join(" ") || "違反なし";
 
+/** base の例外の表（git show）。base に無い（表を足す PR）ときは null */
+function readBaseExceptions(cwd, base) {
+  try {
+    return JSON.parse(git(cwd, "show", `${base}:${EXCEPTIONS_PATH}`)).edges;
+  } catch {
+    return null;
+  }
+}
+
 /**
+ * 全体で0の関所（2026-11-25、点検の案 B-1）。HEAD だけに dependency-cruiser を回し、
+ * 違反の辺が例外の表 dependency-exceptions.json に全部あるかを見る。表は減る向きだけ（base の表より行が増えたら赤）。
+ * 以前は base と HEAD の違反の差で見ていたので、master に一度入った違反がそのまま基準になった。
  * @returns {{ errors: string[], warnings: string[], log: string[] }}
  */
 export function runDepTreeGate({ cwd, base, changed }) {
@@ -184,32 +172,33 @@ export function runDepTreeGate({ cwd, base, changed }) {
   try {
     const config = writeConfig(tmp);
     const head = edgesOfCruise(cruise(cwd, config, tmp, "HEAD").json);
-    const baseRes = withBaseTree(cwd, base, (wt) =>
-      edgesOfCruise(cruise(wt, config, tmp, "base").json),
-    );
     sanity("HEAD", cwd, head, errors);
+    const exceptions = JSON.parse(
+      fs.readFileSync(path.join(cwd, EXCEPTIONS_PATH), "utf8"),
+    ).edges;
     log.push(
-      `依存の向き: base ${base} と比べた。HEAD の違反 ${formatCounts(countByRule(head.edges))}／base の違反 ${formatCounts(countByRule(baseRes.edges))}／モジュール HEAD ${head.modules}・base ${baseRes.modules}`,
+      `依存の向き: HEAD の違反 ${formatCounts(countByRule(head.edges))}／モジュール ${head.modules}／例外の表 ${EXCEPTIONS_PATH}`,
     );
 
-    const cycles = head.edges.filter((e) => e.rule === CIRCULAR);
-    cycles.forEach((e) => errors.push(`循環の import(no-circular): ${e.from} → ${e.to}`));
+    head.edges
+      .filter((e) => e.rule === CIRCULAR)
+      .forEach((e) => errors.push(`循環の import(no-circular): ${e.from} → ${e.to}`));
 
-    const diff = (rule) =>
-      subtractEdges(
-        head.edges.filter((e) => e.rule === rule),
-        baseRes.edges.filter((e) => e.rule === rule),
-      );
-    const rules = [...new Set(head.edges.map((e) => e.rule))].filter(
-      (r) => r !== CIRCULAR,
+    const judged = judgeAgainstExceptions(
+      head.edges.filter((e) => e.rule !== CIRCULAR),
+      exceptions,
     );
-    for (const rule of rules) {
-      const extra = diff(rule);
-      if (extra.length === 0) continue;
-      // データ層の和は from を1つにまとめ、base の違反の to の集合を越えた分だけ見る
-      const baseline = baselineOfEdges(baseRes.edges.filter((e) => e.rule === rule));
-      compareEdgesToBaseline(extra, baseline).problems.forEach((p) =>
-        errors.push(`依存の向き ${p}`),
+    judged.problems.forEach((p) => errors.push(`依存の向き ${p}`));
+    judged.stale.forEach((r) =>
+      warnings.push(`依存の向き: 例外の表の行が今は違反でない（消せる）: ${r}`),
+    );
+
+    const baseExceptions = readBaseExceptions(cwd, base);
+    if (baseExceptions === null) {
+      log.push(`依存の向き: base ${base} に例外の表が無い（表を足す PR）。表の増えは見ない`);
+    } else {
+      compareBaselines(baseExceptions, exceptions).problems.forEach((p) =>
+        errors.push(`依存の向き: 例外の表は減る向きだけ。${p}`),
       );
     }
   } catch (e) {

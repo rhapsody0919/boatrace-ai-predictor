@@ -9,6 +9,7 @@ import {
   isDataLayer,
   compareEdgesToBaseline,
   compareBaselines,
+  judgeAgainstExceptions,
   newServicesFileProblems,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
@@ -223,4 +224,33 @@ test("和の中で移しただけの辺は緑、base に無い to は赤", () =>
     ).ok,
     false,
   );
+});
+
+test("全体で0の関所: 例外の表に無い辺は赤、和の中でもまとめない、表の余りは stale（2026-11-25）", () => {
+  const exc = { "node-to-src": { "api/_lib/a.js": ["src/utils/x.js"] } };
+  const inTable = edge("api/_lib/a.js", "src/utils/x.js", "node-to-src");
+  assert.deepEqual(judgeAgainstExceptions([inTable], exc), { ok: true, problems: [], stale: [] });
+  // base との差の関所なら、master に一度入った辺は通った。全体で0では表に無ければ赤
+  const r = judgeAgainstExceptions([inTable, edge("api/_lib/a.js", "src/utils/y.js", "node-to-src")], exc);
+  assert.equal(r.ok, false);
+  assert.equal(r.problems.length, 1);
+  const dl = { "services-no-ui": { "src/services/raceQueries.js": ["src/pages/P.jsx"] } };
+  assert.equal(
+    judgeAgainstExceptions([edge("src/services/raceQueries2.js", "src/pages/P.jsx")], dl).ok,
+    false,
+    "和の中で別のファイルから同じ先を読むのも表に要る",
+  );
+  assert.deepEqual(judgeAgainstExceptions([], exc).stale, ["node-to-src api/_lib/a.js src/utils/x.js"]);
+});
+
+test("例外の表 dependency-exceptions.json は形が正しく、行を足すと compareBaselines が赤", () => {
+  const { edges } = require("./dependency-exceptions.json");
+  const rules = require("./dependency-rules.cjs").forbidden.map((r) => r.name);
+  for (const [rule, froms] of Object.entries(edges)) {
+    assert.ok(rules.includes(rule) && rule !== "no-circular", rule);
+    for (const tos of Object.values(froms)) assert.ok(Array.isArray(tos) && tos.length > 0);
+  }
+  const more = structuredClone(edges);
+  more["node-to-src"]["api/_lib/new.js"] = ["src/utils/x.js"];
+  assert.equal(compareBaselines(edges, more).ok, false);
 });
