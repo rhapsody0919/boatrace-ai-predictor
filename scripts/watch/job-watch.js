@@ -23,7 +23,10 @@ import {
   nightlyFailureItem,
   recoveryReruns,
   rerunBlockers,
+  outsideCanaryReader,
   runMarker,
+  uncoveredComment,
+  uncoveredKeyRuns,
 } from "../lib/jobWatch.js";
 
 const ROOT = path.resolve(
@@ -106,6 +109,13 @@ const isProductionRun = (r) =>
     r.event === "push" ||
     r.event === "workflow_run");
 
+// その SHA（か ref）の workflow の YAML
+const workflowYamlAt = (p, ref) =>
+  gh("GET", `/repos/${repo}/contents/${p}?ref=${ref}`, null, {
+    raw: true,
+    accept: "application/vnd.github.raw",
+  });
+
 const runJobs = (runId) =>
   listAll(`/repos/${repo}/actions/runs/${runId}/jobs?filter=latest`, "jobs");
 
@@ -169,6 +179,9 @@ async function issueTexts(issue) {
   return [issue.body ?? "", ...comments.map((c) => c.body ?? "")];
 }
 
+const commentOn = (number, body) =>
+  gh("POST", `/repos/${repo}/issues/${number}/comments`, { body });
+
 const line = (r, reason) =>
   `- [${r.name} #${r.run_number}（${r.attempt}回目）](${r.html_url}) ${jstDate(r.createdAt)} ${r.timedOut ? "時間切れ（GitHub の上限で cancelled）・" : ""}${reason}`;
 
@@ -183,9 +196,7 @@ async function writeIssue(label, title, intro, items) {
       body: `${intro}\n\n${text}`,
     });
   } else {
-    await gh("POST", `/repos/${repo}/issues/${issue.number}/comments`, {
-      body: text,
-    });
+    await commentOn(issue.number, text);
   }
 }
 
@@ -238,7 +249,7 @@ const failedCandidates = (runs) =>
 
 // 判断（decideRun）を Issue の項目にする。list は書く先（key・failure）、rerun は rerun に入れるか
 function decidedItem(run, r, d) {
-  if (d.action === "key-issue") {
+  if (d.action === "key-issue" || d.action === "key-issue-uncovered") {
     return {
       list: "key",
       text: line(run, d.reason),
@@ -267,7 +278,8 @@ function decidedItem(run, r, d) {
   };
 }
 
-// 鍵が直ったか: 開いた鍵の Issue より後に、カナリアが成功している。直っていれば Issue に書いて閉じ、rerun する run の id を返す
+// 鍵が直ったか: 開いた鍵の Issue より後に、カナリアが成功している。直っていれば Issue に書いて閉じ、rerun する run の id を返す。
+// カナリアが見ない鍵の誤りの run が残っていれば（同じ workflow の後の run が成功するまで）、カナリアが緑でも閉じない・rerun しない
 async function closeKeyIssueIfRecovered(keyIssue, runs, classified, opts) {
   if (!keyIssue) return [];
   const canaryOk = runs.some(
@@ -277,6 +289,16 @@ async function closeKeyIssueIfRecovered(keyIssue, runs, classified, opts) {
       Date.parse(r.created_at) > Date.parse(keyIssue.created_at),
   );
   if (!canaryOk) return [];
+  const uncovered = await uncoveredKeyRuns(
+    classified,
+    runs,
+    opts.outsideCanaryOf,
+  );
+  if (uncovered.length > 0) {
+    const body = uncoveredComment(uncovered, opts.openDone, line);
+    if (body) await commentOn(keyIssue.number, body);
+    return [];
+  }
   const targets = recoveryReruns(classified, opts);
   const body =
     `カナリアが成功した（鍵が直った）。` +
@@ -286,9 +308,7 @@ async function closeKeyIssueIfRecovered(keyIssue, runs, classified, opts) {
         ? `試運転なので rerun していない。rerun するはずだったもの:\n${targets.map((r) => line(r, "")).join("\n")}`
         : `次を1回ずつ rerun する:\n${targets.map((r) => line(r, "")).join("\n")}`) +
     "\n日をまたいだ失敗・許可の一覧に無い失敗は、手で確かめる。";
-  await gh("POST", `/repos/${repo}/issues/${keyIssue.number}/comments`, {
-    body,
-  });
+  await commentOn(keyIssue.number, body);
   await gh("PATCH", `/repos/${repo}/issues/${keyIssue.number}`, {
     state: "closed",
   });
@@ -311,9 +331,14 @@ async function scan() {
 
   const keyIssue = await openIssue(KEY_LABEL);
   const failureIssue = await openIssue(FAILURE_LABEL);
-  const { openDone, done } = await handledInIssues(keyIssue, failureIssue, since);
+  const { openDone, done } = await handledInIssues(
+    keyIssue,
+    failureIssue,
+    since,
+  );
   const canaryOkAfter = canaryOkAfterIn(runs);
   const newerRun = newerRunIn(runs);
+  const outsideCanaryOf = outsideCanaryReader(workflowYamlAt, CANARY_PATH);
 
   const candidates = failedCandidates(runs);
   let failedCount = 0;
@@ -343,6 +368,7 @@ async function scan() {
     failedCount += 1;
     const category = classifyLog(await failedJobLog(jobs, { timedOut }));
     const run = { ...r, category, timedOut, newerRun: newerRun(r) };
+    run.outsideCanary = category === "config" ? await outsideCanaryOf(r) : [];
     classified.push(run);
     const d = decideRun(run, {
       rerunAllowed,
@@ -374,11 +400,9 @@ async function scan() {
     failureItems,
   );
 
+  const opts = { rerunAllowed, now, outsideCanaryOf, openDone };
   reruns.push(
-    ...(await closeKeyIssueIfRecovered(keyIssue, runs, classified, {
-      rerunAllowed,
-      now,
-    })),
+    ...(await closeKeyIssueIfRecovered(keyIssue, runs, classified, opts)),
   );
 
   const out = process.env.GITHUB_OUTPUT;

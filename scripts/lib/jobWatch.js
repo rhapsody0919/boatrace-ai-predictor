@@ -129,6 +129,92 @@ export function cancelledByTimeout(apiJobs, yamlText) {
   );
 }
 
+/**
+ * workflow が `${{ secrets.X }}` で使う鍵の名前のうち、カナリア（key-canary.yml）の YAML に無いもの。
+ * カナリアが見る鍵の一覧は写しを持たず、カナリアの YAML から読む。GITHUB_TOKEN は自動で渡る物なので数えない。
+ * コメント行の中の書き方は数えない
+ * @param {string} workflowYaml
+ * @param {string} canaryYaml
+ * @returns {string[]} 名前の順
+ */
+export function secretsOutsideCanary(workflowYaml, canaryYaml) {
+  const names = (t) =>
+    new Set(
+      [
+        ...String(t ?? "")
+          .replace(/^\s*#.*$/gm, "")
+          .matchAll(/\$\{\{\s*secrets\.([A-Za-z_]\w*)\s*\}\}/g),
+      ].map((m) => m[1]),
+    );
+  const covered = names(canaryYaml);
+  return [...names(workflowYaml)]
+    .filter((n) => n !== "GITHUB_TOKEN" && !covered.has(n))
+    .sort();
+}
+
+/**
+ * run の workflow（その run の SHA の YAML）が使う鍵のうち、カナリアが見ない物を返す関数を作る。YAML は同じ物を1回だけ取る。
+ * @param {(path: string, ref: string) => Promise<string>} fetchYaml
+ * @param {string} canaryPath
+ * @returns {(run: { path: string, head_sha: string }) => Promise<string[]>}
+ */
+export function outsideCanaryReader(fetchYaml, canaryPath) {
+  const cache = new Map();
+  const yamlAt = (p, ref) => {
+    const key = `${p}@${ref}`;
+    if (!cache.has(key)) cache.set(key, fetchYaml(p, ref));
+    return cache.get(key);
+  };
+  return async (r) =>
+    secretsOutsideCanary(
+      await yamlAt(r.path, r.head_sha),
+      await yamlAt(canaryPath, "master"),
+    );
+}
+
+/**
+ * 鍵の誤りの run のうち、カナリアが見ない鍵の誤りで、まだ直ったと言えない物（同じ workflow の後の run が成功していない物）
+ * @param {{ path: string, created_at: string, category: string, outsideCanary?: string[] }[]} classified
+ * @param {{ path: string, created_at: string, conclusion: string | null }[]} runs
+ * @param {(run: object) => Promise<string[]>} outsideCanaryOf
+ */
+export async function uncoveredKeyRuns(classified, runs, outsideCanaryOf) {
+  const out = [];
+  for (const r of classified.filter((x) => x.category === "config")) {
+    const outsideCanary = r.outsideCanary ?? (await outsideCanaryOf(r));
+    const recovered = runs.some(
+      (o) =>
+        o.path === r.path &&
+        o.conclusion === "success" &&
+        Date.parse(o.created_at) > Date.parse(r.created_at),
+    );
+    if (outsideCanary.length > 0 && !recovered)
+      out.push({ ...r, outsideCanary });
+  }
+  return out;
+}
+
+/**
+ * 鍵の Issue に書く、カナリアの範囲外の鍵の run が残っているというコメント。書いていない run（印が無い）が無ければ null
+ * （1時間ごとの見回りで同じコメントを重ねない）
+ * @param {{ id: number, attempt: number, outsideCanary: string[] }[]} uncovered
+ * @param {Set<string>} done 既に書いた印
+ * @param {(run: object, reason: string) => string} lineOf run を1行にする
+ */
+export function uncoveredComment(uncovered, done, lineOf) {
+  const fresh = uncovered.filter(
+    (r) => !done.has(runMarker(r.id, r.attempt, "uncovered")),
+  );
+  if (fresh.length === 0) return null;
+  const keys = [...new Set(uncovered.flatMap((r) => r.outsideCanary))];
+  return [
+    `カナリアは成功したが、カナリアが見ない鍵の誤りで落ちた run が残っている。カナリアの範囲外の鍵: ${keys.join("・")}。手で確かめて閉じる（同じ workflow の後の run が成功すれば自動で閉じる。rerun もしない）。`,
+    ...fresh.map(
+      (r) => `${lineOf(r, "")}\n${runMarker(r.id, r.attempt, "uncovered")}`,
+    ),
+  ].join("\n");
+}
+
 /** JST の日付（YYYY-MM-DD） */
 export const jstDate = (iso) =>
   new Date(Date.parse(iso) + 9 * 3_600_000).toISOString().slice(0, 10);
@@ -137,13 +223,20 @@ export const jstDate = (iso) =>
  * 1本の失敗した run をどう扱うかを決める
  *
  * @param {{ id: number, path: string, attempt: number, createdAt: string, category: string,
- *           newerRun: boolean }} run newerRun は、同じ workflow の後の run が成功済みか動いているか
+ *           newerRun: boolean, outsideCanary?: string[] }} run newerRun は、同じ workflow の後の run が成功済みか動いているか。
+ *   outsideCanary は、その workflow が使う鍵のうちカナリアが見ない物（secretsOutsideCanary）
  * @param {{ rerunAllowed: Set<string>, now: Date, canaryOkAfter?: boolean }} ctx
  *   canaryOkAfter は、この run より後にカナリアが成功しているか（鍵は正しい）
- * @returns {{ action: "rerun" | "key-issue" | "failure-issue", reason: string }}
+ * @returns {{ action: "rerun" | "key-issue" | "key-issue-uncovered" | "failure-issue", reason: string }}
  */
 export function decideRun(run, { rerunAllowed, now, canaryOkAfter = false }) {
   if (run.category === "config") {
+    // カナリアが見ない鍵の誤りは、カナリアが緑でも直ったと言えない（閉じない・rerun しない）
+    if (run.outsideCanary?.length > 0)
+      return {
+        action: "key-issue-uncovered",
+        reason: `鍵・設定の誤り。カナリアが見ない鍵（${run.outsideCanary.join("・")}）を使う workflow なので、カナリアが緑でも直ったとは言えない`,
+      };
     if (canaryOkAfter)
       return {
         action: "failure-issue",

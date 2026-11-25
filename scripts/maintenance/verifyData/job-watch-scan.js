@@ -94,7 +94,8 @@ function fakeGithub(s, requests) {
       return respond(200, {
         workflow_runs: q.get("page") === "1" ? s.runs : [],
       });
-    if (p === "/issues" && q.get("state") === "open") return respond(200, []);
+    if (p === "/issues" && q.get("state") === "open")
+      return respond(200, s.open?.[q.get("labels")] ?? []);
     if (p === "/issues" && q.get("state") === "closed")
       return respond(200, s.closed[q.get("labels")] ?? []);
     let m = /^\/issues\/(\d+)\/comments$/.exec(p);
@@ -105,9 +106,10 @@ function fakeGithub(s, requests) {
       );
     m = /^\/actions\/runs\/(\d+)\/jobs$/.exec(p);
     if (m) return respond(200, { jobs: s.jobs[m[1]] ?? [] });
-    if (/^\/actions\/jobs\/\d+\/logs$/.test(p))
-      return respond(200, "Error: something broke");
-    if (p.startsWith("/contents/")) return respond(200, YAML);
+    m = /^\/actions\/jobs\/(\d+)\/logs$/.exec(p);
+    if (m) return respond(200, s.logs?.[m[1]] ?? "Error: something broke");
+    if (p.startsWith("/contents/"))
+      return respond(200, s.contents?.[p.slice("/contents/".length)] ?? YAML);
     if (p === "/actions/workflows")
       return respond(200, { workflows: s.workflows });
     if (p === "/actions/workflows/e2e-nightly.yml/runs")
@@ -159,6 +161,73 @@ async function runScan(s) {
     .map((r) => r.body?.body ?? "")
     .join("\n");
   return { requests, posts, error };
+}
+
+/**
+ * 場面: 鍵の Issue が開いていて、カナリアは緑、落ちた run は HTTP 401（鍵の誤り）。
+ * その workflow が使う鍵が、カナリアの範囲内（SUPABASE_URL）か範囲外（GOOGLE_SERVICE_ACCOUNT_KEY）か、
+ * その後に同じ workflow が成功したか（recovered）で分ける
+ */
+function keyIssueScene({ secret, recovered = false }) {
+  const canary = ".github/workflows/key-canary.yml";
+  return {
+    runs: [
+      run(7, "failure", { created_at: iso(100) }),
+      run(8, "success", { path: canary, created_at: iso(30) }),
+      ...(recovered ? [run(9, "success", { created_at: iso(40) })] : []),
+    ],
+    jobs: { 7: [job(71, "failure", 4)] },
+    logs: { 71: "::error::Supabase が HTTP 401 を返した（Invalid API key）" },
+    open: {
+      "job-watch-key": [
+        { number: 200, created_at: iso(90), body: "鍵の Issue" },
+      ],
+    },
+    contents: {
+      [WATCHED]: "env:\n  K: ${{ secrets." + secret + " }}\n",
+      [canary]: "env:\n  S: ${{ secrets.SUPABASE_URL }}\n",
+    },
+    closed: {},
+    comments: {},
+    workflows: [],
+  };
+}
+
+async function checkKeyIssueClose({ check }) {
+  const closed = (r) =>
+    r.requests.some(
+      (q) =>
+        q.method === "PATCH" &&
+        q.path === "/issues/200" &&
+        q.body?.state === "closed",
+    );
+  const outside = await runScan(
+    keyIssueScene({ secret: "GOOGLE_SERVICE_ACCOUNT_KEY" }),
+  );
+  check(
+    "鍵の Issue: カナリアが緑でも、範囲外の鍵（GOOGLE_SERVICE_ACCOUNT_KEY）の run が残っていれば閉じず、コメントに範囲外の鍵を書く",
+    outside.error === null &&
+      !closed(outside) &&
+      outside.posts.includes(
+        "カナリアの範囲外の鍵: GOOGLE_SERVICE_ACCOUNT_KEY",
+      ) &&
+      outside.posts.includes(MARK(7, "uncovered")),
+    outside.error ?? outside.posts,
+  );
+  const inside = await runScan(keyIssueScene({ secret: "SUPABASE_URL" }));
+  check(
+    "鍵の Issue: 範囲内の鍵だけなら、カナリアが緑のとき従来どおり閉じる",
+    inside.error === null && closed(inside),
+    inside.error ?? inside.posts,
+  );
+  const recovered = await runScan(
+    keyIssueScene({ secret: "GOOGLE_SERVICE_ACCOUNT_KEY", recovered: true }),
+  );
+  check(
+    "鍵の Issue: 範囲外の鍵でも、同じ workflow の後の run が成功していれば閉じる",
+    recovered.error === null && closed(recovered),
+    recovered.error ?? recovered.posts,
+  );
 }
 
 export async function checkJobWatchScan({ check }) {
@@ -229,4 +298,5 @@ export async function checkJobWatchScan({ check }) {
     ),
     r.posts,
   );
+  await checkKeyIssueClose({ check });
 }
