@@ -44,6 +44,35 @@ function VenueBoatSelects({ t, vc, todayVenueCode }) {
   );
 }
 
+/** 進入コースの選択。選択肢に走数を出し、0走は押せなくする（選んでいるものは除く） */
+function CourseSelect({ vc }) {
+  return (
+    <div className="racer-vc-filter-field">
+      <label htmlFor="vc-course">進入コース</label>
+      <select
+        id="vc-course"
+        className="venue-select"
+        value={vc.vcCourse}
+        onChange={(e) => vc.setVcCourse(e.target.value)}
+      >
+        <option value="all">全コース</option>
+        {[1, 2, 3, 4, 5, 6].map((n) => {
+          const runs = vc.vcCourseCounts?.[n] ?? 0;
+          return (
+            <option
+              key={n}
+              value={n}
+              disabled={runs === 0 && vc.vcCourse !== String(n)}
+            >
+              {n}コース（{runs}走）
+            </option>
+          );
+        })}
+      </select>
+    </div>
+  );
+}
+
 /** グレード・レース種別の選択 */
 function GradeStageSelects({ vc }) {
   return (
@@ -90,6 +119,7 @@ export function VcFilterBar({ t, vc, vcData, vcLabel, todayVenueCode }) {
   return (
     <div className="racer-vc-filter controls-section">
       <VenueBoatSelects t={t} vc={vc} todayVenueCode={todayVenueCode} />
+      <CourseSelect vc={vc} />
       <GradeStageSelects vc={vc} />
       {todayVenueCode && vc.vcVenue !== String(todayVenueCode) && (
         <button
@@ -99,6 +129,15 @@ export function VcFilterBar({ t, vc, vcData, vcLabel, todayVenueCode }) {
         >
           🏁 本日は{t(`venues.${todayVenueCode}`, todayVenueCode)}で出走 →
         </button>
+      )}
+      {vc.vcCourse !== "all" && (
+        <p className="racer-vc-course-note">
+          進入コースは実際に入ったコースです（
+          {vc.vcCourseSince
+            ? `${vc.vcCourseSince.replaceAll("-", "/")}以降で、`
+            : ""}
+          進入が分かった走だけ）。前付けがあると枠番と違います。
+        </p>
       )}
       {vc.vcActive && (
         <span className="racer-vc-filter-badge">
