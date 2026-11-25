@@ -132,7 +132,11 @@ export function VcFilterBar({ t, vc, vcData, vcLabel, todayVenueCode }) {
       )}
       {vc.vcCourse !== "all" && (
         <p className="racer-vc-course-note">
-          進入コースは実際に入ったコースです（2025年12月以降で、進入が分かった走だけ）。前付けがあると枠番と違います。
+          進入コースは実際に入ったコースです（
+          {vc.vcCourseSince
+            ? `${vc.vcCourseSince.replaceAll("-", "/")}以降で、`
+            : ""}
+          進入が分かった走だけ）。前付けがあると枠番と違います。
         </p>
       )}
       {vc.vcActive && (

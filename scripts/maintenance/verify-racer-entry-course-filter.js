@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import {
   entryCourseCounts,
   filterByEntryCourse,
+  firstEntryCourseDate,
 } from "../../src/pure/racerEntryCourseFilter.js";
 
 const row = (o) => ({
@@ -66,4 +67,16 @@ assert.equal(
 );
 assert.deepEqual(Object.values(entryCourseCounts(null, all)), [0, 0, 0, 0, 0, 0]);
 
-console.log("OK: 進入コースの絞り込みと選択肢の走数");
+// 注記の始まりの日は、進入が分かった走のうち一番古い日（固定の日を書かない。取り込みで延びたらそれに合う）
+assert.equal(
+  firstEntryCourseDate([
+    { raceId: "2026-01-05-08-01", entryCourse: 2 },
+    { raceId: "2025-12-03-12-01", entryCourse: null },
+    { raceId: "2025-12-06-12-01", entryCourse: 1 },
+  ]),
+  "2025-12-06",
+);
+assert.equal(firstEntryCourseDate([{ raceId: "2026-01-05-08-01", entryCourse: null }]), null);
+assert.equal(firstEntryCourseDate(null), null);
+
+console.log("OK: 進入コースの絞り込みと選択肢の走数・注記の始まりの日");

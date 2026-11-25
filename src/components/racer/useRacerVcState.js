@@ -4,6 +4,7 @@ import { getRacerRaceHistory } from "../../services/racerQueries2.js";
 import {
   entryCourseCounts,
   filterByEntryCourse,
+  firstEntryCourseDate,
 } from "../../pure/racerEntryCourseFilter.js";
 
 // 選手ページの成績・調子（RacerPerformanceStats）の絞り込みと出走履歴の状態。
@@ -20,7 +21,7 @@ function useVcFilterState() {
   // 「優勝戦」「準優勝戦」の完全一致のみ判定可能。BOA-159）
   const [vcGrade, setVcGrade] = useState("all");
   const [vcStage, setVcStage] = useState("all");
-  // 実際に入った進入コース（オーナー 2026-11-25）。進入が分かった走（2025-12 以降）だけを数える
+  // 実際に入った進入コース（オーナー 2026-11-25）。進入が分かった走だけを数える
   const [vcCourse, setVcCourse] = useState("all");
   // レース一覧のページ番号（1始まり、常時表示。ADR-0063）。フィルタが変わったら1ページ目に
   // 戻す必要があるため、フィルタ変更を検知してリセットする
@@ -239,6 +240,11 @@ export function useRacerVcState(racerId, onHistoryStateChange) {
       }),
     [history.vcHistory, f.vcVenue, f.vcBoat, f.vcGrade, f.vcStage],
   );
+  // 注記に出す始まりの日。データの最初の日から出す（取り込みで延びたら自動でそれに合う）
+  const vcCourseSince = useMemo(
+    () => firstEntryCourseDate(history.vcHistory),
+    [history.vcHistory],
+  );
   const cross = useVcCross(vcHistory, f);
   const vcActive =
     f.vcVenue !== "all" ||
@@ -252,6 +258,7 @@ export function useRacerVcState(racerId, onHistoryStateChange) {
     vcHistory,
     vcHistoryAll: history.vcHistory,
     vcCourseCounts,
+    vcCourseSince,
     ...cross,
     vcActive,
     vcVenueFixed: f.vcVenue !== "all",
