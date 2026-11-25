@@ -28,6 +28,12 @@ const GH_TIMEOUT_MS = 30000;
 const LSOF_TIMEOUT_MS = 30000;
 /** マージ済みでも、この時間内に HEAD が動いた worktree は片付け対象にしない */
 const RECENT_HOURS = 24;
+/**
+ * マージ済みの PR を取る上限。1000 だと #2350 より古いマージを見ず、2026-11-25 に55本が「作業中」に残った。
+ * PR の総数（11/25 で約3500）より大きく取る
+ */
+export const MERGED_PR_LIMIT = 10000;
+const MASTER_REF = "origin/master";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -68,12 +74,17 @@ function git(args, cwd = repoRoot) {
  * 満たすため、2026-09-28 に稼働中セッションの worktree 4本を「片付けてよい」と表示した。
  * PR の head との一致で見るので squash マージも拾える。マージ後にローカルで
  * 積んだコミットがあれば先頭が一致せず、マージ済みにならない。
+ *
+ * 先頭が PR の head の祖先（別の作業ツリーから同じ枝へ push を足し、ここは古いまま）もマージ済みとする
+ * （2026-11-25 の点検で4本）。ただし先頭が master の祖先（コミット前・同名の枝を作り直した直後）は除く。
+ * isAncestor(a, b) は「a が b の祖先か」。渡さなければ一致だけを見る。
  */
-export function isMergedByPr({ branch, tip, mergedPrs }) {
+export function isMergedByPr({ branch, tip, mergedPrs, isAncestor = null }) {
   if (!branch || !tip || !mergedPrs) return false;
-  return mergedPrs.some(
-    (pr) => pr.headRefName === branch && pr.headRefOid === tip,
-  );
+  const prs = mergedPrs.filter((pr) => pr.headRefName === branch);
+  if (prs.some((pr) => pr.headRefOid === tip)) return true;
+  if (!isAncestor || prs.length === 0 || isAncestor(tip, MASTER_REF)) return false;
+  return prs.some((pr) => isAncestor(tip, pr.headRefOid));
 }
 
 /** `lsof -d cwd -Fn` の出力から、各プロセスのカレントディレクトリを取り出す。 */
@@ -92,6 +103,19 @@ export function hasProcessInside(worktreePath, cwdPaths) {
   );
 }
 
+/** a が b の祖先か（git merge-base --is-ancestor）。b が手元に無い等で判定できなければ false */
+function isAncestor(a, b) {
+  try {
+    execFileSync("git", ["merge-base", "--is-ancestor", a, b], {
+      timeout: GIT_TIMEOUT_MS,
+      cwd: repoRoot,
+      stdio: "ignore",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 /** HEAD が直近 RECENT_HOURS 時間以内に動いたか。 */
 export function isRecentlyActive(lastActivityMs, nowMs) {
   if (lastActivityMs == null) return false;
@@ -160,7 +184,7 @@ function listMergedPrs() {
           "--state",
           "merged",
           "--limit",
-          "1000",
+          String(MERGED_PR_LIMIT),
           "--json",
           "headRefName,headRefOid",
         ],
@@ -201,7 +225,7 @@ function inspectWorktree(e, { mergedPrs, cwds, now }) {
     existsSync(path.join(e.path, p)),
   );
   const tip = e.branch ? git(["rev-parse", e.branch]) : null;
-  const merged = isMergedByPr({ branch: e.branch, tip, mergedPrs });
+  const merged = isMergedByPr({ branch: e.branch, tip, mergedPrs, isAncestor });
   // cwd を取れなかったときは使用中の可能性を否定できないので使用中扱い
   const inUse = cwds === null || hasProcessInside(e.path, cwds);
   // gitが追跡しないもの（node_modules 等）が残っていると

@@ -17,6 +17,7 @@ import {
   hasProcessInside,
   isMergedByPr,
   isRecentlyActive,
+  MERGED_PR_LIMIT,
   parseCwdPaths,
 } from "./check-worktrees.js";
 
@@ -81,6 +82,38 @@ check(
   isMergedByPr({ branch: null, tip: PR_HEAD, mergedPrs }),
   false,
 );
+
+// --- マージ判定: 先頭が PR の head の祖先（2026-11-25） ---
+// 祖先の関係: OLD_MASTER → PR_WORK → PR_HEAD、OLD_MASTER → MASTER_TIP
+const OLD_MASTER = "e".repeat(40);
+const PR_WORK = "f".repeat(40);
+const parents = { [PR_HEAD]: PR_WORK, [PR_WORK]: OLD_MASTER, [MASTER_TIP]: OLD_MASTER };
+const refs = { "origin/master": MASTER_TIP };
+const ancestorOf = (a, b) => {
+  for (let c = refs[b] ?? b; c; c = parents[c]) if (c === a) return true;
+  return false;
+};
+check(
+  "先頭が PR の head の祖先（別の所から push を足した）ならマージ済み",
+  isMergedByPr({ branch: "fix/done", tip: PR_WORK, mergedPrs, isAncestor: ancestorOf }),
+  true,
+);
+check(
+  "先頭が master の祖先（同名の枝を古い master から作り直した直後）はマージ済みでない",
+  isMergedByPr({ branch: "fix/done", tip: OLD_MASTER, mergedPrs, isAncestor: ancestorOf }),
+  false,
+);
+check(
+  "祖先でも枝の名が違えばマージ済みでない",
+  isMergedByPr({ branch: "fix/other", tip: PR_WORK, mergedPrs, isAncestor: ancestorOf }),
+  false,
+);
+check(
+  "isAncestor を渡さなければ一致だけを見る",
+  isMergedByPr({ branch: "fix/done", tip: PR_WORK, mergedPrs }),
+  false,
+);
+check("取得の上限は PR の総数（約3500）より大きい", MERGED_PR_LIMIT > 3500, true);
 
 // --- プロセスの cwd ---
 const lsofOutput = [
