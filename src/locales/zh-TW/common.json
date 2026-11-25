@@ -3108,7 +3108,12 @@
         "noteExhibition": "💡 每個點是近30場展示時間的平均，累積24場後開始繪製。越上面越快。上一節以前是其他選手騎乘時的數值。右側數值相同時，從較小的艇號開始排列。",
         "empty": "{{date}}剛更換（第{{days}}天）。\n目前還沒有任何一台達到{{n}}場，走勢稍後才能看到。",
         "noGeneration": "不清楚此場地的馬達使用開始日，因此無法顯示走勢。",
-        "toNow": "查看目前數值"
+        "toNow": "查看目前數值",
+        "toMeet": "前往該節 →",
+        "tipDays": "{{n}}天",
+        "tipRacer": "騎乘選手 {{name}}",
+        "tipFinishes": "本節名次 {{order}}",
+        "tipValue": "該節首日的官方{{metric}} {{value}}（此前{{runs}}場累計）"
       }
     },
     "motorRanking": {
