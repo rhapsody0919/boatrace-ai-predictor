@@ -10,6 +10,7 @@
  *   - 推移を出さない指標は例外にする
  *   - 節の点の吹き出しは、その節の走の選手と着順、会場の節の期間・グレード・日数。その日に始まる節が無ければ null
  *   - 吹き出しの着は日ごとに区切り、公式の記号（F・欠 等）があれば着順より先に出す。節の終わりがレースの日以降なら開催中
+ *   - 展示はレース内の平均との差（exhibitionDiff、負もある）でも同じ窓で平均できる
  *   - 会場の節の行が無いときは、その基の最後の走がレースの日かその前日なら開催中
  */
 import {
@@ -90,6 +91,11 @@ check("会場の節が無く最後の走が前日なら開催中", motorMeetTip(
 check("会場の節が無く最後の走がレースの日なら開催中", motorMeetTip(tipRuns, day(16), [], { today: day(21) }).ongoing === true);
 check("会場の節が無く最後の走が2日前なら終わった節", motorMeetTip(tipRuns, day(16), [], { today: day(23) }).ongoing === false);
 check("終わった節は開催中でない", motorMeetTip(tipRuns, day(16), seriesMeets, { today: day(30) }).ongoing === false && motorMeetTip(tipRuns, day(16), seriesMeets).ongoing === false);
+
+const diffRuns = runs.map((r, i) => ({ ...r, exhibitionDiff: i % 2 === 0 ? -0.02 : 0.01 }));
+const exd = motorExhibitionTrend(diffRuns, { field: "exhibitionDiff" });
+check("展示の差は負も平均に入れる", ex.length === exd.length && Math.abs(exd[exd.length - 1].value - -0.005) < 1e-12, JSON.stringify(exd[exd.length - 1]));
+check("展示の差の無い走は数えない", motorExhibitionTrend(diffRuns.map((r, i) => (i < 10 ? { ...r, exhibitionDiff: null } : r)), { field: "exhibitionDiff" })[0]?.runs === 24);
 
 let threw = false;
 try { motorRateTrend(runs, "winRate", { today }); } catch { threw = true; }

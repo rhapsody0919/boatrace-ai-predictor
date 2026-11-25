@@ -61,19 +61,21 @@ export function motorRateTrend(runs, metric, { today, minRuns = MOTOR_RATE_MIN_R
 }
 
 /**
- * 展示タイムの直近 window 走の平均。展示のある走が minRuns たまってから、日ごとに最後の値を1点
+ * 展示タイムの直近 window 走の平均。展示のある走が minRuns たまってから、日ごとに最後の値を1点。
+ * field は平均する値: 画面はレース内の平均との差 "exhibitionDiff"（検証した値。オーナー 2026-11-25「B 差で作る」）。
+ * 既定の "exhibitionTime"（秒）は 0 以下を除く。差は負もあるので数であれば使う
  * @returns {Array<{date:string, value:number, runs:number}>}
  */
 export function motorExhibitionTrend(
   runs,
-  { window = MOTOR_EXHIBITION_WINDOW, minRuns = MOTOR_EXHIBITION_MIN_RUNS } = {},
+  { window = MOTOR_EXHIBITION_WINDOW, minRuns = MOTOR_EXHIBITION_MIN_RUNS, field = "exhibitionTime" } = {},
 ) {
-  const rows = sortRuns(runs).filter((r) => typeof r.exhibitionTime === "number" && r.exhibitionTime > 0);
+  const rows = sortRuns(runs).filter((r) => typeof r[field] === "number" && (field !== "exhibitionTime" || r[field] > 0));
   const byDate = new Map();
   rows.forEach((r, i) => {
     if (i + 1 < minRuns) return;
     const w = rows.slice(Math.max(0, i + 1 - window), i + 1);
-    const value = w.reduce((a, x) => a + x.exhibitionTime, 0) / w.length;
+    const value = w.reduce((a, x) => a + x[field], 0) / w.length;
     byDate.set(r.date, { date: r.date, value, runs: i + 1 });
   });
   return [...byDate.values()];
