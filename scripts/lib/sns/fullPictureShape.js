@@ -1,3 +1,5 @@
+import { jstTime, minutesBefore } from "./researchSchedule.js";
+export { jstTime, minutesBefore };
 /**
  * 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、api・scripts/sns に依らない純な部分: 定数・チャネルの決め方・
  * 送る時刻・差し替えの判定・締切の焼き込みの検査。
@@ -56,10 +58,6 @@ export const SEND_GRACE_MIN = 5;
  * 上限の6回を超え（X 3回・YouTube 6回）、YouTube が public_check_budget で非公開のまま残る（2026-10-18 レビューの指摘）
  */
 export const YOUTUBE_OFFSET_MIN = 4;
-export const minutesBefore = (iso, min) =>
-  new Date(Date.parse(iso) - min * 60000).toISOString();
-export const jstTime = (iso) =>
-  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
 export const nonEmpty = (v, max) =>
   typeof v === "string" && v.trim().length > 0 && v.length <= max;
 export const withShorts = (bundle) =>

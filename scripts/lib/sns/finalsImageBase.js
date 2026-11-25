@@ -1,4 +1,6 @@
 // 優勝戦・思考投稿の画像投稿（push-finals-image.js）から移した、api・scripts/sns に依らない定数と純粋関数（形式名・画像と時刻の定数・PNG と画像の検査・締切の時刻・日の上限・投票の有無・job の状態）。
+import { jstDate, jstTime, minutesBefore } from "./researchSchedule.js";
+export { jstDate, jstTime, minutesBefore };
 
 export const FINALS_IMAGE_FORMAT = "finals_image";
 /** 展示後のリプの bundle の format（下書きの format・item の kind は本投稿と同じ finals_image） */
@@ -45,12 +47,6 @@ const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 export const TODAY_THINKING_IMAGE_FORMAT = "today_thinking_image";
 export const TODAY_THINKING_REPLY_FORMAT = "today_thinking_reply";
 
-export const minutesBefore = (iso, min) =>
-  new Date(Date.parse(iso) - min * 60000).toISOString();
-export const jstTime = (iso) =>
-  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
-export const jstDate = (date) =>
-  new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
 
 /** 値が空でないか（null・undefined・空の配列・空白だけの文字列は空） */
 const present = (v) =>
