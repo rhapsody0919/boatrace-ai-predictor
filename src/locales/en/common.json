@@ -791,7 +791,7 @@
     "sonar": "Ryujin Sonar"
   },
   "wakuInfo": {
-    "note": "Pick a racer to compare their record in the expected course in this race across periods and conditions. Tap the period name on the left to see the last 10 finishes from that course. Use the fold below the table to compare all six courses. Figures count only races before this one (the last 3 months and last month are counted back from this race's date).",
+    "note": "Pick a racer to compare their record in the expected course in this race across periods and conditions. Tap the period name at the left of the table to see the last 10 finishes from that course. Use the fold below the table to compare all six courses. Figures count only races before this one (the last 3 months and last month are counted back from this race's date).",
     "boatLabel": "Racer (boat #)",
     "metricLabel": "Metric",
     "metrics": {
@@ -863,8 +863,8 @@
       "periodRange": "{{from}} – {{to}}",
       "colBoat": "Boat / Racer",
       "colWin": "1st-place rate",
-      "colDiff": "Difference from the all-racer average for the same course",
-      "colDiffLocal": "Difference from this venue's average for the same course",
+      "colDiff": "vs. national average",
+      "colDiffLocal": "vs. venue average",
       "colTop2": "Top-2",
       "colTop3": "Top-3",
       "colEntries": "Entries",
@@ -873,11 +873,11 @@
       "smallSampleTitle": "Few entries mean rates are more prone to random variation",
       "noteDiff": "Difference = gap from the all-racer 1st-place rate for the same course (no colors). The ST analysis in this tab compares against the average for the same class.",
       "noteSample": "Boats with few entries (under 10 for course 1, 30 for courses 2–4, 42 for course 5, or 67 for course 6) are shown in gray with no difference, as rates are more prone to random variation. Rates are also hidden for fewer than 10 entries.",
-      "notePeriod": "Last 3 terms = the 3 latest published official term records (aggregated for May–October and November–April). These are the same values as the last 3 terms on the racer page. Tap a row to switch the table below to that racer.",
+      "notePeriod": "Last 3 terms = the 3 latest published official term records (aggregated for May–October and November–April). These are the same values as the last 3 terms on the racer page. Select a row to show that racer's record by course.",
       "fetchError": "Could not load course records for the last 3 terms.",
       "skippedPeriod": "Terms with no starts excluded",
       "periodLabel": "Period",
-      "noteLocal": "This venue = our data (since December 2025) at this venue, counted by the actual entry course. Difference = gap from this venue's 1st-place rate for the same course (no colors). Tap a row to switch the table below to that racer.",
+      "noteLocal": "This venue = our data (since December 2025) at this venue, counted by the actual entry course. Difference = gap from this venue's 1st-place rate for the same course (no colors). Select a row to show that racer's record by course.",
       "localFetchError": "Could not load this venue's results"
     }
   },

@@ -95,8 +95,8 @@ test("当地に切り替えると当社データの当地の値と会場平均�
   for (const value of ["58.3", "+6.3pt", "平均52.0", "12"]) {
     await expect(first).toContainText(value);
   }
-  await expect(first.locator(".six-boat-course-diff")).toHaveAttribute("title", "この会場の同じコース平均との差");
-  await expect(table.locator("thead")).toContainText("この会場の同じコース平均との差");
+  await expect(first.locator(".six-boat-course-diff")).toHaveAttribute("title", "会場平均との差");
+  await expect(table.locator("thead")).toContainText("会場平均との差");
   // 2号艇は当地の2コースの走が無い → 率を出さない
   await expect(table.locator("tbody tr").nth(1).locator("td").first()).toContainText("—");
   // 4号艇は当地の4コース3走（1着3）。10走未満なので 100.0 を出さず「—」と3走
@@ -144,7 +144,7 @@ for (const width of [375, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await open(page);
     const table = page.locator(".six-boat-course");
-    await expect(table.locator("thead th").nth(1).locator("small", { hasText: "全選手の同じコース平均との差" })).toBeVisible();
+    await expect(table.locator("thead th").nth(1).locator("small", { hasText: "全国平均との差" })).toBeVisible();
     await table.locator("tbody tr").nth(3).click();
     const shadow = (i) => table.locator("tbody tr").nth(i).evaluate((el) => getComputedStyle(el).boxShadow);
     await expect.poll(() => shadow(3)).not.toBe("none");
