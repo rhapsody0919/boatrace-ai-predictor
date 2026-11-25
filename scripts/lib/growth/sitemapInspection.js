@@ -82,39 +82,27 @@ export const WRITE_BATCH_SIZE = 50;
 // 同時の検査の数。1件が約6秒かかる（本番の初回で実測）ので4本ずつ。毎分600の上限の内（4本÷6秒＝毎分約40）
 export const INSPECT_CONCURRENCY = 4;
 
-/** items を最大 limit 本ずつ同時に fn へ渡す。結果は items の順。fn が投げない前提（呼ぶ側で捕まえる） */
-async function mapLimit(items, limit, fn) {
-  const out = new Array(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++;
-      out[i] = await fn(items[i]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return out;
-}
-
 /**
- * todo を size 件ずつの塊に分け、塊の中を concurrency 本ずつ同時に検査して、塊ごとに成功の行を write する
- * （途中で切れても済んだ塊は残り、翌日の回は済みを飛ばす）。inspectOne(t) は行を返す。
- * 1件が落ちても他は続け、落ちた URL を返す。write の失敗は握りつぶさず投げる
+ * todo を concurrency 本ずつ同時に検査し、成功の行が size 件たまるごとに write する（途中で切れても済んだ分は残り、翌日の回は済みを飛ばす）。
+ * inspectOne(t) は行を返す。1件が落ちても他は続け、落ちた URL を返す。write の失敗は握りつぶさず投げる。行の順は完了の順
  */
 export async function inspectInBatches(todo, inspectOne, write, size = WRITE_BATCH_SIZE, onError = () => {}, concurrency = INSPECT_CONCURRENCY) {
+  const rows = [];
   const failed = [];
-  for (let i = 0; i < todo.length; i += size) {
-    const results = await mapLimit(todo.slice(i, i + size), concurrency, async (t) => {
+  let next = 0;
+  const worker = async () => {
+    while (next < todo.length) {
+      const t = todo[next++];
       try {
-        return { row: await inspectOne(t) };
+        rows.push(await inspectOne(t));
       } catch (err) {
         failed.push(t.url);
         onError(t, err);
-        return null;
       }
-    });
-    const rows = results.filter(Boolean).map((r) => r.row);
-    if (rows.length > 0) await write(rows);
-  }
+      if (rows.length >= size) await write(rows.splice(0, size));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, todo.length) }, worker));
+  if (rows.length > 0) await write(rows.splice(0));
   return { failed };
 }

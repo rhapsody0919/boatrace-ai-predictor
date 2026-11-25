@@ -82,7 +82,7 @@ assert.deepEqual(
 const items = Array.from({ length: 120 }, (_, i) => ({ url: `${B}/x/${i}` }));
 const written = [];
 const r = await inspectInBatches(items, async (t) => { if (t.url.endsWith("/7")) throw new Error("x"); return t.url; }, async (rows) => { written.push(rows.length); }, 50);
-assert.deepEqual(written, [49, 50, 20], "50件ごとの塊で書く（失敗の1件は塊の行から外れる）。残りは最後に書く");
+assert.deepEqual(written, [50, 50, 19], "50件たまるごとに書き、残りは最後に書く");
 assert.deepEqual(r.failed, [`${B}/x/7`]);
 const partial = [];
 await assert.rejects(
@@ -91,7 +91,7 @@ await assert.rejects(
 );
 assert.deepEqual(partial, [50, 50], "切れるまでに書いた分は残る（書き込みの失敗は握りつぶさない）");
 
-// 同時に4本まで（実際に4本まで上がる）。1件の失敗が他を止めない。行の順は todo の順
+// 同時に4本まで（実際に4本まで上がる）。1件の失敗が他を止めない
 let running = 0;
 let peak = 0;
 const slow = async (t) => {
@@ -106,6 +106,6 @@ const got = [];
 const rc = await inspectInBatches(items.slice(0, 20), slow, async (rows) => { got.push(...rows); }, 50, () => {}, 4);
 assert.equal(peak, 4, "同時は4本（それ以上にならず、4本まで上がる）");
 assert.deepEqual(rc.failed, [`${B}/x/3`], "1件の失敗で他は止まらない");
-assert.deepEqual(got, items.slice(0, 20).filter((t) => !t.url.endsWith("/3")).map((t) => t.url), "成功の行は todo の順");
+assert.deepEqual([...got].sort(), items.slice(0, 20).filter((t) => !t.url.endsWith("/3")).map((t) => t.url).sort(), "成功の行は全部書かれる");
 
 console.log("verify-growth-sitemap-inspection: OK");
