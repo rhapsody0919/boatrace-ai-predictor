@@ -1,6 +1,6 @@
 /* 6艇の推移の線（TrendChart・BasicInfoTrend）。色は艇の色と意味トークンだけ */
 .trc-wrap {
-  max-width: 100%;
+  max-width: 480px;
 }
 
 .trc-head {
@@ -161,15 +161,7 @@
   white-space: nowrap;
 }
 
-/* PC は図が横に伸びるので、添え書きを右端へ飛ばさず札のすぐ右に置く（visual-designer 11/25） */
-@media (min-width: 768px) {
-  .trc-hint {
-    margin-left: var(--spacing-3);
-  }
-}
-
 .trc-note {
-  max-width: 46em;
   margin: var(--spacing-2) 0 0;
   padding: var(--spacing-2);
   border-left: 3px solid var(--brand-accent-primary);
