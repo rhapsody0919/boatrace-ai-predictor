@@ -329,3 +329,56 @@ export function checkBaselineShrink({ base, current }) {
   const count = Object.keys(current.units).length;
   return { errors, strictExisting: count <= current.initial_count / 2 };
 }
+
+/**
+ * 全体で0の大きさの関所（2026-11-25、ADR-0110）。files: {path: source}（HEAD の木の全部）。
+ * - 線を越える単位（関数 100 行・複雑さ 15）は1つも置かない（__fixtures__ は呼び出し側で外す）
+ * - 実質の行（空行・注釈を除く）が 400 を越えるファイルは exceptions.files[path] に要り、その数を越えない
+ * - 表の上限が今の行より多い・ファイルが無い行も赤（表をちょうどに保つ）
+ * exceptions: { files: { path: 上限の実質の行 } }。parse できないファイルは skipped に返す（eslint が別に見る）
+ */
+export function judgeTreeSize({ files, exceptions }) {
+  const errors = [];
+  const warnings = [];
+  const skipped = [];
+  const caps = exceptions?.files ?? {};
+  for (const file of Object.keys(files).sort()) {
+    let units;
+    let lines;
+    try {
+      units = unitsOfSource(files[file]);
+      lines = substantiveLineNumbers(files[file]).length;
+    } catch {
+      skipped.push(file);
+      continue;
+    }
+    for (const u of units.filter(isOverLine)) {
+      errors.push(`${file} ${u.name}（${u.lines} 行・複雑さ ${u.complexity}）が線（${MAX_FN_LINES} 行・複雑さ ${MAX_COMPLEXITY}）を越える`);
+    }
+    const cap = caps[file];
+    if (lines > MAX_FILE_LINES && cap === undefined) {
+      errors.push(`${file} 実質の行 ${lines} が ${MAX_FILE_LINES} を越える（例外の表に無い）`);
+    } else if (cap !== undefined && lines > cap) {
+      errors.push(`${file} 実質の行 ${lines} が例外の表の上限 ${cap} を越えた`);
+    } else if (cap !== undefined && lines < cap) {
+      // 上限を残すと、分けた後に戻しても通る（減る向きだけが名前だけになる）。縮めた PR の中で表も縮める
+      errors.push(`${file} 実質の行 ${lines} が例外の表の上限 ${cap} より少ない（上限を ${lines > MAX_FILE_LINES ? lines : "行ごと消す"} へ）`);
+    }
+  }
+  for (const file of Object.keys(caps).filter((f) => files[f] === undefined)) {
+    errors.push(`${file} 例外の表にあるがファイルが無い（行を消す）`);
+  }
+  return { errors, warnings, skipped };
+}
+
+/** 例外の表は減る向きだけ: base に無い path・上限の引き上げは赤 */
+export function sizeExceptionsGrowth(baseExceptions, headExceptions) {
+  const before = baseExceptions?.files ?? {};
+  return Object.entries(headExceptions?.files ?? {}).flatMap(([file, cap]) =>
+    before[file] === undefined
+      ? [`大きさの例外の表に行を足した: ${file}`]
+      : cap > before[file]
+        ? [`大きさの例外の表の上限を上げた: ${file} ${before[file]} → ${cap}`]
+        : [],
+  );
+}

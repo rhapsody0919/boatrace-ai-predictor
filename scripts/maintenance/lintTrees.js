@@ -1,18 +1,15 @@
 /**
  * lintTrees.js - lint-changed --ci の大きさの関所（BOA-1434、BOA-1425 を割った 1/2）。
  * 指定の SHA の木の JS の字を git だけで（worktree・node_modules を使わず）メモリへ読み、
- * 関数の単位の AST hash の基準（sizeBaselines.js）と比べる。
+ * 線を越える関数が1つも無く、実質400行を越えるファイルが例外の表 size-exceptions.json の上限の内かを見る。
+ * 2026-11-25 に FREEZE_SHA・base の木の基準との比べ（関数の単位の AST hash）から全体で0＋例外の表へ（ADR-0110）。
  *
- * 赤にするもの: FREEZE_SHA が base の祖先でない・木が読めない・部品のファイルが無い。
+ * 赤にするもの: 線の越え・表の外・表の増え・木や表が読めない。
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import {
-  buildBaseline,
-  checkAgainstBaseline,
-  unitsOfSource,
-} from "./sizeBaselines.js";
-
-export const FREEZE_SHA = "3e65af4f3e4b2a07d87b5a58b6cbde5fbddbe7b3";
+import fs from "node:fs";
+import path from "node:path";
+import { judgeTreeSize, sizeExceptionsGrowth } from "./sizeBaselines.js";
 
 const TREE_DIRS = ["src/", "scripts/", "api/"];
 const SKIP_SEGMENTS = new Set(["node_modules", "dist", "sns-video-studio"]);
@@ -55,72 +52,41 @@ export function readTreeSources(cwd, sha) {
   return parseBatch(res.stdout, paths);
 }
 
-// 読めない（parse できない）字は外す。eslint が別に見る
-function parsable(files) {
-  const ok = {};
-  const skipped = [];
-  for (const [p, src] of Object.entries(files)) {
-    try {
-      unitsOfSource(src);
-      ok[p] = src;
-    } catch {
-      skipped.push(p);
-    }
-  }
-  return { ok, skipped };
-}
+export const SIZE_EXCEPTIONS_PATH = "scripts/maintenance/size-exceptions.json";
+const isFixture = (p) => p.split("/").includes("__fixtures__");
 
-function baselineOf(cwd, sha) {
-  const { ok, skipped } = parsable(readTreeSources(cwd, sha));
-  return { baseline: buildBaseline(ok), files: ok, skipped };
-}
-
-function assertAncestor(cwd, base) {
-  const r = spawnSync(
-    "git",
-    ["merge-base", "--is-ancestor", FREEZE_SHA, base],
-    { cwd },
-  );
-  if (r.status !== 0) {
-    throw new Error(`FREEZE_SHA ${FREEZE_SHA} が base ${base} の祖先でない`);
+/** sha の木の file を JSON で読む。木に無いときだけ null（表を足す PR）。ほかの失敗は throw して赤にする */
+function readJsonAt(cwd, sha, file) {
+  const has = spawnSync("git", ["cat-file", "-e", `${sha}:${file}`], { cwd }).status === 0;
+  if (!has) {
+    gitOut(cwd, "rev-parse", "--verify", `${sha}^{commit}`); // sha そのものが読めないなら throw
+    return null;
   }
+  return JSON.parse(gitOut(cwd, "show", `${sha}:${file}`));
 }
 
 /**
- * 大きさの判定。changed: [{file, added}]（HEAD の木にあるものだけ見る）。
- * 戻り: { errors, warnings, log }。部品や木が読めなければ errors に入れる（緑にしない）
+ * 大きさの判定（全体で0＋例外の表、2026-11-25・ADR-0110）。HEAD の木の全部の JS を見る（changed は使わない）。
+ * 戻り: { errors, warnings, log }。木や表が読めなければ errors に入れる（緑にしない）
  */
-export function runSizeGate({ cwd, base, changed }) {
+export function runSizeGate({ cwd, base }) {
   const out = { errors: [], warnings: [], log: [] };
   try {
-    assertAncestor(cwd, base);
-    const freeze = baselineOf(cwd, FREEZE_SHA).baseline;
-    const baseTree = baselineOf(cwd, base);
-    const baseB = baseTree.baseline;
-    const head = baselineOf(cwd, "HEAD");
-    const initial = freeze.initial_count;
-    const strictExisting = head.baseline.initial_count <= initial / 2;
-    const files = changed
-      .filter((c) => head.files[c.file] !== undefined)
-      .map((c) => ({
-        file: c.file,
-        source: head.files[c.file],
-        isNew: c.added,
-        // base の同じファイル（名前を変えたら oldFile）。無ければ null（増えたとみなす）
-        baseSource: c.added ? null : (baseTree.files[c.oldFile ?? c.file] ?? null),
-      }));
-    const r = checkAgainstBaseline({
-      baseline: baseB,
-      files,
-      strictExisting,
-    });
+    const all = readTreeSources(cwd, "HEAD");
+    const files = Object.fromEntries(Object.entries(all).filter(([p]) => !isFixture(p)));
+    const exceptions = JSON.parse(fs.readFileSync(path.join(cwd, SIZE_EXCEPTIONS_PATH), "utf8"));
+    const r = judgeTreeSize({ files, exceptions });
     out.errors.push(...r.errors.map((e) => `大きさ ${e}`));
     out.warnings.push(...r.warnings.map((w) => `大きさ ${w}`));
+    const baseExceptions = readJsonAt(cwd, base, SIZE_EXCEPTIONS_PATH);
+    if (baseExceptions === null) {
+      out.log.push(`size-gate: base ${base} に例外の表が無い（表を足す PR）。表の増えは見ない`);
+    } else {
+      out.errors.push(...sizeExceptionsGrowth(baseExceptions, exceptions).map((e) => `大きさ ${e}`));
+    }
     out.log.push(
-      `size-gate: base=${base} FREEZE_SHA=${FREEZE_SHA} initial_count=${initial} ` +
-        `base の越えの単位=${baseB.initial_count} 今の越えの単位=${head.baseline.initial_count} ` +
-        `半分の旗=${strictExisting} 見たファイル=${files.length} parse できず外した=${head.skipped.length}`,
-      `size-gate: 赤 ${r.errors.length} 件・警告 ${r.warnings.length} 件`,
+      `size-gate: HEAD の JS ${Object.keys(files).length} 本（__fixtures__ を除く）・例外の表 ${Object.keys(exceptions.files ?? {}).length} 本・parse できず外した ${r.skipped.length} 本`,
+      `size-gate: 赤 ${out.errors.length} 件・警告 ${out.warnings.length} 件`,
     );
   } catch (e) {
     out.errors.push(`大きさの関所が動かない（赤にする）: ${e.message}`);
