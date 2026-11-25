@@ -64,7 +64,7 @@ export default function RaceBeforeInfoTabWeather({ weather, venueCode }) {
   const weatherObservedTime = formatObservedTime(weather?.observedAt);
   if (weatherItems.length === 0) return null;
   return (
-    <section className="rbi-card">
+    <section className="rbi-card rbi-weather-card">
       <h3 className="rbi-heading">
         {t("beforeInfo.weatherTitle")}
         {weatherObservedTime && (
