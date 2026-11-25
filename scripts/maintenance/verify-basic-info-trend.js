@@ -4,7 +4,7 @@
  * （製品の部品を esbuild で束ね、作った走の記録で静的に描いて HTML を調べる）。
  *
  * 守ること:
- *   - 勝率は走ごとの線にしない（公式の期別成績の段で出す。期別成績の取得中は読み込み中、失敗は alert）
+ *   - 勝率は走ごとの線にしない（公式の期別成績の段で出す。段の横の数は期の数で走の数でない。期別成績の取得中は読み込み中、失敗は alert）
  *   - 取得中（undefined）は「読み込み中」。取得の失敗（null）は role="alert" で出し、「記録が足りない」にしない
  *   - 記録が窓（30走）に満たなければ「記録が足りない」
  *   - 足りれば線を描き、線の無い艇のボタンは押せない。選んだ艇のボタンだけ押された状態
@@ -132,6 +132,34 @@ const wr = winRateHtml({ periodStats: { rows: wrRows, latestImported: true } });
 check(
   "勝率は段を6艇",
   (wr.match(/class="trc-line trc-line-/g) ?? []).length === 6,
+);
+// 段（期別成績）から描いたこと: 走ごとの線（polyline）でなく段の部品（期の帯・期の変わり目）で、
+// 横の段の数が期の数（行のある期は1つ）であって走の数（60）ではない
+check("勝率は走ごとの線（polyline）を描かない", !wr.includes("<polyline"));
+check("勝率は期の帯を敷く", wr.includes('class="trc-band"'));
+check("勝率は期の変わり目の縦を持つ", wr.includes("trc-rise"));
+const flats = [...wr.matchAll(/<path class="trc-stroke" d="([^"]*)"/g)].map(
+  (m) => (m[1].match(/M/g) ?? []).length,
+);
+check(
+  "段の横は期の数（走の数でない）",
+  flats.length === 6 && flats.every((n) => n === 1),
+  JSON.stringify(flats),
+);
+const twoRows = wrRows.flatMap((r) => [
+  r,
+  { ...r, period_year: 2026, period_no: 2, win_rate: r.win_rate - 0.3 },
+]);
+const wr2 = winRateHtml({
+  periodStats: { rows: twoRows, latestImported: true },
+});
+const flats2 = [...wr2.matchAll(/<path class="trc-stroke" d="([^"]*)"/g)].map(
+  (m) => (m[1].match(/M/g) ?? []).length,
+);
+check(
+  "2期あれば段の横は2つ",
+  flats2.length === 6 && flats2.every((n) => n === 2),
+  JSON.stringify(flats2),
 );
 
 const loading = html("top2Rate", { ...allOf(runs(60)), 4: undefined });
