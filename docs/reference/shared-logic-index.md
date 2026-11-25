@@ -643,6 +643,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/motorQueries5.js` | — | getMotorWakuStats, getMotorRacerWakuStats, getMotorConditionTrend |
 | `src/services/motorQueries6.js` | — | getMotorPartsHistory, getRaceMotorMaintenanceBreakdown |
 | `src/services/motorQueries7.js` | — | getRacerCurrentMotorStatus |
+| `src/services/motorQueries8.js` | — | getMotorGenerationRuns |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/predictionQueries.js` | — | buildFetchFailedPredictions, buildRaceResult, generateReasoning, VENUE_NAMES |
@@ -674,4 +675,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 632 ファイル / export 3413 件。
+対象 633 ファイル / export 3414 件。

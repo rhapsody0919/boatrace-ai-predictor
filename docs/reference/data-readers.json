@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2867,
-    "filesWithAccess": 328,
-    "tableReaders": 966,
+    "sourceFiles": 2869,
+    "filesWithAccess": 329,
+    "tableReaders": 969,
     "tableWriters": 199,
     "rpcCallers": 57,
     "nameMentions": 286,
@@ -1685,6 +1685,12 @@
             "propeller_change",
             "race_id"
           ]
+        },
+        {
+          "ref": "src/services/motorQueries8.js:62",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
         },
         {
           "ref": "src/services/raceQueries.js:35",
@@ -7959,6 +7965,18 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries8.js:32",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "motor_2rate",
+            "motor_3rate",
+            "motor_number",
+            "race_id"
+          ]
+        },
+        {
           "ref": "src/services/mycroftService.js:83",
           "op": "select",
           "via": "client",
@@ -8514,6 +8532,7 @@
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:38",
             "src/services/motorQueries7.js:47",
+            "src/services/motorQueries8.js:32",
             "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:144",
             "src/services/raceQueries.js:169",
@@ -8619,6 +8638,7 @@
             "src/services/motorQueries2.js:262",
             "src/services/motorQueries3.js:240",
             "src/services/motorQueries3.js:303",
+            "src/services/motorQueries8.js:32",
             "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:144",
             "src/services/raceQueries.js:169",
@@ -8811,6 +8831,7 @@
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:38",
             "src/services/motorQueries7.js:47",
+            "src/services/motorQueries8.js:32",
             "src/services/raceQueries3.js:83"
           ],
           "writers": [],
@@ -8834,6 +8855,7 @@
             "src/services/motorQueries.js:274",
             "src/services/motorQueries3.js:240",
             "src/services/motorQueries4.js:160",
+            "src/services/motorQueries8.js:32",
             "src/services/raceQueries3.js:83",
             "src/services/sherlockService.js:70"
           ],
@@ -8936,7 +8958,8 @@
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "src/services/motorQueries.js:274",
-            "src/services/motorQueries3.js:240"
+            "src/services/motorQueries3.js:240",
+            "src/services/motorQueries8.js:32"
           ],
           "writers": [],
           "sql": []
@@ -26020,6 +26043,15 @@
             "start_date",
             "venue_code"
           ]
+        },
+        {
+          "ref": "src/services/motorQueries8.js:16",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "start_date",
+            "venue_code"
+          ]
         }
       ],
       "writers": [
@@ -26038,14 +26070,16 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "src/services/motorQueries.js:179"
+            "src/services/motorQueries.js:179",
+            "src/services/motorQueries8.js:16"
           ],
           "writers": [],
           "sql": []
         },
         "start_date": {
           "readers": [
-            "src/services/motorQueries.js:179"
+            "src/services/motorQueries.js:179",
+            "src/services/motorQueries8.js:16"
           ],
           "writers": [],
           "sql": []

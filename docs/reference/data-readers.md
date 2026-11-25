@@ -10,9 +10,9 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2867 |
-| 読み書きのあるファイル | 328 |
-| 表の読み手（箇所） | 966 |
+| 読んだファイル | 2869 |
+| 読み書きのあるファイル | 329 |
+| 表の読み手（箇所） | 969 |
 | 表の書き手（箇所） | 199 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
@@ -38,7 +38,7 @@
 | [bet_filters](#t-bet_filters) | table | service だけ | 0 | 0 |  |  |  |  |
 | [bet_recommendations](#t-bet_recommendations) | table | anon 可 | 5 | 4 | data_health_morning_freshness, data_health_nightly_freshness | update_prediction_results |  |  |
 | [daily_bet_summary](#t-daily_bet_summary) | table | service だけ | 0 | 0 |  |  |  |  |
-| [exhibition_data](#t-exhibition_data) | table | anon 可 | 48 | 4 | data_health_coverage, data_health_table_rows, get_predictions_by_date ほか3 |  | exhibition, race_info, races_init |  |
+| [exhibition_data](#t-exhibition_data) | table | anon 可 | 49 | 4 | data_health_coverage, data_health_table_rows, get_predictions_by_date ほか3 |  | exhibition, race_info, races_init |  |
 | [exhibition_time_top_stats](#t-exhibition_time_top_stats) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  |  |  |
 | [external_predictions](#t-external_predictions) | table | anon 可 | 1 | 1 | data_health_table_rows |  | pcexpect |  |
 | [fetch_counts](#t-fetch_counts) | table | service だけ | 0 | 0 | fetch_counts_daily | add_fetch_counts |  |  |
@@ -63,7 +63,7 @@
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
 | [predictions](#t-predictions) | table | anon 可 | 45 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか3 | hq:platform/finals_sheet.py |
 | [race_conditions](#t-race_conditions) | table | anon 可 | 45 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか3 |  |
-| [race_entries](#t-race_entries) | table | anon 可 | 148 | 17 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
+| [race_entries](#t-race_entries) | table | anon 可 | 149 | 17 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
 | [race_history_cache](#t-race_history_cache) | table | anon 可 | 3 | 1 | data_health_nightly_freshness |  |  |  |
 | [race_notices_health](#t-race_notices_health) | table | service だけ | 2 | 1 |  |  | race_notices |  |
 | [race_odds](#t-race_odds) | table | anon 可 | 15 | 3 | data_health_coverage, data_health_table_rows |  | odds |  |
@@ -130,7 +130,7 @@
 | [venue_course_technique_baseline](#t-venue_course_technique_baseline) | table | anon 可 | 5 | 1 | compute_racer_course_technique_stats |  | racer_course_technique_stats |  |
 | [venue_entry_course_stats](#t-venue_entry_course_stats) | table | service だけ | 0 | 1 | data_health_table_rows |  | entry_course_stats |  |
 | [venue_grade_boat_stats](#t-venue_grade_boat_stats) | table | anon 可 | 3 | 1 | data_health_nightly_freshness |  |  |  |
-| [venue_motor_start_dates](#t-venue_motor_start_dates) | table | anon 可 | 3 | 1 |  |  | boatcast_motor_start |  |
+| [venue_motor_start_dates](#t-venue_motor_start_dates) | table | anon 可 | 4 | 1 |  |  | boatcast_motor_start |  |
 | [venue_motor_stats](#t-venue_motor_stats) | table | anon 可 | 4 | 1 | data_health_table_rows |  | venue_motor_stats |  |
 | [venue_rules](#t-venue_rules) | table | service だけ | 0 | 0 |  |  |  |  |
 | [venue_technique_period_stats](#t-venue_technique_period_stats) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  |  |  |
@@ -381,7 +381,7 @@
 - 本体で読む RPC: data_health_coverage, data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light, get_race_exhibition_trend, get_race_st_predictability
 - 取得のジョブ: exhibition, race_info, races_init
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:8`, `scripts/maintenance/backfill-kb-gaps.js:82`, `scripts/maintenance/delete-phantom-races.js:86`, `scripts/maintenance/fix-opening-day-race-id-date.js:72`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:45`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（48）: 
+- 読み手（49）: 
   - `api/_lib/analogyV16.js:28` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:192` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
   - `api/_lib/snsClaimCheckReaders.js:41` rest(rest) [is_absent, race_id]
@@ -418,6 +418,7 @@
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
   - `src/services/motorQueries7.js:78` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
+  - `src/services/motorQueries8.js:62` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:35` select [boat_number, race_id, start_flag]
   - `src/services/raceQueries.js:239` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:288` select [boat_number, race_id, start_timing]
@@ -821,7 +822,7 @@
 - 取得のジョブ: exhibition, race_info, races_init
 - 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: name
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:77`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:7`, `scripts/maintenance/backfill-kb-gaps.js:81`, `scripts/maintenance/delete-phantom-races.js:88`, `scripts/maintenance/fix-opening-day-race-id-date.js:66`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:39`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（148）: 
+- 読み手（149）: 
   - `api/_lib/analogyV16.js:30` rest(rest) [boat_number, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:171` rest(rest) [boat_number, race_id, racer_id]
   - `api/_lib/snsClaimCheckReaders.js:40` rest(rest) [is_absent, race_id]
@@ -941,6 +942,7 @@
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
   - `src/services/motorQueries7.js:47` select [motor_number, race_id, racer_id]
+  - `src/services/motorQueries8.js:32` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
   - `src/services/mycroftService.js:83` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:144` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:169` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
@@ -2234,10 +2236,11 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 取得のジョブ: boatcast_motor_start
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/lib/boatcast/oritenSchema.js:15`
-- 読み手（3）: 
+- 読み手（4）: 
   - `scripts/lib/boatcast/motorStartJob.js:202` select(helper:upsertChangedRows)
   - `scripts/sns/rankDataMotor.js:18` select(helper:readAll)
   - `src/services/motorQueries.js:179` select [start_date, venue_code]
+  - `src/services/motorQueries8.js:16` select [start_date, venue_code]
 - 書き手（1）: 
   - `scripts/lib/boatcast/motorStartJob.js:202` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
