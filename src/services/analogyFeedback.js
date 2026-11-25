@@ -21,3 +21,16 @@ export async function sendAnalogyFeedback(row) {
     throw err;
   }
 }
+
+/**
+ * サイト全体のご意見ボックスの1件を site_feedback に送る（表: docs/db-migration/208_site_feedback.sql）。
+ * anon は INSERT しかできないので、返り値を求めない（上と同じ）。重複の決まりは無く、
+ * 失敗（表の CHECK・連投の制限・通信）は投げ、画面が「送れませんでした」を出す。
+ *
+ * @param {{kind: string|null, comment: string, rating: number|null, page_type: string,
+ *   lang: string, client_key: string}} row src/pure/siteFeedback.js の buildSiteFeedbackRow の返り値
+ */
+export async function sendSiteFeedback(row) {
+  if (!supabase) throw new Error("Supabase が未設定のためご意見を送れない");
+  await supabase.from("site_feedback").insert(row);
+}
