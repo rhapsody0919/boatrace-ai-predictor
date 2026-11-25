@@ -3118,7 +3118,12 @@
         "noteExhibition": "💡 Each point is the average exhibition time over the last 30 runs, drawn from 24 runs. Higher is faster. Values before this meet come from other riders. Equal values on the right are listed from the lower boat number.",
         "empty": "New motors since {{date}} (day {{days}}).\nNo motor has reached {{n}} runs yet, so the trend will appear a little later.",
         "noGeneration": "The trend cannot be shown because the motor start date for this venue is unknown.",
-        "toNow": "See current values"
+        "toNow": "See current values",
+        "toMeet": "To the meet →",
+        "tipDays": "{{n}} days",
+        "tipRacer": "Racer {{name}}",
+        "tipFinishes": "Finishes this meet {{order}}",
+        "tipValue": "Official {{metric}} on day 1 {{value}} ({{runs}} runs before)"
       }
     },
     "motorRanking": {
