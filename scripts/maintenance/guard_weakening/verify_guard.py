@@ -460,6 +460,29 @@ def copy_worktree(src: Path, dst: Path) -> None:
     shutil.copytree(src, dst, ignore=shutil.ignore_patterns(".git", "node_modules"), symlinks=True, dirs_exist_ok=True)
 
 
+# 時刻の区切りの確かめ（dev-friction §4）。壁の時計が正時・日付の変わり目をまたぐと落ちる verify（#3424: 毎時0〜10分に落ちた）を、新しい verify の追加のときに捕まえる。
+# 区切り: (周期 ms, 位相 ms)。区切り = 周期の倍数 + 位相（UTC）。hour = 毎正時、jst_day = JST の 0 時（UTC 15:00）。Date.now・new Date() は進み続ける
+# （区切りの 2 秒前から実の速さで進むので、遅い verify は途中で区切りをまたぐ）。PGlite の now() も差し替えた Date に従う（11/25 実測）。
+# 従わない物: performance.now・process.hrtime・子の node 以外の時計（SQL の外の別プロセス等）。これは JS の Date だけの確かめで、捕まえられない型は残る
+CLOCK_BOUNDARIES: Dict[str, Tuple[int, int]] = {"hour": (3600000, 0), "jst_day": (86400000, 15 * 3600000)}
+CLOCK_LABELS = {"hour": "正時（HH:59:58 から）", "jst_day": "JST の日付の変わり目（UTC 14:59:58 から）"}
+CLOCK_LEAD_MS = 2000
+CLOCK_SHIFT_JS = """'use strict';
+const R = Date, real = R.now.bind(R);
+const period = Number(process.env.GUARD_CLOCK_PERIOD_MS), phase = Number(process.env.GUARD_CLOCK_PHASE_MS), lead = Number(process.env.GUARD_CLOCK_LEAD_MS);
+const t0 = real();
+const boundary = Math.ceil((t0 - phase) / period) * period + phase;
+const offset = boundary - lead - t0;
+const now = () => real() + offset;
+class FakeDate extends R {
+  constructor(...a) { if (a.length) super(...a); else super(now()); }
+  static now() { return now(); }
+}
+Object.defineProperty(FakeDate, 'name', { value: 'Date' });
+globalThis.Date = FakeDate;
+"""
+
+
 class Runner:
     """作業場所 src のコピー（self.repo。一時の場所の中）で verify を回す。node_modules は symlink を張る。終わりに全部消す。
     verify は sandbox-exec の中（ネットワーク拒否・書きはコピーと TMPDIR だけ）で動く"""
@@ -514,14 +537,27 @@ class Runner:
         if self.git:
             _git(self.repo, "update-index", "--force-remove", "--", rel)
 
-    def passes(self, script: Path) -> bool:
-        """script（コピーの中）を回して 0 で終われば True。timeout・起動できないは落ちた扱い"""
+    def passes(self, script: Path, clock: Optional[str] = None) -> bool:
+        """script（コピーの中）を回して 0 で終われば True。timeout・起動できないは落ちた扱い。
+        clock（CLOCK_BOUNDARIES のキー）を渡すと、その区切りの CLOCK_LEAD_MS 前から進む時計で回す（--require で Date を差し替える。子の node にも NODE_OPTIONS で届く）"""
         argv = [*native_arch_prefix(), "node", str(script)]
         if self.cfg.get("sandbox"):
             argv = [SANDBOX_EXEC, "-f", str(self.profile), *argv]
         env = {"PATH": os.environ.get("PATH", ""), "CI": "1", "TMPDIR": str(self.tmp), "HOME": str(self.tmp), "NO_COLOR": "1",
                "GIT_CEILING_DIRECTORIES": str(self.scratch.parent)}  # 写しの上（一時の場所の外）の .git を拾わない
+        if clock is not None:
+            preload = self.scratch / "clock-shift.cjs"
+            preload.write_text(CLOCK_SHIFT_JS, encoding="utf-8")
+            env["NODE_OPTIONS"] = f"--require {preload}"
+            env["GUARD_CLOCK_PERIOD_MS"] = str(CLOCK_BOUNDARIES[clock][0])
+            env["GUARD_CLOCK_PHASE_MS"] = str(CLOCK_BOUNDARIES[clock][1])
+            env["GUARD_CLOCK_LEAD_MS"] = str(CLOCK_LEAD_MS)
         return self.run(argv, self.repo, env, int(self.cfg["run_timeout_sec"])) == 0  # type: ignore[call-overload]
+
+
+def clock_failed(rn: "Runner", script_rel_path: str) -> List[str]:
+    """新しい verify を CLOCK_BOUNDARIES の区切りごとに回し、落ちた区切りの名を返す（全部通れば空）"""
+    return [k for k in CLOCK_BOUNDARIES if not rn.passes(rn.repo / script_rel_path, clock=k)]
 
 
 PRODUCT_ROOTS = ("src/", "api/", "scripts/")  # scripts/ は HR34（scripts/ の判定の script を試す verify）。verify 自身・他の verify は製品に数えない
@@ -1453,6 +1489,9 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                     record.setdefault("static", []).extend(f"{p}: {x}" for x in probs)  # HR44: 書き方の誤りは作り手へ返せる（弱める変更ではない）
                 elif not rn.passes(rn.repo / p):
                     human.append(f"{p}: 新しい verify が通らない")
+                elif (cf := clock_failed(rn, p)):
+                    human.append(f"{p}: 時刻の区切りで落ちる（{'・'.join(CLOCK_LABELS[k] for k in cf)}で時計を進めて回すと落ちる。"
+                                 "固定の時刻を渡す・区切りに依る確かめを後ろに置く。#3424・#3428）")
                 else:
                     ok, why, rec = addition_gate(rn, p, c)
                     record["addition"].append(rec)  # type: ignore[union-attr]
