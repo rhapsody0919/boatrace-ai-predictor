@@ -9,12 +9,12 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { stepLabelParts } from "../../../pure/racerWinRateSteps.js";
 import { Badge, GridLines } from "./TrendChart";
+import { useChartWidth } from "./useChartWidth.js";
 
-const W = 343;
 const H = 252;
 const PAD = { l: 30, r: 66, t: 24, b: 48 };
 
-function scaleOf(stepsByBoat, n) {
+function scaleOf(stepsByBoat, n, W) {
   const all = [...stepsByBoat.values()]
     .flat()
     .filter(Boolean)
@@ -63,7 +63,7 @@ function Steps({ steps, boat, selected, x0, cw, y }) {
 
 // 右端の値の札（TrendChart と同じ、重なれば下へずらして引き出し線）。
 // 直前の期に記録が無い艇（休み明け等）も、記録のある最後の期の終わりから札を引く（ファン評価 11/25）
-function EndLabels({ stepsByBoat, selected, xEndOf, y }) {
+function EndLabels({ stepsByBoat, selected, xEndOf, y, W }) {
   const ends = [...stepsByBoat.entries()]
     .map(([boat, s]) => {
       const i = s.findLastIndex(Boolean);
@@ -144,12 +144,14 @@ function PeriodAxis({ periods, sel, selected, x0, cw }) {
 
 export default function WinRateStepChart({ stepsByBoat, periods, selected }) {
   const { t } = useTranslation();
+  const [ref, W] = useChartWidth();
   const n = periods.length;
-  const { x0, cw, y, ticks } = scaleOf(stepsByBoat, n);
+  const { x0, cw, y, ticks } = scaleOf(stepsByBoat, n, W);
   const order = [...stepsByBoat.keys()].filter((b) => b !== selected);
   if (stepsByBoat.has(selected)) order.push(selected);
   return (
     <svg
+      ref={ref}
       className="trc-svg"
       viewBox={`0 0 ${W} ${H}`}
       role="img"
@@ -200,6 +202,7 @@ export default function WinRateStepChart({ stepsByBoat, periods, selected }) {
         selected={selected}
         xEndOf={(i) => x0(i + 1)}
         y={y}
+        W={W}
       />
     </svg>
   );
