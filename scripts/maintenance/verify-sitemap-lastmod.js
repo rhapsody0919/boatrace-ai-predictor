@@ -132,7 +132,7 @@ try {
     entries.every((e) => !nowDates.has(e.lastmod)),
     "generate-sitemap.js が lastmod に生成日（new Date()）を使っている",
   );
-  const postDate = new Map(blogPosts.map((p) => [p.id, p.date ?? null]));
+  const postDate = new Map(blogPosts.map((p) => [p.id, p.updated ?? p.date ?? null]));
   const jaBlog = entries.filter((e) =>
     /^https:\/\/www\.boat-ai\.jp\/blog\/[^/]+$/.test(e.loc),
   );

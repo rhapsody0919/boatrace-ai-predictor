@@ -40,7 +40,7 @@ function ArticleHeadMeta({
           description: post.description,
           image: imageUrl,
           datePublished: post.date,
-          dateModified: post.date,
+          dateModified: post.updated ?? post.date,
           author: {
             "@type": "Organization",
             name: t.brandName,
