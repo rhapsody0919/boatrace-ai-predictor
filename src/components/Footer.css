@@ -37,3 +37,26 @@
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
+
+/* ご意見ボックスの入口（SiteFeedback のパネルを開く）。並びのリンクと見分けがつくよう下線を付けたボタン */
+.site-footer-feedback {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--transition-base) var(--ease-in-out);
+}
+
+.site-footer-feedback:hover {
+  color: var(--brand-accent-primary);
+}
+
+/* Cookie の確認（下端の全幅、z-index 9999）が出ている間は出さない。開いたパネルの「送る」が帯に隠れる */
+body:has(> .cookie-consent) .site-footer-feedback {
+  display: none;
+}
