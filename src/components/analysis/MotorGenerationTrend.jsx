@@ -14,7 +14,7 @@ import { getMotorGenerationRuns } from "../../services/motorQueries8.js";
 import {
   MOTOR_EXHIBITION_MIN_RUNS,
   MOTOR_RATE_MIN_RUNS,
-  motorExhibitionTrend,
+  motorExhibitionMeetTrend,
   motorMeetTip,
   motorRateTrend,
 } from "../../pure/motorGenerationTrend.js";
@@ -24,8 +24,10 @@ import "./MotorTrendChart.css";
 
 // 展示タイムは検証した値（レース内の平均との差）と画面の値（秒の平均）が違うので、同じデータで評価し直すまで出さない
 // （AGENTS「画面に出す推定量は評価した推定量と同じにする」）。部品と純関数は展示タイムにも対応している
-const METRICS = ["top2Rate", "top3Rate"];
-const minRunsOf = (metric) => (metric === "exhibition" ? MOTOR_EXHIBITION_MIN_RUNS : MOTOR_RATE_MIN_RUNS);
+// 展示タイムはレース内の平均との差（検証した値と同じ。オーナー 2026-11-25「B 差で作る」）。秒の平均は出さない
+const METRICS = ["top2Rate", "top3Rate", "exhibitionDiff"];
+const isExDiff = (metric) => metric === "exhibitionDiff";
+const minRunsOf = (metric) => (isExDiff(metric) ? MOTOR_EXHIBITION_MIN_RUNS : MOTOR_RATE_MIN_RUNS);
 const dayDiff = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
 
 /** 「今の値｜推移」の切り替え（選手の成績比較と同じ見た目） */
@@ -83,14 +85,21 @@ function seriesOf(rows, runsByMotor, metric, today) {
   const out = new Map();
   for (const r of rows) {
     const runs = runsByMotor[r.motor_number] ?? [];
-    const s = metric === "exhibition" ? motorExhibitionTrend(runs) : motorRateTrend(runs, metric, { today });
+    // 展示の差は節ごとの点（検証の exh_r30 と同じ時点: 節の初日より前の直近30走）。率と同じく右端は今日まで延ばす
+    const s = isExDiff(metric) ? motorExhibitionMeetTrend(runs, { today }) : motorRateTrend(runs, metric, { today });
     if (s.length > 0) out.set(r.boat_number, s);
   }
   return out;
 }
 
 // 右端（最新）の値の字（図の右の札と同じ桁）
-const endValue = (s, metric) => (s?.length ? s[s.length - 1].value.toFixed(metric === "exhibition" ? 2 : 1) : "—");
+const endValue = (s, metric) => {
+  if (!s?.length) return "—";
+  const v = s[s.length - 1].value;
+  if (!isExDiff(metric)) return v.toFixed(1);
+  const a = Math.abs(v).toFixed(2);
+  return a === "0.00" ? "±0.00" : `${v < 0 ? "−" : "+"}${a}`;
+};
 
 /** 太線にする艇を選ぶ札。1200px 以上は右の列で6基の一覧（艇番・号機・右端の値）になる（オーナー 11/25 の案 A、選手の推移と同じ形） */
 function BoatMotorPicker({ rows, series, runsByMotor, selected, onSelect, showRuns, metric }) {
@@ -150,7 +159,7 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
   return (
     <div className="race-split trc-split">
       <div className="race-split__main">
-        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} renderTip={metric === "exhibition" ? null : renderTip} />
+        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} renderTip={isExDiff(metric) ? null : renderTip} />
       </div>
       <div className="race-split__side">
         <BoatMotorPicker rows={rows} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={onSelect} metric={metric} />
@@ -159,7 +168,7 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
             {t("analysis.motor.genTrend.selected", { boat: selected, n: selRow.motor_number, date: formatGenerationDate(data.generationStart), runs })}
           </p>
         )}
-        <p className="trc-note">{t(metric === "exhibition" ? "analysis.motor.genTrend.noteExhibition" : "analysis.motor.genTrend.noteRate", { n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) })}</p>
+        <p className="trc-note">{t(isExDiff(metric) ? "analysis.motor.genTrend.noteExhibitionDiff" : "analysis.motor.genTrend.noteRate", { n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) })}</p>
       </div>
     </div>
   );

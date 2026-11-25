@@ -16,8 +16,14 @@ const H = 250;
 const PAD = { l: 34, r: 76, t: 24, b: 36 };
 const dayOf = (date) => Date.parse(`${date}T00:00:00Z`) / 86400000;
 const slash = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
-const isEx = (metric) => metric === "exhibition";
-const fmt = (metric, v) => (isEx(metric) ? v.toFixed(2) : v.toFixed(1));
+// 展示タイムは秒（exhibition）とレース内の平均との差（exhibitionDiff、オーナー 2026-11-25「B 差で作る」）。どちらも小さいほど速い
+const isEx = (metric) => metric === "exhibition" || metric === "exhibitionDiff";
+// 差は符号を付ける（−0.03 は平均より0.03秒速い）。丸めて0になる値は ±0.00
+const signed = (v) => {
+  const s = Math.abs(v).toFixed(2);
+  return s === "0.00" ? "±0.00" : `${v < 0 ? "−" : "+"}${s}`;
+};
+const fmt = (metric, v) => (metric === "exhibitionDiff" ? signed(v) : isEx(metric) ? v.toFixed(2) : v.toFixed(1));
 
 function scaleOf(seriesByBoat, metric, generationStart, today, W) {
   const all = [...seriesByBoat.values()].flat().map((p) => p.value);
@@ -65,7 +71,7 @@ function EndLabels({ seriesByBoat, selected, y, metric, W }) {
   const gap = 16;
   const items = [...seriesByBoat.entries()]
     .map(([boat, s]) => ({ boat, v: s[s.length - 1].value }))
-    .map((e) => ({ ...e, py: y(e.v), k: y(Number(fmt(metric, e.v))) }))
+    .map((e) => ({ ...e, py: y(e.v), k: y(Number(e.v.toFixed(isEx(metric) ? 2 : 1))) }))
     .sort((a, b) => a.k - b.k || a.boat - b.boat);
   items.forEach((e, i) => (e.yy = Math.max(e.py, i ? items[i - 1].yy + gap : PAD.t)));
   for (let i = items.length - 1; i >= 0; i -= 1) {
@@ -152,13 +158,13 @@ export default function MotorTrendChart({ seriesByBoat, metric, selected, genera
   return (
     <div className="trc-chartbox" ref={boxRef}>
     <svg ref={ref} className="trc-svg mtc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t(`analysis.motor.genTrend.title.${metric}`)}>
-      <GridLines ticks={ticks} y={y} x1={PAD.l} x2={W - PAD.r} label={(g) => (isEx(metric) ? g.toFixed(2) : Math.round(g))} />
+      <GridLines ticks={ticks} y={y} x1={PAD.l} x2={W - PAD.r} label={(g) => (isEx(metric) ? fmt(metric, g) : Math.round(g))} />
       <text x={PAD.l - 4} y={PAD.t - 8} className="trc-tick" textAnchor="end">
-        {isEx(metric) ? t("analysis.motor.genTrend.unitSec") : "%"}
+        {metric === "exhibitionDiff" ? t("analysis.motor.genTrend.unitSecDiff") : isEx(metric) ? t("analysis.motor.genTrend.unitSec") : "%"}
       </text>
       <Axis generationStart={generationStart} today={today} firstDate={firstDate} minRuns={minRuns} metric={metric} x={x} W={W} />
       {order.map((boat) => (
-        <Line key={boat} points={seriesByBoat.get(boat)} boat={boat} selected={boat === selected} showDots={!isEx(metric) && boat === selected} x={x} y={y} />
+        <Line key={boat} points={seriesByBoat.get(boat)} boat={boat} selected={boat === selected} showDots={metric !== "exhibition" && boat === selected} x={x} y={y} />
       ))}
       <EndLabels seriesByBoat={seriesByBoat} selected={selected} y={y} metric={metric} W={W} />
       {renderTip && <PickLayer px={picked ? x(picked.date) : null} py={picked ? y(picked.value) : 0} selected={selected} W={W} pointer={handlers} />}

@@ -10,6 +10,7 @@
  *   - 1号艇・2号艇・5号艇の線に縁
  *   - 右端の値は率なら小数1桁、展示タイムは小数2桁。展示タイムは小さいほど上で「↑速い」
  *   - 右端の札は図の上下からはみ出さない
+ *   - 展示タイムのレース内の平均との差（exhibitionDiff）は、目盛りと右端の値に符号（−・+・±0.00）を付け、単位は秒差、小さいほど上。節ごとの点なので、選んだ艇に点を打つ
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -96,6 +97,19 @@ check("展示は点を打たない", !ex.includes('r="2.6"'));
 const endY = (b) => Number(ex.match(new RegExp(`trc-line-${b}"[\\s\\S]*?<circle cx="[\\d.]+" cy="([\\d.]+)" r="(?:3|4\\.5)"`))?.[1]);
 const ends = [1, 2, 3, 4, 5, 6].map(endY);
 check("展示は小さいほど上", ends.every((v, i) => i === 0 || v > ends[i - 1]), JSON.stringify(ends));
+
+// 艇 b の差は (b-3.5)/100（1号艇が −0.025 で一番速い）
+const diffSeries = new Map([1, 2, 3, 4, 5, 6].map((b) => [b, Array.from({ length: 60 }, (_, i) => ({ date: day(40 + i), value: (b - 3.5) / 100 }))]));
+const dsvg = svgOf(diffSeries, "exhibitionDiff", 24);
+const dEnds = [...dsvg.matchAll(/class="trc-end"[^>]*>([^<]+)</g)].map((m) => m[1]);
+check("差の右端は符号つき2桁", dEnds.length === 6 && dEnds.every((v) => /^[−+]0\.\d\d$/.test(v)) && dEnds.includes("−0.03") && dEnds.includes("+0.03"), JSON.stringify(dEnds));
+check("差の目盛りに ±0.00", dsvg.includes(">±0.00<"), dsvg.slice(0, 400));
+check("差の単位は秒差", dsvg.includes("unitSecDiff"));
+check("差も「↑速い」", dsvg.includes("↑速い"));
+const dEndY = (b) => Number(dsvg.match(new RegExp(`trc-line-${b}"[\\s\\S]*?<circle cx="[\\d.]+" cy="([\\d.]+)" r="(?:3|4\\.5)"`))?.[1]);
+const dys = [1, 2, 3, 4, 5, 6].map(dEndY);
+check("差は小さいほど上", dys.every((v, i) => i === 0 || v > dys[i - 1]), JSON.stringify(dys));
+check("差は選んだ艇だけ節の点を打つ（率と同じ）", (dsvg.match(/r="2.6"/g) ?? []).length === diffSeries.get(3).length);
 
 if (failures.length > 0) {
   console.error("verify-motor-trend-chart: 失敗");

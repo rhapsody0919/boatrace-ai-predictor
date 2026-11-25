@@ -3095,7 +3095,8 @@
         "title": {
           "top2Rate": "Top-2 rate trend (official, by meet)",
           "top3Rate": "Top-3 rate trend (official, by meet)",
-          "exhibition": "Exhibition time trend (last 30 runs avg)"
+          "exhibition": "Exhibition time trend (last 30 runs avg)",
+          "exhibitionDiff": "Exhibition time vs race average (last 30 runs)"
         },
         "notYet": "Not drawn until {{n}} runs",
         "faster": "↑ faster",
@@ -3113,7 +3114,8 @@
         "metric": {
           "top2Rate": "Top-2 rate",
           "top3Rate": "Top-3 rate",
-          "exhibition": "Exhibition time"
+          "exhibition": "Exhibition time",
+          "exhibitionDiff": "Exhibition time"
         },
         "motorNo": "Motor {{n}}",
         "runs": "{{n}} runs",
@@ -3128,7 +3130,9 @@
         "tipRacer": "Racer {{name}}",
         "tipFinishes": "Finishes this meet {{order}} ({{n}} runs)",
         "tipValue": "Official {{metric}} on day 1 {{value}} ({{runs}} runs before)",
-        "tipFinishesSoFar": "Finishes so far this meet {{order}} ({{n}} runs, in progress)"
+        "tipFinishesSoFar": "Finishes so far this meet {{order}} ({{n}} runs, in progress)",
+        "unitSecDiff": "sec diff",
+        "noteExhibitionDiff": "💡 Each point is the average, over the 30 runs before the meet's first day, of the exhibition time minus that race's 6-boat average (drawn from 24 runs; the right end extends to today). Higher is faster; −0.03 means 0.03 sec faster than the average. Changes that make everyone faster (season, water) cancel out. The riders' weight and skill are not adjusted for. Values before this meet come from other riders. Equal values on the right are listed from the lower boat number."
       }
     },
     "motorRanking": {
