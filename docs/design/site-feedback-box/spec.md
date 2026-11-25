@@ -54,12 +54,16 @@
 
 ## 出す順番（仕組みで守る）
 
-db-apply は master にあるファイルしか当てず、本番の配備は1日3回の定時（ADR-0106）。画面と表を1つの PR にすると「マージ → 次の定時より先に db-apply」の競争になり、負けると全員の送信が「送れませんでした」になる。そこで PR を分ける。
+db-apply は master にあるファイルしか当てず、本番の配備は1日3回の定時（ADR-0106）。画面と表を1つの PR にすると「マージ → 次の定時より先に db-apply」の競争になり、負けると全員の送信が「送れませんでした」になる。そこで PR を分け、画面を全画面につなぐ PR だけを表の適用の後にする（2026-11-25、tinaba の #3296〜#3298 を 300行・5ファイルの線で分け直した）。
 
-1. **表の PR**（`claude/site-feedback-db`）: `208_site_feedback.sql`・台帳の行・`verify-site-feedback-migration.js`・この spec。オーナーがマージする
-2. **db-apply**: オーナーが Actions で起動して承認する。成功すると台帳（APPLIED.md）が「適用済み」になる
-3. **プライバシーポリシーの PR**（`claude/privacy-feedback-storage`）: 文案をオーナーが確かめてマージする
-4. **画面の PR**（`claude/site-feedback-box`）: `verify-site-feedback.js` が、台帳で `208_site_feedback.sql` が適用済みでない、またはポリシーに保存の記載が無いと赤になる。2・3 の後に master から作り直す（1 と同じ所に `verify-registry.json` の行を足すので、取り込むと衝突する。AGENTS.md の決まりどおり、衝突は解かずに新しい枝で作り直す）
+| 順 | PR（枝） | 中身 | 表の前に入れてよいか |
+|---|---|---|---|
+| 1 | 表（`claude/site-feedback-db-v2`） | `208_site_feedback.sql`・台帳の行・`verify-site-feedback-migration.js`・この spec | ―（オーナーがマージ） |
+| 2 | db-apply | オーナーが Actions で起動して承認する。成功すると台帳が「適用済み」になる | ― |
+| 3 | ポリシー（`claude/privacy-feedback-storage-v2`） | プライバシーポリシーの追記 | 可（文だけ） |
+| 4 | 部品（`claude/site-feedback-pure`・`-form`・`-fields`・`-panel`・`-button`） | 決まりの純関数・識別番号・送信と入力の状態・訳・パネル・ボタン。どこからも描かないので画面に出ない | 可 |
+| 5 | つなぐ（`claude/site-feedback-mount`） | `AppRouter.jsx` で全画面に置く・E2E。`verify-site-feedback-gate.js` が、画面と表の列挙のずれ・台帳で `208_site_feedback.sql` が適用済みでないことで赤になる。E2E が /privacy に保存の記載が無いことで赤になる | 不可（2・3 の後） |
+| 6 | フッターの入口（`claude/site-feedback-footer`） | `links` を渡すフッターの「ご意見・ご要望を送る」 | 不可（5 の後） |
 
 ## スコープ
 
@@ -88,11 +92,12 @@ db-apply は master にあるファイルしか当てず、本番の配備は1�
 | `scripts/maintenance/verify-site-feedback-migration.js` | 表を PGlite に当てる検査 |
 | `src/pure/siteFeedback.js` | 列挙値・上限・ページの種類・出さない画面・送る1行 |
 | `src/pure/clientKey.js` | ブラウザごとの匿名の識別番号（龍神ソナーの声と共通。`AnalogyFeedback.jsx` の中にあった物を出した） |
-| `src/components/siteFeedback/` | ボタン（`SiteFeedback.jsx`）・パネル（`SiteFeedbackPanel.jsx`）・入力と送信（`useSiteFeedbackForm.js`）・見た目（`SiteFeedback.css`）・フッターから開くイベントの名前（`openEvent.js`） |
+| `src/components/siteFeedback/` | ボタン（`SiteFeedback.jsx`）・パネル（`SiteFeedbackPanel.jsx`、入力欄は `SiteFeedbackFields.jsx`）・入力と送信（`useSiteFeedbackForm.js`）・見た目（ボタンは `SiteFeedback.css`、パネルは `SiteFeedbackPanel.css`）・フッターから開くイベントの名前（`openEvent.js`） |
 | `src/services/analogyFeedback.js` | `sendSiteFeedback`（`site_feedback` への INSERT）。匿名の声を送る既存のファイルに足した（`src/services/` に `<領域>Queries*.js` でない新しいファイルは足せない決まり） |
 | `src/components/Footer.jsx` | フッターの入口 |
 | `src/AppRouter.jsx` | 全画面への組み込み |
 | `src/locales/{ja,en,zh-TW,ko}/common.json` | `siteFeedback.*` |
-| `scripts/maintenance/verify-site-feedback.js` | 画面の決まりと表の列挙の突き合わせ、台帳とポリシーの関門 |
+| `scripts/maintenance/verify-site-feedback.js` | 画面の決まり（ページの種類・出さない画面・送る1行・識別番号） |
+| `scripts/maintenance/verify-site-feedback-gate.js` | 画面と表の列挙の突き合わせ、台帳の関門（つなぐ PR） |
 | `e2e/site-feedback.spec.js`・`e2e/site-feedback-placement.spec.js`・`e2e/site-feedback-helpers.js` | 画面の動き（入力と送信・置き場所とスマホ・共通の部品） |
 | `src/components/privacy/` | プライバシーポリシーの追記（別の PR） |

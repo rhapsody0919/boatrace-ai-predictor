@@ -15,7 +15,7 @@
 --   page_type   どの種類の画面から送ったか（URL・レースや選手の番号は持たない）
 --   lang        表示言語（ja・en・zh-TW・ko）
 --   client_key  ブラウザごとの乱数（localStorage）。個人と結びつけない。連投の制限だけに使う
---   列挙と上限は画面の src/pure/siteFeedback.js と1対1。画面の PR の verify-site-feedback.js が突き合わせる。
+--   列挙と上限は画面の src/pure/siteFeedback.js と1対1。画面を全画面につなぐ PR の verify-site-feedback-gate.js が突き合わせる。
 --   列挙を足すときは、CHECK を広げるマイグレーションを先に当ててから画面を出す（逆にすると、新しい値の送信が全部落ちる）。
 --   列挙を消すときは画面から先に消し、CHECK には残す（開いたままのタブは古い画面で送る）。
 --
@@ -31,8 +31,9 @@
 --   187 の hashtext('public.analogy_feedback_guard')=971606541 と衝突しない。
 --   created_at はトリガーで now() に上書きする（過去の時刻を送って制限の窓を外すのを防ぐ）。
 --
--- 当てる順番: この表を本番に当ててから、画面の PR（claude/site-feedback-box）をマージする。
---   画面の PR の verify-site-feedback.js は、台帳（APPLIED.md）でこのファイルが適用済みになるまで赤になる。
+-- 当てる順番: この表を本番に当ててから、画面を全画面につなぐ PR（claude/site-feedback-mount）をマージする。
+--   部品だけの PR（つながず画面に出ない）は先に入ってよい。つなぐ PR の verify-site-feedback-gate.js は、
+--   台帳（APPLIED.md）でこのファイルが適用済みになるまで赤になる。
 --   新しい表を作るだけで、既存の表・関数・読み手には触れない（既存の表のロックを取らない）。
 --
 -- 適用前の確認（読み取り。claude_ro）:
@@ -52,7 +53,7 @@
 --          has_table_privilege('claude_ro', 'public.site_feedback', 'SELECT');
 --   → false, true, true, false
 --
--- 戻し方: 末尾の ROLLBACK-BEGIN〜ROLLBACK-END（集めたご意見も消える）。先に画面の PR を revert して定時で出してから当てる。
+-- 戻し方: 末尾の ROLLBACK-BEGIN〜ROLLBACK-END（集めたご意見も消える）。先に画面をつなぐ PR（とフッターの入口の PR）を revert して定時で出してから当てる。
 --   行を残したいなら、オーナーが CSV に退避してリポジトリの外に置く（docs/knowledge/db-operations.md）。
 --
 -- 検証: scripts/maintenance の verify-site-feedback-migration.js（PGlite、本番には接続しない）
