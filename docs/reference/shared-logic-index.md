@@ -404,16 +404,16 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
 | `scripts/lib/sns/bundlePublicationBlocked.js` | — | isBundlePublicationBlocked |
 | `scripts/lib/sns/deadlineIso.js` | — | deadlineIso |
-| `scripts/lib/sns/finalsImageBase.js` | — | hasPoll, pngSize, checkImages, schedule, dailyLimitReason ほか23件 |
+| `scripts/lib/sns/finalsImageBase.js` | — | hasPoll, pngSize, checkImages, schedule, dailyLimitReason ほか20件 |
 | `scripts/lib/sns/fullPictureRows.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、下書きの文と行の組み立て（純粋関数）。 | fullYoutubeText, draftRows, fullTagsOf, draftTexts |
-| `scripts/lib/sns/fullPictureShape.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、api・scripts/sns に依らない純な部分: 定数・チ… | supersedePlan, schedule, bakedDeadlineReasons, FULL_PICTURE_FORMAT, FILES ほか22件 |
+| `scripts/lib/sns/fullPictureShape.js` | — | supersedePlan, schedule, bakedDeadlineReasons, FULL_PICTURE_FORMAT, FILES ほか20件 |
 | `scripts/lib/sns/mp4Info.js` | MP4 の大きさと尺の純粋な読み取り。push-setsu-kiryoku-short.js から移した（字は同じ） | mp4Info |
 | `scripts/lib/sns/publicDisplayCheck.js` | — | checkPublicDisplay |
 | `scripts/lib/sns/researchPushRules.js` | — | PUSH_RULES |
-| `scripts/lib/sns/researchSchedule.js` | — | schedule, dryRunClock, checkTiming, DEADLINE_AFTER_MIN, EXPIRES_BEFORE_MIN ほか11件 |
+| `scripts/lib/sns/researchSchedule.js` | — | schedule, dryRunClock, checkTiming, DEADLINE_AFTER_MIN, EXPIRES_BEFORE_MIN ほか12件 |
 | `scripts/lib/sns/sendHolds.js` | — | sendHolds, mobileHolds |
 | `scripts/lib/sns/setsuDeadlines.js` | 節の機力の Shorts の締切の照合（純粋関数）。push-setsu-kiryoku-short.js から移した（字は同じ） | finalDeadlineMismatch, borderDeadlineMismatch, eveDeadlineMismatch, raceNumberOf, isFinalStage |
-| `scripts/lib/sns/shortSchedule.js` | YouTube Shorts の口（push-setsu-kiryoku-short.js・push-upset-win-short.js）の時刻・日の上限とク… | schedule, checkTiming, youtubeRoomReason, dryRunClock, SEND_DELAY_SEC ほか14件 |
+| `scripts/lib/sns/shortSchedule.js` | — | schedule, checkTiming, youtubeRoomReason, dryRunClock, SEND_DELAY_SEC ほか10件 |
 | `scripts/lib/sns/siteBaseUrl.js` | — | SITE_BASE_URL |
 | `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
 | `scripts/lib/sns/todayDigestStatus.js` | /today の X 投稿の版（digestRevision）と、載せる候補のレースの状態（pickRaceStatus）。 | digestRevision, pickRaceStatus, TODAY_SCREEN_KEY |
@@ -681,4 +681,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 639 ファイル / export 3454 件。
+対象 639 ファイル / export 3446 件。
