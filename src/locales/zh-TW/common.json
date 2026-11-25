@@ -2530,6 +2530,8 @@
       "unitSec": "秒（越上越快）",
       "note": "💡 每個點為該時點近30場的{{metric}}。來源為本站的出賽紀錄（近2年）。平均ST越小畫得越上面",
       "tapHint": "點選以加粗",
+      "pickHint": "選擇艇號以加粗",
+      "lastPeriod": "最右邊的期",
       "selectBoat": "加粗{{boat}}號艇",
       "notEnough": "未滿30場的選手不顯示線",
       "winRateTitle": "勝率走勢（官方各期）",
