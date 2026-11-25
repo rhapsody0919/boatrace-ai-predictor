@@ -11,6 +11,8 @@
  *   (c) 起動（createReleaseDispatchRun）: shadow は叩かない、live は Deploy Hook を POST、鍵・版・Hook が無い・HTTP 失敗は失敗、
  *       stuck は叩かずに失敗（巻き戻しと区別できない）、出した記録（released・fromSha・lastReleasedSha）を返す、比べる先は読んだ master の sha、
  *       拾い直し（UTC の分が30より前の起動）は前が「待つ」のときだけ動き、それ以外は前の記録を残す、出すべき差分が13時間残れば alerts
+ *   (g) 本番の確かめの起動（releaseCheckDispatch.js）: live で Hook を叩いたら e2e-release.yml を出した master の先の sha で起こす。
+ *       起こせなくても release は成功のまま、記録と alerts に残す。shadow は起こさない
  *   (d) 死活（monitor.js）: livenessStaleMin のある monitor のジョブは shadow・live の間だけ last_tick_at を見る
  *   (f) 範囲の赤を解く全件の検査（releaseFullCheck.js、verifyData/release-dispatch-scenes-3.js）: 全件の run が無ければ2本を起こして待つ・
  *       tip か S で success なら解く（S より後は push の run のまま）・base 違い等は認めない・走っていれば待つ・失敗なら止めて起こし直さない・
@@ -29,7 +31,18 @@ import {
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 
 import { cronWiring } from "./verifyData/cronWiring.js";
-import { runReleaseDispatchScenes1 } from "./verifyData/release-dispatch-scenes-1.js";
+import {
+  ctx,
+  fakeGitHub,
+  runReleaseDispatchScenes1,
+  runWith,
+} from "./verifyData/release-dispatch-scenes-1.js";
+import {
+  RELEASE_CHECK_TIMEOUT_MS,
+  RELEASE_CHECK_WORKFLOW,
+  dispatchReleaseCheck,
+  releaseCheckTimeout,
+} from "../lib/releaseCheckDispatch.js";
 import { runReleaseDispatchScenes2 } from "./verifyData/release-dispatch-scenes-2.js";
 import { runReleaseDispatchScenes3 } from "./verifyData/release-dispatch-scenes-3.js";
 
@@ -130,7 +143,13 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
     });
     const AUTO = "d".repeat(40);
     const withCommits = (commits, headAt) => ({
-      compare: { ...ahead(["src/App.jsx"], commits.map((c) => c.sha)), commits },
+      compare: {
+        ...ahead(
+          ["src/App.jsx"],
+          commits.map((c) => c.sha),
+        ),
+        commits,
+      },
       head: { sha: commits[commits.length - 1].sha, committedAt: headAt },
     });
     const FRESH_AT = "2026-11-06T11:44:00+09:00";
@@ -256,6 +275,70 @@ await runReleaseDispatchScenes1({ check, DEPLOYED, HEAD, MID, NOW, OLD_HEAD });
 await runReleaseDispatchScenes2({ check, DEPLOYED, HEAD, MID, NOW });
 // 範囲の赤を解く全件の検査（releaseFullCheck.js）
 await runReleaseDispatchScenes3({ check, DEPLOYED, HEAD, MID, NOW, OLD_HEAD });
+
+// ---------------------------------------------------------------- (g)
+{
+  const startUrl =
+    `/actions/workflows/${RELEASE_CHECK_WORKFLOW}/dis` + "patches";
+  const okF = fakeGitHub();
+  const ok = await runWith(okF, ctx("live"));
+  const call = okF.calls.find((c) => c.url.endsWith(startUrl));
+  check(
+    ok.report?.released === true &&
+      call?.init.method === "POST" &&
+      same(JSON.parse(call.init.body), {
+        ref: "master",
+        inputs: { sha: HEAD },
+      }) &&
+      call.init.signal instanceof AbortSignal &&
+      ok.report.releaseCheck?.dispatched === true &&
+      ok.report.alerts.length === 0,
+    "(g) live: Hook の後に e2e-release.yml を ref master・inputs.sha＝読んだ master の先で起こし、時間を切る",
+    JSON.stringify(ok.report?.releaseCheck),
+  );
+  const base = fakeGitHub();
+  const failF = async (url, init) =>
+    url.endsWith(startUrl)
+      ? { ok: false, status: 500, text: async () => "boom" }
+      : base(url, init);
+  const failed = await runWith(failF, ctx("live"));
+  check(
+    failed.outcome !== "error" &&
+      failed.report?.released === true &&
+      failed.report.releaseCheck?.dispatched === false &&
+      failed.report.releaseCheck.error.includes("HTTP 500") &&
+      failed.report.alerts.some((a) => a.key === "release_check_dispatch"),
+    "(g) 起こせなくても release は成功のまま、releaseCheck と alerts に残す",
+    JSON.stringify(failed),
+  );
+  const shadowF = fakeGitHub();
+  const shadow = await runWith(shadowF, ctx("shadow"));
+  check(
+    shadow.report?.wouldRelease === true &&
+      !shadowF.calls.some((c) => c.url.endsWith(startUrl)),
+    "(g) shadow は確かめを起こさない",
+    JSON.stringify(shadowF.calls.map((c) => c.url)),
+  );
+  check(
+    releaseCheckTimeout(1000, 1000) === RELEASE_CHECK_TIMEOUT_MS &&
+      releaseCheckTimeout(0, 45 * 1000) === 7 * 1000 &&
+      releaseCheckTimeout(undefined) === RELEASE_CHECK_TIMEOUT_MS,
+    "(g) 起こす待ちは15秒までで、関数の60秒から8秒の余白と使った時間を引いた分まで",
+  );
+  const late = await dispatchReleaseCheck({
+    fetchImpl: async () => {
+      throw new Error("呼ばれないはず");
+    },
+    token: "t",
+    sha: HEAD,
+    startedAt: Date.now() - 55 * 1000,
+  });
+  check(
+    late.dispatched === false && late.error.includes("残りが少ない"),
+    "(g) 残りが2秒より少なければ起こさず、理由を残す",
+    JSON.stringify(late),
+  );
+}
 
 // ---------------------------------------------------------------- (e)
 {
