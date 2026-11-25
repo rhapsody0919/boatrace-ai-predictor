@@ -1,0 +1,112 @@
+/*
+ * サイト全体のご意見ボックス（SiteFeedback.jsx）。
+ *
+ * 置き場所の決まり（既存の固定表示と重ねない）:
+ * - ふだんは右下。z-index は 800 で、重なり表示（ヘッダーのメニュー 999・思考アシストのシート 1000・
+ *   選手検索の候補 1001・レースの下部ナビ 1500・トースト 1600）より下に置く。数字を上げて解かない
+ * - Cookie の確認（.cookie-consent、下端の全幅）が出ている間は出さない
+ * - スマホ幅のレース詳細（.race-bottom-nav が出ている間）は、下部ナビ（高さ 100px）の上にアイコンだけで置き、
+ *   下へ読み進めている間は隠す（出走表・結果表の右端の数字の列を隠さない）。上へ戻すと出る
+ * - ブログ記事の「先頭へ戻る」（.back-to-top-button、右下 48px）があるときは、その上に置く
+ * - 入力パネル（SiteFeedbackPanel.css）は 1700（トーストより上、Cookie の確認 9999 より下）
+ */
+.site-fb-btn {
+  position: fixed;
+  right: calc(var(--spacing-4) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 48px;
+  padding: 0 var(--spacing-4) 0 var(--spacing-3);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--brand-accent-primary);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  /* bottom は動かさない（画面を移って下部ナビ・「先頭へ戻る」が出たとき、ボタンが滑って見える） */
+  transition:
+    padding 0.2s ease,
+    opacity 0.2s ease,
+    visibility 0.2s;
+}
+
+.site-fb-btn svg {
+  flex: none;
+}
+
+.site-fb-btn-label {
+  max-width: 8em;
+  margin-left: var(--spacing-2);
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.2s ease,
+    margin-left 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.site-fb-btn.is-mini {
+  padding: 0;
+}
+
+.site-fb-btn.is-mini .site-fb-btn-label {
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+}
+
+.site-fb-btn:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+body:has(> .cookie-consent) .site-fb-btn {
+  display: none;
+}
+
+body:has(.back-to-top-button) .site-fb-btn {
+  /* 「先頭へ戻る」（下 1.25rem・高さ 48px）の上に 12px 空けて置く */
+  bottom: calc(
+    1.25rem + 48px + var(--spacing-3) + env(safe-area-inset-bottom, 0px)
+  );
+  right: calc(1.25rem + env(safe-area-inset-right, 0px));
+}
+
+@media (max-width: 768px) {
+  /* 下部ナビは height: 100px で、safe-area の分は伸びない（RaceBottomNav.css） */
+  body:has(.race-bottom-nav) .site-fb-btn {
+    bottom: calc(100px + var(--spacing-3));
+    padding: 0;
+  }
+
+  body:has(.race-bottom-nav) .site-fb-btn-label {
+    display: none;
+  }
+
+  body:has(.race-bottom-nav) .site-fb-btn.is-mini {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media print {
+  .site-fb {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-fb-btn,
+  .site-fb-btn-label {
+    transition: none;
+  }
+}
