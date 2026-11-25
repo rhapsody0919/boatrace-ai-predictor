@@ -79,9 +79,9 @@ async function scene1() {
       (c) => c.name === "data_health_nightly_freshness",
     );
     check(
-      "鮮度の実行（夜）: 関数に p_to=前日 を渡し、11本が全て未達なら共通原因の要約を先頭に、11件を通知する（2026-10-20 朝の型）",
+      "鮮度の実行（夜）: 関数に p_to=前日 を渡し、12本が全て未達なら共通原因の要約を先頭に、12件を通知する（2026-10-20 朝の型。11/25 に growth_gsc を足して12本）",
       nightCall?.args.p_to === "2026-10-19" &&
-        alerts.length === 12 &&
+        alerts.length === 13 &&
         alerts[0].key === "dh:summary:2026-10-20" &&
         alerts.some((a) => a.key === "dh:nightly.accuracy:2026-10-20"),
       show({ nightCall, n: alerts.length, keys: alerts.map((a) => a.key) }),

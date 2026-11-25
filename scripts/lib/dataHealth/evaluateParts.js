@@ -87,7 +87,11 @@ export function evaluateFreshnessCheck(check, result, items) {
   const stale = applicable.filter((k) => result[k].ok !== true);
   const describe = (k) => {
     const item = byKey.get(k);
-    return `${k}（${FRESHNESS_CRITERIA[item?.kind] ?? "未達"}。最終 ${formatObserved(result[k].observed)}）`;
+    const criteria =
+      item?.kind === "date_lag"
+        ? `評価日の${item.lagDays}日前の分まで進んでいない`
+        : (FRESHNESS_CRITERIA[item?.kind] ?? "未達");
+    return `${k}（${criteria}。最終 ${formatObserved(result[k].observed)}）`;
   };
   return {
     ...base,
