@@ -60,7 +60,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 ```
 画面層   src/pages → src/components/<領域>/ → src/hooks
             ↓ 名前付き import（import { getX } from "../services/motorQueries.js"）
-データ層 src/services/<領域>Queries*.js（1ファイル400行以下。共通は src/services/core*.js）
+データ層 src/services/<領域>Queries*.js（1ファイル実質400行以下＝空行・注釈を除く。共通は src/services/core*.js）
             ↓
 計算層   src/pure/（平ら。新しい計算はここだけ。src/utils は凍結＝新しいファイルを足さない）
 定数     src/constants・src/config・src/data（何も上を読まない）
@@ -68,9 +68,9 @@ Node 側  api → api/_lib → scripts/lib → scripts/lib/pure → src/pure
          scripts/{daily,analysis,sns,…}（入口）→ scripts/lib（逆は禁止）
 ```
 
-- 領域は schedule・race・racer・motor・meet・venue・prediction。データ層の領域の間の import は core と2辺（getRaces → fetchVenueWinRateMap、getRaceMotorFreshness → getVenueMeetStart）だけ
+- 領域は schedule・race・racer・motor・meet・venue・prediction。データ層の領域の間の import は core*.js を通すだけ（直に別の領域の Queries を読まない。`domain-direct`）
 - 殻 `supabaseDataService.js` は RA40 で消えた。新しい取得は `<領域>Queries*.js` に書き、画面・hooks は名前つき import で呼ぶ
-- 向き・大きさは CI の関所（`lint-changed.js --ci`）が見る。既存の違反は基準に凍結され、増えたら赤。下の向きを逆にしない
+- 向き・大きさは CI の関所（`lint-changed.js --ci`）が見る。違反は全体で0、例外は減る向きだけの表（`scripts/maintenance/dependency-exceptions.json`・`size-exceptions.json`）。下の向きを逆にしない
 - scripts・api から src を import するのは src/pure 等の許可の先だけ（Vite の構文 `import.meta.glob`・`import.meta.env` は Node で落ちる）
 
 置き場の正本は `scripts/maintenance/file-placement.json`（全てのファイルを `verify-doc-placement.js` が CI で照らす。下の表は人向けの要約）。新しい種類の置き場・拡張子は同じ PR で表に行を足し、PR 本文に「置き場の表: <理由>」の行を書く
@@ -81,7 +81,7 @@ Node 側  api → api/_lib → scripts/lib → scripts/lib/pure → src/pure
 | `scripts/` | `daily/`（毎日）・`analysis/`（分析）・`maintenance/`（直し・検査 `verify-*.js`、台帳 `verify-registry.json`）・`db/`・`sns/`・`ml/`・`lib/`（共通。Supabase は `scripts/lib/supabaseClient.js`） |
 | `e2e/` | Playwright（組の分け方は `e2e/shards.json`） |
 | `public/blog/`・`note-articles/` | 記事 |
-| `docs/` | `adr/`（決定）・`design/`（採用した設計）・`operation/`（運用）・`reference/`（参照）・`knowledge/`（知見）・`db-migration/`・`setup/`・`archive/`。根に新しい文書を置かない |
+| `docs/` | `adr/`（決定）・`design/`（採用した設計）・`operation/`（運用）・`reference/`（参照）・`knowledge/`（知見）・`db-migration/`・`setup/`・`archive/`・`content-manifests/`（記事の索引）・`issues/`（調査の記録）・`proposal/`（提案）。根に新しい文書を置かない |
 
 ## 落とし穴（機械にできない判断の線。破ると P1 以上）
 
