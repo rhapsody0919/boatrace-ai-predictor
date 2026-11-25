@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 116 |
+| テーブル・ビューの定義 | 117 |
 | 読んでいる（テーブルを直接） | 48 |
 | 読んでいる（RPC経由のみ） | 2 |
 | 画面から読んでいない（例外登録あり） | 29 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **37** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **38** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,7 +24,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_course_win_rate_baseline` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_racer_front_taking_counts` / `get_racer_scoped_race_rows` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（37件）
+## 要判断: 画面から読んでいない（例外登録なし）（38件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -48,6 +48,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `racer_venue_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
 | `raw_snapshots` | 表 | 125_raw_snapshots.sql | なし | 記述なし |  |
 | `rule_applications` | 表 | 008_venue_rules.sql | なし | 記述なし |  |
+| `site_feedback` | 表 | 208_site_feedback.sql | なし | 記述なし |  |
 | `sns_auto_send_control` | 表 | 153_sns_auto_send.sql | なし | 記述なし |  |
 | `sns_auto_send_incidents` | 表 | 153_sns_auto_send.sql | なし | 記述なし |  |
 | `sns_auto_send_items` | 表 | 153_sns_auto_send.sql | なし | 記述なし |  |
