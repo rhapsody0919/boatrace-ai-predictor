@@ -1,0 +1,15 @@
+{
+  "$comment": "大きさの例外（lintTrees.js が見る。全体で0＋この表、ADR-0110）。値は実質の行（空行・注釈を除く）の上限。減る向きだけ: 行を足す・上限を上げると赤。分けたら行を消すか上限を下げる",
+  "files": {
+    "api/_lib/searchBotIpRanges.js": 606,
+    "scripts/analysis/generated-rules.js": 870,
+    "scripts/lib/scrapeJobs/registry.js": 457,
+    "scripts/maintenance/verify-pure-imports.js": 718,
+    "src/config/venueRules.js": 456,
+    "src/data/thinkingAssistCopy.js": 836,
+    "src/data/venueGuidesEn.js": 1970,
+    "src/data/venueGuidesKo.js": 1949,
+    "src/data/venueGuidesZhTw.js": 1889,
+    "src/data/venueSummaryStats.js": 1677
+  }
+}

@@ -7,6 +7,8 @@ import {
   buildBaseline,
   checkAgainstBaseline,
   checkBaselineShrink,
+  judgeTreeSize,
+  sizeExceptionsGrowth,
   substantiveLineNumbers,
   unitsOfSource,
 } from "./sizeBaselines.js";
@@ -199,6 +201,31 @@ ok(s.errors.length === 0 && s.strictExisting === false, "4件のうち3件→旗
 const half = { initial_count: 4, units: { a: four.units.a, b: {} } };
 s = checkBaselineShrink({ base: four, current: half });
 ok(s.errors.length === 0 && s.strictExisting === true, "件数が initial_count の半分以下→旗が立つ");
+
+// --- 全体で0＋例外の表（2026-11-25、ADR-0110） ---
+const big = filler(401); // 実質 401 行
+let t = judgeTreeSize({ files: { "a.js": fn("small", 10), "b.js": filler(400) }, exceptions: { files: {} } });
+ok(t.errors.length === 0 && t.warnings.length === 0, "線の内の関数と実質400行のファイルは緑");
+t = judgeTreeSize({ files: { "a.js": fn("long", 101) }, exceptions: { files: {} } });
+ok(t.errors.length === 1, "101 行の関数は既にある・無いに依らず赤（base の木の基準を持たない）");
+t = judgeTreeSize({ files: { "a.js": big }, exceptions: { files: {} } });
+ok(t.errors.length === 1, "実質 401 行で表に無いファイルは赤");
+t = judgeTreeSize({ files: { "a.js": big }, exceptions: { files: { "a.js": 401 } } });
+ok(t.errors.length === 0 && t.warnings.length === 0, "表の上限の内は緑");
+t = judgeTreeSize({ files: { "a.js": `${big}\nexport const z = 1;` }, exceptions: { files: { "a.js": 401 } } });
+ok(t.errors.length === 1, "表の上限を越えて増えたら赤");
+t = judgeTreeSize({ files: { "a.js": `${big}\n\n// 注釈\n` }, exceptions: { files: { "a.js": 401 } } });
+ok(t.errors.length === 0, "空行・注釈は実質の行に数えない");
+t = judgeTreeSize({ files: { "a.js": filler(300) }, exceptions: { files: { "a.js": 401, "gone.js": 500 } } });
+ok(t.errors.length === 2, "減った・消えたファイルが表に残ると赤（戻しても通る穴を塞ぐ）");
+t = judgeTreeSize({ files: { "a.js": `${big}\nexport const z = 1;` }, exceptions: { files: { "a.js": 402 } } });
+ok(t.errors.length === 0, "上限ちょうどは緑");
+t = judgeTreeSize({ files: { "a.js": "export const = ;" }, exceptions: { files: {} } });
+ok(t.skipped.length === 1 && t.errors.length === 0, "parse できないファイルは skipped");
+ok(sizeExceptionsGrowth({ files: { "a.js": 401 } }, { files: { "a.js": 401 } }).length === 0, "表が同じなら緑");
+ok(sizeExceptionsGrowth({ files: { "a.js": 401 } }, { files: { "a.js": 300 } }).length === 0, "上限を下げるのは緑");
+ok(sizeExceptionsGrowth({ files: { "a.js": 401 } }, { files: { "a.js": 402 } }).length === 1, "上限を上げると赤");
+ok(sizeExceptionsGrowth({ files: {} }, { files: { "b.js": 500 } }).length === 1, "行を足すと赤");
 
 if (failed > 0) {
   console.error(`verify-size-baseline: NG（${failed} 件）`);
