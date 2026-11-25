@@ -13,6 +13,15 @@ import {
   safeStateKey,
   shouldNotify,
 } from "./session-progress.js";
+import {
+  MAX_CONTEXT_BYTES,
+  WRITE_MARGIN_MS,
+  applies,
+  isDone,
+  progressPath,
+  startContext,
+  stopDecision,
+} from "./session-progress-file.js";
 
 const failures = [];
 let checked = 0;
@@ -72,6 +81,84 @@ check(
   true,
 );
 check("根拠を示す", notice.includes("arXiv 2605.10039"), true);
+
+// --- 進捗の一枚（session-progress-file.js、設計 docs/design/harness-migration/dev-friction-2026-11-25.md §2） ---
+check(
+  "置き場: 枝の / は __",
+  progressPath("claude/a-b", "/p"),
+  "/p/claude__a-b.md",
+);
+check(
+  "claude/ の worktree だけ動く",
+  [
+    applies({ branch: "claude/x", isLinkedWorktree: true }),
+    applies({ branch: "claude/x", isLinkedWorktree: false }),
+    applies({ branch: "master", isLinkedWorktree: true }),
+    applies({ branch: "", isLinkedWorktree: true }),
+  ],
+  [true, false, false, false],
+);
+check(
+  "一枚が無ければ置き場と見出しを知らせる",
+  startContext({ file: "/p/f.md", content: null }).includes("/p/f.md に書く"),
+  true,
+);
+check(
+  "一枚があれば上限まで中身を渡す",
+  startContext({ file: "/p/f.md", content: "あ".repeat(MAX_CONTEXT_BYTES) })
+    .length < MAX_CONTEXT_BYTES,
+  true,
+);
+check(
+  "完了の一枚",
+  [
+    isDone("## 状態\n完了\n"),
+    isDone("状態: 完了"),
+    isDone("## 状態（調査中・実行中・待ち・完了）\n実行中\n"),
+  ],
+  [true, true, false],
+);
+const T = Date.parse("2026-11-25T12:00:00Z");
+const stop = (o) =>
+  stopDecision({
+    stopHookActive: false,
+    lastEditAt: T,
+    progressMtime: null,
+    content: null,
+    file: "/p/f.md",
+    ...o,
+  });
+check("変えたのに一枚が無ければ1回止める", stop({})?.decision, "block");
+check(
+  "止めた後の Stop（stop_hook_active）は通す＝1回だけ",
+  stop({ stopHookActive: true }),
+  null,
+);
+check(
+  "このセッションで変えていなければ止めない（読んだだけ）",
+  stop({ lastEditAt: NaN }),
+  null,
+);
+check(
+  "一枚が最後の変更より新しければ止めない",
+  stop({ progressMtime: T + 1, content: "実行中" }),
+  null,
+);
+check(
+  "一枚を書いた直後の編集の時刻のずれは数えない",
+  stop({ progressMtime: T - WRITE_MARGIN_MS, content: "実行中" }),
+  null,
+);
+check(
+  "一枚より後に変えたら止める",
+  stop({ progressMtime: T - WRITE_MARGIN_MS - 1, content: "実行中" })?.decision,
+  "block",
+);
+check(
+  "完了の一枚は見ない",
+  stop({ progressMtime: 0, content: "状態: 完了" }),
+  null,
+);
 
 if (failures.length > 0) {
   console.error("NG: セッション長の判定が期待どおりに動いていません");
