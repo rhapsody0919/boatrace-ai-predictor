@@ -92,8 +92,12 @@ export default function VenueRaceBlock({ race, raceHref, nowHHMM }) {
           {t("raceCard.view")}
         </Link>
         <Link to={aiTabHref(raceHref)}>
+          {/* 会場の一覧では「イン崩れ」だけだと、確定したレースで「このレースはイン崩れだった」と読める
+              （ファン評価 P2、オーナー 2026-11-25）。タブの名前は「イン崩れ」のまま */}
           {t(
-            isInCautionEnabled() ? "raceTabs.inCaution" : "raceTabs.aiPrediction",
+            isInCautionEnabled()
+              ? "volatility.attentionTitle"
+              : "raceTabs.aiPrediction",
           )}
         </Link>
         <Link to={`${raceHref}?tab=${finished ? "result" : "beforeInfo"}`}>
