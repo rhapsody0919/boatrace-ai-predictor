@@ -7,14 +7,14 @@
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { trendGapIndexes } from "../../../pure/racerTrendSeries.js";
+import { useChartWidth } from "./useChartWidth.js";
 
-const W = 343;
 const H = 240;
 const PAD = { l: 30, r: 66, t: 18, b: 34 };
 
 const slash = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
 
-function scaleOf(seriesByBoat, metric) {
+function scaleOf(seriesByBoat, metric, W) {
   const all = [...seriesByBoat.values()].flat().map((p) => p.value);
   const step = metric === "avgSt" ? 0.01 : 5;
   const lo = Math.floor(Math.min(...all) / step) * step - step;
@@ -92,7 +92,7 @@ function Line({ points, boat, selected, x, y }) {
 }
 
 // 右端の値の札。重ならないよう下へずらし、点から引き出し線を付ける（visual-designer 11/24）
-function EndLabels({ seriesByBoat, selected, x, y, metric }) {
+function EndLabels({ seriesByBoat, selected, x, y, metric, W }) {
   const ends = [...seriesByBoat.entries()]
     .map(([boat, s]) => ({ boat, v: s[s.length - 1].value, len: s.length }))
     .sort((a, b) => y(a.v) - y(b.v));
@@ -128,7 +128,7 @@ function EndLabels({ seriesByBoat, selected, x, y, metric }) {
 }
 
 // 選んだ艇の日付の目盛り・「最新」・休みの印
-function SelectedAxis({ sel, selected, x }) {
+function SelectedAxis({ sel, selected, x, W }) {
   const { t } = useTranslation();
   if (sel.length === 0) return null;
   const marks = [
@@ -185,12 +185,14 @@ function SelectedAxis({ sel, selected, x }) {
 
 export default function TrendChart({ seriesByBoat, metric, selected }) {
   const { t } = useTranslation();
-  const { x, y, ticks } = scaleOf(seriesByBoat, metric);
+  const [ref, W] = useChartWidth();
+  const { x, y, ticks } = scaleOf(seriesByBoat, metric, W);
   const sel = seriesByBoat.get(selected) ?? [];
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
   return (
     <svg
+      ref={ref}
       className="trc-svg"
       viewBox={`0 0 ${W} ${H}`}
       role="img"
@@ -214,7 +216,7 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
       >
         {metric === "avgSt" ? t("basicInfo.trend.unitSec") : "%"}
       </text>
-      <SelectedAxis sel={sel} selected={selected} x={x} />
+      <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
       {order.map((boat) => (
         <Line
           key={boat}
@@ -231,6 +233,7 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
         x={x}
         y={y}
         metric={metric}
+        W={W}
       />
     </svg>
   );

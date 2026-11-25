@@ -8,8 +8,8 @@
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { Badge, GridLines } from "../race/basic-info/TrendChart.jsx";
+import { useChartWidth } from "../race/basic-info/useChartWidth.js";
 
-const W = 343;
 const H = 250;
 const PAD = { l: 34, r: 76, t: 24, b: 36 };
 const dayOf = (date) => Date.parse(`${date}T00:00:00Z`) / 86400000;
@@ -17,7 +17,7 @@ const slash = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
 const isEx = (metric) => metric === "exhibition";
 const fmt = (metric, v) => (isEx(metric) ? v.toFixed(2) : v.toFixed(1));
 
-function scaleOf(seriesByBoat, metric, generationStart, today) {
+function scaleOf(seriesByBoat, metric, generationStart, today, W) {
   const all = [...seriesByBoat.values()].flat().map((p) => p.value);
   const step = isEx(metric) ? 0.02 : 5;
   const lo = Math.floor(Math.min(...all) / step) * step - step;
@@ -59,7 +59,7 @@ function Line({ points, boat, selected, showDots, x, y }) {
 }
 
 // 右端の値の札。上下へ逃がして図の中に収め、点から折れた引き出し線を付ける（visual-designer 11/24）
-function EndLabels({ seriesByBoat, selected, y, metric }) {
+function EndLabels({ seriesByBoat, selected, y, metric, W }) {
   const gap = 16;
   const items = [...seriesByBoat.entries()]
     .map(([boat, s]) => ({ boat, v: s[s.length - 1].value }))
@@ -82,7 +82,7 @@ function EndLabels({ seriesByBoat, selected, y, metric }) {
   ));
 }
 
-function Axis({ generationStart, today, firstDate, minRuns, metric, x }) {
+function Axis({ generationStart, today, firstDate, minRuns, metric, x, W }) {
   const { t } = useTranslation();
   const mid = new Date(((dayOf(generationStart) + dayOf(today)) / 2) * 86400000).toISOString().slice(0, 10);
   return (
@@ -121,21 +121,22 @@ function Axis({ generationStart, today, firstDate, minRuns, metric, x }) {
  */
 export default function MotorTrendChart({ seriesByBoat, metric, selected, generationStart, today, minRuns }) {
   const { t } = useTranslation();
-  const { x, y, ticks } = scaleOf(seriesByBoat, metric, generationStart, today);
+  const [ref, W] = useChartWidth();
+  const { x, y, ticks } = scaleOf(seriesByBoat, metric, generationStart, today, W);
   const firstDate = [...seriesByBoat.values()].map((s) => s[0].date).sort()[0];
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
   return (
-    <svg className="trc-svg mtc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t(`analysis.motor.genTrend.title.${metric}`)}>
+    <svg ref={ref} className="trc-svg mtc-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t(`analysis.motor.genTrend.title.${metric}`)}>
       <GridLines ticks={ticks} y={y} x1={PAD.l} x2={W - PAD.r} label={(g) => (isEx(metric) ? g.toFixed(2) : Math.round(g))} />
       <text x={PAD.l - 4} y={PAD.t - 8} className="trc-tick" textAnchor="end">
         {isEx(metric) ? t("analysis.motor.genTrend.unitSec") : "%"}
       </text>
-      <Axis generationStart={generationStart} today={today} firstDate={firstDate} minRuns={minRuns} metric={metric} x={x} />
+      <Axis generationStart={generationStart} today={today} firstDate={firstDate} minRuns={minRuns} metric={metric} x={x} W={W} />
       {order.map((boat) => (
         <Line key={boat} points={seriesByBoat.get(boat)} boat={boat} selected={boat === selected} showDots={!isEx(metric) && boat === selected} x={x} y={y} />
       ))}
-      <EndLabels seriesByBoat={seriesByBoat} selected={selected} y={y} metric={metric} />
+      <EndLabels seriesByBoat={seriesByBoat} selected={selected} y={y} metric={metric} W={W} />
     </svg>
   );
 }
