@@ -119,6 +119,7 @@
     "fetchError": "Couldn't load the last 90 days' data by lane.",
     "details": {
       "summary": "More details (last 90 days by lane: top-2 and top-3 rates, winning techniques)",
+      "windowNote": "The table above shows the last year by actual starting course; this section shows the last 90 days by lane. When a boat moves in, its lane and starting course differ, and the periods differ too, so the two sets of figures will not match.",
       "placeRatesTitle": "Top-2 / top-3 rates by lane (last 90 days)",
       "placeRatesNote": "Top-2 rate = finished 1st or 2nd; top-3 rate = finished in the top 3 ({{count}} races)",
       "boat": "Lane",

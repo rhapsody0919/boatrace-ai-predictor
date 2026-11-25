@@ -44,6 +44,10 @@ export default function VenueCharacteristicsDetails({ venueCode }) {
         {t("venueCharacteristics.details.summary")}
       </summary>
       <div className="venue-details__body">
+        {/* 上の直近1年（進入コース別）と窓・数え方が違うことを先に書く（オーナー 2026-11-25） */}
+        <p className="venue-details__lead">
+          {t("venueCharacteristics.details.windowNote")}
+        </p>
         <PlaceRatesSection t={t} outcomeData={outcomeData} rates={rates} />
 
         <TechniqueSection t={t} techniqueData={techniqueData} />

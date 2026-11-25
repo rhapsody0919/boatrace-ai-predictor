@@ -202,3 +202,14 @@
 .venue-details__link a {
   color: var(--color-info-text);
 }
+
+/* 畳みを開いた先頭の、上の表との窓の違いの1行。768px 以上の2列でも1行を全幅に取る */
+.venue-details__lead {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  padding-left: var(--spacing-2);
+  border-left: 3px solid var(--border-hairline);
+}
