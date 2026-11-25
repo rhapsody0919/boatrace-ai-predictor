@@ -81,6 +81,10 @@ export function PitReportPublished({
 }) {
   const playerByBoat = new Map((players ?? []).map((p) => [p.number, p]));
   const capturedAt = formatCapturedAtJst(report.capturedAt);
+  // 選んだ艇にコメントが無いとき、行が無い理由を注記の末尾に書く（行は足さない）
+  const focusedWithoutComment =
+    focusedBoat != null &&
+    !report.comments.some((c) => c.boatNumber === focusedBoat);
 
   return (
     <section className="rbi-card rpr-card">
@@ -112,7 +116,17 @@ export function PitReportPublished({
         ))}
       </ul>
 
-      <p className="rbi-note">💡 {t("pitReport.cardNote")}</p>
+      <p className="rbi-note">
+        💡 {t("pitReport.cardNote")}
+        {focusedWithoutComment && (
+          <>
+            {" "}
+            <strong className="rpr-no-comment">
+              {t("pitReport.noCommentForBoat", { n: focusedBoat })}
+            </strong>
+          </>
+        )}
+      </p>
       {i18n.language !== "ja" && (
         <p className="rbi-note">{t("pitReport.originalLanguageNote")}</p>
       )}

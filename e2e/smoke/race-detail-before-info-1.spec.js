@@ -128,6 +128,42 @@ test.describe("レース詳細の直前情報タブ: ピットレポート", () 
     ).not.toHaveClass(/is-selected/);
   });
 
+  test("選んだ艇にコメントが無いときは、注記の末尾にそう書く", async ({
+    page,
+  }) => {
+    await routePitReport(page, {
+      report: [
+        {
+          status: "published",
+          target_from: 7,
+          target_to: 12,
+          reporter_name: "テスト レポーター",
+          comment_count: 1,
+          created_at: "2026-09-21T06:42:00Z",
+          updated_at: null,
+        },
+      ],
+      comments: [
+        {
+          boat_number: 1,
+          racer_id: null,
+          comment_text: "1号艇のコメント",
+          confidence_stars: null,
+          previous_race_number: null,
+        },
+      ],
+    });
+    await openBeforeInfoTab(page, `${G1_RACE}?tab=beforeInfo&boat=4`);
+
+    const section = page.locator(".rpr-card");
+    await expect(section).toBeVisible({ timeout: 20000 });
+    await expect(section.locator(".rpr-comment")).toHaveCount(1);
+    await expect(section.locator(".rpr-comment.is-selected")).toHaveCount(0);
+    await expect(section.locator(".rpr-no-comment")).toHaveText(
+      "4号艇のコメントはありません",
+    );
+  });
+
   test("行が無いレースでは「公開待ち」カードを出す", async ({ page }) => {
     await routePitReport(page, { report: [], comments: [] });
     await openBeforeInfoTab(page, G1_RACE);
