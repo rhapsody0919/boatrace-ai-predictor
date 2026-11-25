@@ -98,21 +98,30 @@ export function motorMeetTip(runs, date, meets, { today = null } = {}) {
   const k = all.findIndex((m) => m.start === date);
   if (k < 0) return null;
   const inMeet = rows.slice(all[k].runsBefore, all[k + 1]?.runsBefore ?? rows.length);
-  const series = (meets ?? []).find((m) => m.start <= date && date <= m.end);
+  const head = meetHeadOf((meets ?? []).find((m) => m.start <= date && date <= m.end), date, inMeet);
   return {
-    start: series?.start ?? date,
-    end: series?.end ?? inMeet[inMeet.length - 1].date,
-    days: series?.days ?? null,
-    grade: series?.grade ?? null,
+    ...head,
     racerName: inMeet.find((r) => r.racerName)?.racerName ?? null,
     finishes: inMeet.map((r) => r.finish ?? null),
-    byDay: inMeet.reduce((acc, r) => {
-      const res = r.finishMark ?? r.finish ?? null;
-      const last = acc[acc.length - 1];
-      if (last && last.date === r.date) last.results.push(res);
-      else acc.push({ date: r.date, results: [res] });
-      return acc;
-    }, []),
-    ongoing: today !== null && (series?.end ?? inMeet[inMeet.length - 1].date) >= today,
+    byDay: resultsByDay(inMeet),
+    ongoing: today !== null && head.end >= today,
   };
+}
+
+// 会場の節（race_series）があれば期間・日数・グレードをそこから、無ければ走の日で期間を作る
+function meetHeadOf(series, date, inMeet) {
+  if (!series) return { start: date, end: inMeet[inMeet.length - 1].date, days: null, grade: null };
+  return { start: series.start, end: series.end, days: series.days ?? null, grade: series.grade ?? null };
+}
+
+// 日ごとの着。公式の記号（F・欠 等）があれば着順より先に出す（BOA-576: F の艇が rank に入っていることがある）
+function resultsByDay(inMeet) {
+  const out = [];
+  for (const r of inMeet) {
+    const res = r.finishMark ?? r.finish ?? null;
+    const last = out[out.length - 1];
+    if (last && last.date === r.date) last.results.push(res);
+    else out.push({ date: r.date, results: [res] });
+  }
+  return out;
 }
