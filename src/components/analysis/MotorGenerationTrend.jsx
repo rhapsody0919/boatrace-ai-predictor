@@ -143,7 +143,7 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
   const runs = selRuns.length;
   // 節の点の吹き出し（オーナー 11/25 承認のモック）。率だけ（展示タイムは今は出さない）
   const renderTip = (p) => {
-    const tip = motorMeetTip(selRuns, p.point.date, data.meets ?? []);
+    const tip = motorMeetTip(selRuns, p.point.date, data.meets ?? [], { today });
     return tip && <MotorMeetTooltip tip={tip} venueCode={venueCode} metric={metric} {...p} />;
   };
   // 1200px 以上は左に図・右に6基の一覧と注記（.race-split、オーナー 11/25 の案 A）。それ未満は縦に並ぶ
