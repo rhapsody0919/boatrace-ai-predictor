@@ -66,7 +66,7 @@
 - verify実行前にimport先の秘密ファイル読込と実通信を確認し、本番接続禁止のレーンではmanualのDB検証をローカル純関数検査と区別して未実行と報告する。（2026-10-13、2026-10-13-boa-856.md）
 - 表・列・RPC を変える・止める・消す前に docs/reference/data-readers.md で読み手（src・api・scripts・sns-video-studio のファイル:行）・書き手・RPC の本体が読む表・取得のジョブ・repo の外の読み手（data-readers.extra.json）を確かめる。名前が式の箇所・Python・SQL の直書きは拾わないので「拾えなかったもの」の節も見る。台帳は master へのマージ後に CI が作り直す機械生成の文書で、PR に含めない（2026-10-27、基盤の計画 B、ADR-0078）
 - 表・関数を DROP する前の参照確認は、本番の pg_depend（deptype<>'i'）・prosrc の ILIKE・pg_views・pg_constraint の confrelid の4つで行う。plpgsql の本文は pg_depend に出ないので prosrc の検索が要る（2026-10-19、system-architect、163）
-- DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちる。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
+- （2026-11-25 から、新規マイグレーションは APPLIED.md の行が無くてよい。行が無い＝未適用で、db-apply の record が適用のときに足す。ADR-0097 の追記）以前は DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちた。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
 - 本番に pg_cron は入っていない（cron.job が無い）。DB の DROP で cron の依存を気にしなくてよい（2026-10-19、system-architect の本番読み取り）
 - DROP だけのマイグレーションの runbook では、「最後に書かれた時刻」の判定の基準を、呼び出し元を消した PR の本番デプロイ時刻にする（DROP の PR の時刻では、その間の想定外の書き込みを見逃す）。読むだけの RPC はこの判定では見えず、コードの grep だけが根拠になる（2026-10-19、system-architect、168。呼び出し元を消したのは #1645）
 - pg_depend（deptype<>'i'）で外からの依存を数えるときは、対象の表自身の制約（pg_constraint）・既定値（pg_attrdef）・索引（pg_index の indexrelid）を除く。索引を除き忘れると、外の依存が無くても 0 にならない（2026-10-19、168-runbook の PGlite での再現）
@@ -150,3 +150,4 @@
 - admin の bypass を外しても、Claude のセッションの素の gh がオーナー（admin）なら、オーナーの名義の PR の承認と ruleset の API で審査・CODEOWNERS を越えられる。文字の照合のフック（guard-deploy-approval.sh）で止め、塞ぎきるには素の gh を App にする（2026-11-06、system-architect の審査、db-operations.md の「承認1件は書き込みの身元なら誰でも数える」）
 - Claude の Bash の道具では標準出力が端末でない（process.stdout.isTTY は undefined）。isTTY で「トークンを会話に出さない」を守る判定は効かないので、トークンを出す形を作らず環境変数で子に渡す（2026-11-06、node -e の実測、scripts/maintenance/ryujin-maker-token.js）
 - review.yml の月の上限は、作者の actor の run を取り消し・skipped も含めて数え、Codex と Claude で分け合う。Claude を ryujin-maker の名義にすると1日約68件の見込み（推測）で、既定の300は数日で尽き、尽きると全部の PR に REQUEST_CHANGES が付く（2026-11-06、scripts/review/gate.js・scripts/lib/reviewPr.js の monthlyRunsPath、11/1〜6 の実測は ryujin-maker 118件・rhapsody0919 290件）
+- 自動の適用（reconcile）の点4は台帳の行で決まる。行の判定を変えるときは ADR-0097 と scripts/lib/dbReconcile.js の ledgerReasons を一緒に変える。APPLIED.md の衝突の主な型は、record の [automated] の commit が番号 N の行を書き換え、並走の PR が N+1 の行を隣に足すこと（2026-11-25、system-architect、#3402・#3388）
