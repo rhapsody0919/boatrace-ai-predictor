@@ -37,6 +37,24 @@ test("推移に切り替えると6基の線と号機が出て、一覧は隠れ�
   await expect(page.locator(".motor-ranking-table")).toBeVisible();
 });
 
+test("節の点に重ねると吹き出しが出て、節のページへ飛べる。クリックで留め、Esc で閉じる", async ({ page }) => {
+  await mockGeneration(page);
+  await openTrend(page);
+  const hit = await page.locator(".mtc-chart .trc-hit").boundingBox();
+  await page.mouse.move(hit.x + hit.width * 0.5, hit.y + hit.height / 2);
+  const tip = page.locator(".mtc-wrap .trc-tip");
+  await expect(tip).toBeVisible();
+  await expect(tip.locator(".trc-tip-link")).toHaveText("節へ →");
+  await expect(tip.locator(".trc-tip-link")).toHaveAttribute("href", /^\/venue\/16\/meet\/2026-\d\d-\d\d$/);
+  await expect(tip).toContainText("一般戦");
+  await expect(tip).toContainText("乗った選手 選手");
+  await expect(tip).toContainText("節の初日の公式2連率");
+  await page.mouse.click(hit.x + hit.width * 0.5, hit.y + hit.height / 2);
+  await expect(tip.locator(".trc-tip-close")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(tip).toHaveCount(0);
+});
+
 test("入れ替えから日が浅く20走に届かなければ、線を描かず号機と走数を出す", async ({ page }) => {
   await mockGeneration(page, { start: "2026-09-28" });
   await openTrend(page);

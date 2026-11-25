@@ -9,11 +9,13 @@ import { useTranslation } from "react-i18next";
 import BoatBadge from "../race/BoatBadge";
 import InlineFetchError from "../InlineFetchError";
 import MotorTrendChart from "./MotorTrendChart";
+import MotorMeetTooltip from "./MotorMeetTooltip";
 import { getMotorGenerationRuns } from "../../services/motorQueries8.js";
 import {
   MOTOR_EXHIBITION_MIN_RUNS,
   MOTOR_RATE_MIN_RUNS,
   motorExhibitionTrend,
+  motorMeetTip,
   motorRateTrend,
 } from "../../pure/motorGenerationTrend.js";
 import { formatGenerationDate } from "../../utils/motorGeneration";
@@ -134,15 +136,21 @@ function TrendEmpty({ rows, data, metric, today, onShowNow }) {
   );
 }
 
-function TrendBody({ rows, data, series, metric, today, selected, onSelect }) {
+function TrendBody({ rows, data, series, metric, today, selected, onSelect, venueCode }) {
   const { t } = useTranslation();
   const selRow = rows.find((r) => r.boat_number === selected);
-  const runs = (data.runsByMotor[selRow?.motor_number] ?? []).length;
+  const selRuns = data.runsByMotor[selRow?.motor_number] ?? [];
+  const runs = selRuns.length;
+  // 節の点の吹き出し（オーナー 11/25 承認のモック）。率だけ（展示タイムは今は出さない）
+  const renderTip = (p) => {
+    const tip = motorMeetTip(selRuns, p.point.date, data.meets ?? []);
+    return tip && <MotorMeetTooltip tip={tip} venueCode={venueCode} metric={metric} {...p} />;
+  };
   // 1200px 以上は左に図・右に6基の一覧と注記（.race-split、オーナー 11/25 の案 A）。それ未満は縦に並ぶ
   return (
     <div className="race-split trc-split">
       <div className="race-split__main">
-        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} />
+        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} renderTip={metric === "exhibition" ? null : renderTip} />
       </div>
       <div className="race-split__side">
         <BoatMotorPicker rows={rows} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={onSelect} metric={metric} />
@@ -172,7 +180,7 @@ export default function MotorGenerationTrend({ venueCode, raceId, rows, metric, 
       {status === "loading" && <p className="trc-note">{t("analysis.loading")}</p>}
       {status === "error" && <InlineFetchError />}
       {status === "ok" && series.size === 0 && <TrendEmpty rows={sorted} data={data} metric={metric} today={today} onShowNow={onShowNow} />}
-      {series.size > 0 && <TrendBody rows={sorted} data={data} series={series} metric={metric} today={today} selected={selected} onSelect={pick} />}
+      {series.size > 0 && <TrendBody rows={sorted} data={data} series={series} metric={metric} today={today} selected={selected} onSelect={pick} venueCode={venueCode} />}
     </div>
   );
 }
