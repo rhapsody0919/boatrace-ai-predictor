@@ -105,3 +105,23 @@ export function newServicesFileProblems(addedPaths) {
         `src/services/ に <領域>Queries*.js でない新しいファイル: ${p}（新しい問い合わせは領域の Queries へ）`,
     );
 }
+
+const edgeRows = (edges) =>
+  new Set(edges.map(({ rule, from, to }) => `${rule}\t${from}\t${to}`));
+
+/**
+ * 全体で0の関所（2026-11-25）: 違反の辺のうち、例外の表 { rule: { from: [to] } } に無い物を問題に、
+ * 表にあって今は違反でない行を stale（消せる行）に返す。和の中の from はまとめない（辺ごと）
+ */
+export function judgeAgainstExceptions(edges, exceptions) {
+  const allowed = baselineRows(exceptions);
+  const now = edgeRows(edges);
+  const problems = [...now]
+    .filter((r) => !allowed.has(r))
+    .map((r) => {
+      const [rule, from, to] = r.split("\t");
+      return `${rule}: 例外の表に無い辺 ${from} → ${to}`;
+    });
+  const stale = [...allowed].filter((r) => !now.has(r)).map((r) => r.replaceAll("\t", " "));
+  return { ok: problems.length === 0, problems, stale };
+}
