@@ -5,41 +5,16 @@
  * 全国の基準は venue_course_technique_baseline から1行で添える。選手の特徴としては読ませない（注記）。
  * 事実の記録なので「結果を保証しない」の断りは付けない（オーナー 2026-11-25）。
  */
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "./BoatBadge";
-import {
-  buildNigashiBreakdown,
-  nationalNigashiBaseline,
-} from "../../pure/nigashiStats.js";
-import { getNigashiBaselineRows } from "../../services/venueQueries3.js";
+import { buildNigashiBreakdown } from "../../pure/nigashiStats.js";
+import { useNigashiBaseline } from "../../hooks/useNigashiBaseline";
 import { getDaysAgoJST } from "../../utils/dateUtils";
 import { RACE_PAGE_FROM } from "../../utils/analogySimilarDisplay";
 import "./Course1LossCard.css";
 
 const COURSE = 2;
 const slash = (date) => (date ? date.replaceAll("-", "/") : date);
-
-/** 全国の基準。undefined＝取得中、null＝取得失敗、値＝取得済み（行が無ければ empty）。選手ページ（RacerNigashiCourses）も使う */
-export function useNationalBaseline() {
-  const [state, setState] = useState(undefined);
-  useEffect(() => {
-    let cancelled = false;
-    getNigashiBaselineRows(COURSE)
-      .then((rows) => {
-        if (!cancelled)
-          setState(nationalNigashiBaseline(rows) ?? { empty: true });
-      })
-      .catch((error) => {
-        console.error("逃し率の全国の基準の取得に失敗:", error);
-        if (!cancelled) setState(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return state;
-}
 
 function BaselineLine({ text, baseline }) {
   if (baseline === undefined || baseline?.empty) return null;
@@ -62,7 +37,7 @@ function BaselineLine({ text, baseline }) {
 
 export default function NigashiCard({ player, records, now }) {
   const { t } = useTranslation();
-  const baseline = useNationalBaseline();
+  const baseline = useNigashiBaseline();
   if (!player) return null;
   const text = (key, options) => t(`wakuInfo.nigashi.${key}`, options);
   const body = () => {

@@ -393,33 +393,3 @@ tr.racer-vc-row-highlight td:first-child {
 .racer-return-fold[open] > summary {
   margin-bottom: var(--spacing-2);
 }
-
-/* 逃し率（進入コース別、オーナー 2026-11-25）。ページの地に乗るので意味トークンだけを使う */
-.racer-nigashi {
-  margin: var(--spacing-4) 0;
-}
-
-.racer-nigashi-rows {
-  margin: 0;
-}
-
-.racer-nigashi-row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--spacing-3);
-  padding: var(--spacing-2) var(--spacing-1);
-  border-bottom: var(--border-width-1) solid var(--border-hairline);
-}
-
-.racer-nigashi-row dt {
-  color: var(--text-secondary);
-}
-
-.racer-nigashi-row dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.racer-nigashi-row small {
-  color: var(--text-secondary);
-}

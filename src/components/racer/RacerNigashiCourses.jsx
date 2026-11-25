@@ -5,8 +5,17 @@
  * 事実の記録なので「結果を保証しない」の断りは付けない（オーナー 2026-11-25）。
  */
 import { nigashiByCourse } from "../../pure/nigashiStats.js";
-// 全国の基準（2コースの行。定義上2〜6コースのどれも会場の逃げ率と同じ値）は枠別タブのカードと同じ読み方
-import { useNationalBaseline } from "../race/NigashiCard";
+import { useNigashiBaseline } from "../../hooks/useNigashiBaseline";
+
+// 行の見た目。ページの地に乗るので意味トークンだけを使う（CSS のファイルを増やさないため部品の中に置く）
+const ROW_STYLE = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "var(--spacing-3)",
+  padding: "var(--spacing-2) var(--spacing-1)",
+  borderBottom: "var(--border-width-1) solid var(--border-hairline)",
+};
+const SUB_STYLE = { color: "var(--text-secondary)" };
 
 const slash = (date) => (date ? date.replaceAll("-", "/") : date);
 
@@ -27,22 +36,22 @@ function BaselineNote({ baseline }) {
 }
 
 export default function RacerNigashiCourses({ history }) {
-  const baseline = useNationalBaseline();
+  const baseline = useNigashiBaseline();
   const { rows, from, to } = nigashiByCourse(history);
   if (rows.length === 0) return null;
   return (
-    <div className="racer-nigashi" data-testid="racer-nigashi">
+    <div data-testid="racer-nigashi" style={{ margin: "var(--spacing-4) 0" }}>
       <h3>1コースの艇に逃げで1着を取られた走（進入コース別）</h3>
       <p className="racer-stat-note">
         2〜6コースに入った走のうち、1コースの艇に逃げで1着を取られた走。主に2コースで見る値です（当社データ{" "}
         {slash(from)}〜{slash(to)}。上の絞り込み条件が効きます）
       </p>
-      <dl className="racer-nigashi-rows">
+      <dl style={{ margin: 0 }}>
         {rows.map((r) => (
-          <div key={r.course} className="racer-nigashi-row">
-            <dt>{r.course}コース</dt>
-            <dd>
-              {r.n}走中{r.count}走<small>（{r.pct}%）</small>
+          <div key={r.course} style={ROW_STYLE}>
+            <dt style={SUB_STYLE}>{r.course}コース</dt>
+            <dd style={{ margin: 0, fontVariantNumeric: "tabular-nums" }}>
+              {r.n}走中{r.count}走<small style={SUB_STYLE}>（{r.pct}%）</small>
             </dd>
           </div>
         ))}
