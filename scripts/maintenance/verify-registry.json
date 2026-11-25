@@ -987,6 +987,11 @@
       "guards": "新しいモーターの最初の開催で、モータ情報の一覧が全艇0.0%にならない決まり（公式が0の艇だけ自前の値、まだ走っていません／0%（N走）／※、最初の節の帯、前の節までの走数）（BOA-830）"
     },
     {
+      "script": "verify-motor-generation-runs.js",
+      "tier": "ci",
+      "guards": "モーターの推移の線の取得（motorQueries8.js の getMotorGenerationRuns）。世代はレースの日以前で最新の使用開始日から、このレース以降の走を入れない、頼んだ号機の走を古い順に1走1行で展示は同じ艇の行から、race_entries は1000行未満の幅で読む、使用開始日が無ければ null、取得の失敗は例外"
+    },
+    {
       "script": "verify-motor-generation-trend.js",
       "tier": "ci",
       "guards": "モーターの推移の線（src/pure/motorGenerationTrend.js）。節は日のあきか公式の率の変わり目で区切る、2連率・3連率は節の初日の公式の値で前の節まで20走未満は描かない、右端は今日まで延ばす、展示は直近30走の平均で24走から日ごとに1点"
