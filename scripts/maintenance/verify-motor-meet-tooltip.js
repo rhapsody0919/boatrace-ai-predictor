@@ -99,6 +99,15 @@ check("着は日ごとに空白で区切り、同じ日は続ける", base.inclu
 check("着をハイフンでつながない", !base.includes("3-1"), base);
 check("終わった節はこの節の着順と走数", base.includes("analysis.motor.genTrend.tipFinishes:") && base.includes("&quot;n&quot;:6"), base);
 check("3行目も折り返す", /trc-tip-value mtc-tip-wrap/.test(base), base);
+check("吹き出しは点の横の位置に置く", base.includes("left:30%"), base);
+check("飛び先は吹き出しの見出しの印", /class="trc-tip-link"[^>]*>analysis\.motor\.genTrend\.toMeet</.test(base), base);
+check("55% ちょうどは返さず、56% で返す", !html({ leftPct: 55 }).includes("is-flip") && html({ leftPct: 56 }).includes("is-flip"));
+const closeBtn = html({ pinned: true });
+check("閉じる印は名前つきの × のボタン", /<button[^>]*class="trc-tip-close"[^>]*aria-label="basicInfo\.trend\.tipClose"[^>]*>×<\/button>/.test(closeBtn), closeBtn);
+check("知らない記号はそのまま", html({ tip: tip({ byDay: [{ date: "2026-09-26", results: ["？", 2] }] }) }).includes("？2"));
+const odd = html({ tip: tip({ byDay: [{ date: "2026-09-26", results: [1] }, { date: "2026-09-27", results: [6, 2, null] }] }) });
+check("走数は日をまたいで数える", odd.includes("&quot;n&quot;:4") && odd.includes("1 62-"), odd);
+check("3行目は率と走数（3連率も）", html({ metric: "top3Rate" }).includes("analysis.motor.genTrend.metric.top3Rate"));
 const ongoing = html({ tip: tip({ ongoing: true }) });
 check("開催中はここまでの着順", ongoing.includes("tipFinishesSoFar") && !ongoing.includes("tipFinishes:"), ongoing);
 check("率は1桁と % とそれまでの走数", base.includes("39.6%") && base.includes("&quot;runs&quot;:82"), base);
