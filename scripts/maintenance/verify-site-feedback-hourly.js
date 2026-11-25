@@ -188,6 +188,20 @@ check(
       fn.anon === false,
     JSON.stringify(fn),
   );
+  // 行を消してから2回目を当てても、受け付けた数を下げない。
+  // 行の created_at を動かす下の確かめより先に行う（前の時間帯へずらすと、2回目の数え直しがその時間を新しく足し、
+  // 毎時0〜10分に走ると結果が変わった。2026-11-25 master で赤）
+  const before = JSON.stringify(await hourly());
+  // 一部だけ消す（全部消すと数え直しが何もせず、確かめにならない）
+  await db.exec(
+    `DELETE FROM public.site_feedback WHERE client_key = '${key(7)}'`,
+  );
+  await db.exec(sql);
+  check(
+    "(g) 行を消してから2回目を当てても、件数は変わらない",
+    JSON.stringify(await hourly()) === before,
+    JSON.stringify(await hourly()),
+  );
   // 全体の上限と created_at の上書きも、差し替えた後に効く
   await db.exec(
     "UPDATE public.site_feedback SET created_at = now() - interval '11 minutes'",
@@ -208,18 +222,6 @@ check(
     "SELECT bool_and(created_at > now() - interval '1 minute') AS ok FROM public.site_feedback WHERE client_key::text LIKE '00000000-0000-4000-8000-0000000001%'",
   );
   check("(g) created_at は now() のまま", fresh.rows[0].ok === true);
-  // 行を消してから2回目を当てても、受け付けた数を下げない
-  const before = JSON.stringify(await hourly());
-  // 一部だけ消す（全部消すと数え直しが何もせず、確かめにならない）
-  await db.exec(
-    `DELETE FROM public.site_feedback WHERE client_key = '${key(7)}'`,
-  );
-  await db.exec(sql);
-  check(
-    "(g) 行を消してから2回目を当てても、件数は変わらない",
-    JSON.stringify(await hourly()) === before,
-    JSON.stringify(await hourly()),
-  );
   // セッションの TimeZone に依らず UTC の時間で数える
   await db.exec("SET TIME ZONE 'Asia/Kolkata'");
   await asRole(db, "anon", insert({ ...BASE, client_key: key(900) }));
