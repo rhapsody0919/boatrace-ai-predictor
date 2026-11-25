@@ -231,7 +231,7 @@
   }
 
   .trc-split .trc-boat:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--brand-accent-primary) 6%, transparent);
+    background: color-mix(in srgb, var(--brand-accent-primary) 4%, transparent);
   }
 
   /* 選んだ行は左の帯と薄い地（枠と同じ地では見えない。visual-designer 11/25） */

@@ -8,9 +8,8 @@ import WinRateStepChart from "./WinRateStepChart";
 import { winRateSteps } from "../../../pure/racerWinRateSteps.js";
 
 const slash = (d) => `${d.slice(2, 4)}/${d.slice(5, 7)}`;
-// 記録のある最後の期の勝率（図の右の札と同じ）
-const lastWinRate = (steps) =>
-  steps?.findLast(Boolean)?.winRate.toFixed(2) ?? null;
+// 右端の期の勝率（一覧の見出しが「右端の期」なので、その期に記録の無い艇は前の期の値でなく「—」。ファン評価 11/25）
+const lastWinRate = (steps) => steps?.at(-1)?.winRate.toFixed(2) ?? null;
 
 export default function WinRateTrend({
   periodStats,
