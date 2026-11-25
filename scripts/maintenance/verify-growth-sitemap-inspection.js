@@ -12,6 +12,7 @@ import {
   SAMPLE_RACE_NUMBERS,
   buildInspectionTargets,
   dueWeekly,
+  inspectInBatches,
   parseSitemapLocs,
   planSitemapInspections,
 } from "../lib/growth/sitemapInspection.js";
@@ -76,5 +77,18 @@ assert.deepEqual(
   ["D+1 /race/2026-11-24-01-06", "D+3 /race/2026-11-20-01-01"],
   "済みのレースと、直近の weekly は飛ばす",
 );
+
+// 途中で書く: 120件を50件ごとに書き、途中で切れても（write が投げても）済んだ分は残る。1件の失敗は他を止めない
+const items = Array.from({ length: 120 }, (_, i) => ({ url: `${B}/x/${i}` }));
+const written = [];
+const r = await inspectInBatches(items, async (t) => { if (t.url.endsWith("/7")) throw new Error("x"); return t.url; }, async (rows) => { written.push(rows.length); }, 50);
+assert.deepEqual(written, [50, 50, 19], "50件たまるごとに書き、残りは最後に書く");
+assert.deepEqual(r.failed, [`${B}/x/7`]);
+const partial = [];
+await assert.rejects(
+  inspectInBatches(items, async (t) => t.url, async (rows) => { partial.push(rows.length); if (partial.length === 2) throw new Error("切れた"); }, 50),
+  /切れた/,
+);
+assert.deepEqual(partial, [50, 50], "切れるまでに書いた分は残る（書き込みの失敗は握りつぶさない）");
 
 console.log("verify-growth-sitemap-inspection: OK");

@@ -77,3 +77,28 @@ export async function readRecentWeekly(db, urls, today) {
   }
   return out;
 }
+
+export const WRITE_BATCH_SIZE = 50;
+
+/**
+ * todo を順に検査し、成功の行を size 件たまるごとに write する（途中で切れても済んだ分は残り、翌日の回は済みを飛ばす）。
+ * inspectOne(t) は行を返す。1件が落ちても他は続け、落ちた URL を返す。write の失敗は握りつぶさず投げる
+ */
+export async function inspectInBatches(todo, inspectOne, write, size = WRITE_BATCH_SIZE, onError = () => {}) {
+  let rows = [];
+  const failed = [];
+  for (const t of todo) {
+    try {
+      rows.push(await inspectOne(t));
+    } catch (err) {
+      failed.push(t.url);
+      onError(t, err);
+    }
+    if (rows.length >= size) {
+      await write(rows);
+      rows = [];
+    }
+  }
+  if (rows.length > 0) await write(rows);
+  return { failed };
+}

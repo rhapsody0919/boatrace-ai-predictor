@@ -18,7 +18,7 @@ import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import { getGoogleAuthClient } from "../lib/googleServiceAuth.js";
 import { ptToday } from "../lib/growth/gscDaily.js";
-import { buildInspectionTargets, planSitemapInspections, readRecentWeekly } from "../lib/growth/sitemapInspection.js";
+import { WRITE_BATCH_SIZE, buildInspectionTargets, inspectInBatches, planSitemapInspections, readRecentWeekly } from "../lib/growth/sitemapInspection.js";
 import {
   INSPECTION_LIMITS,
   assertInspectionTableExists,
@@ -52,26 +52,24 @@ function requireEnv(names) {
   if (missing.length > 0) throw new Error(`環境変数が無い: ${missing.join("・")}（鍵は窓口が用意する）`);
 }
 
-/** todo の URL を順に検査して行にする。1件が落ちても他は取り、落ちた URL を返す */
-async function inspectAll(todo, today) {
+/** todo の URL を順に検査し、50件ごとに write で書く。1件が落ちても他は取り、落ちた URL を返す */
+async function inspectAll(todo, today, write) {
   const searchconsole = google.searchconsole({
     version: "v1",
     auth: getGoogleAuthClient(["https://www.googleapis.com/auth/webmasters.readonly"]),
   });
-  const rows = [];
-  const failed = [];
-  for (const t of todo) {
-    try {
+  return inspectInBatches(
+    todo,
+    async (t) => {
       const result = await inspectUrl(searchconsole, process.env.SEARCH_CONSOLE_SITE_URL, t.url);
       const row = toInspectionRow({ ...t, inspectedOn: today, result, fetchedAt: new Date().toISOString() });
-      rows.push(row);
       console.log(`${t.checkpoint} ${t.url}: ${row.verdict ?? "不明"}${row.canonical_ok === false ? "・canonical が別" : ""}`);
-    } catch (err) {
-      failed.push(t.url);
-      console.error(`${t.url}: 検査の失敗 ${err?.code ?? err?.status ?? "unknown"}`);
-    }
-  }
-  return { rows, failed };
+      return row;
+    },
+    write,
+    WRITE_BATCH_SIZE,
+    (t, err) => console.error(`${t.url}: 検査の失敗 ${err?.code ?? err?.status ?? "unknown"}`),
+  );
 }
 
 async function planFromArticles(opts, db, today) {
@@ -99,8 +97,9 @@ async function main() {
   const today = ptToday(new Date());
   const { count, todo } = opts.sitemap ? await planFromSitemap(opts, db, today) : await planFromArticles(opts, db, today);
   console.log(`検査: 一覧${count}件のうち${todo.length}件${opts.dryRun ? "（dry-run）" : ""}`);
-  const { rows, failed } = await inspectAll(todo, today);
-  if (db) await writeInspections(db, rows);
+  const { failed } = await inspectAll(todo, today, async (rows) => {
+    if (db) await writeInspections(db, rows);
+  });
   if (failed.length > 0) throw new Error(`${failed.length}件の検査が落ちた。回し直せば済みの分は飛ばす`);
 }
 
