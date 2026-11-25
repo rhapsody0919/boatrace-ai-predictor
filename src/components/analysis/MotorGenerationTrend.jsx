@@ -57,24 +57,24 @@ export function MotorMetricChips({ metric, setMetric }) {
   );
 }
 
+// 取得の結果は、頼んだ鍵と一緒に持つ。鍵が今と違えば読み込み中（effect の中で同期に state を戻さない）
 function useGenerationRuns(venueCode, motors, raceId) {
-  const [state, setState] = useState({ status: "loading", data: null });
-  const key = motors.join("_");
+  const key = `${venueCode}-${motors.join("_")}-${raceId}`;
+  const [got, setGot] = useState({ key: null, status: "loading", data: null });
   useEffect(() => {
     let cancelled = false;
-    setState({ status: "loading", data: null });
-    getMotorGenerationRuns(venueCode, key.split("_").map(Number), raceId).then(
-      (data) => !cancelled && setState({ status: "ok", data }),
+    getMotorGenerationRuns(venueCode, key.split("-")[1].split("_").map(Number), raceId).then(
+      (data) => !cancelled && setGot({ key, status: "ok", data }),
       (err) => {
         console.error("モーターの推移の取得エラー:", err);
-        if (!cancelled) setState({ status: "error", data: null });
+        if (!cancelled) setGot({ key, status: "error", data: null });
       },
     );
     return () => {
       cancelled = true;
     };
   }, [venueCode, key, raceId]);
-  return state;
+  return got.key === key ? got : { status: "loading", data: null };
 }
 
 function seriesOf(rows, runsByMotor, metric, today) {
@@ -109,6 +109,40 @@ function BoatMotorPicker({ rows, series, runsByMotor, selected, onSelect, showRu
   );
 }
 
+function TrendEmpty({ rows, data, metric, today, onShowNow }) {
+  const { t } = useTranslation();
+  if (data.generationStart === null) return <p className="trc-note">{t("analysis.motor.genTrend.noGeneration")}</p>;
+  return (
+    <>
+      <BoatMotorPicker rows={rows} series={new Map()} runsByMotor={data.runsByMotor} showRuns />
+      <div className="mtc-empty">
+        <p>{t("analysis.motor.genTrend.empty", { date: formatGenerationDate(data.generationStart, { short: true }), days: dayDiff(data.generationStart, today) + 1, n: minRunsOf(metric) })}</p>
+        <button type="button" className="mtc-to-now" onClick={onShowNow}>
+          {t("analysis.motor.genTrend.toNow")}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function TrendBody({ rows, data, series, metric, today, selected, onSelect }) {
+  const { t } = useTranslation();
+  const selRow = rows.find((r) => r.boat_number === selected);
+  const runs = (data.runsByMotor[selRow?.motor_number] ?? []).length;
+  return (
+    <>
+      <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} />
+      <BoatMotorPicker rows={rows} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={onSelect} />
+      {selRow && (
+        <p className="mtc-selected">
+          {t("analysis.motor.genTrend.selected", { boat: selected, n: selRow.motor_number, date: formatGenerationDate(data.generationStart), runs })}
+        </p>
+      )}
+      <p className="trc-note">{t(metric === "exhibition" ? "analysis.motor.genTrend.noteExhibition" : "analysis.motor.genTrend.noteRate", { n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) })}</p>
+    </>
+  );
+}
+
 export default function MotorGenerationTrend({ venueCode, raceId, rows, metric, onShowNow, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   const [localBoat, setLocalBoat] = useState(null);
@@ -119,35 +153,12 @@ export default function MotorGenerationTrend({ venueCode, raceId, rows, metric, 
   const want = focusedBoat ?? localBoat ?? 1;
   const selected = series.has(want) ? want : [...series.keys()][0];
   const pick = (boat) => (onFocusBoat ? onFocusBoat(boat) : setLocalBoat(boat));
-  const selRow = sorted.find((r) => r.boat_number === selected);
   return (
     <div className="trc-wrap mtc-wrap">
       {status === "loading" && <p className="trc-note">{t("analysis.loading")}</p>}
       {status === "error" && <InlineFetchError />}
-      {status === "ok" && data.generationStart === null && <p className="trc-note">{t("analysis.motor.genTrend.noGeneration")}</p>}
-      {status === "ok" && data.generationStart !== null && series.size === 0 && (
-        <>
-          <BoatMotorPicker rows={sorted} series={series} runsByMotor={data.runsByMotor} showRuns />
-          <div className="mtc-empty">
-            <p>{t("analysis.motor.genTrend.empty", { date: formatGenerationDate(data.generationStart, { short: true }), days: dayDiff(data.generationStart, today) + 1, n: minRunsOf(metric) })}</p>
-            <button type="button" className="mtc-to-now" onClick={onShowNow}>
-              {t("analysis.motor.genTrend.toNow")}
-            </button>
-          </div>
-        </>
-      )}
-      {series.size > 0 && (
-        <>
-          <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} />
-          <BoatMotorPicker rows={sorted} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={pick} />
-          {selRow && (
-            <p className="mtc-selected">
-              {t("analysis.motor.genTrend.selected", { boat: selected, n: selRow.motor_number, date: formatGenerationDate(data.generationStart), runs: (data.runsByMotor[selRow.motor_number] ?? []).length })}
-            </p>
-          )}
-          <p className="trc-note">{t(metric === "exhibition" ? "analysis.motor.genTrend.noteExhibition" : "analysis.motor.genTrend.noteRate", { n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) })}</p>
-        </>
-      )}
+      {status === "ok" && series.size === 0 && <TrendEmpty rows={sorted} data={data} metric={metric} today={today} onShowNow={onShowNow} />}
+      {series.size > 0 && <TrendBody rows={sorted} data={data} series={series} metric={metric} today={today} selected={selected} onSelect={pick} />}
     </div>
   );
 }

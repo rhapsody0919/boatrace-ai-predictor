@@ -248,15 +248,31 @@ function DrillView({ m, v }) {
   );
 }
 
+// 一覧と「今の値｜推移」。切り替えはレース詳細のタブだけ（オーナー 2026-11-25 承認のモック改訂2）。開いた最初は今の値
+function MotorListArea({ m, v, scroll, scrollRef }) {
+  const [view, setView] = useState("now");
+  const [metric, setMetric] = useState("top2Rate");
+  const list = <MotorListView m={m} v={v} scroll={scroll} scrollRef={scrollRef} />;
+  if (!m.embedded) return list;
+  const trend = view === "trend";
+  return (
+    <>
+      {trend && <MotorMetricChips metric={metric} setMetric={setMetric} />}
+      <MotorViewHead view={view} setView={setView} metric={metric} />
+      {trend ? (
+        <MotorGenerationTrend venueCode={m.selectedVenue} raceId={m.selectedRace} rows={m.breakdown} metric={metric}
+          onShowNow={() => setView("now")} focusedBoat={m.focusedBoat} onFocusBoat={m.onFocusBoat} />
+      ) : (
+        list
+      )}
+    </>
+  );
+}
+
 export function MotorMain({ m, v, scroll, scrollRef }) {
   const { t } = useTranslation();
   const { loading, error, drillDownMotor, drillPreGeneration, breakdown, setDrillDownMotor } = m;
   const ready = !loading && !error;
-  // 「今の値｜推移」はレース詳細のタブだけ（オーナー 2026-11-25 承認のモック改訂2）。開いた最初は今の値
-  const [view, setView] = useState("now");
-  const [metric, setMetric] = useState("top2Rate");
-  const listReady = ready && drillDownMotor === null && breakdown.length > 0;
-  const trend = listReady && m.embedded && view === "trend";
   return (
     <>
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
@@ -266,11 +282,8 @@ export function MotorMain({ m, v, scroll, scrollRef }) {
         </div>
       )}
 
-      {trend && <MotorMetricChips metric={metric} setMetric={setMetric} />}
-      {listReady && m.embedded && <MotorViewHead view={view} setView={setView} metric={metric} />}
-      {listReady && !trend && <MotorListView m={m} v={v} scroll={scroll} scrollRef={scrollRef} />}
-      {trend && (
-        <MotorGenerationTrend venueCode={m.selectedVenue} raceId={m.selectedRace} rows={breakdown} metric={metric} onShowNow={() => setView("now")} focusedBoat={m.focusedBoat} onFocusBoat={m.onFocusBoat} />
+      {ready && drillDownMotor === null && breakdown.length > 0 && (
+        <MotorListArea m={m} v={v} scroll={scroll} scrollRef={scrollRef} />
       )}
 
       {ready && drillDownMotor !== null && drillPreGeneration && (
