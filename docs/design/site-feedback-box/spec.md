@@ -58,10 +58,11 @@ db-apply は master にあるファイルしか当てず、本番の配備は1�
 
 | 順 | PR（枝） | 中身 | 表の前に入れてよいか |
 |---|---|---|---|
-| 1 | 表（`claude/site-feedback-db-v2`） | `208_site_feedback.sql`・台帳の行・`verify-site-feedback-migration.js`・この spec | ―（オーナーがマージ） |
+| 1 | 表（`claude/site-feedback-db-v2`、#3391） | `208_site_feedback.sql`・台帳の行・`verify-site-feedback-migration.js` | ―（オーナーがマージ） |
+| 1 | spec（`claude/site-feedback-spec`） | この spec と content-index | いつでも |
 | 2 | db-apply | オーナーが Actions で起動して承認する。成功すると台帳が「適用済み」になる | ― |
-| 3 | ポリシー（`claude/privacy-feedback-storage-v2`） | プライバシーポリシーの追記 | 可（文だけ） |
-| 4 | 部品（`claude/site-feedback-pure`・`-form`・`-fields`・`-panel`・`-button`） | 決まりの純関数・識別番号・送信と入力の状態・訳・パネル・ボタン。どこからも描かないので画面に出ない | 可 |
+| 3 | ポリシー（`claude/privacy-feedback-storage-v2`、#3389） | プライバシーポリシーの追記 | 可（文だけ） |
+| 4 | 部品（`claude/site-feedback-pure`・`-form`・`-fields`・`-panel`・`-button`、前の枝に重ねる） | 決まりの純関数・識別番号・送信と入力の状態・訳・パネル・ボタン。どこからも描かないので画面に出ない | 可 |
 | 5 | つなぐ（`claude/site-feedback-mount`） | `AppRouter.jsx` で全画面に置く・E2E。`verify-site-feedback-gate.js` が、画面と表の列挙のずれ・台帳で `208_site_feedback.sql` が適用済みでないことで赤になる。E2E が /privacy に保存の記載が無いことで赤になる | 不可（2・3 の後） |
 | 6 | フッターの入口（`claude/site-feedback-footer`） | `links` を渡すフッターの「ご意見・ご要望を送る」 | 不可（5 の後） |
 
