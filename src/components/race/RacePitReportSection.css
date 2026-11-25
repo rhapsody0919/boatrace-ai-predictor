@@ -25,6 +25,7 @@
 
 .rpr-source-part {
   display: inline-block;
+  word-break: keep-all; /* 1行に収まらない塊は空白で折る（「ピットレポ／ート」を防ぐ） */
 }
 
 .rpr-source-link {
