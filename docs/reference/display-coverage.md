@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 114 |
+| テーブル・ビューの定義 | 116 |
 | 読んでいる（テーブルを直接） | 48 |
 | 読んでいる（RPC経由のみ） | 2 |
 | 画面から読んでいない（例外登録あり） | 29 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **35** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **37** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,7 +24,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_course_win_rate_baseline` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_racer_front_taking_counts` / `get_racer_scoped_race_rows` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（35件）
+## 要判断: 画面から読んでいない（例外登録なし）（37件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -34,6 +34,8 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `fetch_counts` | 表 | 185_fetch_counts.sql | なし | 記述なし |  |
 | `fetch_counts_minute` | 表 | 185_fetch_counts.sql | なし | 記述なし |  |
 | `growth_gsc_daily` | 表 | 204_growth_gsc_daily.sql | なし | 記述なし |  |
+| `growth_gsc_page_daily` | 表 | 205_growth_gsc_page_daily.sql | なし | 記述なし |  |
+| `growth_url_inspection` | 表 | 206_growth_url_inspection.sql | なし | 記述なし |  |
 | `in_caution_gap_band_daily` | 表 | 155_in_caution_gap_band_daily.sql | なし | 記述なし |  |
 | `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） |  |
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
