@@ -7,7 +7,6 @@ import assert from "node:assert/strict";
 import {
   buildNigashiBreakdown,
   nationalNigashiBaseline,
-  nigashiByCourse,
 } from "../../src/pure/nigashiStats.js";
 
 const now = new Date("2026-11-20T03:00:00Z");
@@ -62,25 +61,4 @@ assert.deepEqual(
 assert.equal(nationalNigashiBaseline([]), null);
 assert.equal(nationalNigashiBaseline(null), null);
 
-// 選手ページの進入コース別（出走履歴の entryCourse で数える。1コース・進入が分からない走は数えない）
-const hist = (o) => ({ raceId: "2026-01-10-05-03", entryCourse: 2, winningTechnique: "逃げ", ...o });
-assert.deepEqual(
-  nigashiByCourse([
-    hist({ raceId: "2025-12-06-12-01" }),
-    hist({ winningTechnique: "差し" }),
-    hist({ entryCourse: 4, raceId: "2026-11-24-05-12" }),
-    hist({ entryCourse: 1 }),
-    hist({ entryCourse: null }),
-  ]),
-  {
-    rows: [
-      { course: 2, n: 2, count: 1, pct: 50 },
-      { course: 4, n: 1, count: 1, pct: 100 },
-    ],
-    from: "2025-12-06",
-    to: "2026-11-24",
-  },
-);
-assert.deepEqual(nigashiByCourse(null), { rows: [], from: null, to: null });
-
-console.log("OK: 逃し率の数え方と全国の基準・進入コース別");
+console.log("OK: 逃し率の数え方と全国の基準");

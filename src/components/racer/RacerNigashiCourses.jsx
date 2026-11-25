@@ -4,35 +4,11 @@
  * 選手ごとの値は信頼性が低く予測にも効かないので、k/n と率の記録だけを出し、強調・並べ替えはしない。
  * 事実の記録なので「結果を保証しない」の断りは付けない（オーナー 2026-11-25）。
  */
-import { useEffect, useState } from "react";
-import {
-  nationalNigashiBaseline,
-  nigashiByCourse,
-} from "../../pure/nigashiStats.js";
-import { getNigashiBaselineRows } from "../../services/venueQueries3.js";
+import { nigashiByCourse } from "../../pure/nigashiStats.js";
+// 全国の基準（2コースの行。定義上2〜6コースのどれも会場の逃げ率と同じ値）は枠別タブのカードと同じ読み方
+import { useNationalBaseline } from "../race/NigashiCard";
 
 const slash = (date) => (date ? date.replaceAll("-", "/") : date);
-
-/** 全国の基準（2コースの行。定義上2〜6コースのどれも会場の逃げ率と同じ値）。undefined＝取得中、null＝失敗 */
-function useNationalBaseline() {
-  const [state, setState] = useState(undefined);
-  useEffect(() => {
-    let cancelled = false;
-    getNigashiBaselineRows(2)
-      .then((rows) => {
-        if (!cancelled)
-          setState(nationalNigashiBaseline(rows) ?? { empty: true });
-      })
-      .catch((error) => {
-        console.error("逃し率の全国の基準の取得に失敗:", error);
-        if (!cancelled) setState(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return state;
-}
 
 function BaselineNote({ baseline }) {
   if (baseline === undefined || baseline?.empty) return null;

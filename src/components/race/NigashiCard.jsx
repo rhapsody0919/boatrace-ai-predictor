@@ -20,8 +20,8 @@ import "./Course1LossCard.css";
 const COURSE = 2;
 const slash = (date) => (date ? date.replaceAll("-", "/") : date);
 
-/** 全国の基準。undefined＝取得中、null＝取得失敗、値＝取得済み（行が無ければ empty） */
-function useNationalBaseline() {
+/** 全国の基準。undefined＝取得中、null＝取得失敗、値＝取得済み（行が無ければ empty）。選手ページ（RacerNigashiCourses）も使う */
+export function useNationalBaseline() {
   const [state, setState] = useState(undefined);
   useEffect(() => {
     let cancelled = false;
