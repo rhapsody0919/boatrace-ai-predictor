@@ -28,9 +28,9 @@ const baseline = {
 test("データ層の和に当たるファイル", () => {
   assert.ok(!isDataLayer("src/services/supabaseDataService.js"), "殻は RA40 で消えた");
   assert.ok(isDataLayer("src/services/coreHelpers.js"));
-  assert.ok(isDataLayer("src/services/raceQueries2.js"));
+  assert.ok(isDataLayer("src/services/zzaQueries2.js"));
   assert.ok(!isDataLayer("src/services/other.js"));
-  assert.ok(!isDataLayer("src/components/raceQueries.js"));
+  assert.ok(!isDataLayer("src/components/zzaQueries.js"));
 });
 
 test("基準の辺だけなら緑", () => {
@@ -56,7 +56,7 @@ test("基準に無い辺は赤", () => {
 
 test("データ層の和の中で関数を別ファイルへ移した辺は緑", () => {
   const moved = [
-    edge("src/services/raceQueries.js", "src/hooks/useX.js"),
+    edge("src/services/zzaQueries.js", "src/hooks/useX.js"),
     edge("src/services/coreNew.js", "src/pages/P.jsx"),
   ];
   assert.equal(compareEdgesToBaseline(moved, baseline).ok, true);
@@ -72,10 +72,10 @@ test("src/utils の新しいファイルは赤", () => {
 
 test("src/services の新しいファイルは <領域>Queries*.js だけ通す", () => {
   for (const ok of [
-    "src/services/racerQueries5.js",
-    "src/services/motorQueries.js",
-    "src/services/venueQueries12.js",
-    "src/services/venueQueries10.js",
+    "src/services/zzrQueries5.js",
+    "src/services/zzbQueries.js",
+    "src/services/zzvQueries12.js",
+    "src/services/zzvQueries10.js",
     "src/utils/x.js",
     "src/pure/racerService.js",
   ]) {
@@ -85,14 +85,14 @@ test("src/services の新しいファイルは <領域>Queries*.js だけ通す"
     "src/services/dataService.js",
     "src/services/racerService.js",
     "src/services/core2.js",
-    "src/services/RacerQueries.js",
-    "src/services/racerQueries.ts",
-    "src/services/racerQueriesX.js",
-    "src/services/xracerQueries.js.bak",
-    "src/services/racer/racerQueries.js",
+    "src/services/ZzrQueries.js",
+    "src/services/zzrQueries.ts",
+    "src/services/zzrQueriesX.js",
+    "src/services/xzzrQueries.js.bak",
+    "src/services/racer/zzrQueries.js",
     "src/services/Queries.js",
     "src/services/racer-queries.js",
-    "src/services/racerQueries5.jsx",
+    "src/services/zzrQueries5.jsx",
   ]) {
     assert.equal(newServicesFileProblems([ng]).length, 1, ng);
   }
@@ -220,28 +220,28 @@ test("dependency-rules.cjs が読めて規則の名前が14個", () => {
 });
 
 test("baselineOfEdges は和の中の from を <data-layer> にまとめ、和の外はそのまま残す", () => {
-  const to = "src/components/race/basicInfoStats.js";
+  const to = "src/components/zz/zzStats.js";
   const base = baselineOfEdges([
-    edge("src/services/raceQueries.js", to),
-    edge("src/services/raceService.js", to),
+    edge("src/services/zzaQueries.js", to),
+    edge("src/services/zzaService.js", to),
   ]);
   assert.deepEqual(Object.keys(base["services-no-ui"]).sort(), [
     "<data-layer>",
-    "src/services/raceService.js",
+    "src/services/zzaService.js",
   ]);
   assert.deepEqual(base["services-no-ui"]["<data-layer>"], [to]);
 });
 
 test("和の中で移しただけの辺は緑、base に無い to は赤", () => {
-  const to = "src/components/race/basicInfoStats.js";
-  const base = baselineOfEdges([edge("src/services/raceQueries.js", to)]);
+  const to = "src/components/zz/zzStats.js";
+  const base = baselineOfEdges([edge("src/services/zzaQueries.js", to)]);
   assert.equal(
-    compareEdgesToBaseline([edge("src/services/raceQueries2.js", to)], base).ok,
+    compareEdgesToBaseline([edge("src/services/zzaQueries2.js", to)], base).ok,
     true,
   );
   assert.equal(
     compareEdgesToBaseline(
-      [edge("src/services/raceQueries2.js", "src/components/race/Other.js")],
+      [edge("src/services/zzaQueries2.js", "src/components/zz/Other.js")],
       base,
     ).ok,
     false,
