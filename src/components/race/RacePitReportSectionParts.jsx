@@ -33,9 +33,13 @@ function ConfidenceStars({ stars, t }) {
   );
 }
 
-function PitCommentCard({ comment, player, t }) {
+function PitCommentCard({ comment, player, selected, t }) {
   return (
-    <li className="rpr-comment" data-boat={comment.boatNumber}>
+    <li
+      className={selected ? "rpr-comment is-selected" : "rpr-comment"}
+      data-boat={comment.boatNumber}
+      aria-current={selected ? "true" : undefined}
+    >
       <div className="rpr-comment-head">
         <BoatBadge n={comment.boatNumber} />
         {player?.name ? (
@@ -69,6 +73,7 @@ function PitCommentCard({ comment, player, t }) {
 export function PitReportPublished({
   report,
   players,
+  focusedBoat,
   heading,
   officialLink,
   t,
@@ -76,6 +81,10 @@ export function PitReportPublished({
 }) {
   const playerByBoat = new Map((players ?? []).map((p) => [p.number, p]));
   const capturedAt = formatCapturedAtJst(report.capturedAt);
+  // 選んだ艇にコメントが無いとき、行が無い理由を注記の末尾に書く（行は足さない）
+  const focusedWithoutComment =
+    focusedBoat != null &&
+    !report.comments.some((c) => c.boatNumber === focusedBoat);
 
   return (
     <section className="rbi-card rpr-card">
@@ -101,12 +110,23 @@ export function PitReportPublished({
             key={comment.boatNumber}
             comment={comment}
             player={playerByBoat.get(comment.boatNumber)}
+            selected={comment.boatNumber === focusedBoat}
             t={t}
           />
         ))}
       </ul>
 
-      <p className="rbi-note">💡 {t("pitReport.cardNote")}</p>
+      <p className="rbi-note">
+        💡 {t("pitReport.cardNote")}
+        {focusedWithoutComment && (
+          <>
+            {" "}
+            <strong className="rpr-no-comment">
+              {t("pitReport.noCommentForBoat", { n: focusedBoat })}
+            </strong>
+          </>
+        )}
+      </p>
       {i18n.language !== "ja" && (
         <p className="rbi-note">{t("pitReport.originalLanguageNote")}</p>
       )}

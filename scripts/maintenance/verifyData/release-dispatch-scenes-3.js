@@ -2,6 +2,7 @@
  * verify-release-dispatch.js の後半の場面（3/3）。verify ではない。
  * 範囲の赤を解く全件の検査（scripts/lib/releaseFullCheck.js、ADR-0106 の 2026-11-24 の追記）。偽の fetch で GitHub には繋がない。
  */
+import { RELEASE_CHECK_WORKFLOW } from "../../lib/releaseCheckDispatch.js";
 import {
   RELEASE_HOOK_ENV,
   createReleaseDispatchRun,
@@ -70,9 +71,11 @@ function fake({ pushRuns, fullRuns = {}, fullStatus = 200 }) {
   f.calls = calls;
   return f;
 }
+// 全件の検査の起動だけを数える。出した後の本番の確かめ（e2e-release.yml）の起動は verify の (g) が見る
 const posts = (f) =>
   f.calls
     .filter((c) => c.url.endsWith("/dispatches"))
+    .filter((c) => !c.url.includes(`/workflows/${RELEASE_CHECK_WORKFLOW}/`))
     .map((c) => [
       c.url.split("/workflows/")[1].split("/")[0],
       JSON.parse(c.init.body),

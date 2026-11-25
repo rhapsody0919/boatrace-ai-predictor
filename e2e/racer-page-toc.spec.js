@@ -59,6 +59,10 @@ for (const viewport of [
       await page.goto("/racer/4320");
       const toc = page.locator("nav.racer-toc");
       await expect(toc).toBeVisible({ timeout: 40000 });
+      // 節は非同期に届き、目次の項目はそのたびに増える。ST の推移（成績・調子の中）が出て、目次に2つ以上の項目が
+      // 揃うのを待ってから押す（本番のデータの E2E Live では届く前に読み、押す項目が0件のまま #st-trend が null で落ちていた。2026-11-25）
+      await expect(page.locator(".racer-st-trend")).toBeVisible({ timeout: 40000 });
+      await expect.poll(() => toc.locator("a").count(), { timeout: 40000 }).toBeGreaterThan(1);
       const hrefs = await toc
         .locator("a")
         .evaluateAll((as) => as.map((a) => a.getAttribute("href").slice(1)));

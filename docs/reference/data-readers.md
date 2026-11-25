@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2880 |
+| 読んだファイル | 2888 |
 | 読み書きのあるファイル | 329 |
 | 表の読み手（箇所） | 969 |
 | 表の書き手（箇所） | 200 |
@@ -255,7 +255,7 @@
 | racer_news | api/cron/racer-news.js | 28 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
 | racer_profiles | api/cron/racer-profiles.js | 27 | racer_profiles, scrape_job_state, scrape_slots |
 | races_init | api/cron/races-init.js | 64 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| release_dispatch | api/cron/release-dispatch.js | 27 | scrape_job_state, scrape_slots |
+| release_dispatch | api/cron/release-dispatch.js | 28 | scrape_job_state, scrape_slots |
 | result | api/cron/result.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | result_catchup | api/cron/result-catchup.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 24 | scrape_job_state, scrape_slots |

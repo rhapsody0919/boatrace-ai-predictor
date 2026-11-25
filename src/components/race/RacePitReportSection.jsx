@@ -41,7 +41,7 @@ function notTargetReason({ isCandidate, raceGrade, report }) {
   return report?.state === "not_target" ? "official" : null;
 }
 
-function RacePitReportSection({ raceId, raceGrade, players }) {
+function RacePitReportSection({ raceId, raceGrade, players, focusedBoat }) {
   const { t, i18n } = useTranslation();
   const parsed = parseRaceId(raceId);
   const isCandidate =
@@ -126,6 +126,7 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
     <PitReportPublished
       report={report}
       players={players}
+      focusedBoat={focusedBoat}
       heading={heading}
       officialLink={officialLink}
       t={t}
