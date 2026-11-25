@@ -1425,6 +1425,16 @@
   color: var(--text-secondary);
 }
 
+/* 行の名前の2行目（前提の断り）。札にせず小さく添える */
+.ta-kv-sub {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
 .ta-kv dd {
   margin: 0;
   min-width: 0;

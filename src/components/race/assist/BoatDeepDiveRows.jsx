@@ -7,7 +7,11 @@ import { Dt, Val } from "./BoatDeepDiveParts";
 export function CourseRow({ course, courseAssumed = false, cw, runs }) {
   return (
     <>
-      <dt>{C.kvCourse(course)}</dt>
+      <dt>
+        {C.kvCourse(course)}
+        {/* 展示の進入が分かるまでは艇番をコースとみなす。札だと期間・範囲の札に読めたので行の名前の2行目に置く（オーナー 2026-11-25） */}
+        {courseAssumed && <span className="ta-kv-sub">{C.courseAssumedSub}</span>}
+      </dt>
       <dd>
         {cw ? (
           <span className="ta-num">{C.courseWin(cw.k, cw.n)}</span>
@@ -17,9 +21,6 @@ export function CourseRow({ course, courseAssumed = false, cw, runs }) {
           C.loading
         )}{" "}
         <span className="ta-scopechip">{C.courseNote}</span>
-        {courseAssumed && (
-          <span className="ta-scopechip">{C.courseAssumedChip}</span>
-        )}
       </dd>
     </>
   );

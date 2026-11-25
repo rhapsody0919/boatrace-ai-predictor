@@ -819,6 +819,26 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
     ).toBeVisible();
   });
 
+  test("展示の進入が無いうちは、コースの行の名前の2行目に「艇番どおりに入る想定」と書き、札にしない（オーナー 2026-11-25）", async ({
+    page,
+  }) => {
+    // 整備の問い合わせ（展示の進入を含む）を空にして、展示前の状態にする
+    await page.route("**/rest/v1/exhibition_data*", (route) =>
+      route.request().url().includes("exhibition_course")
+        ? route.fulfill({ json: [] })
+        : route.fallback(),
+    );
+    await open(page);
+    const region = await openDeep(page, 3);
+    const courseName = region.locator("dt", { hasText: "3コースで走ったとき" });
+    await expect(courseName.locator(".ta-kv-sub")).toHaveText(
+      "艇番どおりに入る想定",
+      { timeout: 30000 },
+    );
+    // 期間・範囲の札に読めた「枠なりの想定」の札は出さない
+    await expect(region.getByText("枠なりの想定")).toHaveCount(0);
+  });
+
   test("指摘2: 勝ち決まり手に期間（直近90日）を書く", async ({ page }) => {
     await open(page);
     const region = await openDeep(page, 1);
