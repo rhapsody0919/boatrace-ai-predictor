@@ -10,6 +10,7 @@
  *   - 1回の返す行が1000で切れても、走を取りこぼさない
  *   - 使用開始日が無ければ generationStart は null で走は空。取得の失敗は例外のまま
  *   - 走に乗った選手と着順（結果の rank から。結果が無ければ null）を付け、会場の節（世代の初めからレースの日まで）を返す
+ *   - 展示タイムのレース内の平均との差（そのレースの展示のある艇の平均を引く。2艇に満たなければ null）を付ける
  *   - 着順の付かない走の公式の記号（race_start_timings.finish_mark）を同じ艇の行から付ける。空の記号は null
  */
 import {
@@ -94,6 +95,17 @@ check("公式の記号は同じ艇の行から（空は null）", motors.every((
   const e = want(m)[i];
   return r.finishMark === (markOf(r.raceId, e.boat_number) || null);
 })) && motors.some((m) => got.runsByMotor[m].some((r) => r.finishMark === "F")));
+// 偽の展示は艇 b が 6.7+b/100。6艇の平均は 6.735 なので、差は (b-3.5)/100
+check("展示の差はレース内の平均を引く", motors.every((m) => got.runsByMotor[m].every((r, i) => Math.abs(r.exhibitionDiff - (want(m)[i].boat_number - 3.5) / 100) < 1e-9)));
+clearCache();
+// 34号機が走ったレースの1つで、34号機の艇だけに展示を残す
+const loneRun = want(34)[10];
+fake.reset({ ...tables, exhibition_data: exhibition.filter((x) => x.race_id !== loneRun.race_id || x.boat_number === loneRun.boat_number) });
+const lone = await getMotorGenerationRuns(V, motors, target);
+const loneRow = lone.runsByMotor[34].find((r) => r.raceId === loneRun.race_id);
+check("展示のある艇が2艇に満たないレースは差が null", loneRow && loneRow.exhibitionTime !== null && loneRow.exhibitionDiff === null, JSON.stringify(loneRow));
+clearCache();
+fake.reset(tables);
 check("会場の節は世代の初めからレースの日まで", got.meets.map((m) => m.start).join() === [6, 30, 90].map(day).join(), JSON.stringify(got.meets.map((m) => m.start)));
 check("節はグレード・日数つき", got.meets[0].grade === "一般" && got.meets[0].days === 6 && got.meets[0].end === day(11));
 check("頼んでいない号機は返さない", Object.keys(got.runsByMotor).sort().join() === "12,34,58");

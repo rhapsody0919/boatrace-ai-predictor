@@ -61,22 +61,45 @@ export function motorRateTrend(runs, metric, { today, minRuns = MOTOR_RATE_MIN_R
 }
 
 /**
- * 展示タイムの直近 window 走の平均。展示のある走が minRuns たまってから、日ごとに最後の値を1点
+ * 展示タイムの直近 window 走の平均。展示のある走が minRuns たまってから、日ごとに最後の値を1点。
+ * field は平均する値: 画面はレース内の平均との差 "exhibitionDiff"（検証した値。オーナー 2026-11-25「B 差で作る」）。
+ * 既定の "exhibitionTime"（秒）は 0 以下を除く。差は負もあるので数であれば使う
  * @returns {Array<{date:string, value:number, runs:number}>}
  */
 export function motorExhibitionTrend(
   runs,
-  { window = MOTOR_EXHIBITION_WINDOW, minRuns = MOTOR_EXHIBITION_MIN_RUNS } = {},
+  { window = MOTOR_EXHIBITION_WINDOW, minRuns = MOTOR_EXHIBITION_MIN_RUNS, field = "exhibitionTime" } = {},
 ) {
-  const rows = sortRuns(runs).filter((r) => typeof r.exhibitionTime === "number" && r.exhibitionTime > 0);
+  const rows = sortRuns(runs).filter((r) => typeof r[field] === "number" && (field !== "exhibitionTime" || r[field] > 0));
   const byDate = new Map();
   rows.forEach((r, i) => {
     if (i + 1 < minRuns) return;
     const w = rows.slice(Math.max(0, i + 1 - window), i + 1);
-    const value = w.reduce((a, x) => a + x.exhibitionTime, 0) / w.length;
+    const value = w.reduce((a, x) => a + x[field], 0) / w.length;
     byDate.set(r.date, { date: r.date, value, runs: i + 1 });
   });
   return [...byDate.values()];
+}
+
+/**
+ * 展示タイムの差（exhibitionDiff）の、節ごとの点。検証（analyze.py の exh_r30）と同じ時点にそろえる:
+ * 節の初日より前の直近 window 走（展示の無い走も数える）のうち、差のある走が minRuns 以上なら、その平均を節の初日の点にする。
+ * 節の中では値を変えない。右の端は today まで最後の値を延ばす（公式の率の推移と同じ形）
+ * @returns {Array<{date:string, value:number, runs:number, extended:boolean}>}
+ */
+export function motorExhibitionMeetTrend(
+  runs,
+  { today, window = MOTOR_EXHIBITION_WINDOW, minRuns = MOTOR_EXHIBITION_MIN_RUNS, field = "exhibitionDiff" },
+) {
+  const rows = sortRuns(runs);
+  const points = motorMeets(rows).flatMap((m) => {
+    const vals = rows.slice(Math.max(0, m.runsBefore - window), m.runsBefore).map((r) => r[field]).filter((v) => typeof v === "number");
+    if (vals.length < minRuns) return [];
+    return [{ date: m.start, value: vals.reduce((a, v) => a + v, 0) / vals.length, runs: m.runsBefore, extended: false }];
+  });
+  const last = points[points.length - 1];
+  if (last && today > last.date) points.push({ ...last, date: today, runs: rows.length, extended: true });
+  return points;
 }
 
 /**
