@@ -534,5 +534,45 @@ if HAVE_NM:
     check("他の verify・自分自身は製品に数えない", vg.product_files(d, N, ['import "./verify-calc.js";\nconst me = "./verify-new.js";\n']) == [])
     shutil.rmtree(d)
 
+# ---------- 時刻の区切り（dev-friction §4）: 新しい verify を時計をずらして回す ----------
+if HAVE_NM:
+    print("時刻の区切り: 区切りの 2 秒前から進む時計で新しい verify を回す")
+    BASE = 'import { clamp } from "../../src/calc.js";\nconst t0 = Date.now();\nif (clamp(20) !== 10) process.exit(1);\nwhile (Date.now() - t0 < 3500) {}\n'
+    HOUR_FAIL = BASE + 'if (new Date(t0).getUTCHours() !== new Date().getUTCHours()) { console.error("hour changed"); process.exit(1); }\n'
+    DAY_FAIL = BASE + 'const jst = (ms) => new Date(ms + 9 * 3600000).getUTCDate();\nif (jst(t0) !== jst(Date.now())) { console.error("jst day changed"); process.exit(1); }\n'
+    d = mk({"src/calc.js": CALC, N: BASE})
+    v = vg.evaluate(d, {N: "A"}, master, CFG)
+    check("時刻に依らない新 verify: 通る（区切りでも落ちない）", N in v.excused and not v.human, (v.excused, v.human))
+    shutil.rmtree(d)
+    d = mk({"src/calc.js": CALC, N: HOUR_FAIL})
+    v = vg.evaluate(d, {N: "A"}, master, CFG)
+    check("正時をまたぐと落ちる新 verify: 人へ（時刻の区切り。UTC 15:00 は正時でもあるので両方で落ちる）", N not in v.excused and any("時刻の区切りで落ちる" in h and "正時（HH:59:58" in h for h in v.human), (v.excused, v.human))
+    shutil.rmtree(d)
+    d = mk({"src/calc.js": CALC, N: DAY_FAIL})
+    v = vg.evaluate(d, {N: "A"}, master, CFG)
+    check("JST の日付の変わり目をまたぐと落ちる新 verify: 人へ（日付）", N not in v.excused and any("時刻の区切りで落ちる" in h and "日付" in h and "正時" not in h for h in v.human), (v.excused, v.human))
+    shutil.rmtree(d)
+    d = mk({"src/calc.js": CALC, N: BASE})
+    rn = vg.Runner(d, NM, CFG, vg.default_run)
+    try:
+        probe = rn.repo / "probe.mjs"
+        probe.write_text("const r = 3600000 - (Date.now() % 3600000);\nprocess.exit(r > 0 && r <= 2500 ? 0 : 1);\n")
+        check("hour の時計は区切りの 2 秒前から始まる", rn.passes(probe, clock="hour"))
+    finally:
+        rn.__exit__(None, None, None)
+    shutil.rmtree(d)
+    if (NM / "@electric-sql" / "pglite").is_dir():
+        PG = ('import { PGlite } from "@electric-sql/pglite";\nconst db = new PGlite();\n'
+              'const r = await db.query("select extract(epoch from now()) * 1000 as ms");\n'
+              'if (Math.abs(Number(r.rows[0].ms) - Date.now()) > 60000) { console.error("PGlite の now() が JS の時計に従わない"); process.exit(1); }\n'
+              'await db.close();\n')
+        d = mk({"src/calc.js": CALC, N: PG})
+        rn = vg.Runner(d, NM, {**CFG, "run_timeout_sec": 120}, vg.default_run)
+        try:
+            check("PGlite の now() はずらした JS の時計に従う（hour・jst_day とも）", rn.passes(rn.repo / N, clock="hour") and rn.passes(rn.repo / N, clock="jst_day"))
+        finally:
+            rn.__exit__(None, None, None)
+        shutil.rmtree(d)
+
 print(f"\n{sum(ok)}/{len(ok)} OK" + (f"（飛ばし {skipped}）" if skipped else ""))
 sys.exit(0 if all(ok) else 1)
