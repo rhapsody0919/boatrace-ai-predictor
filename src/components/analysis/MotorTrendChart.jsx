@@ -3,12 +3,11 @@
  * 横は入れ替えの日から今日までの日付で、6基とも同じ。率は節ごとの公式の点、展示タイムは直近30走の平均。
  * 描き始めの走数に届く前の区間は地を塗り「描かない」と書く。選んだ艇だけ太線にし、率なら節の点も打つ。
  * 線の色・目盛りの見た目は TrendChart.css（選手の推移の線）の trc- を使い、ここに固有の物は MotorTrendChart.css。
+ * 2つの CSS の読み込みは使う側が持つ（TrendChart と同じ）。
  */
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { Badge, GridLines } from "../race/basic-info/TrendChart.jsx";
-import "../race/basic-info/TrendChart.css";
-import "./MotorTrendChart.css";
 
 const W = 343;
 const H = 250;

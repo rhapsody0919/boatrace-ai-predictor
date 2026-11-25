@@ -31,7 +31,6 @@ const bundled = await bundle({
   format: "cjs",
   packages: "external",
   jsx: "automatic",
-  loader: { ".css": "empty" },
   plugins: [
     {
       name: "offline",
