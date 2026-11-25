@@ -5,8 +5,8 @@
  * - ふだんは右下。z-index は 800 で、重なり表示（ヘッダーのメニュー 999・思考アシストのシート 1000・
  *   選手検索の候補 1001・レースの下部ナビ 1500・トースト 1600）より下に置く。数字を上げて解かない
  * - Cookie の確認（.cookie-consent、下端の全幅）が出ている間は出さない
- * - スマホ幅のレース詳細（.race-bottom-nav が出ている間）は、下部ナビ（高さ 100px）の上にアイコンだけで置き、
- *   下へ読み進めている間は隠す（出走表・結果表の右端の数字の列を隠さない）。上へ戻すと出る
+ * - 768px 以下は、どの画面でも下へ読み進めている間は隠す（本文・成績表の右端を隠さない）。上へ戻すと出る
+ * - スマホ幅のレース詳細（.race-bottom-nav が出ている間）は、下部ナビ（高さ 100px）の上にアイコンだけで置く
  * - ブログ記事の「先頭へ戻る」（.back-to-top-button、右下 48px）があるときは、その上に置く
  * - 入力パネル（SiteFeedbackPanel.css）は 1700（トーストより上、Cookie の確認 9999 より下）
  */
@@ -91,7 +91,8 @@ body:has(.back-to-top-button) .site-fb-btn {
     display: none;
   }
 
-  body:has(.race-bottom-nav) .site-fb-btn.is-mini {
+  /* 768px 以下は、どの画面でも下へ読み進めている間は隠す（本文・成績表の右端を隠さない。オーナー 2026-11-25、ファン評価の P2） */
+  .site-fb-btn.is-mini {
     visibility: hidden;
     opacity: 0;
     pointer-events: none;
