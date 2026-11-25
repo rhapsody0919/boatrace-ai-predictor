@@ -1,0 +1,128 @@
+/*
+ * ご意見ボックスの入力パネル（SiteFeedbackPanel.jsx）。600px 以下は下からのシート、それより広いと右下の小窓。
+ * z-index は 1700（トーストより上、Cookie の確認 9999 より下）。背景の幕は 1690。
+ * 入力欄の見た目は SiteFeedbackFields.css、右下のボタンと置き場所の決まりは SiteFeedback.css。
+ */
+.site-fb-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1690;
+  background: color-mix(in srgb, var(--color-gray-900) 45%, transparent);
+  animation: site-fb-fade 0.2s ease;
+}
+
+.site-fb-panel {
+  position: fixed;
+  right: calc(var(--spacing-4) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--spacing-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 1700;
+  display: grid;
+  gap: var(--spacing-3-5);
+  width: min(400px, calc(100vw - 32px));
+  /* dvh を知らないブラウザ（Safari 15.4 未満）は vh の行を使う */
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: var(--spacing-4-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  text-align: left;
+  box-shadow: var(--shadow-2xl);
+  animation: site-fb-rise 0.2s ease;
+}
+
+.site-fb-panel:focus {
+  outline: none;
+}
+
+@media (max-width: 600px) {
+  .site-fb-scrim {
+    background: color-mix(in srgb, var(--color-gray-900) 55%, transparent);
+  }
+
+  /* 下からのシート。キーボードが出たらその高さ（--site-fb-kb）だけ持ち上げる */
+  .site-fb-panel {
+    left: 0;
+    right: 0;
+    bottom: var(--site-fb-kb, 0px);
+    width: auto;
+    max-height: calc(100vh - var(--site-fb-kb, 0px) - var(--spacing-6));
+    max-height: calc(100dvh - var(--site-fb-kb, 0px) - var(--spacing-6));
+    padding: var(--spacing-4)
+      max(var(--spacing-4), env(safe-area-inset-right, 0px))
+      calc(var(--spacing-4-5) + env(safe-area-inset-bottom, 0px))
+      max(var(--spacing-4), env(safe-area-inset-left, 0px));
+    border-bottom: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+}
+
+@keyframes site-fb-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes site-fb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-fb-scrim,
+  .site-fb-panel {
+    animation: none;
+  }
+}
+
+.site-fb-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+}
+
+.site-fb-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.site-fb-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.site-fb-lead {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.site-fb-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: calc(-1 * var(--spacing-2)) calc(-1 * var(--spacing-2)) 0 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-circle);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.site-fb-panel button:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
