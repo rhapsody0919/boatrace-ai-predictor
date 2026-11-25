@@ -112,7 +112,7 @@ for (const width of [1440, 1920]) {
     });
     // 基本情報（棒｜凡例）・今節（表｜注記）・結果（隊形｜着順、払戻｜水面傾向）。
     // 枠別情報は 1200px 以上で6艇表｜選んだ選手のカードの2列・下の3枚の3列に変えた（オーナー承認 2026-11-25）。
-    // その並びは e2e/layout/race-detail-waku-pc-layout.spec.js が見る
+    // その並びは e2e/layout/ の枠別の PC の並びの試験が見る
     const expected = { 基本情報: 1, 今節: 1, 結果: 2 };
     for (const [tab, min] of Object.entries(expected)) {
       await page.locator(".race-tabs-btn", { hasText: tab }).first().click();
