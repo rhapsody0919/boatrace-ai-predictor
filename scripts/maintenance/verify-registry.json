@@ -1761,6 +1761,11 @@
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
     },
     {
+      "script": "verify-site-feedback-gate.js",
+      "tier": "ci",
+      "guards": "ご意見ボックスを全画面につなぐ前の関門。画面の列挙・上限（src/pure/siteFeedback.js）と表（docs/db-migration/NNN_site_feedback.sql）の CHECK が同じこと、台帳（APPLIED.md）で表が適用済みであること（表より先に画面を出すと全員の送信が失敗する）"
+    },
+    {
       "script": "verify-site-feedback-migration.js",
       "tier": "ci",
       "guards": "マイグレーション208（サイト全体のご意見ボックス site_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・claude_ro は読めない・画面の列挙値（種類・ページの種類・言語・満足度）が全部入る・列挙の外と空白だけと501文字と満足度の外は名前つきの制約で拒否・created_at の上書き・同じブラウザ24時間10行と全体10分30行の連投制限・冪等・ロールバックを確かめる"
