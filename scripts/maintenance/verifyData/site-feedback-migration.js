@@ -29,3 +29,50 @@ export function readSiteFeedbackMigration() {
 export function readMigrationLedger() {
   return fs.readFileSync(path.join(MIGRATION_DIR, "APPLIED.md"), "utf8");
 }
+
+/** 本番と同じロールと、076・166 の既定の権限（PGlite に先に当てる） */
+export const FIXTURE_SQL = `
+CREATE ROLE anon NOLOGIN;
+CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS;
+CREATE ROLE claude_ro NOLOGIN BYPASSRLS;
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role, claude_ro;
+-- 076: postgres が作る新規テーブルに anon・authenticated の権限を付けない
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
+-- Supabase の既定: service_role は新しい表を全部使える
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+-- 166: claude_ro は新しい public の表を既定で読める（この表では 208 が外す）
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO claude_ro;
+`;
+
+export const lit = (v) =>
+  v == null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`;
+export const key = (n) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+export const BASE = {
+  kind: "feature",
+  comment: "モーターの成績も見たい",
+  rating: 4,
+  page_type: "race",
+  lang: "ja",
+  client_key: key(1),
+};
+export const insert = (row) =>
+  `INSERT INTO public.site_feedback (kind, comment, rating, page_type, lang, client_key) VALUES (${lit(row.kind)}, ${lit(row.comment)}, ${row.rating ?? "NULL"}, ${lit(row.page_type)}, ${lit(row.lang)}, ${lit(row.client_key)})`;
+
+export async function asRole(db, role, query) {
+  await db.exec(`SET ROLE ${role}`);
+  try {
+    await db.query(query);
+    return null;
+  } catch (e) {
+    return e;
+  } finally {
+    await db.exec("RESET ROLE");
+  }
+}
+export const count = async (db) =>
+  Number(
+    (await db.query("SELECT count(*) AS n FROM public.site_feedback")).rows[0]
+      .n,
+  );
