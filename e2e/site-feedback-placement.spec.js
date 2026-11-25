@@ -16,7 +16,7 @@ import {
 test.describe("パソコンの幅（1280px）", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test("ブログ記事では「先頭へ戻る」と重ならず、その上に置く", async ({
+  test("ブログ記事では「先頭へ戻る」と重ならず、その上に置く @blog", async ({
     page,
   }) => {
     await page.goto(BLOG_PATH);
