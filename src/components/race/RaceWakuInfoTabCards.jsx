@@ -2,6 +2,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import { isRaceBeforeTodayJST } from "../../utils/dateUtils";
 import { translateTechnique } from "./raceIndicators";
 import Course1LossCard from "./Course1LossCard";
+import NigashiCard from "./NigashiCard";
 import NigeSimulationCard from "./NigeSimulationCard";
 import {
   aggregateTechniqueDistribution,
@@ -122,6 +123,8 @@ export function LowerCards({
   // 1号艇の選手（欠場・出走表が無く登番が取れないときはカードを出さない、BOA-1331）
   const course1Player =
     players.find((p) => Number(p.number) === 1 && p.racerId != null) ?? null;
+  const course2Player =
+    players.find((p) => Number(p.number) === 2 && p.racerId != null) ?? null;
   const raceIsPast = isRaceBeforeTodayJST(raceId);
   return (
     <div className="race-split">
@@ -135,6 +138,12 @@ export function LowerCards({
         />
         {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}
         <NigeSimulationCard rows={nigeRows} asOfToday={raceIsPast} />
+        {/* 2号艇の選手本人の、進入2コースで1コースの艇に逃げられた走（逃し率、オーナー 2026-11-25）。まくられ・差されの直後は逃げのカードと e2e が固定しているので、その下に置く */}
+        <NigashiCard
+          player={course2Player}
+          records={course2Player ? scopedBefore[course2Player.racerId] : null}
+          now={periodAnchor}
+        />
       </div>
       <div className="race-split__side">
         <TechniqueCard
