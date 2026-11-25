@@ -121,9 +121,13 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
         t={t}
       />
 
-      <OutcomeTabs data={data} t={t} />
+      <OutcomeTabs data={data} totalRaces={total_races} t={t} />
 
-      <p className="table-note">{t("analysis.outcome.note")}</p>
+      <p className="table-note">
+        {t("analysis.outcome.noteDenominator", {
+          count: total_races.toLocaleString(),
+        })}
+      </p>
     </div>
   );
 }
@@ -258,7 +262,10 @@ function TopPatternsTable({ data, topPatternLimit, t }) {
   );
 }
 
-function OutcomeTabs({ data, t }) {
+// その号艇が1着だったレースの数。1着ごとに2着・3着の組は全部（5×4＝20通り）返るので、出現回数の和になる
+const winsOf = (patterns) => patterns.reduce((sum, p) => sum + (p.count ?? 0), 0);
+
+function OutcomeTabs({ data, totalRaces, t }) {
   return (
     <div className="tabs-container">
       {[1, 2, 3, 4, 5, 6].map((firstBoat) => {
@@ -267,7 +274,18 @@ function OutcomeTabs({ data, t }) {
         return (
           <div key={firstBoat} className="outcome-tab">
             <div className="tab-header">
-              <h3>{t("analysis.outcome.firstHeading", { n: firstBoat })}</h3>
+              <h3>
+                {t("analysis.outcome.firstHeading", { n: firstBoat })}
+                {/* 出現率の分母は全レース。1着の回数だけを見出しに出すと、その中の割合に読める（ファン評価 2026-11-25） */}
+                {totalRaces > 0 && patterns.length > 0 && (
+                  <span className="outcome-first-count">
+                    {t("analysis.outcome.firstCount", {
+                      total: totalRaces.toLocaleString(),
+                      wins: winsOf(patterns).toLocaleString(),
+                    })}
+                  </span>
+                )}
+              </h3>
               <span className="pattern-count">
                 {t("analysis.patternCount", { n: patterns.length })}
               </span>

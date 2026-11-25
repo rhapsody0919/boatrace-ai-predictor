@@ -432,3 +432,10 @@
     margin-top: 0.75rem;
   }
 }
+
+/* 号艇ごとの見出しの「（全Nレース中Mレース）」。見出しより控えめに */
+.outcome-first-count {
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
