@@ -79,26 +79,30 @@ export async function readRecentWeekly(db, urls, today) {
 }
 
 export const WRITE_BATCH_SIZE = 50;
+// 同時の検査の数。1件が約6秒かかる（本番の初回で実測）ので4本ずつ。毎分600の上限の内（4本÷6秒＝毎分約40）
+export const INSPECT_CONCURRENCY = 4;
 
 /**
- * todo を順に検査し、成功の行を size 件たまるごとに write する（途中で切れても済んだ分は残り、翌日の回は済みを飛ばす）。
- * inspectOne(t) は行を返す。1件が落ちても他は続け、落ちた URL を返す。write の失敗は握りつぶさず投げる
+ * todo を concurrency 本ずつ同時に検査し、成功の行が size 件たまるごとに write する（途中で切れても済んだ分は残り、翌日の回は済みを飛ばす）。
+ * inspectOne(t) は行を返す。1件が落ちても他は続け、落ちた URL を返す。write の失敗は握りつぶさず投げる。行の順は完了の順
  */
-export async function inspectInBatches(todo, inspectOne, write, size = WRITE_BATCH_SIZE, onError = () => {}) {
-  let rows = [];
+export async function inspectInBatches(todo, inspectOne, write, size = WRITE_BATCH_SIZE, onError = () => {}, concurrency = INSPECT_CONCURRENCY) {
+  const rows = [];
   const failed = [];
-  for (const t of todo) {
-    try {
-      rows.push(await inspectOne(t));
-    } catch (err) {
-      failed.push(t.url);
-      onError(t, err);
+  let next = 0;
+  const worker = async () => {
+    while (next < todo.length) {
+      const t = todo[next++];
+      try {
+        rows.push(await inspectOne(t));
+      } catch (err) {
+        failed.push(t.url);
+        onError(t, err);
+      }
+      if (rows.length >= size) await write(rows.splice(0, size));
     }
-    if (rows.length >= size) {
-      await write(rows);
-      rows = [];
-    }
-  }
-  if (rows.length > 0) await write(rows);
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, todo.length) }, worker));
+  if (rows.length > 0) await write(rows.splice(0));
   return { failed };
 }

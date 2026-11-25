@@ -91,4 +91,21 @@ await assert.rejects(
 );
 assert.deepEqual(partial, [50, 50], "切れるまでに書いた分は残る（書き込みの失敗は握りつぶさない）");
 
+// 同時に4本まで（実際に4本まで上がる）。1件の失敗が他を止めない
+let running = 0;
+let peak = 0;
+const slow = async (t) => {
+  running++;
+  peak = Math.max(peak, running);
+  await new Promise((res) => setTimeout(res, 5));
+  running--;
+  if (t.url.endsWith("/3")) throw new Error("x");
+  return t.url;
+};
+const got = [];
+const rc = await inspectInBatches(items.slice(0, 20), slow, async (rows) => { got.push(...rows); }, 50, () => {}, 4);
+assert.equal(peak, 4, "同時は4本（それ以上にならず、4本まで上がる）");
+assert.deepEqual(rc.failed, [`${B}/x/3`], "1件の失敗で他は止まらない");
+assert.deepEqual([...got].sort(), items.slice(0, 20).filter((t) => !t.url.endsWith("/3")).map((t) => t.url).sort(), "成功の行は全部書かれる");
+
 console.log("verify-growth-sitemap-inspection: OK");
