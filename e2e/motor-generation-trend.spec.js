@@ -30,8 +30,9 @@ test("推移に切り替えると6基の線と号機が出て、一覧は隠れ�
 
   await page.locator(".mtc-chip", { hasText: "3連率" }).click();
   await expect(head.locator(".trc-title")).toHaveText("3連率の推移（公式・節ごと）");
-  // 展示タイムは検証した値と画面の値が違うので、評価し直すまで出さない
-  await expect(page.locator(".mtc-chip", { hasText: "展示タイム" })).toHaveCount(0);
+  // 展示タイムはレース内の平均との差（検証した値と同じ。オーナー 2026-11-25「B 差で作る」）。秒の平均は出さない
+  await page.locator(".mtc-chip", { hasText: "展示タイム" }).click();
+  await expect(head.locator(".trc-title")).toHaveText("展示タイムの推移（レース内の平均との差・直近30走）");
 
   await head.locator(".trc-tab", { hasText: "今の値" }).click();
   await expect(page.locator(".motor-ranking-table")).toBeVisible();

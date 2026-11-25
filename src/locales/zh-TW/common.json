@@ -3082,7 +3082,8 @@
         "title": {
           "top2Rate": "2連對率走勢（官方、按節）",
           "top3Rate": "3連對率走勢（官方、按節）",
-          "exhibition": "展示時間走勢（近30場平均）"
+          "exhibition": "展示時間走勢（近30場平均）",
+          "exhibitionDiff": "展示時間走勢（與該場平均之差、近30場）"
         },
         "notYet": "累積{{n}}場前不繪製",
         "faster": "↑ 較快",
@@ -3100,7 +3101,8 @@
         "metric": {
           "top2Rate": "2連對率",
           "top3Rate": "3連對率",
-          "exhibition": "展示時間"
+          "exhibition": "展示時間",
+          "exhibitionDiff": "展示時間"
         },
         "motorNo": "{{n}}號機",
         "runs": "{{n}}場",
@@ -3115,7 +3117,9 @@
         "tipRacer": "騎乘選手 {{name}}",
         "tipFinishes": "本節名次 {{order}}（{{n}}場）",
         "tipValue": "該節首日的官方{{metric}} {{value}}（此前{{runs}}場累計）",
-        "tipFinishesSoFar": "本節目前為止的名次 {{order}}（{{n}}場，進行中）"
+        "tipFinishesSoFar": "本節目前為止的名次 {{order}}（{{n}}場，進行中）",
+        "unitSecDiff": "秒差",
+        "noteExhibitionDiff": "💡 每個點是該節首日之前的近30場中，與該場6艇平均的展示時間差的平均值（累積24場後開始繪製，右端延伸至今天）。越上面越快，−0.03 表示比平均快0.03秒。季節或水面使全員一起變快的部分不計入差值。未扣除騎乘選手的體重與實力。上一節以前是其他選手騎乘時的數值。右側數值相同時，從較小的艇號開始排列。"
       }
     },
     "motorRanking": {
