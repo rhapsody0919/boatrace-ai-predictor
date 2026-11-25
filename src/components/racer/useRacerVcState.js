@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { aggregateRacerCrossStats } from "../../services/core.js";
 import { getRacerRaceHistory } from "../../services/racerQueries2.js";
+import {
+  entryCourseCounts,
+  filterByEntryCourse,
+} from "../../pure/racerEntryCourseFilter.js";
 
 // 選手ページの成績・調子（RacerPerformanceStats）の絞り込みと出走履歴の状態。
 // 絞り込みはフロント側の純関数で再集計し、履歴は racerId ごとに1回だけ取る（ADR-0063）
@@ -16,6 +20,8 @@ function useVcFilterState() {
   // 「優勝戦」「準優勝戦」の完全一致のみ判定可能。BOA-159）
   const [vcGrade, setVcGrade] = useState("all");
   const [vcStage, setVcStage] = useState("all");
+  // 実際に入った進入コース（オーナー 2026-11-25）。進入が分かった走（2025-12 以降）だけを数える
+  const [vcCourse, setVcCourse] = useState("all");
   // レース一覧のページ番号（1始まり、常時表示。ADR-0063）。フィルタが変わったら1ページ目に
   // 戻す必要があるため、フィルタ変更を検知してリセットする
   const [vcRacePage, setVcRacePage] = useState(1);
@@ -32,6 +38,8 @@ function useVcFilterState() {
     setVcGrade,
     vcStage,
     setVcStage,
+    vcCourse,
+    setVcCourse,
     vcRacePage,
     setVcRacePage,
     vcRetryToken,
@@ -123,10 +131,18 @@ function useVcResets(racerId, f) {
     f.setVcBoat("all");
     f.setVcGrade("all");
     f.setVcStage("all");
+    f.setVcCourse("all");
   }
 
   // フィルタまたは選手が変わったら、レース一覧を1ページ目へ戻す。
-  const racePageInputs = [racerId, f.vcVenue, f.vcBoat, f.vcGrade, f.vcStage];
+  const racePageInputs = [
+    racerId,
+    f.vcVenue,
+    f.vcBoat,
+    f.vcGrade,
+    f.vcStage,
+    f.vcCourse,
+  ];
   const [previousRacePageInputs, setPreviousRacePageInputs] =
     useState(racePageInputs);
   if (
@@ -206,15 +222,36 @@ export function useRacerVcState(racerId, onHistoryStateChange) {
   const f = useVcFilterState();
   const history = useVcHistory(racerId, f.vcRetryToken, onHistoryStateChange);
   useVcResets(racerId, f);
-  const cross = useVcCross(history.vcHistory, f);
+  // 枠の中（会場別・枠番別・決まり手・推移・レース一覧）は進入コースで絞った履歴から数える。
+  // 枠の外（レース条件別）は絞り込みに連動しないので、絞る前の履歴（vcHistoryAll）を使う
+  const vcHistory = useMemo(
+    () => filterByEntryCourse(history.vcHistory, f.vcCourse),
+    [history.vcHistory, f.vcCourse],
+  );
+  // 選択肢に出す走数は、ほかの絞り込みに合う走のうち進入が分かった走だけ
+  const vcCourseCounts = useMemo(
+    () =>
+      entryCourseCounts(history.vcHistory, {
+        venue: f.vcVenue,
+        boat: f.vcBoat,
+        grade: f.vcGrade,
+        stage: f.vcStage,
+      }),
+    [history.vcHistory, f.vcVenue, f.vcBoat, f.vcGrade, f.vcStage],
+  );
+  const cross = useVcCross(vcHistory, f);
   const vcActive =
     f.vcVenue !== "all" ||
     f.vcBoat !== "all" ||
     f.vcGrade !== "all" ||
-    f.vcStage !== "all";
+    f.vcStage !== "all" ||
+    f.vcCourse !== "all";
   return {
     ...f,
     ...history,
+    vcHistory,
+    vcHistoryAll: history.vcHistory,
+    vcCourseCounts,
     ...cross,
     vcActive,
     vcVenueFixed: f.vcVenue !== "all",

@@ -141,7 +141,13 @@ function useRacerPerformanceView(t, vc, stats) {
     isNarrow,
     chartRuns: (rows) => (isNarrow ? rows.slice(-NARROW_CHART_RUNS) : rows),
     raceLabelOf: raceLabelOfWith(t),
-    vcLabel: vcLabelOf(t, vc),
+    // 進入コースは選んだときだけラベルの末尾に足す（vcLabelOf は4軸のまま）
+    vcLabel:
+      vc.vcCourse === "all"
+        ? vcLabelOf(t, vc)
+        : [vcLabelOf(t, vc), `${vc.vcCourse}コース`]
+            .filter((s) => s !== "全条件")
+            .join("×"),
     ...stAxisOf(vcData),
     displayTechniques: displayTechniquesOf(vcData, techniqueProfile),
     ...trendChartsOf(formTrend, exhibitionTimeTrend),
@@ -311,7 +317,7 @@ export default function RacerPerformanceStats({
       />
       <WinRateChart chartData={view.chartData} />
       {/* レース条件別の成績（BOA-336）。フィルタには連動しない（全会場・全条件の履歴から集計） */}
-      <RacerConditionStats history={vc.vcHistory} />
+      <RacerConditionStats history={vc.vcHistoryAll} />
       <ReturnRateTable view={view} boatReturnRate={boatReturnRate} />
       {/* 絞り込みの欄と、それが効く節（会場別・枠番別の表、決まり手、推移、レース一覧）を1つの枠にまとめる */}
       <FilterScopeFrame>

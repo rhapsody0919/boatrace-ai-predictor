@@ -102,6 +102,19 @@
   background: var(--surface-card);
 }
 
+/* 絞り込みの欄が増えても、出走の案内（操作）は幅によらず欄の下の行に置く */
+.racer-vc-today-badge {
+  flex-basis: 100%;
+  max-width: max-content;
+}
+
+.racer-vc-course-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 .racer-vc-scope {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-normal);
