@@ -9,7 +9,8 @@ maker-dispatch の guarded（scripts/maintenance/verify-*）に当たった差�
    （比べる演算子の反転・&&↔||・戻り値を null に・数値の定数を変える・文の削除）を作り、「旧の verify（origin/master の版）で落ちた変異 ⊆ 新の verify で落ちた変異」なら通す。
    変異が作れない・製品のファイルが見つからない・基準（変異なし）で旧か新が落ちる・node_modules が無いときは通さない（止める側）
    結果の型（record.mutation[].outcome）: ok・weakened（弱め）のほか、旧の verify が PR の木で通らない赤を split（分けよ: verify の変更を前段の PR へ）・
-   rule_change（決まりの変更: 人が見る）・old_red_on_base（比べられない）に分ける（old_red。どれも通さない）
+   rule_change（決まりの変更: 人が見る）・old_red_on_base（比べられない）に分ける（old_red。どれも通さない）。
+   rule_change のうち落とす変異の数が減らず確かめの形の数も減らない物は rule_change_kept（11/25 オーナー yes、A2。龍神の CI では警告）
    incomparable（比べられない・人が見る。11/20 オーナー yes、drafts/hr34-guard-false-red-20261120.md）: base の実の木（base_ref）で、旧の verify が製品を import しない・
    変異なしで通らない・変異を1つも落とさないとき。excused には入れず（hq は人行きのまま）、Verdict.incomparable に文を入れる（龍神の CI は警告にして赤にしない）。
    確かめの形の数（throw・exit・push・assert 系・リテラル）が旧より減った・早抜けや catch が増えた物は static_fewer（弱めの疑い）で赤のまま。
@@ -673,6 +674,10 @@ Others = Callable[[], Tuple[Swap, Sequence[str]]]  # (PR が変えた守り以�
 OUT_OK, OUT_WEAKENED, OUT_SPLIT, OUT_RULE, OUT_OLD_RED, OUT_NEW_RED = "ok", "weakened", "split", "rule_change", "old_red_on_base", "new_red"
 # 11/20: incomparable＝比べられない（人が見る。赤でない別の結果）・static_fewer＝比べられないうえ確かめの形の数が減った（赤）・flaky_new＝新が同じ変異を落としたり落とさなかったり（赤）
 OUT_INCOMPARABLE, OUT_FEWER, OUT_FLAKY = "incomparable", "static_fewer", "flaky_new"
+# 11/25 オーナー yes（A2、コードの健全さの点検）: rule_change のうち、旧が落とす変異が1つ以上あり、新が落とす数が旧以上で、
+# 確かめの形の数（static_fewer）も弱い側へ動いていない物。excused には入れず、incomparable と同じく龍神の CI では警告（赤でない）
+OUT_RULE_KEPT = "rule_change_kept"
+WARN_OUTCOMES = (OUT_INCOMPARABLE, OUT_RULE_KEPT)  # 龍神の CI で赤にせず警告にする型
 INCOMPARABLE_HEAD = "【比べられない（人が見る）】"
 BaseRunner = Callable[[], Optional["Runner"]]  # base の実の木（merge-base）の Runner。作れなければ None（「比べられない」と言わず今どおり赤）
 
@@ -856,6 +861,13 @@ def old_red(runner: Runner, script_rel: str, old_path: Path, old_text: str, new_
     k_new = _kills(runner, new_ms, lambda: runner.passes(new_path))
     rec.update(outcome=OUT_RULE, direction={"old_killed": k_old, "old_tried": n_old, "new_killed": k_new, "new_tried": len(new_ms)})
     trend = (f"落とす変異の数 旧 {k_old}/{n_old}（base の本文）→ 新 {k_new}/{len(new_ms)}（PR の本文）" if k_old and len(new_ms) else "出せない（旧が落とす変異を作れない）")
+    if k_old and new_ms and k_new >= k_old:
+        fewer = static_fewer(runner, script_rel, old_text, new_path.read_text(encoding="utf-8"), swap, rec)
+        if not fewer:
+            rec["outcome"] = OUT_RULE_KEPT
+            return (f"{script_rel}: 【決まりの変更: 警告】{trend}で減らず、確かめの形の数も弱い側へ動いていない。弱めていない証明ではない（木ごとに変異が違う）ので、"
+                    "差分の中の verify の変わり方を人が見る（旧の verify は base の本文でだけ、新の verify は PR の本文でだけ通る）")
+        trend += f"。{fewer}"
     return (f"{script_rel}: 【決まりの変更: 人が見る】向き: {trend}。数だけの目安で、弱めていない根拠ではない（木ごとに変異が違う）。"
             "旧の verify は base の本文でだけ、新の verify は PR の本文でだけ通る（決まりそのものを変えたか、守りと本文を分けられない変更。前段の PR には分けられない）")
 
@@ -1523,7 +1535,7 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                     excused.add(p)
                 else:
                     human.append(why)
-                    if rec.get("outcome") == OUT_INCOMPARABLE:
+                    if rec.get("outcome") in WARN_OUTCOMES:
                         inc_lines.append(why)
             else:
                 human.append(f"{p}: 変更の種類 {st} は見ない")
@@ -1567,7 +1579,7 @@ def data_gate_verdicts(rn: Runner, nm: Path, c: Json, datas: Mapping[str, str], 
         gated[v] = ok
         if not ok:
             human.append(f"{why}（verifyData/ の変更で）")
-            if rec.get("outcome") == OUT_INCOMPARABLE and inc_lines is not None:
+            if rec.get("outcome") in WARN_OUTCOMES and inc_lines is not None:
                 inc_lines.append(human[-1])
     for p, st in sorted(datas.items()):
         old, new = swap[p]
@@ -1586,7 +1598,7 @@ def data_gate_verdicts(rn: Runner, nm: Path, c: Json, datas: Mapping[str, str], 
         bad = [v for v in rs if not gated.get(v)]
         if bad:
             outs = {str(r.get("script")): r.get("outcome") for r in record["mutation"]}  # type: ignore[union-attr]
-            if all(outs.get(v) == OUT_INCOMPARABLE for v in bad):  # 読む verify が全部「比べられない」なら本も同じ結果（本の側の静的な語の赤は上で先に出ている）
+            if all(outs.get(v) in WARN_OUTCOMES for v in bad):  # 読む verify が全部「比べられない」なら本も同じ結果（本の側の静的な語の赤は上で先に出ている）
                 human.append(f"{p}: {INCOMPARABLE_HEAD}この verifyData/ を読む verify {len(bad)}/{len(rs)} 本が変異で比べられない（{'・'.join(bad[:3])}）。機械では通さず、人が差分を見る")
                 if inc_lines is not None:
                     inc_lines.append(human[-1])

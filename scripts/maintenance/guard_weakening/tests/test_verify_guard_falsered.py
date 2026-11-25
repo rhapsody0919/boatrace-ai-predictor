@@ -170,7 +170,11 @@ else:
     check("鍵が無く旧も新も判定の場所で回せない: 比べられない", inc(v) and outcomes(v) == {V: vg.OUT_INCOMPARABLE}, (v.human, v.incomparable, v.record))
     OLD_OK = 'import { clamp } from "../../src/calc.js";\nif (clamp(20) !== 10 || clamp(3) !== 3) process.exit(1);\n'
     v = judge({V: OLD_OK, "src/calc.js": CALC}, {V: OLD_OK.replace("!== 10", "!== 12"), "src/calc.js": CALC.replace("return 10;", "return 12;")})
-    check("base では旧が通る（決まりの変更）: 今までどおり赤の型（rule_change）", red(v) and outcomes(v) == {V: vg.OUT_RULE}, (v.human, v.incomparable))
+    # 11/25 A2: 落とす変異の数が減らず確かめの形の数も減らない決まりの変更は、比べられない物と同じ警告の並び（赤でない）
+    kept = V not in v.excused and any(h.startswith(V) and "【決まりの変更: 警告】" in h for h in v.incomparable)
+    check("base では旧が通る（決まりの変更、確かめは減らない）: rule_change_kept・警告（A2）", kept and outcomes(v) == {V: vg.OUT_RULE_KEPT}, (v.human, v.incomparable))
+    v = judge({V: OLD_OK, "src/calc.js": CALC}, {V: 'import { clamp } from "../../src/calc.js";\nif (clamp(20) !== 12) process.exit(1);\n', "src/calc.js": CALC.replace("return 10;", "return 12;")})
+    check("決まりの変更で確かめを減らした: 今までどおり赤の型（rule_change）", red(v) and outcomes(v) == {V: vg.OUT_RULE}, (v.human, v.incomparable))
 
     # base でも旧が変異を1つも落とさない（import するだけの旧。#3123 の一部の形）と、PR の木の水増しで作った「落とさない」
     OLD_NK = 'import * as m from "../../src/calc.js";\nconst seen = [];\nseen.push(typeof m);\nif (seen.length !== 1) process.exit(1);\n'

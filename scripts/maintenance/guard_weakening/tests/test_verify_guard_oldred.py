@@ -70,9 +70,20 @@ else:
     d = mk({V: OLD_V.replace("!== 10", "!== 12"), "src/calc.js": CALC.replace("return 10;", "return 12;")})
     v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, base.get, CFG)
     rec = (v.record.get("mutation") or [{}])[0]
-    check("(ii) 決まりの変更（旧は旧の値を assert）: 通さず「決まりの変更: 人が見る」（型 rule_change）と向き",
-          V not in v.excused and rec.get("outcome") == vg.OUT_RULE and any("【決まりの変更: 人が見る】" in h and "向き" in h for h in v.human)
-          and (rec.get("direction") or {}).get("old_killed", 0) > 0 and (rec.get("direction") or {}).get("new_killed", 0) > 0, (v.excused, v.human, rec))
+    # 11/25 A2: 落とす変異の数が減らず確かめの形の数も減らないので rule_change_kept（excused でなく、incomparable と同じ警告の並びへ）
+    check("(ii) 決まりの変更（旧は旧の値を assert、新は同じ形で新の値を assert）: excused にせず rule_change_kept・警告の並び（A2）",
+          V not in v.excused and rec.get("outcome") == vg.OUT_RULE_KEPT and any("【決まりの変更: 警告】" in h for h in v.incomparable)
+          and (rec.get("direction") or {}).get("old_killed", 0) > 0
+          and (rec.get("direction") or {}).get("new_killed", 0) >= (rec.get("direction") or {}).get("old_killed", 0), (v.excused, v.human, v.incomparable, rec))
+    shutil.rmtree(d)
+
+    # 決まりを変え、新の verify の確かめを1つ減らした（clamp(3) の確かめを消した）: 確かめの形の数が減るので rule_change の赤のまま（A2 の外）
+    d = mk({V: 'import { clamp } from "../../src/calc.js";\nif (clamp(20) !== 12) process.exit(1);\n', "src/calc.js": CALC.replace("return 10;", "return 12;")})
+    v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, base.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("決まりの変更＋確かめを減らした: rule_change の赤のまま、警告の並びに入らない",
+          V not in v.excused and rec.get("outcome") == vg.OUT_RULE and not v.incomparable
+          and any("【決まりの変更: 人が見る】" in h for h in v.human), (v.excused, v.human, v.incomparable, rec))
     shutil.rmtree(d)
 
     # 決まりを変え、新の verify を空にした: 新は base の本文でも通るので「分けよ」。言われたとおり前段（verify だけ）に出すと、そこで弱めの赤になる（抜け道にならない）
