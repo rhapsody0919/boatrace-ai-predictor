@@ -9,7 +9,8 @@
  *    範囲の中で走っている run（skipped を除く）が1本でもある・master の先が10分以内のコミットなら「待つ」
  *    （20分後の拾い直しでもう一度見る。先の新しさは自動 docs 再生成の commit を除いた最後の commit の時刻で見る）。範囲の中に落ちた run が1本でもあれば出さずに失敗（Slack）。
  *    後の run の成功では解かない（summarizeGates の説明）。live で赤・読み切れないなら、全件の検査を起こして「待つ」（releaseFullCheck.js）
- * 4. それ以外なら Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL、master に結び付けたもの）を叩く
+ * 4. それ以外なら Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL、master に結び付けたもの）を叩き、
+ *    出した master の先の sha で e2e-release.yml を起こす（releaseCheckDispatch.js。起こせなくても release は成功）
  *
  * 見張り（scrape_job_state.last_report に持つ。成功の記録のときだけ置き換わり、失敗の間は前の値が残る）:
  * - 前回の起動で叩いたのに本番の版がそのときのまま（ビルドの失敗か、出た後の Instant Rollback。区別できない）→ 叩かずに失敗。本番の版が動けば戻る
@@ -21,6 +22,7 @@
  */
 import { GITHUB_REPO, githubHeaders } from "./analogyDispatch.js";
 import { decideRelease } from "./releaseDecide.js";
+import { releasedReport } from "./releaseCheckDispatch.js";
 import { readFullChecks, startFullChecks } from "./releaseFullCheck.js";
 
 // 出すかどうかの判定（純関数）は releaseDecide.js。今までどおりここからも読めるようにする
@@ -335,6 +337,7 @@ export function createReleaseDispatchRun({
   env = process.env,
 } = {}) {
   return async (ctx) => {
+    const startedAt = Date.now(); // 関数の時間（60秒）の残りで確かめの起動を省く（releaseCheckDispatch.js）
     const previous = ctx.state?.last_report ?? null;
     // 20分後の拾い直しは、定時が「待つ」で終わったときだけ動く。それ以外は前の記録をそのまま残す
     // （置き換えると、定時で叩いた記録が消えて次の定時で「出ていない」を見張れなくなる）
@@ -350,7 +353,7 @@ export function createReleaseDispatchRun({
     const { head, compare, gateRuns } = read;
 
     // 範囲に赤・読み切れないがあれば、全件の検査の run で解く・起こす（releaseFullCheck.js）
-    const io = { fetchImpl, token, deployedSha };
+    const io = { fetchImpl, token, deployedSha, startedAt };
     const full = await readFullChecks(io, compare, gateRuns, summarizeGates);
     if (full.error) return full.error;
     const { gates } = full;
@@ -390,7 +393,8 @@ export function createReleaseDispatchRun({
     }
     const hookError = await fireDeployHook({ fetchImpl, env });
     if (hookError) return hookError;
-    const body = { ...report, released: true, lastReleasedSha: head.sha };
+    // 出した版で本番の確かめを起こし、出した記録を組む（releaseCheckDispatch.js。起こせなくても成功）
+    const body = await releasedReport(io, report, head.sha);
     return { rowsWritten: 0, report: body, body };
   };
 }

@@ -120,6 +120,10 @@ jobs:
     needs: [shards, e2e-live]
     if: always()
     environment: prod-jobs
+    # 前の run の artifact（赤の鍵、e2e-red-keys）を基準に読む
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -167,12 +171,14 @@ jobs:
           exit 0
 
       - name: Check skipped tests
+        id: skips
         # 組が全部成功したのにレポートが無い（merge-reports の異常）ときも走らせて落とす（黙って skip にしない）
         if: always() && (needs.e2e-live.result == 'success' || hashFiles('e2e-results.json') != '')
         run: node scripts/maintenance/check-e2e-skips.js
 
       # 分け方（matrix、e2e/shards.json）が全テストを1回ずつ走らせたか（PR ゲートの集約と同じ検査）
       - name: Check shard coverage
+        id: coverage
         # 組が全部成功したのにレポートが無い（merge-reports の異常）ときも走らせて落とす（黙って skip にしない）
         if: always() && (needs.e2e-live.result == 'success' || hashFiles('e2e-results.json') != '')
         env:
@@ -183,21 +189,46 @@ jobs:
           npx playwright test --list --reporter=json
           node scripts/maintenance/check-e2e-shard-coverage.js e2e-list.json e2e-results.json
 
-      - name: Notify Slack (失敗時のみ)
+      # 前の完了 run の赤（artifact e2e-red-keys）と比べ、Slack に出すかを決める（scripts/maintenance/e2e-new-reds.js、
+      # 設計 docs/design/harness-migration/design.md §2）。組の欠け・skip と網羅の検査の落ちは比べられないので鳴らす側で、
+      # その run の鍵は基準に残さない
+      - name: 新しい赤か決める
+        id: reds
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED: ${{ needs.shards.result != 'success' || needs.e2e-live.result != 'success' || job.status != 'success' }}
+          INCOMPLETE: ${{ needs.shards.result != 'success' || needs.e2e-live.result == 'cancelled' || steps.skips.outcome == 'failure' || steps.coverage.outcome == 'failure' }}
+        run: |
+          set -euo pipefail
+          node scripts/maintenance/e2e-new-reds.js --workflow=e2e-live.yml --report=e2e-results.json \
+            --out=red-keys.json --failed="$FAILED" --incomplete="$INCOMPLETE" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: 赤の鍵を次の run の基準に残す
+        if: always() && hashFiles('red-keys.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-red-keys
+          path: red-keys.json
+          retention-days: 14
+
+      - name: Notify Slack (新しい赤のときだけ)
         # skip・網羅の検査（直前、always()）が落ちても通知・失敗扱いが飛ばないよう always() を付ける
-        # 組の落ちに加え、skip・網羅の検査の落ち（failure()）でも鳴らす
-        if: always() && (needs.shards.result != 'success' || needs.e2e-live.result != 'success' || failure())
+        # 組の落ちに加え、skip・網羅の検査の落ち（failure()）でも鳴らす。ただし前と同じ赤だけなら鳴らさない
+        # （判定の step が答えを出せなかった＝notify が空なら鳴らす側）
+        if: always() && (needs.shards.result != 'success' || needs.e2e-live.result != 'success' || failure()) && steps.reds.outputs.notify != 'false'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.merge.outputs.summary }}
+          REDS: ${{ steps.reds.outputs.text }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         # 通知の形（attachments + section/mrkdwn）は nightly-verify-db.yml に揃える。
         # テスト名に引用符・改行が入るため、JSONは jq で組み立ててエスケープを任せる。
         # Slack の section の text は3000文字が上限で、超えると通知ごと拒否されるため、
         # ログだけを切り詰める（BOA-652。定型文は削らない）
         run: |
-          PAYLOAD=$(jq -n --arg summary "$SUMMARY" --arg url "$RUN_URL" '
-            ":rotating_light: *本番データでのE2Eが失敗しました*\n" as $head
+          PAYLOAD=$(jq -n --arg summary "$SUMMARY" --arg url "$RUN_URL" --arg reds "${REDS:-}" '
+            (":rotating_light: *本番データでのE2Eが失敗しました*\n" + $reds + "\n") as $head
             | ("\nPRゲートは録画の再生で走るため、本番データ側の変化（RPCの応答形・当日データの欠け・時刻依存の表示）はここでしか検知できません。データ側の正常な変化が原因なら `npm run test:e2e:record` で録画を撮り直してください。\n<" + $url + "|実行ログ>") as $tail
             | {
                 attachments: [{

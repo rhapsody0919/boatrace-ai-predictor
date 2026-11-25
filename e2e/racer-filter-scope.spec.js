@@ -29,7 +29,9 @@ for (const viewport of [
         ".racer-filter-scope .racer-official-block, .racer-filter-scope .racer-motor-status-card, .racer-filter-scope .racer-cond-stats, .racer-filter-scope .racer-stat-cards-grid:not(.racer-vc-cards-grid)",
       ),
     ).toHaveCount(0);
-    // 枠の前に、絞り込みに連動しない節（条件別の成績）がある
+    // 枠の前に、絞り込みに連動しない節（条件別の成績）がある。条件別の成績は非同期に届くので、出るのを待ってから比べる
+    // （本番のデータの E2E Live では届く前に比べて null で落ちていた。2026-11-25）
+    await expect(page.locator(".racer-cond-stats")).toBeVisible({ timeout: 40000 });
     const order = await page.evaluate(() => {
       const y = (q) => document.querySelector(q).getBoundingClientRect().top;
       return y(".racer-cond-stats") < y(".racer-filter-scope");
