@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2918,
+    "sourceFiles": 2921,
     "filesWithAccess": 329,
-    "tableReaders": 972,
+    "tableReaders": 973,
     "tableWriters": 200,
     "rpcCallers": 57,
     "nameMentions": 286,
@@ -25653,6 +25653,20 @@
           "op": "rest",
           "via": "rest",
           "columns": []
+        },
+        {
+          "ref": "src/services/venueQueries3.js:207",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "course",
+            "nigashi_rate",
+            "race_grade",
+            "runs",
+            "venue_code",
+            "window_end",
+            "window_start"
+          ]
         }
       ],
       "writers": [
@@ -25672,35 +25686,45 @@
       "readByView": [],
       "columns": {
         "venue_code": {
-          "readers": [],
+          "readers": [
+            "src/services/venueQueries3.js:207"
+          ],
           "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats"
           ]
         },
         "race_grade": {
-          "readers": [],
+          "readers": [
+            "src/services/venueQueries3.js:207"
+          ],
           "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats"
           ]
         },
         "course": {
-          "readers": [],
+          "readers": [
+            "src/services/venueQueries3.js:207"
+          ],
           "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats"
           ]
         },
         "window_start": {
-          "readers": [],
+          "readers": [
+            "src/services/venueQueries3.js:207"
+          ],
           "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats"
           ]
         },
         "window_end": {
-          "readers": [],
+          "readers": [
+            "src/services/venueQueries3.js:207"
+          ],
           "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats"
@@ -25714,7 +25738,9 @@
           ]
         },
         "runs": {
-          "readers": [],
+          "readers": [
+            "src/services/venueQueries3.js:207"
+          ],
           "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats"
@@ -25735,7 +25761,9 @@
           ]
         },
         "nigashi_rate": {
-          "readers": [],
+          "readers": [
+            "src/services/venueQueries3.js:207"
+          ],
           "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats"

@@ -12,9 +12,9 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | 区分 | 件数 |
 |---|---|
 | テーブル・ビューの定義 | 118 |
-| 読んでいる（テーブルを直接） | 49 |
+| 読んでいる（テーブルを直接） | 50 |
 | 読んでいる（RPC経由のみ） | 2 |
-| 画面から読んでいない（例外登録あり） | 29 |
+| 画面から読んでいない（例外登録あり） | 28 |
 | **画面から読んでいない（例外登録なし＝要判断）** | **38** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 2 |
 
@@ -67,7 +67,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `sns_youtube_quota_reads` | 表 | 146_sns_shorts_send.sql | なし | 記述なし |  |
 | `venue_rules` | 表 | 008_venue_rules.sql | なし | 記述なし |  |
 
-## 画面から読んでいない（例外登録あり）（29件）
+## 画面から読んでいない（例外登録あり）（28件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -98,10 +98,9 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `v_prediction_performance` | ビュー | 001_schema.sql | なし | 記述なし | 001_schema.sql のモデル評価用ビュー。読み手は scripts/ のみ |
 | `v_production_models` | ビュー | 001_schema.sql | なし | 記述なし | 001_schema.sql のモデル管理用ビュー。読み手は scripts/ のみ |
 | `v_todays_recommendations` | ビュー | 001_schema.sql | なし | 記述なし | 001_schema.sql の初期設計に由来するビュー。scripts/ にも読み手が無い（廃止候補） |
-| `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（51件）
+## 画面から読んでいる（52件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -149,6 +148,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `sns_strategy_insights` | 表 | 039_sns_strategy_insights.sql | APIが直接 | 記述なし |  |
 | `st_course_baseline` | 表 | 094_course_baselines.sql | 画面が直接 | GRANT（094_course_baselines.sql） |  |
 | `top_start_stats` | 表 | 025_top_start_stats.sql | 画面が直接 | GRANT（025_top_start_stats.sql） |  |
+| `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | 画面が直接 | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_grade_boat_stats` | 表 | 059_venue_grade_boat_stats.sql | 画面が直接 | ポリシー（059_venue_grade_boat_stats.sql） |  |
 | `venue_motor_start_dates` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（104_venue_motor_start_dates_public_read.sql） |  |
 | `venue_motor_stats` | 表 | 057_venue_motor_stats.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |

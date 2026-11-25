@@ -10,9 +10,9 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2918 |
+| 読んだファイル | 2921 |
 | 読み書きのあるファイル | 329 |
-| 表の読み手（箇所） | 972 |
+| 表の読み手（箇所） | 973 |
 | 表の書き手（箇所） | 200 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
@@ -127,7 +127,7 @@
 | [v_prediction_performance](#t-v_prediction_performance) | view | anon 可 | 0 | 0 |  |  |  |  |
 | [v_production_models](#t-v_production_models) | view | anon 可 | 0 | 0 |  |  |  |  |
 | [v_todays_recommendations](#t-v_todays_recommendations) | view | anon 可 | 0 | 0 |  |  |  |  |
-| [venue_course_technique_baseline](#t-venue_course_technique_baseline) | table | anon 可 | 5 | 1 | compute_racer_course_technique_stats |  | racer_course_technique_stats |  |
+| [venue_course_technique_baseline](#t-venue_course_technique_baseline) | table | anon 可 | 6 | 1 | compute_racer_course_technique_stats |  | racer_course_technique_stats |  |
 | [venue_entry_course_stats](#t-venue_entry_course_stats) | table | service だけ | 0 | 1 | data_health_table_rows |  | entry_course_stats |  |
 | [venue_grade_boat_stats](#t-venue_grade_boat_stats) | table | anon 可 | 3 | 1 | data_health_nightly_freshness |  |  |  |
 | [venue_motor_start_dates](#t-venue_motor_start_dates) | table | anon 可 | 4 | 1 |  |  | boatcast_motor_start |  |
@@ -2202,12 +2202,13 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: compute_racer_course_technique_stats
 - 取得のジョブ: racer_course_technique_stats
-- 読み手（5）: 
+- 読み手（6）: 
   - `scripts/daily/update-racer-course-technique-stats.js:262` select [*]
   - `scripts/daily/update-racer-course-technique-stats.js:361` select(helper:upsertStamped)
   - `scripts/lib/morningDigestFetch.js:164` select [*]
   - `scripts/maintenance/verifyData/full-picture-scene2-b-12.js:202` rest(rest)
   - `scripts/maintenance/verifyData/full-picture-scene2-b-6.js:75` rest(rest)
+  - `src/services/venueQueries3.js:207` select [course, nigashi_rate, race_grade, runs, venue_code, window_end, window_start]
 - 書き手（1）: 
   - `scripts/daily/update-racer-course-technique-stats.js:361` upsert(helper:upsertStamped) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる

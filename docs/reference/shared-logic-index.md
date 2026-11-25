@@ -50,6 +50,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses, computePeriodClip ほか4件 |
 | `src/pure/motorGenerationTrend.js` | モーターの推移の線（今の世代＝会場の入れ替えの後だけ。オーナー 2026-11-25 承認のモック改訂2）。 | motorMeets, motorRateTrend, motorExhibitionTrend, motorExhibitionMeetTrend, motorMeetTip ほか3件 |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
+| `src/pure/nigashiStats.js` | 逃し率（オーナー 2026-11-25）: 2〜6コースに入った走のうち、1コースの艇に逃げで1着を取られた走の割合。 | buildNigashiBreakdown, nationalNigashiBaseline |
 | `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
 | `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
 | `src/pure/predictionAssistBoardParts.js` | 思考アシスト（BOA-430）のボードの部品のうち、文言（src/data）を読まない計算。純粋関数だけ。 | firstPlaceComposite, missingFirstBoats, LENSES, stText, METRICS ほか1件 |
@@ -676,9 +677,9 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
 | `src/services/venueQueries.js` | — | getVenueTechniquePeriodStats, getVenueCharacteristics, getNationalAverageOutcomeDistribution, getOutcomeDistribution, getWinningTechniqueStats ほか1件 |
 | `src/services/venueQueries2.js` | — | getTodaysVenueRanking, getVenueDaySummary, getVenueFirstWinRateRanking, getTopStartStats, getLosingTechniqueStats ほか1件 |
-| `src/services/venueQueries3.js` | — | getNigeSimulation, getNigeOutcomeDistribution, getExhibitionTimeTopStats, getVenueGradeBoatStats, getVenuesWithGradeStats |
+| `src/services/venueQueries3.js` | — | getNigeSimulation, getNigeOutcomeDistribution, getExhibitionTimeTopStats, getVenueGradeBoatStats, getVenuesWithGradeStats ほか1件 |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 639 ファイル / export 3446 件。
+対象 640 ファイル / export 3449 件。
