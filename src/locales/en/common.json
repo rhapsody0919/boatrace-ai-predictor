@@ -3063,7 +3063,7 @@
       "courseHeader": "Lane",
       "exhibitionTrendHeader": "Trial time (avg / trend, higher = faster)",
       "wakuStatsExpand": "Show all 6 lanes",
-      "wakuStatsNote": "💡 \"Lane\" is the course this motor actually entered from (for older races without entry-course data, the boat number is used as-is). Tap a row to see the results for each racer who used this motor in that lane. On the race page, the highlighted row treats today's boat number as its lane (not valid when a boat moves in).",
+      "wakuStatsNote": "💡 \"Lane\" is the course this motor actually entered from (for older races without entry-course data, the boat number is used as-is). Tap a row to see the results for each racer who used this motor in that lane. The highlighted row treats today's boat number as its lane (may differ from the actual entry when a boat moves in).",
       "racerWakuBackLabel": "← Back to lane results",
       "racerWakuHeading": "Racers in lane {{course}}",
       "racerWakuEmpty": "No racers found for this motor/lane combination",
@@ -3759,7 +3759,7 @@
   },
   "stConsideration": {
     "title": "Start timing",
-    "subtitle": "Lower figure is the gap from the average for the same course and class. Courses assume boats enter in boat-number order (not valid when a boat moves in)",
+    "subtitle": "Lower figure is the gap from the average for the same course and class. Courses assume boats enter in boat-number order (may differ from the actual entry when a boat moves in)",
     "window": "Average compared against: {{start}} to {{end}}",
     "ownWindow": "The racer's figures count only races before this one",
     "gradeRow": "Class",
