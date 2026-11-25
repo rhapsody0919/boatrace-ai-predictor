@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2877,
+    "sourceFiles": 2880,
     "filesWithAccess": 329,
     "tableReaders": 969,
-    "tableWriters": 199,
+    "tableWriters": 200,
     "rpcCallers": 57,
     "nameMentions": 286,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 12,
+    "notInSnapshot": 13,
     "unresolved": 37,
     "parseErrors": 0,
     "uncoveredFiles": 57
@@ -30256,6 +30256,13 @@
         "scripts/lib/racerCareerDb.js:108",
         "scripts/lib/racerCareerJob.js:174",
         "scripts/lib/racerCareerJob.js:223"
+      ]
+    },
+    {
+      "kind": "table",
+      "name": "site_feedback",
+      "refs": [
+        "src/services/analogyFeedback.js:35"
       ]
     },
     {

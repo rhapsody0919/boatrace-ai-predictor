@@ -626,7 +626,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/adlerService.js` | アドラー予想 データ取得・推論サービス | getAdlerModelInfo, getAdlerPredictions |
 | `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance |
 | `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
-| `src/services/analogyFeedback.js` | 龍神ソナー（BOA-271）の「画面の中の声」を analogy_feedback に送る（docs/db-migration/143_analogy_feed… | sendAnalogyFeedback |
+| `src/services/analogyFeedback.js` | 龍神ソナー（BOA-271）の「画面の中の声」を analogy_feedback に送る（docs/db-migration/143_analogy_feed… | sendAnalogyFeedback, sendSiteFeedback |
 | `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogyLayer, getAnalogySimilar ほか2件 |
 | `src/services/core.js` | — | withCache, clearCache, chunkArray, fetchAllByIn, isPastRace ほか7件 |
 | `src/services/currentMeetEntries.js` | 選手の今節の走（同じ会場・同じモーター）を特定する取得（BOA-861）。 | fetchCurrentMeetRaceEntries |
@@ -677,4 +677,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 635 ファイル / export 3425 件。
+対象 635 ファイル / export 3426 件。

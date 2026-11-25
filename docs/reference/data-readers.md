@@ -10,16 +10,16 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2877 |
+| 読んだファイル | 2880 |
 | 読み書きのあるファイル | 329 |
 | 表の読み手（箇所） | 969 |
-| 表の書き手（箇所） | 199 |
+| 表の書き手（箇所） | 200 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
-| コードが使うのに写しに無い名前 | 12 |
+| コードが使うのに写しに無い名前 | 13 |
 | 名前が式で拾えなかった箇所 | 37 |
 | 構文木にできなかったファイル | 0 |
 | 対象外の言語のファイル（Python 等） | 57 |
@@ -2331,6 +2331,7 @@
 - table `growth_gsc_page_daily`: `scripts/lib/growth/gscPageDaily.js:73`, `scripts/lib/growth/gscPageDaily.js:85`, `scripts/lib/growth/gscPageDaily.js:92`
 - table `growth_url_inspection`: `scripts/lib/growth/urlInspection.js:98`, `scripts/lib/growth/urlInspection.js:109`, `scripts/lib/growth/urlInspection.js:119`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
+- table `site_feedback`: `src/services/analogyFeedback.js:35`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`, `scripts/maintenance/verifyData/sns-send-runner-scenes-4.js:174`
 
 ## 拾えなかったもの
