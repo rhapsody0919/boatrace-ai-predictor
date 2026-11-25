@@ -118,7 +118,62 @@ test("基準の行を足すと赤、減ると better", () => {
   assert.equal(compareBaselines(baseline, baseline).better.length, 0);
 });
 
-test("dependency-rules.cjs が読めて規則の名前が10個", () => {
+// 規則の path・pathNot を dependency-cruiser と同じ読み方（to の $1 は from の1つ目の組）で当てる。試験だけの写し
+const asList = (v) => (v === undefined ? [] : [v].flat());
+function violates(rule, from, to) {
+  const fm = asList(rule.from.path).map((re) => from.match(new RegExp(re))).find(Boolean);
+  if (rule.from.path && !fm) return false;
+  if (asList(rule.from.pathNot).some((re) => new RegExp(re).test(from))) return false;
+  const sub = (re) => re.replace(/\$1/g, fm?.[1] ?? "");
+  if (!asList(rule.to.path).some((re) => new RegExp(sub(re)).test(to))) return false;
+  return !asList(rule.to.pathNot).some((re) => new RegExp(sub(re)).test(to));
+}
+const ruleOf = (name) =>
+  require("./dependency-rules.cjs").forbidden.find((r) => r.name === name);
+
+test("domain-direct: 領域の間の Queries は赤（prediction・meet も）、同じ領域は緑（2026-11-25 に締めた）", () => {
+  const r = ruleOf("domain-direct");
+  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/raceQueries.js"), false);
+  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/motorQueries.js"), true);
+  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/predictionQueries3.js"), true);
+  assert.equal(violates(r, "src/services/racerQueries5.js", "src/services/meetQueries2.js"), true);
+  assert.equal(violates(r, "src/services/raceQueries2.js", "src/services/core.js"), false);
+});
+
+test("pure-no-up: src/pure は自分と定数だけ", () => {
+  const r = ruleOf("pure-no-up");
+  for (const ok of ["src/pure/b.js", "src/constants/c.js", "src/config/languages.js", "src/data/d.js"]) {
+    assert.equal(violates(r, "src/pure/a.js", ok), false, ok);
+  }
+  for (const ng of ["src/utils/x.js", "src/services/raceQueries.js", "src/components/A.jsx", "src/locales/ja/common.json"]) {
+    assert.equal(violates(r, "src/pure/a.js", ng), true, ng);
+  }
+});
+
+test("constants-no-up: 定数は定数だけ", () => {
+  const r = ruleOf("constants-no-up");
+  assert.equal(violates(r, "src/constants/a.js", "src/config/b.js"), false);
+  assert.equal(violates(r, "src/data/a.js", "src/constants/b.js"), false);
+  for (const from of ["src/constants/a.js", "src/config/a.js", "src/data/a.js"]) {
+    assert.equal(violates(r, from, "src/pure/x.js"), true, from);
+    assert.equal(violates(r, from, "src/utils/x.js"), true, from);
+  }
+});
+
+test("node-to-src: scripts・api から src は pure・定数・訳だけ、試験は除く", () => {
+  const r = ruleOf("node-to-src");
+  for (const from of ["scripts/lib/a.js", "scripts/daily/b.js", "api/_lib/c.js", "api/cron/d.js", "middleware.js", "scripts/maintenance/fix-x.js"]) {
+    assert.equal(violates(r, from, "src/pure/x.js"), false, from);
+    assert.equal(violates(r, from, "src/locales/ja/common.json"), false, from);
+    assert.equal(violates(r, from, "src/utils/x.js"), true, from);
+    assert.equal(violates(r, from, "src/services/raceQueries.js"), true, from);
+  }
+  assert.equal(violates(r, "scripts/maintenance/verify-x.js", "src/services/raceQueries.js"), false);
+  assert.equal(violates(r, "scripts/maintenance/verifyData/x-scenes.js", "src/utils/x.js"), false);
+  assert.equal(violates(r, "src/pages/P.jsx", "src/utils/x.js"), false);
+});
+
+test("dependency-rules.cjs が読めて規則の名前が14個", () => {
   const { forbidden, DEPENDENCY_CRUISER } = require("./dependency-rules.cjs");
   assert.match(DEPENDENCY_CRUISER, /^dependency-cruiser@\d+\.\d+\.\d+$/);
   assert.deepEqual(
@@ -133,6 +188,9 @@ test("dependency-rules.cjs が読めて規則の名前が10個", () => {
       "api-no-ui-data",
       "lib-no-entry",
       "domain-direct",
+      "pure-no-up",
+      "constants-no-up",
+      "node-to-src",
       "no-circular",
     ],
   );
