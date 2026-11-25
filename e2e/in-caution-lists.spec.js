@@ -226,6 +226,13 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
       "solid",
     );
     await expect(page.locator(".race-card", { hasText: "🌪️" })).toHaveCount(0);
+    // AI予想タブへのリンクの名前は「イン崩れ注意度」（「イン崩れ」だけだと結果の言い切りに読める。2026-11-25 オーナー）
+    await expect(
+      page.locator(".venue-race-block__links a", { hasText: "イン崩れ注意度" }).first(),
+    ).toBeVisible();
+    await expect(
+      page.locator(".venue-race-block__links a").filter({ hasText: /^イン崩れ$/ }),
+    ).toHaveCount(0);
     // 札の割合が何か（全国の勝率差の帯）を一覧の上に書く（#1602 ファン評価1周目 指摘1）
     await expect(
       page.locator(".venue-race-list__in-caution-note"),
