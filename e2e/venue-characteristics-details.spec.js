@@ -83,7 +83,13 @@ test("会場特徴カードの「もっと詳しく」に枠番別の2連率・3
 
   // 初期は閉じている
   await expect(details).not.toHaveAttribute("open", "");
+  // 見出しは艇番で数えた表だと分かる名前にし、開いた先頭で上の直近1年（進入コース別）との窓の違いを書く（オーナー 2026-11-25）
+  await expect(details.locator("summary")).toContainText("艇番で見ると");
   await details.locator("summary").click();
+  await expect(details.locator(".venue-details__lead")).toContainText(
+    "前付けがあると艇番と進入コースが違い",
+  );
+  await expect(details.locator("thead th").first()).toHaveText("艇番");
 
   // 1着率の列は出さない（枠・2連率・3連率）
   await expect(details.locator("thead th")).toHaveCount(3);
