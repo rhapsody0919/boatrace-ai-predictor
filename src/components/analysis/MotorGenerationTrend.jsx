@@ -34,7 +34,7 @@ export function MotorViewHead({ view, setView, metric }) {
       <p className="trc-title">{t(view === "now" ? "analysis.motor.genTrend.nowTitle" : `analysis.motor.genTrend.title.${metric}`)}</p>
       <span className="trc-tabs" role="group" aria-label={t("analysis.motor.genTrend.viewLabel")}>
         {["now", "trend"].map((v) => (
-          <button key={v} type="button" className="trc-tab" aria-pressed={view === v} onClick={() => setView(v)}>
+          <button key={v} type="button" className="trc-tab mtc-tab" aria-pressed={view === v} onClick={() => setView(v)}>
             {t(`analysis.motor.genTrend.view.${v}`)}
           </button>
         ))}

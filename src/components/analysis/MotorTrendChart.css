@@ -89,7 +89,7 @@
 }
 
 /* 題が長い指標（展示タイム）でも「今の値｜推移」を折り返さない */
-.motor-condition-container .trc-tab {
+.mtc-tab {
   white-space: nowrap;
 }
 
