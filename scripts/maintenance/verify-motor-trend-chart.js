@@ -19,10 +19,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const PRODUCT = "src/components/analysis/MotorTrendChart.jsx";
 const bundled = await bundle({
   stdin: {
-    contents: 'export { default as MotorTrendChart } from "./MotorTrendChart.jsx";',
-    resolveDir: path.join(ROOT, "src/components/analysis"),
+    contents: `export { default as MotorTrendChart } from ${JSON.stringify(path.join(ROOT, PRODUCT))};`,
+    resolveDir: ROOT,
     loader: "js",
   },
   bundle: true,
