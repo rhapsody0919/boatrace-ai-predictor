@@ -198,7 +198,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/growth/morningSheet.js` | SEO の朝の1枚の組み立て（SEO データの輪 PR6。設計 seo-data-loop-design §2・§4・§5）。 | freshnessReport, positionBand, buildSignals, ticketTemplate, articleLines ほか4件 |
 | `scripts/lib/growth/seoDetect.js` | 察知の純関数（SEO データの輪 PR3。設計 seo-data-loop-design §4）。 | normalizePage, weightedPosition, classifyIntent, isSeasonalTerm, isEventDriven ほか7件 |
 | `scripts/lib/growth/seoEffect.js` | 効きの測りの純関数（SEO データの輪 PR4。設計 seo-data-loop-design §5）。 | sumWindow, baselineBand, deploySlotOf, cannotSeparate, dueCheckpoints ほか4件 |
-| `scripts/lib/growth/sitemapInspection.js` | sitemap.xml から URL Inspection の検査の一覧を作る純関数（コアアップデートからの回復 打ち手 D、索引の数を毎日測る）。 | parseSitemapLocs, buildInspectionTargets, dueWeekly, planSitemapInspections, readRecentWeekly ほか5件 |
+| `scripts/lib/growth/sitemapInspection.js` | sitemap.xml から URL Inspection の検査の一覧を作る純関数（コアアップデートからの回復 打ち手 D、索引の数を毎日測る）。 | parseSitemapLocs, buildInspectionTargets, dueWeekly, planSitemapInspections, readRecentWeekly ほか6件 |
 | `scripts/lib/growth/urlInspection.js` | URL Inspection（索引の状態）の取得の部品（SEO データの輪 PR5。設計 seo-data-loop-design §3.1・§5）。 | latestDueCheckpoint, pendingInspections, canonicalOk, toInspectionRow, indexStatusOf ほか8件 |
 | `scripts/lib/harville.js` | — | — |
 | `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
@@ -680,4 +680,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 638 ファイル / export 3448 件。
+対象 638 ファイル / export 3449 件。
