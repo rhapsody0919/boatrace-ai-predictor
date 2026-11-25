@@ -64,6 +64,19 @@ test.describe("レイアウト: 枠別情報の PC の並び", () => {
     expect(right.x, "右のカードは6艇表の右").toBeGreaterThan(left.x + left.w);
     await expect(page.locator(".rwit-detail-title")).toBeVisible();
 
+    // 左の6艇表はヘッダーの下に留まり、画面に入りきらなければカードの中だけ動く。
+    // 高さは右とそろえない（右を開くと左の下が空の枠になるため。オーナー承認 2026-11-25）
+    const sticky = await page
+      .locator(".rwit-top > .six-boat-course")
+      .evaluate((e) => {
+        const s = getComputedStyle(e);
+        return { position: s.position, overflowY: s.overflowY, maxHeight: s.maxHeight };
+      });
+    expect(sticky.position, "左は画面に留まる").toBe("sticky");
+    expect(sticky.overflowY, "左は中だけ動く").toBe("auto");
+    expect(sticky.maxHeight, "左は画面の高さまで").not.toBe("none");
+    await expect(page.locator(".rwit-top")).toHaveCSS("align-items", "start");
+
     // チップは 3×2（5＋1 の折れを出さない）
     const chipTops = await page
       .locator(".rwit-detail .rwit-boat-chip")
