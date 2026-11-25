@@ -66,6 +66,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
 | `src/pure/racerConditionDiff.js` | — | twoGroupZ, isConditionDiffSignificant, COND_RATE_MIN_RUNS, COND_Z_CRITICAL |
+| `src/pure/racerEntryCourseFilter.js` | 選手ページの成績の絞り込み「進入コース」（オーナー 2026-11-25）。 | filterByEntryCourse, entryCourseCounts, firstEntryCourseDate, ENTRY_COURSES |
 | `src/pure/racerLatestEntry.js` | 選手ページの冒頭の1行目「MM/DD の出走表」（#3258 の #2）。 | officialPeriodKey, latestEntryLine, F_COUNT_RELIABLE_FROM |
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか4件 |
@@ -680,4 +681,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 638 ファイル / export 3450 件。
+対象 639 ファイル / export 3454 件。
