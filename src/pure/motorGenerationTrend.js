@@ -86,22 +86,42 @@ export function motorExhibitionTrend(
  * @param {Array<Object>} runs 1基の今の世代の走（racerName・finish つき）
  * @param {string} date 点の日（節の初日）
  * @param {Array<{start:string,end:string,days:number|null,grade:string|null,title:string|null}>} meets 会場の節
- * @returns {{start:string,end:string,days:number|null,grade:string|null,racerName:string|null,finishes:Array<number|null>}|null}
- *   start は節のページ（/venue/会場/meet/初日）の初日。その日に始まる節が無ければ null
+ * @param {{today?: string}} [opts] today はこのレースの日。節の終わりがこの日以降なら開催中（着順はここまでの分）
+ * @returns {{start:string,end:string,days:number|null,grade:string|null,racerName:string|null,finishes:Array<number|null>,
+ *   byDay:Array<{date:string, results:Array<number|string|null>}>, ongoing:boolean}|null}
+ *   start は節のページ（/venue/会場/meet/初日）の初日。その日に始まる節が無ければ null。
+ *   byDay は日ごとの着（公式の記号があれば記号を先に。BOA-576）。3連単の目に見えないよう日で区切って出すため
  */
-export function motorMeetTip(runs, date, meets) {
+export function motorMeetTip(runs, date, meets, { today = null } = {}) {
   const rows = sortRuns(runs);
   const all = motorMeets(rows);
   const k = all.findIndex((m) => m.start === date);
   if (k < 0) return null;
   const inMeet = rows.slice(all[k].runsBefore, all[k + 1]?.runsBefore ?? rows.length);
-  const series = (meets ?? []).find((m) => m.start <= date && date <= m.end);
+  const head = meetHeadOf((meets ?? []).find((m) => m.start <= date && date <= m.end), date, inMeet);
   return {
-    start: series?.start ?? date,
-    end: series?.end ?? inMeet[inMeet.length - 1].date,
-    days: series?.days ?? null,
-    grade: series?.grade ?? null,
+    ...head,
     racerName: inMeet.find((r) => r.racerName)?.racerName ?? null,
     finishes: inMeet.map((r) => r.finish ?? null),
+    byDay: resultsByDay(inMeet),
+    ongoing: today !== null && head.end >= today,
   };
+}
+
+// 会場の節（race_series）があれば期間・日数・グレードをそこから、無ければ走の日で期間を作る
+function meetHeadOf(series, date, inMeet) {
+  if (!series) return { start: date, end: inMeet[inMeet.length - 1].date, days: null, grade: null };
+  return { start: series.start, end: series.end, days: series.days ?? null, grade: series.grade ?? null };
+}
+
+// 日ごとの着。公式の記号（F・欠 等）があれば着順より先に出す（BOA-576: F の艇が rank に入っていることがある）
+function resultsByDay(inMeet) {
+  const out = [];
+  for (const r of inMeet) {
+    const res = r.finishMark ?? r.finish ?? null;
+    const last = out[out.length - 1];
+    if (last && last.date === r.date) last.results.push(res);
+    else out.push({ date: r.date, results: [res] });
+  }
+  return out;
 }
