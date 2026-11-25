@@ -144,6 +144,35 @@ const formatCounts = (counts) =>
     .map(([r, n]) => `${r}=${n}`)
     .join(" ") || "違反なし";
 
+/**
+ * 違反の辺と表から赤と記録を決める（純関数）。baseExceptions は base の表、無いときは null（表を足す PR）。
+ * 循環は表に依らず赤。消せる行を残すと、直した違反を後で戻しても通る（減る向きだけが名前だけになる）ので赤
+ */
+export function judgeDepTree({ headEdges, exceptions, baseExceptions }) {
+  const errors = headEdges
+    .filter((e) => e.rule === CIRCULAR)
+    .map((e) => `循環の import(no-circular): ${e.from} → ${e.to}`);
+  const log = [];
+  const judged = judgeAgainstExceptions(
+    headEdges.filter((e) => e.rule !== CIRCULAR),
+    exceptions,
+  );
+  errors.push(...judged.problems.map((p) => `依存の向き ${p}`));
+  errors.push(
+    ...judged.stale.map((r) => `依存の向き: 例外の表の行が今は違反でない（この PR で行を消す）: ${r}`),
+  );
+  if (baseExceptions === null) {
+    log.push("依存の向き: base <base> に例外の表が無い（表を足す PR）。表の増えは見ない");
+  } else {
+    errors.push(
+      ...compareBaselines(baseExceptions, exceptions).problems.map(
+        (p) => `依存の向き: 例外の表は減る向きだけ。${p}`,
+      ),
+    );
+  }
+  return { errors, log };
+}
+
 /** base の例外の表。base の木に無いとき（表を足す PR）だけ null。ほかの失敗は throw して赤にする */
 function readBaseExceptions(cwd, base) {
   const has = spawnSync("git", ["cat-file", "-e", `${base}:${EXCEPTIONS_PATH}`], { cwd }).status === 0;
@@ -156,7 +185,7 @@ function readBaseExceptions(cwd, base) {
 
 /**
  * 全体で0の関所（2026-11-25、点検の案 B-1）。HEAD だけに dependency-cruiser を回し、
- * 違反の辺が例外の表 dependency-exceptions.json にちょうどあるかを見る（ADR-0110）。表は減る向きだけ（base の表より行が増えたら赤）、
+ * 違反の辺が例外の表 dependency-exceptions.json にちょうどあるかを見る（全体で0＋例外の表）。表は減る向きだけ（base の表より行が増えたら赤）、
  * 今は違反でない行が残っても赤。
  * 以前は base と HEAD の違反の差で見ていたので、master に一度入った違反がそのまま基準になった。
  * @returns {{ errors: string[], warnings: string[], log: string[] }}
@@ -182,28 +211,13 @@ export function runDepTreeGate({ cwd, base, changed }) {
       `依存の向き: HEAD の違反 ${formatCounts(countByRule(head.edges))}／モジュール ${head.modules}／例外の表 ${EXCEPTIONS_PATH}`,
     );
 
-    head.edges
-      .filter((e) => e.rule === CIRCULAR)
-      .forEach((e) => errors.push(`循環の import(no-circular): ${e.from} → ${e.to}`));
-
-    const judged = judgeAgainstExceptions(
-      head.edges.filter((e) => e.rule !== CIRCULAR),
+    const judged = judgeDepTree({
+      headEdges: head.edges,
       exceptions,
-    );
-    judged.problems.forEach((p) => errors.push(`依存の向き ${p}`));
-    // 消せる行を残すと、直した違反を後で戻しても通る（減る向きだけが名前だけになる）。直した PR の中で表も縮める
-    judged.stale.forEach((r) =>
-      errors.push(`依存の向き: 例外の表の行が今は違反でない（この PR で行を消す）: ${r}`),
-    );
-
-    const baseExceptions = readBaseExceptions(cwd, base);
-    if (baseExceptions === null) {
-      log.push(`依存の向き: base ${base} に例外の表が無い（表を足す PR）。表の増えは見ない`);
-    } else {
-      compareBaselines(baseExceptions, exceptions).problems.forEach((p) =>
-        errors.push(`依存の向き: 例外の表は減る向きだけ。${p}`),
-      );
-    }
+      baseExceptions: readBaseExceptions(cwd, base),
+    });
+    errors.push(...judged.errors);
+    log.push(...judged.log.map((l) => l.replace("<base>", base)));
   } catch (e) {
     errors.push(`依存の向き: ${e.message}`);
   } finally {

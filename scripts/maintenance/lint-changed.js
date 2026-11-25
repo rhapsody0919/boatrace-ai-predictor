@@ -14,7 +14,7 @@
  *   - 新しいファイルが max-lines・complexity の線を越える
  *   - 既にあるファイルが、この差分で max-lines の線を越えた（base で線の内だった）
  *   - --ci: src・scripts・api に循環の import がある（dependency-cruiser の no-circular、lintDepTree.js。全体で0件を保つ）
- *   - --ci: 依存の向きの違反が例外の表 dependency-exceptions.json とちょうど合わない・表が増えた（lintDepTree.js、ADR-0110）
+ *   - --ci: 依存の向きの違反が例外の表 dependency-exceptions.json とちょうど合わない・表が増えた（lintDepTree.js）
  *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）。split-data-layer.mjs の出力そのままの PR で、
  *     差分の側が全部移しただけのファイルの重なりは警告（base の殻の字そのまま。lintDuplicates.js）。
  *     master への push の run では赤にせず [dup-on-push] の注記にする（hq が直しの票にする。jscpd の結果が無いのは赤のまま）
@@ -173,7 +173,7 @@ if (ci) {
   errors.push(...size.errors);
   warnings.push(...size.warnings);
 
-  // --- 依存の向き（dependency-cruiser を HEAD に回し、違反が例外の表にちょうどあるか。ADR-0110）・src/utils の新しいファイル
+  // --- 依存の向き（dependency-cruiser を HEAD に回し、違反が例外の表にちょうどあるか）・src/utils の新しいファイル
   const dep = runDepTreeGate({ cwd: ROOT, base: mergeBase, changed });
   dep.log.forEach((l) => console.log(l));
   errors.push(...dep.errors);

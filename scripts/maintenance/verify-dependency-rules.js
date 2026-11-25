@@ -5,7 +5,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { readFileSync } from "node:fs";
 import {
   isDataLayer,
   compareEdgesToBaseline,
@@ -14,7 +13,7 @@ import {
   newServicesFileProblems,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
-import { baselineOfEdges } from "./lintDepTree.js";
+import { baselineOfEdges, judgeDepTree } from "./lintDepTree.js";
 
 const require = createRequire(import.meta.url);
 
@@ -246,11 +245,24 @@ test("全体で0の関所: 例外の表に無い辺は赤、和の中でもま�
   assert.equal(twice.problems.length, 1, "同じ辺が2度出ても1件");
 });
 
-test("runDepTreeGate: 表の余り（今は違反でない行）は赤、base の表が無いときだけ増えを見ない（ADR-0110）", () => {
-  const src = readFileSync(new URL("./lintDepTree.js", import.meta.url), "utf8");
-  assert.match(src, /judged\.stale\.forEach\(\(r\) =>\s*errors\.push/, "stale は errors へ");
-  assert.match(src, /cat-file", "-e"/, "base の表の有無は git cat-file -e で分ける");
-  assert.doesNotMatch(src, /catch \{\s*return null;/, "読みの失敗を null（表が無い）にしない");
+test("judgeDepTree: 表の余り・表の増え・循環は赤、base の表が無いときだけ増えを見ない", () => {
+  const e1 = edge("api/_lib/a.js", "src/utils/x.js", "node-to-src");
+  const exc = { "node-to-src": { "api/_lib/a.js": ["src/utils/x.js"] } };
+  const ok = judgeDepTree({ headEdges: [e1], exceptions: exc, baseExceptions: exc });
+  assert.deepEqual(ok, { errors: [], log: [] });
+  const stale = judgeDepTree({ headEdges: [], exceptions: exc, baseExceptions: exc });
+  assert.equal(stale.errors.length, 1, "直したのに表に行が残ると赤");
+  const grown = judgeDepTree({ headEdges: [e1], exceptions: exc, baseExceptions: {} });
+  assert.equal(grown.errors.length, 1, "base より表が増えたら赤");
+  const first = judgeDepTree({ headEdges: [e1], exceptions: exc, baseExceptions: null });
+  assert.equal(first.errors.length, 0);
+  assert.equal(first.log.length, 1, "表を足す PR は増えを見ないと記録する");
+  const cyc = judgeDepTree({
+    headEdges: [e1, edge("src/a.js", "src/b.js", "no-circular")],
+    exceptions: { ...exc, "no-circular": { "src/a.js": ["src/b.js"] } },
+    baseExceptions: null,
+  });
+  assert.ok(cyc.errors.some((x) => x.startsWith("循環")), "循環は表に書いても赤");
 });
 
 test("例外の表 dependency-exceptions.json は形が正しく、行を足すと compareBaselines が赤", () => {
