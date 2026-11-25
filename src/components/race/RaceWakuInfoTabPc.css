@@ -19,8 +19,19 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--spacing-4);
-    align-items: stretch;
+    /* 高さはそろえない。右で直近10走・全コースを開くと右だけ伸び、そろえると左の下が空の枠になる（オーナー承認 2026-11-25） */
+    align-items: start;
     margin-bottom: var(--spacing-3);
+  }
+
+  /* 左の6艇表は、右を下へ読む間もヘッダーの下に留め、行を押して選手を替えられるようにする。
+     画面に入りきらなければカードの中だけ動かす（visual-designer 2026-11-25、高さ 768px でも6艇の行が見える）。
+     72px はヘッダー（約64px）＋8px。ヘッダーの高さの変数が無いので数で書く */
+  .rwit-top > .six-boat-course {
+    position: sticky;
+    top: 72px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
   }
 
   /* 左右のカード。見た目は .rwit-card とそろえる */
