@@ -114,8 +114,9 @@ jobs:
           CI: true
           RELEASE_BASE_URL: https://www.boat-ai.jp
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-          # 新しい赤の判定（下の step）が JSON から赤の鍵を取る
-          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-release-results.json
+          # 新しい赤の判定（下の step）が JSON から赤の鍵を取る。_OUTPUT_NAME は設定のファイルの置き場（e2e/release-check/）を基準に
+          # 解かれて根に出ず、基準の artifact が残らなかった（2026-11-26 の run 45698016342）。_OUTPUT_FILE は作業の置き場の根を基準に解かれる
+          PLAYWRIGHT_JSON_OUTPUT_FILE: e2e-release-results.json
         run: npx playwright test --config=e2e/release-check/playwright.release.config.js --reporter=list,json
 
       # 前の完了 run の赤（artifact e2e-red-keys）と比べ、Slack に出すかを決める。試験の前に落ちた run（レポートが無い）は鳴らす側
