@@ -1771,6 +1771,11 @@
       "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
     },
     {
+      "script": "verify-site-feedback-gate.js",
+      "tier": "ci",
+      "guards": "ご意見ボックスを全画面につなぐ前の関門。画面の列挙・上限（src/pure/siteFeedback.js）と表（docs/db-migration/NNN_site_feedback.sql）の CHECK が同じこと、台帳（APPLIED.md）で表が適用済みであること（表より先に画面を出すと全員の送信が失敗する）"
+    },
+    {
       "script": "verify-site-feedback-hourly.js",
       "tier": "ci",
       "guards": "マイグレーション209（ご意見ボックスの時間ごとの件数 site_feedback_hourly）を 208 の後に PGlite に当て、当てる前の行の数え直しと冪等、受け付けた行ごとに1増える、拒否した送信（CHECK・連投の制限）は数えない、claude_ro は件数の表を読めてご意見の表は読めない、anon・authenticated は件数の表を読めない、戻しで消えて 208 の形で送れる、db-apply の検査で拒否が無いことを確かめる"
