@@ -1,0 +1,79 @@
+/*
+ * ご意見ボックスの内容の欄（SiteFeedbackComment.jsx）。.site-fb-field・.site-fb-q・.site-fb-opt・.site-fb-error は、
+ * 種類・満足度の欄と送れなかったときの文（SiteFeedbackFields.jsx）も使う。
+ */
+.site-fb-text:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.site-fb-field {
+  display: grid;
+  gap: var(--spacing-1-5);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.site-fb-q {
+  padding: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.site-fb-opt {
+  margin-left: var(--spacing-1-5);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.site-fb-text {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 104px;
+  padding: var(--spacing-2-5) var(--spacing-3);
+  resize: vertical;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font: inherit;
+  /* 16px 未満だと iOS Safari がフォーカスで画面を拡大する */
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.site-fb-text::placeholder {
+  color: var(--text-secondary);
+}
+
+.site-fb-text[aria-invalid="true"] {
+  border-color: var(--color-error-text);
+}
+
+.site-fb-under {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.site-fb-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.site-fb-error {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-error-text);
+}
+
+.site-fb-under .site-fb-error {
+  font-size: var(--font-size-xs);
+}
