@@ -26,11 +26,6 @@
       "guards": ".github/workflows の全ファイルに actionlint＋shellcheck の新しい指摘が無いこと（BOA-659）。#1080 の env の ${{ failure() }}（ワークフロー全体が無効になり、PR の CI は緑のままだった）や #1081 の無効な types: merged を PR で止める。既存の指摘は actionlint-allowlist.json に（file, rule, 行の内容）で固定し、解消済みの残骸も失敗にする。版は actionlint-tools.json で固定し、Quality Gates が install-actionlint.js で sha256 を照合して取得する。手元で未取得なら警告して飛ばす（CI では失敗）"
     },
     {
-      "script": "verify-actions-fresh.js",
-      "tier": "ci",
-      "guards": "Actions の「最後の起動が古い」の検知（actions-fresh.js）: 線より古い・1回も無いを high にし、event ごとに別の鍵・問い合わせは success・event・any で絞る。新しい警報だけ Slack に1回出し、出せなければ覚えず、直ったら鍵を忘れる。取得の失敗は連続2回で mid、webhook と応答の本文を出さない。時計と取得は固定、外部接続なし"
-    },
-    {
       "script": "verify-actual-course-kfile-parser.js",
       "tier": "ci",
       "guards": "Kファイル方式の進入コースパーサー（scripts/lib/kfileParser.js、BOA-257）"
