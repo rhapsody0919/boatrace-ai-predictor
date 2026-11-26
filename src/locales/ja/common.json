@@ -2064,7 +2064,8 @@
       "winRate": "勝率",
       "top2Rate": "2連対率",
       "top3Rate": "3連対率",
-      "avgSt": "平均ST"
+      "avgSt": "平均ST",
+      "st": "ST"
     },
     "scopes": {
       "local": "当地",
@@ -3795,6 +3796,7 @@
     "histogramOwnTitle": "この選手 {{pct}}%（{{n}}走）",
     "histogramBaseTitle": "同コース・同級別の平均 {{pct}}%",
     "historyNote": "{{course}}コースから出走した全{{n}}走（新しい順）",
+    "trendNote": "想定コースで走った全走の ST（上ほど速い、右が最新）。F フライング・L 出遅れ",
     "histDate": "日付",
     "histVenue": "会場",
     "histSt": "ST",

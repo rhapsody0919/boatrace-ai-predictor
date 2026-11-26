@@ -2575,7 +2575,8 @@
       "winRate": "승률",
       "top2Rate": "2연대율",
       "top3Rate": "3연대율",
-      "avgSt": "평균 ST"
+      "avgSt": "평균 ST",
+      "st": "ST"
     },
     "scopes": {
       "local": "현지",
@@ -3795,6 +3796,7 @@
     "histogramOwnTitle": "이 선수 {{pct}}%({{n}}주)",
     "histogramBaseTitle": "같은 코스·같은 급별 평균 {{pct}}%",
     "historyNote": "{{course}}코스에서 출주한 전체 {{n}}주(최신순)",
+    "trendNote": "예상 코스로 달린 모든 레이스의 ST(위일수록 빠름, 오른쪽이 최신). F 플라잉, L 출발 지연",
     "histDate": "날짜",
     "histVenue": "경기장",
     "histSt": "ST",

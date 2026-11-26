@@ -2581,7 +2581,8 @@
       "winRate": "Win rate",
       "top2Rate": "Top-2 rate",
       "top3Rate": "Top-3 rate",
-      "avgSt": "Avg. ST"
+      "avgSt": "Avg. ST",
+      "st": "ST"
     },
     "scopes": {
       "local": "Local",
@@ -3804,6 +3805,7 @@
     "histogramOwnTitle": "This racer {{pct}}% ({{n}} starts)",
     "histogramBaseTitle": "Same course and class average {{pct}}%",
     "historyNote": "All {{n}} starts from course {{course}} (newest first)",
+    "trendNote": "ST of every race from the expected course (faster higher, newest right). F flying, L late start",
     "histDate": "Date",
     "histVenue": "Venue",
     "histSt": "ST",
