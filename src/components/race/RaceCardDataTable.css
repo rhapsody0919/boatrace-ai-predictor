@@ -195,14 +195,6 @@
     padding-right: 0;
   }
 
-  /* 今節前走の「6コース」は語の途中で折らない（.drt-nowrap）。10px のままでは約42px で、
-     カード約300px（360px・1024px）の列（約40px）を越えて表が 3〜24px 広がった（G3 の点検 2026-11-26）。
-     開いた行の小さい段だけ一回り小さく、字間を詰めて列に収める */
-  .rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap {
-    font-size: 9.5px;
-    letter-spacing: -0.03em;
-  }
-
   /* 2連率・モーターの「%」を一回り小さくし、数字の左右に余白を作る。1024px（カード約315px）で
      「36.1%」がセル（約34px）いっぱいになり、罫線に接して隣の値とつながって見えた（BOA-586）。
      %を外すと単位が分からなくなるので、小さくするだけにする */
@@ -215,5 +207,39 @@
   .rcdt-table .rcdt-name-th {
     padding-left: 0;
     padding-right: 0;
+  }
+}
+
+/* 開いた行は「47.6kg」「6コース」「11/25 11R」等の折れない値が多く、カードが 380px 以下だと表が枠より広がって
+   6号艇の列が隠れた（360px・1024px のカード約300px、820〜850px のカード約342〜357px。PR #3525 ファン評価 1・2周目）。
+   画面の幅でなくカードの幅で、開いた行だけを詰める。今節前走の「6コース」は語の途中で折らない（.drt-nowrap） */
+@container (max-width: 380px) {
+  .rcdt-collapsed-rows .rcdt-label-cell {
+    white-space: normal;
+  }
+
+  .rcdt-table .rcdt-collapsed-rows .rcdt-cell {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap {
+    font-size: 9.5px;
+    letter-spacing: -0.03em;
+  }
+
+  /* 部品交換の札（リング×1）は 12px と左右の余白で約50px あり、それだけで列を広げた（640・820・960px） */
+  .rcdt-table .rcdt-collapsed-rows .drt-badge {
+    font-size: 9.5px;
+    padding-left: 1px;
+    padding-right: 1px;
+  }
+}
+
+/* カードが 280px 以下（620〜680px・960〜1010px）は列が約37px しかなく、9.5px の「6コース」も入らない */
+@container (max-width: 280px) {
+  .rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap {
+    font-size: 9px;
+    letter-spacing: -0.06em;
   }
 }
