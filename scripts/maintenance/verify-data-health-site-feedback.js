@@ -1,6 +1,7 @@
 /**
  * verify-data-health-site-feedback.js - data_health の ご意見ボックスの見張り（マイグレーション211・checks.js の site_feedback.*）。
- * PGlite に仮の表（site_feedback_hourly・site_feedback）と 211 を当てて、次を確かめる。本番 DB には接続しない。
+ * PGlite に仮の表（site_feedback_hourly・site_feedback）と、関数の DDL（正本は functions.js、211 はその出力）を当てて確かめる。
+ * 本番 DB には接続しない。
  *   (a) 受け付けが0件の日も、分母24の行を出す（「対象なし」にしない）
  *   (b) 1時間89件は上限に近くない、90件は近い（calm_hours が1減る）
  *   (c) JST の日で区切る（UTC 15:00 は JST の翌日 0 時）
@@ -14,7 +15,10 @@
 import { PGlite } from "@electric-sql/pglite";
 import { COUNT_CHECKS as DATA_HEALTH_CHECKS } from "../lib/dataHealth/checks.js";
 import { SITE_FEEDBACK_BUSY_HOUR } from "../lib/dataHealth/tableSql.js";
-import { readDataHealthSiteFeedbackMigration } from "./verifyData/data-health-site-feedback.js";
+import {
+  functionByName,
+  renderFunctionDdl,
+} from "../lib/dataHealth/functions.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -35,7 +39,8 @@ CREATE TABLE site_feedback_hourly (hour timestamptz PRIMARY KEY, received intege
 CREATE TABLE site_feedback (created_at timestamptz NOT NULL);
 GRANT SELECT ON site_feedback_hourly, site_feedback TO service_role;
 `);
-await db.exec(readDataHealthSiteFeedbackMigration());
+// 当てるのは SQL の正本（functions.js）から作った DDL。211 のファイルが正本と同じことは verify-data-health-job.js が見る
+await db.exec(renderFunctionDdl(functionByName("data_health_site_feedback")));
 
 // JST の 11/20〜11/23 の4日。時ごとの件数は UTC の正時で持つ
 const hourly = [
