@@ -8,20 +8,20 @@
 }
 
 @media (min-width: 1200px) {
-  /* 3つがそろうときだけ組み替える。:where で詳細度を ID 1つに抑え、下の個別の置き場の指定を勝たせる */
-  #racer-stats:where(:has(> .racer-stat-cards-grid + .racer-stat-chart + .racer-cond-stats)) {
+  /* 3つがそろうときだけ組み替える（そろうかは JSX の racerStatsClassName が決める）。:where で詳細度を ID 1つに抑え、下の個別の置き場の指定を勝たせる */
+  #racer-stats:where(.racer-stats-pc-pair) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--spacing-4);
     align-items: start;
   }
 
-  #racer-stats:where(:has(> .racer-stat-cards-grid + .racer-stat-chart + .racer-cond-stats)) > * {
+  #racer-stats:where(.racer-stats-pc-pair) > * {
     grid-column: 1 / -1;
     min-width: 0;
   }
 
-  #racer-stats:where(:has(> .racer-stat-cards-grid + .racer-stat-chart + .racer-cond-stats)) > .racer-stat-cards-grid {
+  #racer-stats:where(.racer-stats-pc-pair) > .racer-stat-cards-grid {
     display: contents;
   }
 

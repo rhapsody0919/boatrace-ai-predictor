@@ -22,6 +22,7 @@ import FilterScopeFrame from "./RacerFilterScope";
 import RacerNigashiCourses from "./RacerNigashiCourses";
 import { VcFilterBar, VcHistoryError } from "./RacerPerformanceFilters";
 import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
+import { racerStatsClassName } from "./racerStatsLayout";
 import RacerBoatReturns from "./RacerBoatReturns";
 import {
   BothFixedNoRuns,
@@ -348,7 +349,7 @@ export default function RacerPerformanceStats({
   return (
     <div
       id="racer-stats"
-      className="racer-performance-stats"
+      className={racerStatsClassName(view.chartData, vc.vcHistoryAll)}
       data-snapshot-history={snapshotHistoryState}
     >
       <h2>{heading}</h2>
