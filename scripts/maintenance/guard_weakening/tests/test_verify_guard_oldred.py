@@ -86,6 +86,80 @@ else:
           and any("【決まりの変更: 人が見る】" in h for h in v.human), (v.excused, v.human, v.incomparable, rec))
     shutil.rmtree(d)
 
+    # 11/27: 死んだ関数（isBig）とその試験を一緒に消した片付け。消した行の変異を除くと旧が落とす変異を新も全部落とす → deleted_code（警告）
+    BOTH_V = ('import { clamp, isBig } from "../../src/calc.js";\nif (clamp(20) !== 10 || clamp(3) !== 3) process.exit(1);\n'
+              'if (!isBig(7) || isBig(2)) process.exit(1);\n')
+    ONLY_CLAMP = "export function clamp(x) {\n  if (x > 10) {\n    return 10;\n  }\n  return x;\n}\n"
+    base2 = {V: BOTH_V, "src/calc.js": CALC}
+    d = mk({V: OLD_V, "src/calc.js": ONLY_CLAMP})
+    v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, base2.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("死んだ関数とその試験を一緒に消した: deleted_code・警告の並び（excused にしない）",
+          V not in v.excused and rec.get("outcome") == vg.OUT_DELETED_OK and any("【消したコードの片付け: 警告】" in h for h in v.incomparable)
+          and (rec.get("deleted_code") or {}).get("deleted_lines", 0) > 0 and not (rec.get("deleted_code") or {}).get("missed"), (v.human, v.incomparable, rec))
+    shutil.rmtree(d)
+    # ファイルごと消した（死んだファイル）: 残る calc.js の確かめは新も同じなので deleted_code
+    DEAD = "export function unused(x) {\n  if (x > 1) {\n    return x;\n  }\n  return 0;\n}\n"
+    base3 = {V: BOTH_V.replace('import { clamp, isBig } from "../../src/calc.js";', 'import { clamp, isBig } from "../../src/calc.js";\nimport { unused } from "../../src/dead.js";\nif (unused(2) !== 2 || unused(0) !== 0) process.exit(1);'), "src/calc.js": CALC, "src/dead.js": DEAD}
+    d = mk({V: BOTH_V, "src/calc.js": CALC})
+    v = vg.evaluate(d, {V: "M", "src/dead.js": "D"}, base3.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("死んだファイルとその試験を一緒に消した: deleted_code・警告",
+          V not in v.excused and rec.get("outcome") == vg.OUT_DELETED_OK
+          and any("書き換えていない" in h for h in v.incomparable), (v.human, v.incomparable, rec))
+    shutil.rmtree(d)
+    # 消した関数（isBig）の中身を呼び出し元（clamp）へ書き戻し、isBig の試験を消した: clamp を書き換えたので deleted_code にせず split の赤のまま
+    CALL = ("export function isBig(x) {\n  return x >= 5;\n}\nexport function clamp(x) {\n  if (isBig(x) && x > 10) {\n    return 10;\n  }\n  return x;\n}\n")
+    INLINE = "export function clamp(x) {\n  if (x >= 5 && x > 10) {\n    return 10;\n  }\n  return x;\n}\n"
+    d = mk({V: OLD_V, "src/calc.js": INLINE})
+    v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, {V: BOTH_V, "src/calc.js": CALL}.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("消した関数の中身を呼び出し元へ書き戻した: 製品の宣言を書き換えたので split の赤のまま",
+          V not in v.excused and rec.get("outcome") == vg.OUT_SPLIT and not v.incomparable and (rec.get("deleted_code") or {}).get("rewritten") == ["clamp"], (v.human, v.incomparable, rec))
+    shutil.rmtree(d)
+    # 消したうえで、残る関数（clamp）の確かめも弱めた: 消した行の外の変異を新が落とさないので split の赤のまま
+    d = mk({V: 'import { clamp } from "../../src/calc.js";\nif (clamp(3) !== 3) process.exit(1);\n', "src/calc.js": ONLY_CLAMP})
+    v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, base2.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("消したうえで残る関数の試験も弱めた: split の赤のまま、警告の並びに入らない",
+          V not in v.excused and rec.get("outcome") == vg.OUT_SPLIT and not v.incomparable and (rec.get("deleted_code") or {}).get("missed"), (v.human, v.incomparable, rec))
+    shutil.rmtree(d)
+    # 名前を変えて書き直し（clamp → cap、本体の行は25字未満）、残る isBig と cap の試験を弱めた: 新しい名前を足したので split の赤のまま
+    CAP = "export function cap(x) {\n  if (x > 10) {\n    return 10;\n  }\n  return x;\n}\nexport function isBig(x) {\n  return x >= 5;\n}\n"
+    d = mk({V: 'import { cap, isBig } from "../../src/calc.js";\nif (cap(3) !== 3 || !isBig(7) || isBig(2)) process.exit(1);\n', "src/calc.js": CAP})
+    v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, base2.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("名前を変えて書き直し試験を弱めた: deleted_code にせず赤（新の verify は base に無い名を読むので rule_change）",
+          V not in v.excused and rec.get("outcome") in (vg.OUT_RULE, vg.OUT_SPLIT) and not v.incomparable, (v.human, v.incomparable, rec))
+    # 新の verify が古い名にも頼れる形（m.cap ?? m.clamp）で base の本文でも通る: split に入るが、新しい名 cap を足したので deleted_code にしない
+    d = mk({V: 'const m = await import("../../src/calc.js");\nconst cap = m.cap ?? m.clamp;\nif (cap(3) !== 3 || !m.isBig(7)) process.exit(1);\n', "src/calc.js": CAP})
+    v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, base2.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("名前を変えて書き直し、新の verify が base でも通る: 新しい名前を足したので split の赤のまま",
+          V not in v.excused and rec.get("outcome") == vg.OUT_SPLIT and not v.incomparable and (rec.get("deleted_code") or {}).get("added") == ["cap"], (v.human, v.incomparable, rec))
+    shutil.rmtree(d)
+    check("added_names: 新しく出た最上位の名前だけ",
+          vg.added_names(NM, b"export function f() {}\n", b"export function f() {}\nconst g = 1;\n") == frozenset({"g"})
+          and vg.added_names(NM, b"export function f() {}\n", None) == frozenset() and vg.added_names(NM, None, b"const a = 1;\n") == frozenset({"a"}))
+    TSA = b"export function f(x: number): number {\n  return x + 1;\n}\nexport const g = (y: string): string => y;\n"
+    check("TS の本文も元の拡張子で解析する（.js にすると型注釈で解析に失敗していた）",
+          vg.deleted_lines(NM, TSA, b"export function f(x: number): number {\n  return x + 1;\n}\n", ".ts") == frozenset({4})
+          and vg.deleted_lines(NM, TSA, TSA, ".js") is None)
+    # 旧の verify が消した関数（isBig）だけを確かめていた: 残るコードを旧が1つも確かめないので空の通過にせず split の赤のまま
+    d = mk({V: 'import { clamp } from "../../src/calc.js";\nif (typeof clamp !== "function") process.exit(1);\n', "src/calc.js": ONLY_CLAMP})
+    v = vg.evaluate(d, {V: "M", "src/calc.js": "M"}, {V: 'import { isBig } from "../../src/calc.js";\nif (!isBig(7) || isBig(2)) process.exit(1);\n', "src/calc.js": CALC}.get, CFG)
+    rec = (v.record.get("mutation") or [{}])[0]
+    check("旧が消した関数だけを確かめていた: 空の通過にせず split の赤のまま",
+          V not in v.excused and rec.get("outcome") == vg.OUT_SPLIT and not v.incomparable, (v.human, v.incomparable, rec))
+    shutil.rmtree(d)
+    # deleted_lines は名前ごと消えた最上位の宣言の行だけ。名前が残る宣言は書き換えても入れない
+    A = b"export function f(x) {\n  return x + 1;\n}\nexport function g(x) {\n  return x * 2;\n}\nconst k = 3;\nimport z from './z.js';\n"
+    check("deleted_lines: 名前ごと消えた宣言（g・k）の行だけ、書き換えた f は入れない",
+          vg.deleted_lines(NM, A, b"export function f(x) {\n  return x - 1;\n}\n") == frozenset({4, 5, 6, 7})
+          and vg.deleted_lines(NM, A, A) == frozenset() and vg.deleted_lines(NM, A, None) == frozenset(range(1, 8))
+          and vg.deleted_lines(NM, None, A) == frozenset() and vg.deleted_lines(NM, b"export function (", A) is None,
+          [vg.deleted_lines(NM, A, b"export function f(x) {\n  return x - 1;\n}\n"), vg.deleted_lines(NM, A, None)])
+
     # 決まりを変え、新の verify を空にした: 新は base の本文でも通るので「分けよ」。言われたとおり前段（verify だけ）に出すと、そこで弱めの赤になる（抜け道にならない）
     EMPTY_V = 'import { clamp } from "../../src/calc.js";\nif (typeof clamp !== "function") process.exit(1);\n'
     d = mk({V: EMPTY_V, "src/calc.js": CALC.replace("return 10;", "return 12;")})
