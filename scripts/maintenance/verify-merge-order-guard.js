@@ -75,7 +75,7 @@ writeFileSync(
   `#!/bin/bash
 if [ "$1 $2" = "pr checks" ]; then
   [ -n "$FAKE_GH_CHECKS" ] && { echo "$FAKE_GH_CHECKS"; exit 0; }
-  echo '[{"name":"verify","state":"SUCCESS"},{"name":"ml-tests","state":"SUCCESS"},{"name":"e2e","state":"SUCCESS"}]'
+  echo '[{"name":"verify","state":"SUCCESS"},{"name":"ml-tests","state":"SUCCESS"},{"name":"e2e","state":"SUCCESS"},{"name":"guard-weakening","state":"SUCCESS"}]'
   exit 0
 fi
 if [ "$1" = "api" ]; then

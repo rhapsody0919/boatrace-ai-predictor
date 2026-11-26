@@ -25,7 +25,12 @@ function scene1() {
           },
         },
       ]);
-    const enforced = statusRule(["verify", "e2e", "ml-tests"]);
+    const enforced = statusRule([
+      "verify",
+      "e2e",
+      "ml-tests",
+      "guard-weakening",
+    ]);
     expectGuard(
       "(f) ruleset が必須チェックを持てば、--auto はチェックが赤でも通す",
       null,
