@@ -15,6 +15,7 @@ import {
   EXPECTED,
 } from "./verifyData/racer-boat-return-baseline.js";
 import { MIGRATION_210_SQL } from "./verifyData/racer-boat-return-baseline-sql.js";
+import { classifyMigration, inspectMigration } from "../lib/dbApplySql.js";
 
 const db = new PGlite();
 const sql = MIGRATION_210_SQL;
@@ -151,4 +152,17 @@ test("RPC は service_role だけが呼べ、表は匿名が読めて書けな�
       ),
     "boat_number は 0〜6",
   );
+});
+
+test("db-apply の検査で拒否が無く、触る表は racer_boat_return_baseline だけ", () => {
+  const inspection = inspectMigration(sql);
+  assert.deepEqual(inspection.rejections, []);
+  assert.equal(inspection.mode, "single-transaction");
+  assert.deepEqual(
+    inspection.tables.map((t) => t.table),
+    ["racer_boat_return_baseline"],
+  );
+  const lane = classifyMigration(sql, "210_racer_boat_return_baseline.sql");
+  assert.equal(lane.label, "heavy");
+  assert.deepEqual(lane.stops, []);
 });
