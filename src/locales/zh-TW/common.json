@@ -131,6 +131,7 @@
       "outcomeLink": "查看此賽場的常見結果排行（分析工具）"
     },
     "courseLabel": "{{course}}道",
+    "courseTitle": "各進場道次第1名率",
     "techniqueTitle": "決勝方式（占全部比賽的比例）",
     "techniqueName": "決勝方式",
     "techniqueVenue": "本賽場",

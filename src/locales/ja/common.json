@@ -131,6 +131,7 @@
       "outcomeLink": "この会場の出目ランキングを見る（分析ツール）"
     },
     "courseLabel": "{{course}}コース",
+    "courseTitle": "進入コース別の1着率",
     "techniqueTitle": "決まり手（全レースのうちの割合）",
     "techniqueName": "決まり手",
     "techniqueVenue": "この会場",
