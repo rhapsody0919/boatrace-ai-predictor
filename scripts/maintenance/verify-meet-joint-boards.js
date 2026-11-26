@@ -6,7 +6,7 @@
  * 描く道具は i18n を読まないので画面には訳のキーが出る。キーで出し分けを見て、ja の文は common.json で見る。
  * 開催ごとの組の分け方（jointMeetSeriesOf）は verify-joint-meet-series.js が見る。
  */
-import { readFileSync } from "node:fs";
+import jaCommon from "../../src/locales/ja/common.json" with { type: "json" };
 import { renderPage } from "./verifyData/jsx-page-render.js";
 import { quietly } from "./verifyData/jsx-page-stubs.js";
 const failures = [];
@@ -116,7 +116,7 @@ async function open(page) {
 
 // 3. ja の文: G2 の札・線に「準優」を出さず、注記は推定と断る
 {
-  const ja = JSON.parse(readFileSync(new URL("../../src/locales/ja/common.json", import.meta.url), "utf8")).meetPage;
+  const ja = jaCommon.meetPage;
   check("ja: 表の名", [ja.joint["cc-sg"], ja.joint["cc-g2"]], ["チャレンジカップ（SG）", "レディースチャレンジカップ（G2）"]);
   check("ja: G2 の札", ja.borderFinalGoal, "優勝戦の目安 {{slots}}位 {{rate}}");
   check("ja: G2 の線", ja.borderLineFinalGoal, "ここまで優勝戦の目安（{{slots}}人）");
