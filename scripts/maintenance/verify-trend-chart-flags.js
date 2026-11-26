@@ -270,7 +270,7 @@ check(
 );
 check(
   "日付の横軸: 目盛りは xTicks（走の順の目盛りは出さない）",
-  /x="30"[^>]*>9\/21</.test(dateChart) &&
+  /x="30"[^>]*trc-day[^>]*>9\/21</.test(dateChart) &&
     /x="277"[^>]*>9\/28</.test(dateChart) &&
     !dateChart.includes("basicInfo.trend.latest"),
 );

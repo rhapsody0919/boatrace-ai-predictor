@@ -117,7 +117,7 @@ function DateAxis({ xTicks, at }) {
       key={`${k.xr}-${k.label}`}
       x={at(k.xr)}
       y={H - 18}
-      className="trc-tick"
+      className="trc-tick trc-day"
       textAnchor="middle"
     >
       {k.label}
