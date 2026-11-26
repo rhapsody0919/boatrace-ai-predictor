@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 // 図（recharts）のある選手ページに効く CSS。:has() の代わりに JSX で付けたクラス（--bars・--chart 等）で条件を書く
-const FILES = ["src/pages/RacerProfile.css"];
+const FILES = [
+  "src/pages/RacerProfile.css",
+  "src/components/racer/RacerPerformanceStatsPc.css",
+];
 
 /** 注釈を除いた CSS の中の :has( の数 */
 export function countHas(css) {
