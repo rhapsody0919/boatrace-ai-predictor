@@ -218,5 +218,37 @@ check("骨格: no-undef は rules だけを行として除く。entries キー�
 check("骨格: entries 型は entries だけを除く。rules キーの追加は骨格の変更で人", not run(NU, nb, {**nb, "rules": {"x": 1}}).excused, "")
 check("骨格: 型ごとの除き方（行のキーの書き換えだけの変更は通る）", run(NU, nb, {**nb, "$comment": "d", "entries": []}).excused == {NU}, "")
 
+# --- メタの行の例外（オーナー 2026-11-26 の案1。verify-kyotei-wording.js の例外1） ---
+LJ, PM = "src/locales/ja/series.json", "src/utils/pageMeta.js"
+mb = ky(("src/a.jsx", "競艇 a"))
+
+
+def meta_add(*rows):
+    return run(KY, mb, ky(("src/a.jsx", "競艇 a"), *rows))
+
+
+d = meta_add((LJ, '"metaTitleSeries": "競艇の節",'))
+check("メタ: locales の metaTitle* → A・meta_passed と規則名", d.excused == {KY} and d.record["paths"][KY]["meta_passed"] == 1 and d.record["paths"][KY]["meta_rules"] == {"locales-meta-key": 1}, (d.human, d.record))
+check("メタ: ogDescription・twitterTitle・metaKeywords も通る", meta_add((LJ, '"ogDescription": "競艇"'), (LJ, '"twitterTitle": "競艇",'), (LJ, '"metaKeywordsX": "競艇",')).excused == {KY}, "")
+d = meta_add((PM, "title: `${venueName}競艇の結果・配当`,"))
+check("メタ: pageMeta.js の新しい title: 行 → A（meta-file）", d.excused == {KY} and d.record["paths"][KY]["meta_rules"] == {"meta-file": 1}, (d.human, d.record))
+check("メタ: useSocialMeta.js の description: も通る", meta_add(("src/hooks/useSocialMeta.js", 'description: "競艇",')).excused == {KY}, "")
+CJ = "src/locales/ja/common.json"
+mb2 = ky(("src/a.jsx", "競艇 a"), (CJ, '"title": "競艇 旧",'))
+d = run(KY, mb2, ky(("src/a.jsx", "競艇 a"), (CJ, '"title": "競艇 新",')))
+check("メタ: 素の \"title\": の置き換え（同じファイル・同じキーが消えた）→ A（locales-replace）", d.excused == {KY} and d.record["paths"][KY]["meta_rules"] == {"locales-replace": 1}, (d.human, d.record))
+check("メタ赤: 素の \"title\": の新規追加（置き換えでない）→ 人", not meta_add((CJ, '"title": "競艇",')).excused, "")
+check("メタ赤: 置き換えでも別のキー名（description を消して title を足す）→ 人", not run(KY, ky((CJ, '"description": "競艇 旧",')), ky((CJ, '"title": "競艇",'))).excused, "")
+check("メタ赤: 置き換えの数を超える追加 → 人", not run(KY, mb2, ky(("src/a.jsx", "競艇 a"), (CJ, '"title": "競艇 新",'), (CJ, '"title": "競艇 別",'))).excused, "")
+check("メタ赤: 別のファイルで消えた title は置き換えにならない", not run(KY, mb2, ky(("src/a.jsx", "競艇 a"), ("src/locales/ja/other.json", '"title": "競艇",'))).excused, "")
+check("メタ赤: todayTitle・blogIntro は人", not meta_add((LJ, '"todayTitle": "競艇",')).excused and not meta_add((LJ, '"blogIntro": "競艇",')).excused, "")
+check("メタ赤: metaTitle の小文字・大文字違い（metatitle）は人", not meta_add((LJ, '"metatitle": "競艇",')).excused, "")
+check("メタ赤: botPageModel.js の title: は人", not meta_add(("src/utils/botPageModel.js", "title: `競艇`,")).excused, "")
+check("メタ赤: pageMeta.js でも title:・description:・keywords: 以外の行は人", not meta_add((PM, "heading: `競艇`,")).excused, "")
+check("メタ赤: locales 以外のファイルの metaTitle 行は人", not meta_add(("src/pages/X.jsx", '"metaTitle": "競艇",')).excused, "")
+check("メタ赤: 1行に2キー → 人", not meta_add((LJ, '"metaTitleA": "競艇", "metaTitleB": "x",')).excused and not meta_add((LJ, '"metaTitleA": "競艇","todayTitle": "x",')).excused, "")
+check("メタ赤: 通る行と外れる行が混じる組 → 人（外れた行だけ理由に）", not meta_add((LJ, '"metaTitleSeries": "競艇",'), (LJ, '"todayTitle": "競艇",')).excused, "")
+check("メタ: ほかの許可リストの型には効かない（e2e-no-unroute に meta 風の行を足しても人）", not run(NU, nb, {**nb, "entries": nb["entries"] + [{"file": LJ, "code": '"metaTitleSeries": "x",'}]}).excused, "")
+
 print(f"\n{sum(ok)}/{len(ok)} OK")
 sys.exit(0 if all(ok) else 1)
