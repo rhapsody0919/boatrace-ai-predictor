@@ -129,9 +129,18 @@ export default function VenueCharacteristicsCard({ venueCode }) {
       <p className="venue-characteristics-note">
         {t("venueCharacteristics.note")}
       </p>
-      <VenueCourseTable t={t} rows={rows} />
-
-      <TechniqueTable t={t} venue={venue} national={national} />
+      {/* 768px 以上で「進入コース別｜決まり手」の2列（下の「艇番で見ると」の中と同じ組み方）。G3 の点検 2026-11-26 */}
+      <div className="venue-characteristics-pair">
+        <div>
+          <h3 className="venue-characteristics-subtitle">
+            {t("venueCharacteristics.courseTitle")}
+          </h3>
+          <VenueCourseTable t={t} rows={rows} />
+        </div>
+        <div>
+          <TechniqueTable t={t} venue={venue} national={national} />
+        </div>
+      </div>
 
       {water && (
         <>

@@ -133,6 +133,7 @@
       "outcomeLink": "See this venue's most common results (Analysis tools)"
     },
     "courseLabel": "Course {{course}}",
+    "courseTitle": "1st-place rate by starting course",
     "techniqueTitle": "Winning techniques (share of all races)",
     "techniqueName": "Technique",
     "techniqueVenue": "This venue",

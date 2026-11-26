@@ -123,3 +123,25 @@
     transform: none;
   }
 }
+
+/* 768px 以上で「進入コース別の表｜決まり手の表」の2列。下の折りたたみ「艇番で見ると」
+   （VenueCharacteristicsDetails.css の .venue-details__body）と同じ列・同じ間にし、開いたときに縦の線が通るようにする。
+   1列のままだと PC で表が 1152px のカードの左に寄り、2つが縦に積まれてカードが 837px あった（G3 の点検 2026-11-26） */
+@media (min-width: 768px) {
+  .venue-characteristics-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--spacing-6);
+    align-items: start;
+  }
+
+  .venue-characteristics-pair .venue-technique-table {
+    max-width: none;
+  }
+
+  .venue-characteristics-pair
+    > div
+    > .venue-characteristics-subtitle:first-child {
+    margin-top: 0;
+  }
+}

@@ -131,6 +131,7 @@
       "outcomeLink": "이 경기장의 자주 나온 결과 순위 보기 (분석 도구)"
     },
     "courseLabel": "{{course}}코스",
+    "courseTitle": "진입 코스별 1착률",
     "techniqueTitle": "결정수 (전 경주 중 비율)",
     "techniqueName": "결정수",
     "techniqueVenue": "이 경정장",
