@@ -266,6 +266,25 @@ function PickLayer({ picked, px, y, selected, W, pointer, scale }) {
   );
 }
 
+// 選んだ艇の点を拾う（吹き出しの点と横の位置）
+function useSelectedPick(sel, xSel, selected, W) {
+  const boxRef = useRef(null);
+  const { pick, close, handlers } = useChartPick({
+    xs: sel.map((_, i) => xSel(i, sel.length)),
+    key: selected,
+    W,
+    boxRef,
+  });
+  return {
+    boxRef,
+    pick,
+    close,
+    pointer: handlers,
+    picked: pick ? sel[pick.i] : null,
+    px: pick ? xSel(pick.i, sel.length) : 0,
+  };
+}
+
 /**
  * @param {{ seriesByBoat: Map<number, Array<object>>, metric: string, selected: number,
  *   scale?: ReturnType<typeof trendScaleOf>, label?: string,
@@ -301,19 +320,12 @@ export default function TrendChart({
   const sel = seriesByBoat.get(selected) ?? [];
   const xSel = xFor(sel);
   const order = drawOrder(seriesByBoat, selected);
-  const boxRef = useRef(null);
-  const {
-    pick,
-    close,
-    handlers: pointer,
-  } = useChartPick({
-    xs: sel.map((_, i) => xSel(i, sel.length)),
-    key: selected,
+  const { boxRef, pick, close, pointer, picked, px } = useSelectedPick(
+    sel,
+    xSel,
+    selected,
     W,
-    boxRef,
-  });
-  const picked = pick ? sel[pick.i] : null;
-  const px = pick ? xSel(pick.i, sel.length) : 0;
+  );
   return (
     <div className="trc-chartbox" ref={boxRef}>
       <svg
