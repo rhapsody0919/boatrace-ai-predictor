@@ -1,4 +1,4 @@
-// 枠別情報タブ「1コースの艇に逃げで1着を取られた走（2号艇の選手本人）」（逃し率、オーナー 2026-11-25）
+// 枠別情報タブ「逃がし率（2号艇の選手）」（オーナー 2026-11-25。題は 2026-11-26 に短い形に）
 import { test, expect } from "./fixtures.js";
 import { stubRacerScopedRuns, runDates } from "./racer-scoped-stub.js";
 
@@ -40,10 +40,11 @@ test("2号艇の進入2コースの走のうち、逃げで1着を取られた�
   // 2コース 17走（逃げられた 9）。3コースの逃げは数えない。率は30走未満でも出す
   await stubRacerScopedRuns(page, runs({ nigashi: 9, other2: 8, otherCourse: 5 }));
   const card = await open(page);
-  await expect(card).toContainText("1コースの艇に逃げで1着を取られた走（2号艇の選手本人）");
+  await expect(card).toContainText("逃がし率（2号艇の選手）");
+  await expect(card).toContainText("1コースの艇に逃げで1着を取られた走の割合");
   await expect(card.getByTestId("nigashi-value")).toHaveText("17走中9走（53%）");
   await expect(card).toContainText("全国では、2025/12/02〜2026/09/26の2コースの走の52%で1コースの艇が逃げています。");
-  await expect(card).toContainText("選手の特徴を表す率ではありません");
+  await expect(card).toContainText("選手の特徴を表す値ではありません");
   // 事実の記録なので「結果を保証しない」の断りは付けない（オーナー 2026-11-25）
   await expect(card).not.toContainText("保証");
   // 右の列（決まり手のカードと同じ列）の上に置く。PC の下の段は3列のまま、スマホでは逃げのカードの直後に来る
