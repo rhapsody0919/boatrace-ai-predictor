@@ -318,6 +318,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceStatusJob.js` | 中止・順延の早期確定（race_status、共通ラッパ cronWrapper.js の continuous ジョブ）。 | runRaceStatusJob, RACE_STATUS_CONCURRENCY, CONFIRM_REASON |
 | `scripts/lib/raceStatusParsers.js` | 開催場一覧（race/index）と結果ページ（raceresult）から、中止・順延の告知を読み取る純粋関数。 | raceIndexUrl, raceResultUrl, classifyStatusText, parseVenueStatuses, isRaceCancelledPage |
 | `scripts/lib/racelistBackfillRows.js` | 出走表（racelist）過去分バックフィルの、行の組み立て・URL・アーカイブパス（純関数。DB・取得先に接続しない） | parseRaceId, buildRacelistUrl, racelistArchiveRelPath, buildFillRow, buildFillRowsForRace ほか2件 |
+| `scripts/lib/racerBoatReturnBaselineJob.js` | 選手ページの回収率の全国の基準（racer_boat_return_baseline）を毎晩数え直す（api/cron/racer-boat-return-ba… | sumByBoat, buildBaselineRows, runRacerBoatReturnBaselineJob, BASELINE_TABLE, BASELINE_RPC ほか2件 |
 | `scripts/lib/racerCareerCore.js` | — | mergeCareerResult, staleRowsOf, chunk, writeCareerRows, runKbEra ほか4件 |
 | `scripts/lib/racerCareerDb.js` | 選手ページの集計の表（racerCareerJob.js）の DB の読み（判定の材料・計算の RPC・今ある行・kb の指紋）と、計算の記録の書き込み。 | loadJudgeInputs, computeCounts, fetchExistingKeys, writeMeta, kbFingerprint ほか4件 |
 | `scripts/lib/racerCareerJob.js` | — | runMainEra, runRacerCareerMainJob |
@@ -687,4 +688,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 645 ファイル / export 3473 件。
+対象 646 ファイル / export 3480 件。

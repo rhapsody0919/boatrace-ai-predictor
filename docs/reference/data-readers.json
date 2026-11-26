@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2964,
-    "filesWithAccess": 329,
+    "sourceFiles": 2967,
+    "filesWithAccess": 330,
     "tableReaders": 974,
     "tableWriters": 200,
-    "rpcCallers": 57,
+    "rpcCallers": 58,
     "nameMentions": 286,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 13,
+    "notInSnapshot": 14,
     "unresolved": 38,
     "parseErrors": 0,
     "uncoveredFiles": 57
@@ -18922,6 +18922,7 @@
         "race_notices",
         "race_series",
         "race_status",
+        "racer_boat_return_baseline",
         "racer_career_main",
         "racer_course_technique_stats",
         "racer_news",
@@ -19487,6 +19488,7 @@
         "race_notices",
         "race_series",
         "race_status",
+        "racer_boat_return_baseline",
         "racer_career_main",
         "racer_course_technique_stats",
         "racer_news",
@@ -29748,6 +29750,28 @@
       }
     },
     {
+      "job": "racer_boat_return_baseline",
+      "entry": "api/cron/racer-boat-return-baseline.js",
+      "reachableFiles": 26,
+      "writes": {
+        "scrape_job_state": [
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
+        ]
+      }
+    },
+    {
       "job": "racer_career_main",
       "entry": "api/cron/racer-career-main.js",
       "reachableFiles": 31,
@@ -30241,6 +30265,13 @@
       "refs": [
         "scripts/maintenance/verifyData/e2e-har-merge-scenes.js:189",
         "scripts/maintenance/verifyData/e2e-har-merge-scenes.js:208"
+      ]
+    },
+    {
+      "kind": "rpc",
+      "name": "compute_racer_boat_return_baseline",
+      "refs": [
+        "scripts/lib/racerBoatReturnBaselineJob.js:73"
       ]
     },
     {
