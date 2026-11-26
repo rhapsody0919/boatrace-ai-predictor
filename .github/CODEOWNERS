@@ -47,6 +47,18 @@
 /scripts/maintenance/prLaneLines.js      @rhapsody0919
 /config/pr-path-rules.json            @rhapsody0919
 
+# 依存の向き・大きさ・重複の関所と、守りの試験を弱める変更の判定器（コードの健全さの点検 2026-11-25、オーナー 11/26）。
+# 規則・線・判定を緩める変更を人が見る。例外の表（dependency-exceptions.json・size-exceptions.json）は入れない:
+# 表の増えはこの関所の本体が赤にし、表を縮めるだけの PR に持ち主の承認を要らせないため
+/scripts/maintenance/lint-changed.js     @rhapsody0919
+/scripts/maintenance/lintBaselines.js    @rhapsody0919
+/scripts/maintenance/lintDepTree.js      @rhapsody0919
+/scripts/maintenance/lintDuplicates.js   @rhapsody0919
+/scripts/maintenance/lintTrees.js        @rhapsody0919
+/scripts/maintenance/dependency-rules.cjs @rhapsody0919
+/scripts/maintenance/sizeBaselines.js    @rhapsody0919
+/scripts/maintenance/guard_weakening/**  @rhapsody0919
+
 # 試験の固定データの .gz（v3.3 の H5）
 # 構築の段（決定 build-phase-throughput.md の決定3、2026-11-12）で、既存の e2e の spec・verify の一覧と
 # scripts/lib/**・.claude/**・AGENTS.md・vite.config.js・index.html を外した。これらは maker-merge の機械の判定
