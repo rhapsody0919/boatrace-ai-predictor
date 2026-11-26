@@ -35,6 +35,41 @@ function segmentsOf(points, x, y) {
   return segs.filter((g) => g.length > 0).map((g) => g.join(" "));
 }
 
+// 値の無い走を挟む前後を点線でつなぐ区間（今節の走の図、BOA-885 承認のモック）
+function bridgesOf(points, x, y) {
+  const idx = points.flatMap((p, i) => (p.value == null ? [] : [i]));
+  const at = (i) => `${x(i, points.length)},${y(points[i].value)}`;
+  return idx.slice(1).flatMap((to, k) => {
+    const from = idx[k];
+    return to - from > 1 ? [`${at(from)} ${at(to)}`] : [];
+  });
+}
+
+// 選んだ艇の点の中の着順（1着は金）。着順の無い走は点だけ
+function DotMarks({ points, boat, x, y }) {
+  return points.map((p, i) =>
+    p.value == null ? null : (
+      <g key={`m${p.raceId}`} className="trc-mark">
+        <circle
+          cx={x(i, points.length)}
+          cy={y(p.value)}
+          r={9}
+          className="trc-mark-dot"
+          stroke={BOAT_COLORS[boat].bg}
+        />
+        <text
+          x={x(i, points.length)}
+          y={y(p.value) + 4}
+          textAnchor="middle"
+          className={p.mark === 1 ? "trc-mark-text is-win" : "trc-mark-text"}
+        >
+          {p.mark ?? "—"}
+        </text>
+      </g>
+    ),
+  );
+}
+
 // 帯の印。選んだ艇は艇の色の枠の札、ほかの艇は小さな点（線の切れ目の理由を見せる）
 function Flags({ points, boat, selected, x }) {
   return points.map((p, i) =>
@@ -68,16 +103,24 @@ function Flags({ points, boat, selected, x }) {
   );
 }
 
-export function Line({ points, boat, selected, x, y, scale }) {
+export function Line({ points, boat, selected, x, y, scale, lineClass }) {
   const segs = segmentsOf(points, x, y);
   const w = selected ? 3 : 1.4;
   // 1走ごとの生の値は6本が重なって塊になるので、選んでいない艇を薄くする（visual-designer 11/26）
   const dim = scale.dimOthers && !selected;
+  // lineClass は使う側の試験・撮影の当て先（今節の足の mft-series）。選んだ艇に is-active
+  const cls = lineClass
+    ? ` ${lineClass}${selected ? " is-active" : ""}`
+    : "";
   return (
-    <g className={`trc-line trc-line-${boat}`} opacity={dim ? 0.35 : undefined}>
+    <g
+      className={`trc-line trc-line-${boat}${cls}`}
+      data-boat={lineClass ? boat : undefined}
+      opacity={dim ? 0.35 : undefined}
+    >
       {/* 1号艇の白・2号艇の黒は地に溶けるので縁を付ける */}
       {(boat === 1 || boat === 2) &&
-        !dim &&
+        (!dim || scale.dimHalo) &&
         segs.map((d) => (
           <polyline
             key={`h${d}`}
@@ -96,6 +139,20 @@ export function Line({ points, boat, selected, x, y, scale }) {
           strokeWidth={w}
         />
       ))}
+      {scale.bridgeGaps &&
+        bridgesOf(points, x, y).map((d) => (
+          <polyline
+            key={`b${d}`}
+            className="trc-stroke trc-bridge"
+            points={d}
+            fill="none"
+            strokeWidth={w}
+            strokeDasharray="3 4"
+          />
+        ))}
+      {scale.dotLabel && selected && (
+        <DotMarks points={points} boat={boat} x={x} y={y} />
+      )}
       {scale.dots &&
         selected &&
         points.map((p, i) =>
@@ -149,7 +206,8 @@ export function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
     const px = x(e.at, e.len);
     return (
       <g key={e.boat}>
-        {!e.flag && (
+        {/* 点の中に着順を描く図（dotLabel）は、選んだ艇の右端の点で着順を隠さない */}
+        {!e.flag && !(scale.dotLabel && e.boat === selected) && (
           <circle
             cx={px}
             cy={py}

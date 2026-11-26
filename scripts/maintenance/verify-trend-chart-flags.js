@@ -10,6 +10,9 @@
  *   - 選んでいない艇は薄く（0.35）、その縁は付けない。選んだ艇は点を打つ
  *   - 縦軸は 0 より下に伸ばさず、目盛りの数字は1つおき、値は .12 の書き方
  *   - 使う側の口: renderOver は図の中で線より下に、renderBelow は図の外の下に、同じ横の座標で描く
+ *   - 今節の走の尺度（展示タイム等、BOA-885）: 各艇の1走目を左にそろえ、値の無い走を挟んで点線でつなぐ、
+ *     選んだ艇の点の中に着順（1着は is-win）で右端の点で隠さない、横の目盛りは「N走」、薄くした1号艇にも縁、
+ *     lineClass は線の g にクラス・is-active・data-boat、extraHeight は図の高さを伸ばす、extraValues は縦軸に含める
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -158,6 +161,60 @@ check(
   String(overX),
 );
 check("label が aria-label になる", slots.includes('aria-label="LBL"'));
+
+// 今節の走の図（尺度 exhibition）
+const meetRuns = (b, len, nullAt = []) =>
+  Array.from({ length: len }, (_, i) => ({
+    raceId: `2026-10-1${i % 9}-22-0${b}`,
+    date: `2026-10-1${i % 9}`,
+    value: nullAt.includes(i) ? null : 6.8 + b / 100 + (i % 3) / 100,
+    mark: i === 1 ? 1 : 3,
+    gapDays: null,
+    run: null,
+  }));
+const meet = renderToStaticMarkup(
+  createElement(TrendChart, {
+    seriesByBoat: new Map([
+      [1, meetRuns(1, 9)],
+      [3, meetRuns(3, 7, [3])],
+    ]),
+    metric: "exhibition",
+    selected: 3,
+    lineClass: "mft-series",
+    extraHeight: 100,
+    extraValues: [7.5],
+  }),
+);
+const meetGroup = (b) =>
+  new RegExp(
+    `<g class="trc-line trc-line-${b}[^"]*"[^>]*>([\\s\\S]*?)(?=<g class="trc-line|<g><circle|$)`,
+  ).exec(meet)?.[0] ?? "";
+const firstX = (b) =>
+  /<polyline class="trc-stroke" points="([\d.]+),/.exec(meetGroup(b))?.[1];
+check(
+  "1走目を左にそろえる",
+  firstX(1) === firstX(3) && firstX(1) === "48",
+  `${firstX(1)} ${firstX(3)}`,
+);
+check(
+  "値の無い走を挟んで点線",
+  /class="trc-stroke trc-bridge"[^>]*stroke-dasharray="3 4"/.test(meetGroup(3)),
+);
+check(
+  "選んだ艇の点の中に着順",
+  (meetGroup(3).match(/class="trc-mark-text/g) ?? []).length === 6,
+);
+check("1着は is-win", meetGroup(3).includes("trc-mark-text is-win"));
+check("右端の点で着順を隠さない", !/<circle[^>]*r="4.5"/.test(meet));
+check("横の目盛りは N走", meet.includes("beforeInfo.meetFormRunN"));
+check("薄くした1号艇にも縁", meetGroup(1).includes("trc-halo"));
+check(
+  "lineClass と is-active と data-boat",
+  /class="trc-line trc-line-3 mft-series is-active" data-boat="3"/.test(meet) &&
+    /class="trc-line trc-line-1 mft-series" data-boat="1"/.test(meet),
+);
+check("extraHeight で図を伸ばす", meet.includes('viewBox="0 0 343 340"'));
+check("extraValues を縦軸に含める", meet.includes(">7.50<"));
 
 if (failures.length > 0) {
   console.error(`verify-trend-chart-flags: NG\n- ${failures.join("\n- ")}`);
