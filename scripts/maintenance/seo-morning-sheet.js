@@ -125,13 +125,21 @@ async function loadArticleLines(src, today, articles, args, inspectionRows) {
   return lines;
 }
 
+/** 察知の窓の終わり。今日でなく growth_gsc_daily の最新の日にする（GSC は約3日遅れ、今日で切ると直近の窓の日が欠け、伸びた語が出にくく落ちた語が出やすい）。最新の日が無ければ今日 */
+export function signalWindowEnd(freshness, today) {
+  const d = freshness.find((t) => t.table === "growth_gsc_daily")?.maxDate;
+  return d && d < today ? d : today;
+}
+
 /** 読み口から1枚（と票の雛形）を組む。出力は行の配列 */
 export async function buildSheetLines(src, args, today, articles = readJson(args.articles)) {
   const freshness = freshnessReport(await Promise.all(TABLES.map((t) => src.tableStats(t))), today);
   const green = isGreen(freshness);
-  const loaded = green ? await loadSignals(src, today) : { signals: [], falling: 0, inspectionRows: {} };
+  const dataEnd = signalWindowEnd(freshness, today);
+  const loaded = green ? await loadSignals(src, dataEnd) : { signals: [], falling: 0, inspectionRows: {} };
   const articleLinesOut = green ? await loadArticleLines(src, today, articles, args, loaded.inspectionRows) : [];
   const out = [renderSheet({ today, freshness, signals: loaded.signals, articleLinesOut, fallingCount: loaded.falling })];
+  if (green) out.push(`察知の窓の終わり: ${dataEnd}（growth_gsc_daily の最新の日。GSC の遅れで欠けた日を窓に入れない）`);
   for (const s of loaded.signals.slice(0, args.tickets)) out.push(`\n--- 「SEO:」票の雛形 ---\n${ticketTemplate(s, today)}`);
   return out;
 }
