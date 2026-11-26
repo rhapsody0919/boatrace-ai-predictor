@@ -52,6 +52,7 @@ export function aiIntroHtml(a) {
     listOf("ol", a.steps),
     `<p>${link(a.venuesLink.href, a.venuesLink.text)}</p>`,
     `<p>${escapeHtml(a.note)}</p>`,
+    `<p>${escapeHtml(a.ageNotice)}</p>`,
     "</div>",
     "<div>",
     `<h3>${escapeHtml(a.faqTitle)}</h3>`,

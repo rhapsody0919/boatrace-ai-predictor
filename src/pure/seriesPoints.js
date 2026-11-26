@@ -160,6 +160,52 @@ export function prelimEndRaceIdOf(rows) {
 }
 
 /**
+ * 得点率に算入するレースで同じレースを走った選手をつないだ、選手の組（連結成分、union-find）。
+ * `splitMeetSeries`（男女Ｗ優勝戦）と `jointMeetSeriesOf`（SG と G2 の併催）が使う。
+ * @param {Array<Object>} list 節の全レース（種別）
+ * @param {Map<string, Array<number>>|Object} racersByRace `race_id` → 出走選手ID
+ * @returns {Array<Set<number>>}
+ */
+export function seriesComponentsOf(list, racersByRace) {
+  const get = (raceId) => {
+    if (racersByRace instanceof Map) return racersByRace.get(raceId) ?? [];
+    return racersByRace?.[raceId] ?? [];
+  };
+  const prelimEnd = prelimEndRaceIdOf(list);
+  const parent = new Map();
+  const find = (x) => {
+    if (!parent.has(x)) parent.set(x, x);
+    let root = x;
+    while (parent.get(root) !== root) root = parent.get(root);
+    // 経路圧縮
+    while (parent.get(x) !== root) {
+      const next = parent.get(x);
+      parent.set(x, root);
+      x = next;
+    }
+    return root;
+  };
+  for (const r of list) {
+    const raceId = r.raceId ?? r.race_id;
+    const stage = r.raceStage ?? r.race_stage ?? "";
+    if (!countsForSeriesScore(stage, raceId, prelimEnd)) continue;
+    const racers = get(raceId).filter((v) => v !== null && v !== undefined);
+    for (let i = 1; i < racers.length; i += 1) {
+      const a = find(racers[0]);
+      const b = find(racers[i]);
+      if (a !== b) parent.set(a, b);
+    }
+  }
+  const groups = new Map();
+  for (const racer of [...parent.keys()]) {
+    const g = find(racer);
+    if (!groups.has(g)) groups.set(g, new Set());
+    groups.get(g).add(racer);
+  }
+  return [...groups.values()];
+}
+
+/**
  * **男女Ｗ優勝戦の節**を、2つのシリーズに分ける（純関数、BOA-511/BOA-476）。
  *
  * 1つの「節」の中に独立した2シリーズが同居する開催がある（優勝戦が2本組まれる）。
@@ -209,42 +255,7 @@ export function splitMeetSeries(rows, racersByRace) {
   );
   if (!isW) return null;
 
-  const get = (raceId) => {
-    if (racersByRace instanceof Map) return racersByRace.get(raceId) ?? [];
-    return racersByRace?.[raceId] ?? [];
-  };
-  const prelimEnd = prelimEndRaceIdOf(list);
-  const parent = new Map();
-  const find = (x) => {
-    if (!parent.has(x)) parent.set(x, x);
-    let root = x;
-    while (parent.get(root) !== root) root = parent.get(root);
-    // 経路圧縮
-    while (parent.get(x) !== root) {
-      const next = parent.get(x);
-      parent.set(x, root);
-      x = next;
-    }
-    return root;
-  };
-  for (const r of list) {
-    const raceId = r.raceId ?? r.race_id;
-    const stage = r.raceStage ?? r.race_stage ?? "";
-    if (!countsForSeriesScore(stage, raceId, prelimEnd)) continue;
-    const racers = get(raceId).filter((v) => v !== null && v !== undefined);
-    for (let i = 1; i < racers.length; i += 1) {
-      const a = find(racers[0]);
-      const b = find(racers[i]);
-      if (a !== b) parent.set(a, b);
-    }
-  }
-  const groups = new Map();
-  for (const racer of [...parent.keys()]) {
-    const g = find(racer);
-    if (!groups.has(g)) groups.set(g, new Set());
-    groups.get(g).add(racer);
-  }
-  const comps = [...groups.values()];
+  const comps = seriesComponentsOf(list, racersByRace);
   // ちょうど2つに割れたときだけ採用する（安全弁）
   if (comps.length !== 2) return null;
   // 大きいほうを先に返す（表示の並びを安定させる）

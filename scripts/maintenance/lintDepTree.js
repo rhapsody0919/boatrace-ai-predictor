@@ -11,9 +11,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import {
-  DATA_LAYER_KEY,
   compareBaselines,
-  isDataLayer,
   judgeAgainstExceptions,
   newServicesFileProblems,
   newUtilsFileProblems,
@@ -54,18 +52,6 @@ export function countByRule(edges) {
   const counts = {};
   for (const { rule } of edges) counts[rule] = (counts[rule] ?? 0) + 1;
   return counts;
-}
-
-/** 辺 → 基準の形 { rule: { from: [to] } }（和の中の from は1つにまとめる。今の関所は使わず、試験だけが読む。消すのは別の PR） */
-export function baselineOfEdges(edges) {
-  const out = {};
-  for (const { rule, from: file, to } of edges) {
-    const from = isDataLayer(file) ? DATA_LAYER_KEY : file;
-    out[rule] ??= {};
-    out[rule][from] ??= [];
-    if (!out[rule][from].includes(to)) out[rule][from].push(to);
-  }
-  return out;
 }
 
 const jsFileCount = (cwd) =>

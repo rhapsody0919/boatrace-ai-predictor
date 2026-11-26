@@ -122,6 +122,8 @@ function HomeAiIntro({ lastUpdated = null }) {
           {t("home.aiIntro.venuesLink")}
         </a>
         <p className="home-ai-intro__note">{t("home.aiIntro.disclaimer")}</p>
+        {/* 公営競技の断り（AGENTS.md「断り」、BOA-1722） */}
+        <p className="home-ai-intro__note">{t("home.aiIntro.ageNotice")}</p>
       </div>
 
       <div className="home-ai-intro__faq">

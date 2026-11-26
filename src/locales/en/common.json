@@ -84,6 +84,7 @@
     "raceCount_one": "{{count}} race"
   },
   "venueGrid": {
+    "title": "Status of all 24 venues",
     "noRacesToday": "No races today",
     "nextOpen": "Next: {{date}}",
     "nextRace": "Next R{{race}}",
@@ -475,10 +476,15 @@
       "step3SonarOnly": "Open the \"Ryujin Sonar\" tab",
       "venuesLink": "Pick a venue racing today ↑",
       "disclaimer": "Both lay out past races and official data. They do not guarantee any result.",
+      "ageNotice": "Only people aged 20 or over who live in Japan can bet on boat races.",
       "toolsIntro": "In Ryujin Sonar, you can check the results of past races under close conditions, and the past rates when you change the entry or start pattern. In Thinking Assist, you can look at racers' records and past tendencies along the questions you want answered, such as the axis boat, race flow, boat power and the other contenders.",
       "toolsIntroSonarOnly": "In Ryujin Sonar, you can check the results of past races under close conditions, and the past rates when you change the entry or start pattern.",
       "faqTitle": "Frequently asked questions",
       "faq": {
+        "q6": "Are the AI predictions accurate?",
+        "a6": "Some predictions hit and some miss, and no result is guaranteed. The record of predictions checked against actual race results, including misses, is published on the results page (in Japanese).",
+        "q7": "What data does the AI look at to make predictions?",
+        "a7": "It compares, race by race, each racer's win rate and class, the motor's and boat's top-2 rates, exhibition times and exhibition starts, average start timing, wind and waves, and more.",
         "q1": "Can I see the AI boat race predictions for free?",
         "a1": "Ryujin Radar's AI predictions are free, with no sign-up required. The past rates in Ryujin Sonar, and racers' records and past tendencies in Thinking Assist, can also be checked without signing up.",
         "a1SonarOnly": "Ryujin Radar's AI predictions are free, with no sign-up required. The past rates in Ryujin Sonar can also be checked without signing up.",
@@ -891,6 +897,7 @@
       "avg": "Avg. {{value}}",
       "smallSampleTitle": "Few entries mean rates are more prone to random variation",
       "noteDiff": "Difference = gap from the all-racer 1st-place rate for the same course (no colors). The ST analysis in this tab compares against the average for the same class.",
+      "noteDiffBar": "Bar = gap from the all-racer 1st-place rate for the same course (center line). Green ▲ / red ▼ appear only when, given the number of entries, the gap is hard to explain by chance alone (they do not mark the size of the gap). Dashed bars are boats with too few entries to show a gap. The ST analysis in this tab compares against the average for the same class.",
       "noteSample": "Boats with few entries (under 10 for course 1, 30 for courses 2–4, 42 for course 5, or 67 for course 6) are shown in gray with no difference, as rates are more prone to random variation. Rates are also hidden for fewer than 10 entries.",
       "notePeriod": "Last 3 terms = the 3 latest published official term records (aggregated for May–October and November–April). These are the same values as the last 3 terms on the racer page. Select a row to show that racer's record by course.",
       "fetchError": "Could not load course records for the last 3 terms.",
@@ -2327,7 +2334,7 @@
     "meetFormRowValue_lap": "Lap",
     "meetFormRowValue_turn": "Turn",
     "meetFormRowValue_straight": "Straight",
-    "meetFormNote": "Higher is faster. The number in each point is the actual finish (gold = 1st). Runs where the entry course differed from the boat number are colored. Runs without exhibition data skip the point and are joined by a dotted line. Each boat ran different races (the x-axis counts each boat's runs from the first).",
+    "meetFormNote": "The number inside each point is the actual finish (gold = 1st). Tap a point to see that run's values and a link to the race. The number at the right edge is each boat's value from its last run this meet before this race; it is not this race's value. Each boat ran different races on different days, so the x-axis starts at each boat's first run. Runs where the entry course differed from the boat number are colored. Runs without exhibition data skip the point and are joined by a dotted line.",
     "meetFormNoteAvg": " The dashed line is the venue average for that day.",
     "meetFormFinishFailed": "Could not load finishes"
   },
@@ -4052,6 +4059,16 @@
     "rankingSubOfficialAsOf": "Qualifying score rate (as of the end of day {{day}}, from the official score-rate list; today's results are added around 22:00 JST) · {{count}} racers",
     "officialLiveLink": "Latest ranks including today's results: official score-rate list (reflected here around 22:00 JST)",
     "borderLineTie": "Estimated semi-final line ({{tied}} racers tied at {{rank}}th; {{seats}} spot(s) left)",
+    "joint": {
+      "cc-sg": "Challenge Cup (SG)",
+      "cc-g2": "Ladies Challenge Cup (G2)"
+    },
+    "jointNote": "This meet runs two events, SG and G2, at the same time. As in the official point-rate list, rankings are shown for each event.",
+    "jointFinalNote": "The Ladies Challenge Cup (G2) has no semi-finals. The last day has the final and special selection races. The final line is our estimate based on the top 6 of the preliminaries advancing to the final in 2025, not an official rule.",
+    "borderFinalGoal": "Final line (estimate): {{slots}}th {{rate}}",
+    "borderLineFinalGoal": "Estimated final line ({{slots}} racers)",
+    "borderLineFinalGoalTie": "Estimated final line ({{tied}} racers tied at {{rank}}th; {{seats}} spot(s) left)",
+    "shobugakeNoteFinalGoal": "On the bubble: racers near the line whose final spot depends on today's finishes",
     "points": "{{points}} pts",
     "pointsWithPenalty": "{{points}} pts, penalty {{penalty}}",
     "sourceConfirmed": "Source: score rates and ranks come from the official BOAT RACE score-rate list (as of the end of qualifying, penalties included).",

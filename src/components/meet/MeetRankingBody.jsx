@@ -154,7 +154,12 @@ function ExcludedRow({ r, confirmed, classByRacer }) {
 
 // 枠の位置が同率で割れているとき（18位が5人等）、線の上の人数は枠より多い。
 // 「18人」とだけ書くと数が合わないので、同率の人数と入れる人数を書く（2周目）
-function lineKeyOf(tie, confirmed) {
+function lineKeyOf(tie, confirmed, goal) {
+  // 準優の無い開催（併催の G2）は優勝戦の目安。予選の後も「目安」のまま（G3 の点検 V-61）
+  if (goal === "final")
+    return tie
+      ? "meetPage.borderLineFinalGoalTie"
+      : "meetPage.borderLineFinalGoal";
   return tie
     ? "meetPage.borderLineTie"
     : confirmed
@@ -176,6 +181,7 @@ function RankingBody({
   penaltyByRacer,
   bestRate,
   tie,
+  goal = "semifinal",
 }) {
   const { t } = useTranslation();
   return (
@@ -202,7 +208,7 @@ function RankingBody({
           lineAfter && (
             <BorderLineRow
               key={`line-${r.racerId}`}
-              lineKey={lineKeyOf(tie, confirmed)}
+              lineKey={lineKeyOf(tie, confirmed, goal)}
               slots={slots}
               tie={tie}
             />

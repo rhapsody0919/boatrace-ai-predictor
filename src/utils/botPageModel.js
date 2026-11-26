@@ -193,6 +193,7 @@ function buildAiIntro(t, lang, scrapedAt) {
     // 人の画面と同じページ内リンク（本日開催中のレースの欄）
     venuesLink: { text: t("home.aiIntro.venuesLink"), href: "#today-venues" },
     note: t("home.aiIntro.disclaimer"),
+    ageNotice: t("home.aiIntro.ageNotice"),
     faqTitle: t("home.aiIntro.faqTitle"),
     faqItems,
     faqPageLd: toFaqPageLd(faqItems),
