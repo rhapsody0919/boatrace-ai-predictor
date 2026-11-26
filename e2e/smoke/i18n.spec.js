@@ -126,10 +126,16 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
     "aria-label",
     "Breadcrumb",
   );
-  const labels = page.locator(".meet-sparkline-label");
+  // 6艇の推移は共通の図1枚（R-43）。6号艇を選ぶと、その走の記号が点の中か上の帯に出る
+  await page.locator(".rmt-trend-row").nth(5).click({ timeout: 30000 });
+  const labels = page
+    .locator(".rmt-trend-series.is-active")
+    .locator(".trc-mark-text, .trc-flag text");
   await labels.first().waitFor({ timeout: 30000 });
   await expect(labels.filter({ hasText: "エ" })).toHaveCount(0);
   await expect(labels.filter({ hasText: "Eng" }).first()).toBeVisible();
+  // 艇の選択はタブの間で共有される。下の基本情報で6号艇を押して選ぶため、1号艇に戻しておく
+  await page.locator(".rmt-trend-row").nth(0).click();
   const history = page.locator(".race-history-table").first();
   await history.waitFor({ timeout: 30000 });
   await expect(history).toContainText("¥");
