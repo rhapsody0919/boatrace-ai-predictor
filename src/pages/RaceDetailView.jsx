@@ -22,8 +22,13 @@ import { FETCH_FAILED_ERROR, NO_DATA_ERROR } from "../hooks/useDatePredictions";
 import { RACE_STATUS } from "../utils/raceStatus";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { formatDateLocalized } from "../utils/formatters";
+import { useRootClass } from "../hooks/useRootClass";
+
+// ヘッダーの左右を本文の列にそろえる（Header.css の body.race-wide-header）
+const WIDE_HEADER = "race-wide-header";
 
 export function InvalidUrlView({ t, localize }) {
+  useRootClass("body", WIDE_HEADER);
   return (
     <>
       <title>{t("meta.title")}</title>
@@ -278,6 +283,7 @@ export function RaceDetailView({
   navigateToVenue,
 }) {
   const { gradeConfig, seriesTitle, stageChip, seriesDayLabel } = heading;
+  useRootClass("body", WIDE_HEADER);
   return (
     <>
       {/* 開催日を入れる。無いと同じ会場・同じR番号の全日付で title・description が同じになり、

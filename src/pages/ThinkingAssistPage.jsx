@@ -54,6 +54,7 @@ import {
   initialState,
 } from "../pure/predictionAssistState";
 import "../components/race/assist/ThinkingAssist.css";
+import { useRootClass } from "../hooks/useRootClass";
 
 // 「選んだ艇でボックス」の組みは utils/assistModel のまま（src/pure の reducer へ渡す）
 const reducer = createAssistReducer({ boxBets, assistBetType });
@@ -155,6 +156,8 @@ function AssistFoot({
 
 function AssistPageShell({ view, sheetApi, showViewSwitch, parsedRaceId }) {
   const { raceId, venueName, headerHeight, sheetOpen } = view;
+  // ヘッダーの左右を本文の列にそろえる（Header.css の body.race-wide-header。レース詳細と同じ）
+  useRootClass("body", "race-wide-header");
   return (
     <AssistSheetContext.Provider value={sheetApi}>
       <title>{`${ASSIST_COPY.title}（${raceId}）`}</title>
