@@ -154,6 +154,14 @@
       "line": "const BANNED_WORDS = [\"競艇\"];"
     },
     {
+      "file": "src/utils/pageMeta.js",
+      "line": "title: `${venueName}競艇の結果・配当 ${day}のレース一覧・AIデータ分析 - 龍神レーダー`,"
+    },
+    {
+      "file": "src/utils/pageMeta.js",
+      "line": "description: `${venueName}競艇（ボートレース${venueName}）の${day}の全レースの結果。着順・決まり手・3連単の配当と、各レースの出走表・AIデータ分析を無料で確認できます。`,"
+    },
+    {
       "file": "src/shared/venueSeriesTitle.js",
       "line": "* 「{会場}競艇予想 ai」は SG 開催週に跳ねる（桐生SGの週に「桐生競艇予想 ai」が1週1,489表示）ため、"
     }

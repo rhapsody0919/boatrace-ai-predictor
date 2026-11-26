@@ -1,10 +1,13 @@
 /**
  * VenueRaceListPage の純な計算（一覧の整形・次の発走レースの位置・過去日付のパンくずと meta）。
- * VenueRaceListPage.jsx から移しただけで、挙動は変えない。
+ * VenueRaceListPage.jsx から移しただけで、挙動は変えない。過去日付の meta の中身は pageMeta.js の getPastVenuePageMeta（BOA-1723）。
  */
 import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
-import { getTodayVenueBreadcrumbItems } from "../utils/pageMeta";
+import {
+  getPastVenuePageMeta,
+  getTodayVenueBreadcrumbItems,
+} from "../utils/pageMeta";
 
 function buildVenueRaces(allRaces, venueCode, venueName) {
   return allRaces
@@ -42,13 +45,8 @@ function pastBreadcrumbItems(t, date, venueCode, venueName) {
   ];
 }
 
-export function pastPageMeta(venueName, date, venueCode) {
-  return {
-    title: `${venueName} ${formatDate(date)}のレース一覧・AIデータ分析 - 龍神レーダー`,
-    description: `${venueName}ボートレース場の${formatDate(date)}の全レース一覧。各レースのAIデータ分析・結果を確認できます。`,
-    canonical: `https://www.boat-ai.jp/races/${date}/${venueCode}`,
-  };
-}
+// 過去日付の title・description・canonical は Node の verify から呼べるよう pageMeta.js で組む（BOA-1723）
+export const pastPageMeta = getPastVenuePageMeta;
 
 // 本日分のパンくずは、ボット向け HTML（ADR 0089）の BreadcrumbList と同じ関数で組む
 export function venueBreadcrumbItems({ isToday, t, date, venueCode, venueName, lang }) {
