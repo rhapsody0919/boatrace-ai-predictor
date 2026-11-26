@@ -18,14 +18,17 @@ import { H, PAD, BAND, FLAG_Y, fmtValue } from "./trendChartGeom.js";
 // 勝率の段・モーターの推移が使う（線の部品は TrendChartLines.jsx）
 export { Badge };
 
+// 今節の走の図で、1走目を軸から離す幅（下の行の「まわり足」等の見出しが点の列と重ならない）
+const ALIGN_START_INSET = 18;
+
 const slash = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
 
-function scaleOf(seriesByBoat, scale, W) {
-  // 値の無い点（フライング・出遅れ等。印だけ描く）は尺度に入れない
-  const all = [...seriesByBoat.values()]
-    .flat()
-    .map((p) => p.value)
-    .filter((v) => v !== null && v !== undefined);
+function scaleOf(seriesByBoat, scale, W, extraValues = []) {
+  // 値の無い点（フライング・出遅れ等。印だけ描く）は尺度に入れない。extraValues は重ね書きの値（会場平均など）
+  const all = [
+    ...[...seriesByBoat.values()].flat().map((p) => p.value),
+    ...extraValues,
+  ].filter((v) => v !== null && v !== undefined);
   const { step } = scale;
   // 負にならない指標（ST）は 0 より下に伸ばさない
   const lo = Math.max(
@@ -41,9 +44,14 @@ function scaleOf(seriesByBoat, scale, W) {
     const top = PAD.t + (scale.flags ? BAND : 0);
     return top + (H - top - PAD.b) * (scale.invert ? r : 1 - r);
   };
-  // 右端（最新）をそろえる。点の少ない艇は左を空ける
+  // 右端（最新）をそろえる。点の少ない艇は左を空ける。alignStart（今節の走）は各艇の1走目を左にそろえ、
+  // 下の行の見出しの分だけ左を空ける
+  const inset = scale.alignStart ? ALIGN_START_INSET : 0;
   const x = (i, len) =>
-    PAD.l + ((W - PAD.l - PAD.r) * (n - len + i)) / Math.max(1, n - 1);
+    PAD.l +
+    inset +
+    ((W - PAD.l - inset - PAD.r) * (scale.alignStart ? i : n - len + i)) /
+      Math.max(1, n - 1);
   const { tickStep } = scale;
   const ticks = [];
   for (
@@ -52,7 +60,7 @@ function scaleOf(seriesByBoat, scale, W) {
     g += tickStep
   )
     ticks.push(g);
-  return { x, y, ticks };
+  return { x, y, ticks, n };
 }
 
 /** 横の目盛りの線と左の数字（走ごとの線と勝率の段で共通） */
@@ -98,9 +106,26 @@ function ValueAxis({ ticks, y, W, scale, t }) {
 }
 
 // 選んだ艇の日付の目盛り・「最新」・休みの印
-function SelectedAxis({ sel, selected, x, W }) {
+function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
   const { t } = useTranslation();
   if (sel.length === 0) return null;
+  // 今節の走の図は日付でなく「N走」（艇ごとに走ったレースは違う。日は図の下の行）
+  if (runAxisKey)
+    return (
+      <g>
+        {Array.from({ length: n }, (_, i) => (
+          <text
+            key={i}
+            x={x(i, n)}
+            y={H - 18}
+            className="trc-tick"
+            textAnchor="middle"
+          >
+            {t(runAxisKey, { n: i + 1 })}
+          </text>
+        ))}
+      </g>
+    );
   const marks = [
     0,
     Math.floor(sel.length / 3),
@@ -160,7 +185,7 @@ function SelectedAxis({ sel, selected, x, W }) {
 }
 
 // 選んだ点の縦の点線と印、点を選ぶ当たりの面（図の中の全面、透明）。縦のスクロールは指に任せる
-function PickLayer({ picked, px, y, selected, W, pointer }) {
+function PickLayer({ picked, px, y, selected, W, pointer, scale }) {
   return (
     <>
       {picked && (
@@ -172,19 +197,24 @@ function PickLayer({ picked, px, y, selected, W, pointer }) {
             y2={H - PAD.b}
             className="trc-pick-line"
           />
-          <circle
-            cx={px}
-            cy={picked.value == null ? FLAG_Y : y(picked.value)}
-            r={7.5}
-            className="trc-pick-ring"
-          />
-          <circle
-            cx={px}
-            cy={picked.value == null ? FLAG_Y : y(picked.value)}
-            r={6}
-            fill={BOAT_COLORS[selected].bg}
-            className="trc-pick-dot"
-          />
+          {/* 値の無い走は印の帯がある尺度だけ帯に印。点の中に着順を描く尺度は着順を隠さない外の輪だけ */}
+          {(picked.value != null || scale.flags) && (
+            <circle
+              cx={px}
+              cy={picked.value == null ? FLAG_Y : y(picked.value)}
+              r={scale.dotLabel ? 12 : 7.5}
+              className="trc-pick-ring"
+            />
+          )}
+          {(picked.value != null || scale.flags) && !scale.dotLabel && (
+            <circle
+              cx={px}
+              cy={picked.value == null ? FLAG_Y : y(picked.value)}
+              r={6}
+              fill={BOAT_COLORS[selected].bg}
+              className="trc-pick-dot"
+            />
+          )}
         </g>
       )}
       <rect
@@ -206,7 +236,9 @@ function PickLayer({ picked, px, y, selected, W, pointer }) {
  *   renderOver?: (g: {x: Function, y: Function, W: number, pad: object, sel: Array<object>}) => any,
  *   renderBelow?: (g: {x: Function, W: number, pad: object, sel: Array<object>}) => any }} props
  *   scale を渡さなければ metric の既定の尺度。label は図の読み上げの名前（無ければ基本情報の題）。
- *   renderOver は線の下に重ねる SVG、renderBelow は図の下に描く物（どちらも図と同じ横の座標 x(i, len)）
+ *   renderOver は線の下に重ねる SVG、renderBelow は図の下に描く物（どちらも図と同じ横の座標 x(i, len)）。
+ *   extraValues は縦軸の範囲に含める重ね書きの値、lineClass は線の g に足すクラス（使う側の試験の当て先）。
+ *   extraHeight は図の下に足す高さで、renderOver が y >= h に同じ svg の中で描く（今節の足の走の行）
  */
 export default function TrendChart({
   seriesByBoat,
@@ -216,10 +248,13 @@ export default function TrendChart({
   label,
   renderOver,
   renderBelow,
+  extraValues,
+  lineClass,
+  extraHeight = 0,
 }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
-  const { x, y, ticks } = scaleOf(seriesByBoat, scale, W);
+  const { x, y, ticks, n } = scaleOf(seriesByBoat, scale, W, extraValues);
   const sel = seriesByBoat.get(selected) ?? [];
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
@@ -241,7 +276,7 @@ export default function TrendChart({
       <svg
         ref={ref}
         className="trc-svg"
-        viewBox={`0 0 ${W} ${H}`}
+        viewBox={`0 0 ${W} ${H + extraHeight}`}
         role="img"
         aria-label={
           label ??
@@ -251,9 +286,16 @@ export default function TrendChart({
         }
       >
         <ValueAxis ticks={ticks} y={y} W={W} scale={scale} t={t} />
-        <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
+        <SelectedAxis
+          sel={sel}
+          selected={selected}
+          x={x}
+          W={W}
+          runAxisKey={scale.runAxisKey}
+          n={n}
+        />
         {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
-        {renderOver?.({ x, y, W, pad: PAD, sel })}
+        {renderOver?.({ x, y, W, h: H, pad: PAD, sel })}
         {order.map((boat) => (
           <Line
             key={boat}
@@ -263,6 +305,7 @@ export default function TrendChart({
             x={x}
             y={y}
             scale={scale}
+            lineClass={lineClass}
           />
         ))}
         <EndLabels
@@ -280,9 +323,9 @@ export default function TrendChart({
           selected={selected}
           W={W}
           pointer={pointer}
+          scale={scale}
         />
       </svg>
-      {/* 使う側が図の下に描く物（選んだ艇の走ごとの行・モーターの段など）。横の座標は図と同じ */}
       {renderBelow?.({ x, W, pad: PAD, sel })}
       {picked && (
         <TrendTooltip

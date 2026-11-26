@@ -406,3 +406,19 @@
   padding-bottom: var(--spacing-2);
   border-bottom: 1px solid var(--border-hairline);
 }
+
+/* 今節の走の図（尺度の dotLabel）: 選んだ艇の点の中の着順。1着は金 */
+.trc-mark-dot {
+  fill: var(--surface-card);
+  stroke-width: 2;
+}
+
+.trc-mark-text {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.trc-mark-text.is-win {
+  fill: var(--brand-accent-primary);
+}

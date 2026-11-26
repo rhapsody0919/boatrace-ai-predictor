@@ -11,7 +11,29 @@
  * - tipValue: 吹き出しに値の行（「直近30走の◯◯」）を出すか。走ごとの生の値は2行目と重なるので出さない
  * - min: 縦軸の下の端の下限（負にならない値）
  * - flags・dimOthers・dots・dropZero: 走ごとの生の値の図（R-36）だけ。F・L の印の帯、選んでいない艇を薄く、選んだ艇に点、ST の .12 の書き方
+ * - 今節の走の図（直前情報の今節の足 R-47・R-119、BOA-885 承認のモック）だけ: alignStart は横を各艇の1走目からそろえる、
+ *   bridgeGaps は値の無い走を挟んで前後を点線でつなぐ、dotLabel は選んだ艇の点の中に着順、runAxisKey は横の目盛りを「N走」にする訳の鍵、
+ *   tipValueKey は吹き出しの値の行の訳の鍵、tipSt: false は吹き出しに ST を出さない
  */
+
+// 今節の走の図の共通（タイムは小さいほど速いので上に描く）
+const MEET_RUN = Object.freeze({
+  invert: true,
+  digits: 2,
+  tickDigits: 2,
+  unit: "",
+  unitKey: "basicInfo.trend.unitSec",
+  tipValue: true,
+  tipValueKey: "basicInfo.trend.tipValueRun",
+  tipSt: false,
+  dimOthers: true,
+  // 薄くした1号艇の白・2号艇の黒にも縁を残す（地に溶けて消える。visual-designer 11/26）
+  dimHalo: true,
+  alignStart: true,
+  bridgeGaps: true,
+  dotLabel: true,
+  runAxisKey: "beforeInfo.meetFormRunN",
+});
 
 export const TREND_SCALES = Object.freeze({
   top2Rate: Object.freeze({
@@ -61,6 +83,10 @@ export const TREND_SCALES = Object.freeze({
     dots: true,
     dropZero: true,
   }),
+  exhibition: Object.freeze({ ...MEET_RUN, step: 0.02, tickStep: 0.05 }),
+  lap: Object.freeze({ ...MEET_RUN, step: 0.1, tickStep: 0.5 }),
+  turn: Object.freeze({ ...MEET_RUN, step: 0.05, tickStep: 0.2 }),
+  straight: Object.freeze({ ...MEET_RUN, step: 0.05, tickStep: 0.2 }),
 });
 
 /**
