@@ -168,7 +168,7 @@ async function open(page) {
     line: s.querySelector("tr.meet-ranking__line")?.textContent ?? null,
     subs: [...s.querySelectorAll(".meet-ranking__sub")].map((p) => p.textContent).join("\n"),
   }));
-  const jointTitle = view.container.querySelector(".meet-ranking__joint-title")?.textContent ?? null;
+  const jointTitle = view.container.querySelector(".meet-page__main > .meet-ranking__head h2")?.textContent ?? null;
   const text = view.container.textContent;
   await view.unmount();
   return { sections, jointTitle, text };
@@ -186,8 +186,8 @@ async function open(page) {
   check("ページの見出しは1回", jointTitle, "meetPage.rankingTitle");
   check("分けた理由の注記", text.includes("meetPage.jointNote"), true);
   const [sg, g2] = sections;
-  check("SG の表の名", [sg?.headTag, sg?.head], ["H3", "meetPage.joint.cc-sg"]);
-  check("G2 の表の名", [g2?.headTag, g2?.head], ["H3", "meetPage.joint.cc-g2"]);
+  check("SG の表の名", [sg?.headTag, sg?.head], ["H2", "meetPage.joint.cc-sg"]);
+  check("G2 の表の名", [g2?.headTag, g2?.head], ["H2", "meetPage.joint.cc-g2"]);
   check("見出しの id が重ならない", sg?.labelledBy !== g2?.labelledBy && Boolean(sg?.labelledBy), true);
   check("SG の人数（女子を混ぜない）", sg?.rows, 20);
   check("G2 の人数", g2?.rows, 9);
@@ -211,14 +211,14 @@ async function open(page) {
   check("併催でない: 札は準優の目安", sections[0]?.chip, "meetPage.borderPrelim");
 }
 
-// 3. ja の文: PAGE_G2 の札・線に「準優」を出さず、注記は推定と断る
+// 3. ja の文: G2 の札・線に「準優」を出さず、注記は推定と断る
 {
   const ja = JSON.parse(readFileSync(new URL("../../src/locales/ja/common.json", import.meta.url), "utf8")).meetPage;
   check("ja: 表の名", [ja.joint["cc-sg"], ja.joint["cc-g2"]], ["チャレンジカップ（SG）", "レディースチャレンジカップ（G2）"]);
   check("ja: G2 の札", ja.borderFinalGoal, "優勝戦の目安 {{slots}}位 {{rate}}");
-  check("ja: PAGE_G2 の線", ja.borderLineFinalGoal, "ここまで優勝戦の目安（{{slots}}人）");
+  check("ja: G2 の線", ja.borderLineFinalGoal, "ここまで優勝戦の目安（{{slots}}人）");
   check("ja: G2 の札・線に準優を出さない", /準優/.test(ja.borderFinalGoal + ja.borderLineFinalGoal + ja.borderLineFinalGoalTie), false);
-  check("ja: PAGE_G2 の注記は推定と断る", ja.jointFinalNote.includes("当社の推定で、公式の決まりではありません"), true);
+  check("ja: G2 の注記は推定と断る", ja.jointFinalNote.includes("当社の推定で、公式の決まりではありません"), true);
   check("ja: 分けた理由", ja.jointNote.includes("公式の得点率一覧と同じく、開催ごとに順位を出しています"), true);
 }
 

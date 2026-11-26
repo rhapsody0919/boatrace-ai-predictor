@@ -45,16 +45,14 @@ function subKeyOf(confirmed, officialAsOfDay, officialAsOfIsToday) {
       : "meetPage.rankingSubPrelim";
 }
 
-// 併催の節は表ごとに開催の名を h3 で出す（ページの h2「得点率ランキング」は MeetPage が1回だけ）
+// 併催の節は表ごとに開催の名を見出しにする（ページの「得点率ランキング」は MeetPage が1回だけ）
 function RankingHead({ borderText, seriesKey, titleId }) {
   const { t } = useTranslation();
   return (
     <div className="meet-ranking__head">
-      {seriesKey ? (
-        <h3 id={titleId}>{t(`meetPage.joint.${seriesKey}`)}</h3>
-      ) : (
-        <h2 id={titleId}>{t("meetPage.rankingTitle")}</h2>
-      )}
+      <h2 id={titleId}>
+        {t(seriesKey ? `meetPage.joint.${seriesKey}` : "meetPage.rankingTitle")}
+      </h2>
       {borderText && <span className="meet-ranking__border">{borderText}</span>}
     </div>
   );

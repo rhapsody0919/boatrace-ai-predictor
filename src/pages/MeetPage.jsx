@@ -417,7 +417,9 @@ function MeetBody({ page }) {
         )}
         {models.length > 1 && (
           <>
-            <h2 className="meet-ranking__joint-title">{t("meetPage.rankingTitle")}</h2>
+            <div className="meet-ranking__head">
+              <h2>{t("meetPage.rankingTitle")}</h2>
+            </div>
             <p className="meet-page__note">{t("meetPage.jointNote")}</p>
           </>
         )}
