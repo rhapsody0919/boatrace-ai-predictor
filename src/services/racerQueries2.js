@@ -295,7 +295,8 @@ export function getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
     // v5: 天候・風速・波高を足した（レース条件別の成績、BOA-336）
     // v6: race_entries を1000行で切らずに取り切るようにした（BOA-1051）
-    return withCache(`racer-race-history-v6-${racerId}`, async () => {
+    // v7: 3連単の払戻（payout_trio。列名と中身が逆で、payout_trio が3連単。data-columns.md）を足した（G2 2026-11-26）
+    return withCache(`racer-race-history-v7-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -322,7 +323,7 @@ export function getRacerRaceHistory(racerId) {
           ),
           fetchAllByIn(
             "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, payout_trio, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
             "race_id",
             raceIds,
           ),
