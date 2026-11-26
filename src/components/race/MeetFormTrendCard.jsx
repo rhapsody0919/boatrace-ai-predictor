@@ -12,9 +12,11 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MEET_FORM_ANCHOR, buildMeetFormTrend } from "./meetFormTrend";
 import { MetricTabs, BoatChips } from "./MeetFormTrendControls";
-import MeetFormTrendChart from "./MeetFormTrendChart";
-import { chartScales, deriveView } from "./MeetFormTrendScales";
+import { AvgLine, RunRows, ROWS_HEIGHT } from "./MeetFormTrendChart";
+import { deriveView } from "./MeetFormTrendScales";
+import TrendChart from "./basic-info/TrendChart";
 import InlineFetchError from "../InlineFetchError";
+import "./basic-info/TrendChart.css";
 import "./MeetFormTrendCard.css";
 
 const METRIC_LABEL_KEY = {
@@ -24,22 +26,34 @@ const METRIC_LABEL_KEY = {
   straight: "beforeInfo.meetFormMetricStraight",
 };
 
-/** 描く枠の幅を測る（ResizeObserver）。カードが出ている間だけ */
-function useChartWidth(hasData) {
-  const wrapRef = useRef(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!hasData || !el) return undefined;
-    setWidth(el.getBoundingClientRect().width);
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver((entries) => {
-      setWidth(entries[0]?.contentRect.width ?? 0);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [hasData]);
-  return { wrapRef, width };
+/** 共通の推移の図に、会場平均の破線と下の行（同じ svg の中）を足して描く */
+function MeetChart({ t, view, label }) {
+  const { metric, selected, showAvg, avgOf, avgValues, seriesByBoat } = view;
+  return (
+    <TrendChart
+      seriesByBoat={seriesByBoat}
+      metric={metric}
+      selected={selected.boat}
+      label={label}
+      extraValues={avgValues}
+      lineClass="mft-series"
+      extraHeight={ROWS_HEIGHT}
+      renderOver={({ x, y, W, h, sel }) => (
+        <>
+          {showAvg && <AvgLine sel={sel} x={x} y={y} avgOf={avgOf} />}
+          <RunRows
+            t={t}
+            metric={metric}
+            boat={selected.boat}
+            sel={sel}
+            W={W}
+            x={x}
+            top={h}
+          />
+        </>
+      )}
+    />
+  );
 }
 
 /** 導線（#meet-form-trend 付き）で開いたときは、カードが出たら1回だけそこまで下げる */
@@ -86,21 +100,14 @@ function MeetFormTrendCard({
   });
   // 今節の初戦（前の走が無い）は出さない。表の「今節初戦」に任せる
   const hasData = model.maxRuns > 0 && model.metrics.length > 0;
-  const { wrapRef, width } = useChartWidth(hasData);
   const sectionRef = useAnchorScroll(hasData);
 
   if (!hasData) return null;
 
-  const { metric, selected, showAvg, avgOf, domain, drawOrder } = deriveView(
-    model,
-    metricKey,
-    boat,
-    venueDailyAvg,
-  );
+  const { metric, selected, showAvg, avgOf, avgValues, seriesByBoat } =
+    deriveView(model, metricKey, boat, venueDailyAvg);
   const metricLabel = (key) =>
     `${t(METRIC_LABEL_KEY[key])}${turnTimeDiffers && key === "turn" ? " ※" : ""}`;
-
-  const { L, W, H, x, y, ticks } = chartScales(width, model.maxRuns, domain);
 
   return (
     <section
@@ -128,23 +135,15 @@ function MeetFormTrendCard({
           onRetry={onRetryFinish}
         />
       )}
-      <div ref={wrapRef} className="mft-chart">
-        {width > 0 && domain && selected && (
-          <MeetFormTrendChart
+      <div className="mft-chart">
+        {selected && (
+          <MeetChart
             t={t}
-            W={W}
-            H={H}
-            L={L}
-            x={x}
-            y={y}
-            ticks={ticks}
-            maxRuns={model.maxRuns}
-            metric={metric}
-            metricLabel={metricLabel}
-            selected={selected}
-            showAvg={showAvg}
-            avgOf={avgOf}
-            drawOrder={drawOrder}
+            view={{ metric, selected, showAvg, avgOf, avgValues, seriesByBoat }}
+            label={t("beforeInfo.meetFormChartLabel", {
+              metric: metricLabel(metric),
+              boat: selected.boat,
+            })}
           />
         )}
       </div>

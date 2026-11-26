@@ -1,7 +1,10 @@
-/** MeetFormTrendCard の SVG（軸・線と点・下の行）。描画だけを受け持つ */
-import { BOAT_LINE_COLORS } from "../../utils/colors";
-import { segmentsOf } from "./meetFormTrend";
+/**
+ * MeetFormTrendCard が共通の推移の図（TrendChart）に描き足す物: その日の会場平均の破線（線の下）と、
+ * 選んだ艇の日・R・枠・進入・値・着順の行（図の下に伸ばした同じ svg の中、各点の真下）。座標は図から受け取る（BOA-885 承認のモック）
+ */
 import { ROW_KEYS } from "./MeetFormTrendScales";
+
+const ROW_H = 18;
 
 const cellText = (t, metric, run, key) => {
   switch (key) {
@@ -25,141 +28,37 @@ const cellText = (t, metric, run, key) => {
 };
 
 /** その日の会場平均の破線。値の無い日は線を切る */
-function AvgLine({ points }) {
-  const runs = [];
-  let cur = [];
-  points.forEach((p) => {
-    if (p === null) {
-      if (cur.length) runs.push(cur);
-      cur = [];
-    } else cur.push(p);
+export function AvgLine({ sel, x, y, avgOf }) {
+  const runs = [[]];
+  sel.forEach((p, i) => {
+    const v = avgOf(p.meetRun.date);
+    if (v === null) runs.push([]);
+    else runs[runs.length - 1].push(`${x(i, sel.length)},${y(v)}`);
   });
-  if (cur.length) runs.push(cur);
-  return runs.map((pts) => (
-    <polyline
-      key={pts[0].join(",")}
-      data-venue-avg
-      className="mft-avg"
-      points={pts.map((p) => p.join(",")).join(" ")}
-    />
-  ));
-}
-
-function Axes({ t, L, W, x, y, ticks, maxRuns }) {
-  return (
-    <>
-      {ticks.map((v) => (
-        <g key={v}>
-          <line
-            className="mft-grid"
-            x1={L.left}
-            x2={W - L.right}
-            y1={y(v)}
-            y2={y(v)}
-          />
-          <text
-            className="mft-axis"
-            x={L.left - 6}
-            y={y(v) + 3}
-            fontSize={L.font}
-            textAnchor="end"
-          >
-            {v.toFixed(2)}
-          </text>
-        </g>
-      ))}
-      {Array.from({ length: maxRuns }, (_, i) => (
-        <text
-          key={i}
-          className="mft-axis"
-          x={x(i)}
-          y={L.chartHeight - 6}
-          fontSize={L.font}
-          textAnchor="middle"
-        >
-          {t("beforeInfo.meetFormRunN", { n: i + 1 })}
-        </text>
-      ))}
-    </>
-  );
-}
-
-function Point({ b, i, v, on, color, L, x, y }) {
-  if (v === null) return null;
-  if (!on) {
-    return <circle key={i} cx={x(i)} cy={y(v)} r={2.5} fill={color} />;
-  }
-  return (
-    <g key={i} data-boat={b.boat}>
-      <circle
-        className="mft-point-active"
-        cx={x(i)}
-        cy={y(v)}
-        r={L.finishFont - 2}
-        stroke={color}
+  return runs
+    .filter((r) => r.length > 0)
+    .map((pts) => (
+      <polyline
+        key={pts[0]}
+        data-venue-avg
+        className="mft-avg"
+        points={pts.join(" ")}
       />
-      <text
-        className={b.runs[i].finish === 1 ? "mft-finish is-win" : "mft-finish"}
-        x={x(i)}
-        y={y(v) + 4}
-        fontSize={L.finishFont}
-        textAnchor="middle"
-      >
-        {b.runs[i].finish ?? "—"}
-      </text>
-    </g>
-  );
+    ));
 }
 
-function Series({ b, on, metric, L, x, y }) {
-  const vals = b.runs.map((r) => r.values[metric]);
-  const color = BOAT_LINE_COLORS[b.boat];
+function Row({ rowKey, j, t, metric, boat, runs, W, x }) {
+  const top = j * ROW_H;
+  const base = top + ROW_H - 4;
   return (
-    <g
-      data-boat={b.boat}
-      className={on ? "mft-series is-active" : "mft-series"}
-    >
-      {segmentsOf(vals).map((s) => (
-        <line
-          key={`${s.from}-${s.to}`}
-          x1={x(s.from)}
-          y1={y(vals[s.from])}
-          x2={x(s.to)}
-          y2={y(vals[s.to])}
-          stroke={color}
-          strokeWidth={on ? 3 : 1.5}
-          strokeDasharray={s.gap ? "3 4" : undefined}
-        />
-      ))}
-      {vals.map((v, i) => (
-        <Point
-          key={i}
-          b={b}
-          i={i}
-          v={v}
-          on={on}
-          color={color}
-          L={L}
-          x={x}
-          y={y}
-        />
-      ))}
-    </g>
-  );
-}
-
-function Row({ rowKey, j, t, metric, selected, L, W, x }) {
-  const top = L.chartHeight + 8 + j * L.rowHeight;
-  const base = top + L.rowHeight - 5;
-  return (
-    <g className="mft-row" data-boat={selected.boat} data-row={rowKey}>
+    <g className="mft-row" data-boat={boat} data-row={rowKey}>
       <line className="mft-grid" x1={0} x2={W} y1={top} y2={top} />
-      <text className="mft-axis" x={0} y={base} fontSize={L.font}>
+      <text className="mft-axis" x={0} y={base}>
         {rowKey === "value"
           ? t(`beforeInfo.meetFormRowValue_${metric}`)
           : t(`beforeInfo.meetFormRow_${rowKey}`)}
       </text>
-      {selected.runs.map((run, i) => {
+      {runs.map((run, i) => {
         const off =
           rowKey === "course" &&
           run.course !== null &&
@@ -176,9 +75,9 @@ function Row({ rowKey, j, t, metric, selected, L, W, x }) {
             ]
               .filter(Boolean)
               .join(" ")}
-            x={x(i)}
+            x={x(i, runs.length)}
             y={base}
-            fontSize={rowKey === "finish" ? L.finishFont : L.font}
+            fontSize={rowKey === "finish" ? 11 : undefined}
             textAnchor="middle"
           >
             {cellText(t, metric, run, rowKey)}
@@ -189,53 +88,14 @@ function Row({ rowKey, j, t, metric, selected, L, W, x }) {
   );
 }
 
-function MeetFormTrendChart({
-  t,
-  W,
-  H,
-  L,
-  x,
-  y,
-  ticks,
-  maxRuns,
-  metric,
-  metricLabel,
-  selected,
-  showAvg,
-  avgOf,
-  drawOrder,
-}) {
+/** 図の下の行の高さ（図の extraHeight） */
+export const ROWS_HEIGHT = ROW_KEYS.length * ROW_H + 2;
+
+/** 図の下の行。図と同じ svg の中で、図の下端 top から描き、横を点にそろえる */
+export function RunRows({ t, metric, boat, sel, W, x, top }) {
+  const runs = sel.map((p) => p.meetRun);
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      width={W}
-      height={H}
-      role="img"
-      aria-label={t("beforeInfo.meetFormChartLabel", {
-        metric: metricLabel(metric),
-        boat: selected.boat,
-      })}
-    >
-      <Axes t={t} L={L} W={W} x={x} y={y} ticks={ticks} maxRuns={maxRuns} />
-      {showAvg && (
-        <AvgLine
-          points={selected.runs.map((r, i) => {
-            const v = avgOf(r.date);
-            return v === null ? null : [x(i), y(v)];
-          })}
-        />
-      )}
-      {drawOrder.map((b) => (
-        <Series
-          key={b.boat}
-          b={b}
-          on={b.boat === selected.boat}
-          metric={metric}
-          L={L}
-          x={x}
-          y={y}
-        />
-      ))}
+    <g className="mft-rows" transform={`translate(0 ${top})`}>
       {ROW_KEYS.map((key, j) => (
         <Row
           key={key}
@@ -243,14 +103,12 @@ function MeetFormTrendChart({
           j={j}
           t={t}
           metric={metric}
-          selected={selected}
-          L={L}
+          boat={boat}
+          runs={runs}
           W={W}
           x={x}
         />
       ))}
-    </svg>
+    </g>
   );
 }
-
-export default MeetFormTrendChart;
