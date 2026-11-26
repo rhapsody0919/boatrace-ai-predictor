@@ -10,6 +10,8 @@
  *  - その他: 成功0で 5xx 1回以上か 4xx 2回以上、または失敗3回以上かつ呼び出しの半分以上で mid（目安・根拠なし）
  *  - key の日は最初に落ちた時間の JST の日（窓の24時間が抜けるまで同じ key ＝ 同じ失敗で再通知しない）
  * 見えない物: 呼ばれもしない cron（SHIP 以外）、モード off・skipped で 200 を返す cron
+ *
+ * 検証: scripts/maintenance/verify-cron-watch-judge.js（時計を固定）
  */
 export const JUDGE_H = 24;
 export const RATE_MIN = 3;
