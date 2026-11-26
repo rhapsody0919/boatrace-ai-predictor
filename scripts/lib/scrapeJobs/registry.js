@@ -635,12 +635,12 @@ export const SCRAPE_JOBS = Object.freeze({
   // マイグレーション190）。外部サイトへの通信は無く、数えるのは SQL 側（RPC compute_racer_career_counts）。
   // 23:30 指定（cron: 23:30・01:00 JST）。直近3日に出た選手（約700〜950人）を50人ずつ、main の全期間で計算し直す。
   // 1回の RPC は実測で約3秒（100人、2026-10-31 の本番の読み取り）。実装: scripts/lib/racerCareerJob.js
-  racer_career_main: {
-    kind: "daily",
-    targetTimeJst: "23:30",
-    leaseSec: 300,
-    maxDurationSec: 300,
-  },
+  racer_career_main: { kind: "daily", targetTimeJst: "23:30", leaseSec: 300, maxDurationSec: 300 },
+
+  // 選手ページの回収率の全国の基準（racer_boat_return_baseline、docs/design/racer-return-baseline/db-draft.md）。
+  // 外部サイトへの通信は無く、数えるのは SQL 側（RPC compute_racer_boat_return_baseline）。730日の窓を月ごとに約25回呼ぶ。
+  // 1回の所要時間は未検証（適用前に1か月分を EXPLAIN ANALYZE で測る）。実装: scripts/lib/racerBoatReturnBaselineJob.js
+  racer_boat_return_baseline: { kind: "daily", targetTimeJst: "01:20", leaseSec: 300, maxDurationSec: 300 },
 
   // BOA-402 「本日のデータ一覧」（/today）の抽出結果。外部サイトへの通信は無い。
   // 実測の実行時間は約5秒。実装: scripts/daily/generate-morning-digest.js
