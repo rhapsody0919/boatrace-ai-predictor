@@ -9,6 +9,7 @@ import {
   runFinishLabel,
 } from "../pure/seriesPoints.js";
 import { pickMeetPretestByRacer } from "../utils/pretestRows";
+import { JOINT_FINAL_SLOTS } from "../pure/jointMeetSeries.js";
 
 // **残りの予選走数**（表示中のレースを含む）。公式の「必要得点」は
 // 「準優ボーダーをクリアするために必要な得点」で、実データから
@@ -26,12 +27,17 @@ import { pickMeetPretestByRacer } from "../utils/pretestRows";
 // 残り走で取りうる**最大得点**。残りの本数だけでは出せない（ドリーム戦の
 // 1着は12点、特選は11点）。予選配点の10点で決め打ちすると、ドリーム戦が
 // 残っている選手を「届かず」と誤って出す（BOA-457）
-function remainingByRacer({ meetRows, raceId, stageById, prelimEnd, add }) {
+// 併催では予選の終わりが開催ごとに違うので、選手の組の予選の終わりで数える（G3 の点検 V-61。
+// 節全体の終わりだと、G2 の予選が続く5日目の SG の一般戦を予選に数えた）
+function remainingByRacer({ meetRows, raceId, stageById, prelimEnd, jointSeries, add }) {
   const byRacer = {};
   for (const e of meetRows) {
     if (e.race_id < raceId) continue;
     const st = stageById.get(e.race_id) ?? "";
-    if (!countsForSeriesScore(st, e.race_id, prelimEnd)) continue;
+    const end =
+      jointSeries?.find((s) => s.racerIds.has(e.racer_id))?.prelimEndRaceId ??
+      prelimEnd;
+    if (!countsForSeriesScore(st, e.race_id, end)) continue;
     byRacer[e.racer_id] = (byRacer[e.racer_id] ?? 0) + add(st);
   }
   return byRacer;
@@ -226,6 +232,7 @@ function headFieldsOf(ctx) {
   const { meetStart, date, raceId, meetRows, conditions, raceIds } = ctx;
   const { stageById, prelimEnd, usesOfficialSeries, officialSeries } = ctx;
   const { prelimOfficial, resultById, cancelledRaceIds, meetStarts } = ctx;
+  const { jointSeries } = ctx;
   const officialRows = officialSeries ?? [];
   return {
     meetStart,
@@ -261,6 +268,7 @@ function headFieldsOf(ctx) {
       raceId,
       stageById,
       prelimEnd,
+      jointSeries,
       add: () => 1,
     }),
     remainingPrelimMaxPointsByRacer: remainingByRacer({
@@ -268,6 +276,7 @@ function headFieldsOf(ctx) {
       raceId,
       stageById,
       prelimEnd,
+      jointSeries,
       add: (st) => scoreTableFor(st)[1],
     }),
     // 丸一日レースが無かった日（BOA-636）
@@ -289,6 +298,11 @@ function headFieldsOf(ctx) {
 function seriesFieldsOf(ctx) {
   const { seriesConditions, cancelledRaceIds, resultById, racersByRace } = ctx;
   const { currentSeries, meetSeries, meetRows, raceId, stageById } = ctx;
+  const slotsOptions = {
+    cancelledRaceIds,
+    ranRaceIds: new Set(resultById.keys()),
+    racersByRace,
+  };
   return {
     // **この節に組まれた準優勝戦の枠数**。慣例は3個レース=18名で、決められない
     // とき（予選中で準優がまだ番組に出ていない等）は **null**（0ではない）。
@@ -298,11 +312,22 @@ function seriesFieldsOf(ctx) {
     // ボーダー・必要得点・「届かず」まで狂う（BOA-490）
     // 枠数は本数 × 6 ではなく実人数で数える。多摩川のＷ準優戦は
     // 同じ12名が2回走るヒートで、本数で数えると倍になる
-    semifinalSlots: semifinalSlotsOf(seriesConditions, {
-      cancelledRaceIds,
-      ranRaceIds: new Set(resultById.keys()),
-      racersByRace,
-    }),
+    semifinalSlots: semifinalSlotsOf(seriesConditions, slotsOptions),
+    // **SG と G2 の併催の開催ごとの表**（G3 の点検 V-61）。null なら併催でない。節ページが
+    // 表ごとに seriesRacerIds・枠数・予選の終わりを差し替えて順位を振る。準優の無い G2 は
+    // 優勝戦の目安の人数（JOINT_FINAL_SLOTS）。準優の枠数が決まらなければ null（画面が既定の18枠）
+    seriesBoards:
+      ctx.jointSeries?.map((s) => ({
+        key: s.key,
+        grade: s.grade,
+        goal: s.goal,
+        racerIds: [...s.racerIds],
+        prelimEndRaceId: s.prelimEndRaceId,
+        slots:
+          s.goal === "final"
+            ? JOINT_FINAL_SLOTS
+            : semifinalSlotsOf(s.conditions, slotsOptions),
+      })) ?? null,
     // **男女Ｗ優勝戦の節で、表示中の6艇が属するシリーズの選手**（BOA-511）。
     // null なら通常の節で、画面はこれまでどおり節全体を母集団にする。
     // 2シリーズを混ぜて順位を振ると、節内順位・出場人数・準優の目安が

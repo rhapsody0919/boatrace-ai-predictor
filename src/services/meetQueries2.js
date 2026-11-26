@@ -13,6 +13,7 @@ import {
   isAbsentStartRow,
   officialMarkOf,
 } from "../pure/seriesPoints.js";
+import { jointMeetSeriesOf } from "../pure/jointMeetSeries.js";
 import { PRETEST_LOOKBACK_DAYS, shiftDate } from "../utils/pretestRows";
 import { fetchAllByIn, isPastRace, withCache } from "./core.js";
 import { headFieldsOf, seriesFieldsOf, runFieldsOf } from "./meetQueries4.js";
@@ -68,7 +69,8 @@ export function getMeetScoreboard(raceId, venueCode, { useOfficial } = {}) {
   // v29: 節ページの useOfficial を足した（BOA-682）。キーを分けないと、今節タブと
   //      節ページで公式値の採否が違う結果を取り違える
   // v30: 予選中に公式の前夜の減点・途中帰郷を足した（officialPenaltyByRacer、BOA-782）
-  const cacheKey = `meet-scoreboard-v30-${raceId}${useOfficial ? ":of" : ""}`;
+  // v31: SG と G2 の併催を開催ごとに分けた seriesBoards を足した（G3 の点検 V-61）
+  const cacheKey = `meet-scoreboard-v31-${raceId}${useOfficial ? ":of" : ""}`;
   return withCache(cacheKey, () =>
     loadMeetScoreboard({ raceId, venueCode, useOfficial, date, vv }),
   );
@@ -339,7 +341,9 @@ function seriesContextOf({ meetRows, conditions, raceId }) {
         (racersByRace.get(c.race_id) ?? []).some((r) => currentSeries.has(r)),
       )
     : (conditions ?? []);
-  return { racersByRace, meetSeries, currentSeries, seriesConditions };
+  // SG と G2 の併催は開催ごとの組（節ページが表を分ける。G3 の点検 V-61）
+  const jointSeries = jointMeetSeriesOf(conditions ?? [], racersByRace);
+  return { racersByRace, meetSeries, currentSeries, seriesConditions, jointSeries };
 }
 
 // **本番スタートの記録があるか**（欠場の判定。BOA-489）。
