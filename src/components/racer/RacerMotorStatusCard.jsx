@@ -213,7 +213,9 @@ export default function RacerMotorStatusCard({ status }) {
   const { hasPowerIndex, tone } = resolveTone(powerIndex);
 
   return (
-    <div className="racer-motor-status-card">
+    <div
+      className={`racer-motor-status-card${chartData.length > 1 ? " racer-motor-status-card--chart" : ""}`}
+    >
       {/* 直近出走が入れ替え前（数ヶ月前）なら「今節」とは呼ばない */}
       <h2 className="racer-motor-status-title">
         🔧{" "}

@@ -110,7 +110,7 @@ function CourseSection({ summary }) {
   const last = summary.periods[0];
   const rangeText = `${first.range.split("〜")[0]}〜${last.range.split("〜")[1]}`;
   return (
-    <div className="racer-official-block">
+    <div className="racer-official-block racer-official-block--bars">
       <h3>
         進入コース別成績（公式・{rangeText}の{summary.periods.length}期
         {summary.contiguous ? "" : "、出走のない期を除く"}）
