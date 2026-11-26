@@ -22,6 +22,19 @@ test("勝率の推移は全国勝率だけの1本の線で、当地勝率は出�
   await expect(chart).not.toContainText("当地勝率");
 });
 
+// 縦軸は値の幅に合わせる（期別成績の図と同じ winRateAxis）。0 から始めると 0.4 の上下が平らに見えた（G2 2026-11-26）
+test("全国勝率の推移の縦軸は0から始めず、値の幅に合わせる", async ({ page }) => {
+  await page.goto("/racer/4320");
+  const chart = page.locator(".racer-stat-chart", {
+    has: page.locator("h3", { hasText: "全国勝率の推移" }),
+  });
+  const ticks = chart.locator(".recharts-yAxis-tick-labels text");
+  await expect(ticks.first()).toBeVisible({ timeout: 30000 });
+  const values = (await ticks.allTextContents()).map(Number);
+  expect(values).not.toContain(0);
+  expect(Math.max(...values) - Math.min(...values)).toBeLessThanOrEqual(8);
+});
+
 test("ニュースが0件の選手にはニュースの節が無く、ある選手には出る", async ({
   page,
 }) => {
