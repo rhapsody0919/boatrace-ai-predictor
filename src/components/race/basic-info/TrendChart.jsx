@@ -172,13 +172,20 @@ function PickLayer({ picked, px, y, selected, W, pointer }) {
 
 /**
  * @param {{ seriesByBoat: Map<number, Array<object>>, metric: string, selected: number,
- *   scale?: ReturnType<typeof trendScaleOf> }} props scale を渡さなければ metric の既定の尺度
+ *   scale?: ReturnType<typeof trendScaleOf>, label?: string,
+ *   renderOver?: (g: {x: Function, y: Function, W: number, pad: object, sel: Array<object>}) => any,
+ *   renderBelow?: (g: {x: Function, W: number, pad: object, sel: Array<object>}) => any }} props
+ *   scale を渡さなければ metric の既定の尺度。label は図の読み上げの名前（無ければ基本情報の題）。
+ *   renderOver は線の下に重ねる SVG、renderBelow は図の下に描く物（どちらも図と同じ横の座標 x(i, len)）
  */
 export default function TrendChart({
   seriesByBoat,
   metric,
   selected,
   scale = trendScaleOf(metric),
+  label,
+  renderOver,
+  renderBelow,
 }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
@@ -206,9 +213,12 @@ export default function TrendChart({
         className="trc-svg"
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={t("basicInfo.trend.title", {
-          metric: t(`basicInfo.metrics.${metric}`),
-        })}
+        aria-label={
+          label ??
+          t("basicInfo.trend.title", {
+            metric: t(`basicInfo.metrics.${metric}`),
+          })
+        }
       >
         <GridLines
           ticks={ticks}
@@ -233,6 +243,8 @@ export default function TrendChart({
           {scale.unitKey ? t(scale.unitKey) : scale.unit}
         </text>
         <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
+        {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
+        {renderOver?.({ x, y, W, pad: PAD, sel })}
         {order.map((boat) => (
           <Line
             key={boat}
@@ -261,6 +273,8 @@ export default function TrendChart({
           pointer={pointer}
         />
       </svg>
+      {/* 使う側が図の下に描く物（選んだ艇の走ごとの行・モーターの段など）。横の座標は図と同じ */}
+      {renderBelow?.({ x, W, pad: PAD, sel })}
       {picked && (
         <TrendTooltip
           point={picked}
