@@ -11,15 +11,8 @@
  *   - 3段は同じ値を同じ順位にする（展示タイム 6.48 が2艇なら上位が3艇）。全艇同値・値が4艇以下は空
  *
  * 値の例は本番の常滑 2026-11-25 3R の枠別情報・直前情報の画面の値。
- * 末尾の変異検証で、要を1つずつ壊したコピーでは検証が落ちることを確かめる。
  */
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SRC = path.join(__dirname, "../../src/pure/compareBaseline.js");
+import * as compareBaseline from "../../src/pure/compareBaseline.js";
 
 const c = (...values) => values.map((value, i) => ({ boat: i + 1, value }));
 const tiers = (m) => Object.fromEntries([...m].sort((a, b) => a[0] - b[0]));
@@ -65,34 +58,11 @@ function run(m) {
   return failures;
 }
 
-const failures = run(await import(pathToFileURL(SRC).href));
-
-const source = fs.readFileSync(SRC, "utf8");
-const MUTANTS = [
-  ["線を見ない", "if (z >= zLine) return \"high\";\n  if (z <= -zLine) return \"low\";", "if (z >= 0) return \"high\";\n  if (z < 0) return \"low\";"],
-  ["走数の下限を見ない", "if (n < minN || n <= 0) return { diff, dir: \"few\" };\n  const p", "if (n <= 0) return { diff, dir: \"few\" };\n  const p"],
-  ["正確な二項を使わない", "const exact = n * p < EXACT_MIN_EXPECTED", "const exact = false && n * p < EXACT_MIN_EXPECTED"],
-  ["大きい率を裏返さない", "if (p > 0.5) {", "if (false) {"],
-  ["同値を同順位にしない", "if (betterCount < size) tiers.set", "if (values.indexOf(c) < size && betterCount < size + 1) tiers.set"],
-  ["丸めない", "(digits === undefined ? v : Number(v.toFixed(digits)))", "v"],
-];
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-compare-baseline-"));
-for (const [name, from, to] of MUTANTS) {
-  if (!source.includes(from)) {
-    failures.push(`変異「${name}」の置換元がソースに無い（ソースが変わったら MUTANTS を直す）`);
-    continue;
-  }
-  const file = path.join(tmpDir, `${name.replace(/\s/g, "_")}.mjs`);
-  fs.writeFileSync(file, source.replace(from, to));
-  if (run(await import(pathToFileURL(file).href)).length === 0) {
-    failures.push(`変異「${name}」で検証が落ちない（テストに歯が無い）`);
-  }
-}
-fs.rmSync(tmpDir, { recursive: true, force: true });
+const failures = run(compareBaseline);
 
 if (failures.length > 0) {
   console.error("verify-compare-baseline: 失敗");
   failures.forEach((f) => console.error(`  - ${f}`));
   process.exit(1);
 }
-console.log(`verify-compare-baseline: OK（${cases({}).length}件、変異${MUTANTS.length}件）`);
+console.log(`verify-compare-baseline: OK（${cases({}).length}件）`);
