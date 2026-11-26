@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * 費用の警報を束ねて Slack に1行ずつ出す CLI（hq の dashboard-alerts の費用の警報の移し、2026-11-25 窓口の依頼）。
- * 判定は cost-alerts-month.js（月の見込み・サービス別の上限）と cost-alerts-other.js（前払い・急増・取得・期限）。
+ * 判定は cost-alerts-month.js（月の見込み・サービス別の上限）と cost-alerts-other.js（前払い・急増・取得・期限）と
+ * cost-alerts-monthly.js（API で取れない請求を月の初めに見に行く知らせ。Supabase）。
  * launchd（com.terukina.ryujin.fetch-costs）の同じ回で fetch-costs.js の後に回す。
  *
  * - 材料: リポジトリの外 ~/.config/ryujin/private/costs/（RYUJIN_COSTS_DIR）の costs.jsonl・budgets.json・fetch-state.json
@@ -16,6 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { monthAlerts } from "./cost-alerts-month.js";
+import { monthlyChecks } from "./cost-alerts-monthly.js";
 import { otherAlerts } from "./cost-alerts-other.js";
 
 export const WEBHOOK_KEYCHAIN = { service: "hq-slack-webhook", account: "hq" };
@@ -24,6 +26,7 @@ export const WEBHOOK_KEYCHAIN = { service: "hq-slack-webhook", account: "hq" };
 export const costAlerts = (cfg, rows, fetchState, today) => [
   ...monthAlerts(cfg, rows, today),
   ...otherAlerts(cfg, rows, fetchState, today),
+  ...monthlyChecks(today),
 ];
 
 /** まだ出していない警報だけ */
