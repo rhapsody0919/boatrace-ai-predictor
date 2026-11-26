@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2981,
-    "filesWithAccess": 330,
-    "tableReaders": 974,
+    "sourceFiles": 2983,
+    "filesWithAccess": 331,
+    "tableReaders": 975,
     "tableWriters": 200,
     "rpcCallers": 58,
     "nameMentions": 286,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 14,
+    "notInSnapshot": 15,
     "unresolved": 38,
     "parseErrors": 0,
     "uncoveredFiles": 57
@@ -30361,6 +30361,13 @@
       "name": "site_feedback",
       "refs": [
         "src/services/analogyFeedback.js:35"
+      ]
+    },
+    {
+      "kind": "table",
+      "name": "site_feedback_hourly",
+      "refs": [
+        "scripts/maintenance/content-ops-checks/check-site-feedback-received.js:56"
       ]
     },
     {
