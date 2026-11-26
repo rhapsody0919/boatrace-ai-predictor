@@ -1,0 +1,59 @@
+/* 3着以内のレースの3連単配当（RacerTrifectaInvolvement.jsx・RacerTrifectaChart.jsx）。クラスは rti- で始める（verify-css-class-collisions）。
+   数字は右揃え・等幅、単位は小さい灰の字（design-system.md「表とグラフ」5、visual-designer 2026-11-26） */
+.rti-table th,
+.rti-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding-left: var(--spacing-1);
+  padding-right: var(--spacing-1);
+}
+
+.rti-table thead th {
+  vertical-align: bottom;
+  line-height: 1.25;
+}
+
+.rti-table th[scope="row"],
+.rti-table thead th:first-child {
+  text-align: left;
+}
+
+.rti-total th,
+.rti-total td {
+  font-weight: var(--font-weight-bold);
+  border-top: 2px solid var(--border-hairline);
+}
+
+.rti-unit {
+  margin-left: 1px;
+  font-size: 0.78em;
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+
+.rti-trend {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.rti-trend-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rti-trend-sub {
+  margin: var(--spacing-1) 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rti-chart {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
