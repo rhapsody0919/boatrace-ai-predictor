@@ -59,44 +59,43 @@ function tally(counts, cut) {
   return per;
 }
 
+const isDown = (path, a) => SHIP.includes(path) && a.f5 >= 2 && a.ok === 0;
+const isUnrecovered = (path, a, settled) =>
+  (path.includes("-dispatch") || path === WATCHER) &&
+  a.f5 >= 1 &&
+  a.last5 < settled &&
+  !(a.lastOk && a.lastOk >= a.last5);
+const isMostlyFailing = (a) =>
+  (a.ok === 0 && (a.f5 >= 1 || a.f4 >= 2)) ||
+  (a.f4 + a.f5 >= RATE_MIN && a.f4 + a.f5 >= RATE * (a.ok + a.f4 + a.f5));
+
 /** 経路1本の警報（無ければ null）。settled はこの時間より前の失敗だけ「戻っていない」と見る（拾い直しを待つ） */
 function judgePath(path, a, settled) {
-  const fails = a.f4 + a.f5;
-  if (fails === 0) return null;
-  const name = path.split("/").pop();
+  if (a.f4 + a.f5 === 0) return null;
   const codes = Object.entries(a.codes)
     .sort(([x], [y]) => (x < y ? -1 : 1))
     .map(([k, v]) => `${k} ${v}回`)
     .join("・");
   const day = jstDay(a.first5 ?? a.first4);
-  const head = `Vercel Cron ${name} が直近24時間で失敗（${codes}、成功 ${a.ok}回、${day} から）`;
+  const head = `Vercel Cron ${path.split("/").pop()} が直近24時間で失敗（${codes}、成功 ${a.ok}回、${day} から）`;
   const alert = (prefix, level, text) => ({
     key: `${prefix}:${path}:${day}`,
     level,
     text: `${head}。${text}`,
   });
-  const recovered = a.lastOk && a.lastOk >= a.last5;
-  if (SHIP.includes(path) && a.f5 >= 2 && a.ok === 0)
+  if (isDown(path, a))
     return alert(
       "cron_down",
       "high",
       `定時と拾い直しが両方落ちて本番の出荷が止まっている。Vercel のログ（${path}）を見る。鍵・環境変数ならオーナー`,
     );
-  if (
-    (path.includes("-dispatch") || path === WATCHER) &&
-    a.f5 >= 1 &&
-    a.last5 < settled &&
-    !recovered
-  )
+  if (isUnrecovered(path, a, settled))
     return alert(
       "cron_fail",
       "mid",
       `最後の失敗の後に成功が無い（${path === WATCHER ? "見張り自身の失敗" : "拾い直しも戻っていない"}）。Vercel のログを見る`,
     );
-  if (
-    (a.ok === 0 && (a.f5 >= 1 || a.f4 >= 2)) ||
-    (fails >= RATE_MIN && fails >= RATE * (a.ok + fails))
-  )
+  if (isMostlyFailing(a))
     return alert(
       "cron_fail",
       "mid",
