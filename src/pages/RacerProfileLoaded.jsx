@@ -41,16 +41,19 @@ export default function RacerProfileLoaded({
         racerId={racerId}
         isInya={front.frontTaking?.isInya === true}
       />
-      {data.profile && <RacerTodayRuns racerId={racerId} periodRows={period.periodRows} />}
-      {data.profile && !period.periodFailed && (
-        <RacerSummaryBlock
-          racerId={racerId}
-          grade={data.grade}
-          // 期別の行が届く前は undefined（取得中）、届いて出走が無ければ null
-          summary={period.periodRows ? summary : undefined}
-          front={front.frontTaking}
-        />
-      )}
+      {/* PC（1200px 以上）で今日の出走｜成績の要約の2列にする包み。1199px 以下は display: contents（RacerProfile.css） */}
+      <div className="racer-profile-top">
+        {data.profile && <RacerTodayRuns racerId={racerId} periodRows={period.periodRows} />}
+        {data.profile && !period.periodFailed && (
+          <RacerSummaryBlock
+            racerId={racerId}
+            grade={data.grade}
+            // 期別の行が届く前は undefined（取得中）、届いて出走が無ければ null
+            summary={period.periodRows ? summary : undefined}
+            front={front.frontTaking}
+          />
+        )}
+      </div>
       {data.profile && <RacerPageToc />}
       <div id="racer-profile">
         <RacerProfileCard profile={data.profile} racerId={racerId} />
