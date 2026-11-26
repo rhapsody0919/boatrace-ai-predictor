@@ -15,7 +15,7 @@ const BOATS = [1, 2, 3, 4, 5, 6];
  * 会場・枠番・グレード・レース種別の完全一致（null は絞り込みなし）。
  * racerVenueBoatStats.js の matchesRacerFilter と同じ
  */
-function matchesFilter(row, { venueCode, boatNumber, raceGrade, raceStage }) {
+export function matchesFilter(row, { venueCode, boatNumber, raceGrade, raceStage }) {
   if (venueCode && row.venueCode !== venueCode) return false;
   if (boatNumber && row.boatNumber !== boatNumber) return false;
   if (raceGrade && row.raceGrade !== raceGrade) return false;
