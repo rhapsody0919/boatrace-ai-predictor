@@ -52,3 +52,94 @@
     padding: 0.65rem 0.75rem;
   }
 }
+
+/* ホームの PC（1200px 以上）: 主役の会場の一覧を左に、短い案内（初めての方へ・SG の帯・お気に入り・
+   本日のデータ一覧・紹介の帯）を右の列に置き、会場の一覧を最初の画面に入れる（G3 の点検 2026-11-26。
+   1列のままだと会場の一覧の上端が 1472px、初めての人で 2695px だった）。長いイン崩れ注意度は2列の下に全幅で置く。
+   DOM の順は変えず grid の置き場だけを決めるので、1199px 以下は今のまま */
+.home-today-board {
+  display: contents;
+}
+
+@media (min-width: 1200px) {
+  .home-today-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 27vw, 400px);
+    /* 会場の一覧（1〜5行目にまたがる）が右より高いとき、余りを空の行（2回目以降の1行目等）に
+       配らず5行目へ寄せる。配ると右の列の頭が左より数px 下がった */
+    grid-template-rows: auto auto auto auto 1fr auto;
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+
+  .home-today-board > * {
+    grid-column: 1 / -1;
+  }
+
+  .home-today-board > .venue-grid {
+    grid-column: 1;
+    grid-row: 1 / 6;
+    margin-top: 0;
+  }
+
+  .home-today-board > .first-visit-guide-card {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .home-today-board > .sg-now-banner {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .home-today-board > .favorite-runs {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .home-today-board > .home-digest-link {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+  .home-today-board > .intro-banner {
+    grid-column: 2;
+    grid-row: 5;
+  }
+
+  .home-today-board > .volatility-highlights {
+    grid-row: 6;
+    margin-top: 1.5rem;
+  }
+
+  .home-today-board
+    > :is(
+      .first-visit-guide-card,
+      .sg-now-banner,
+      .favorite-runs,
+      .home-digest-link,
+      .intro-banner
+    ) {
+    margin: 0 0 1rem;
+    max-width: none;
+    width: auto;
+  }
+
+  /* 右の列（約360px）では縦長の動画が約650px になり、右だけが長くなる */
+  .home-today-board > .first-visit-guide-card .guide-video {
+    max-height: 440px;
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+/* 1200〜1439px は左の列が約780px。4列だとカードが約190px で節の名前が切れるので3列にする */
+@media (min-width: 1200px) and (max-width: 1439px) {
+  /* 列の数は calc() の auto-fit で決める（verify-code-pitfalls）。24会場なので列は3で埋まる */
+  .home-today-board > .venue-grid {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - 2 * 0.5rem) / 3), 1fr)
+    );
+  }
+}
