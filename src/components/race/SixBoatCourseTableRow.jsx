@@ -1,5 +1,8 @@
 import { useTranslation } from "react-i18next";
 import BoatBadge from "./BoatBadge";
+import CompareBar from "../dataDisplay/CompareBar";
+import { judgeRateVsBaseline } from "../../pure/compareBaseline.js";
+import { SIX_BOAT_WARN_ENTRIES } from "../../pure/sixBoatCourseStats.js";
 
 const rate = (value) => (value == null ? "—" : value.toFixed(1));
 // 10走未満（reliability "none"）は率を出さない（spec §1.2）。直近3期は純関数が null にしているが、
@@ -22,7 +25,20 @@ function PendingCell({ reliability, text }) {
   );
 }
 
-function RateCells({ row, text, diffTitle }) {
+// 全国の同じコースとの差が偶然の幅を超えたかの向き（意味づけ 2026-11-26）。差を出す線未満は few。
+// 当地（isLocal）は棒と差だけで色を付けない（当地の得意が翌年も続くかは未検証）
+function barDir(row, isLocal) {
+  if (row.reliability !== "ok") return "few";
+  if (isLocal) return "unclear";
+  return judgeRateVsBaseline({
+    rate: row.winRate, baseline: row.avg, n: row.entries, minN: SIX_BOAT_WARN_ENTRIES[row.course],
+  })?.dir ?? "unclear";
+}
+
+function RateCells({ row, text, diffTitle, isLocal }) {
+  const winRate = shown(row, "winRate");
+  const barDiff = winRate == null || row.avg == null ? null : winRate - row.avg;
+  const dir = barDiff == null ? null : barDir(row, isLocal);
   return (
     <>
       <td>
@@ -36,7 +52,15 @@ function RateCells({ row, text, diffTitle }) {
                 value: `${row.diff >= 0 ? "+" : ""}${row.diff.toFixed(1)}`,
               })}
         </small>
-        <small>{text("avg", { value: rate(row.avg) })}</small>
+        {barDiff == null ? (
+          <small>{text("avg", { value: rate(row.avg) })}</small>
+        ) : (
+          <CompareBar
+            diff={barDiff}
+            dir={dir}
+            baseLabel={text("avg", { value: rate(row.avg) })}
+          />
+        )}
       </td>
       <td className="six-boat-course-rate">{rate(shown(row, "top2Rate"))}</td>
       <td className="six-boat-course-rate">{rate(shown(row, "top3Rate"))}</td>
@@ -56,6 +80,7 @@ export default function SixBoatCourseTableRow({
   player,
   text,
   diffTitle,
+  isLocal,
   focusedBoat,
   onFocusBoat,
 }) {
@@ -81,7 +106,7 @@ export default function SixBoatCourseTableRow({
       {pending ? (
         <PendingCell reliability={row.reliability} text={text} />
       ) : (
-        <RateCells row={row} text={text} diffTitle={diffTitle} />
+        <RateCells row={row} text={text} diffTitle={diffTitle} isLocal={isLocal} />
       )}
     </tr>
   );
