@@ -163,7 +163,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dataHealth/functions.js` | 汎用の日次監視（data_health）が呼ぶDB関数の定義（SQLの正本）。 | renderFunctionDdl, renderInlineSql, MAX_RANGE_DAYS, DATA_HEALTH_FUNCTIONS, functionByName ほか1件 |
 | `scripts/lib/dataHealth/job.js` | 汎用の日次監視 data_health（完了の定義C）の実行。api/cron/data-health.js が、共通ラッパ | createRpcCaller, readDeliveredKeys, runDataHealthChecks, DATA_HEALTH_JOB, DATA_HEALTH_MORNING_JOB ほか3件 |
 | `scripts/lib/dataHealth/jobParts.js` | job.js（runDataHealthChecks）の部品。関数の呼び出し計画・項目の判定・通知の候補・報告の組み立てを、 | planFunctionRanges, judgeCheck, countStatuses, callFunctions, TABLE_ROWS_FN ほか1件 |
-| `scripts/lib/dataHealth/tableSql.js` | 空でないことを確認するテーブル（data_health_table_rows）。テーブルを足すときは、 | TABLE_ROWS_TABLES |
+| `scripts/lib/dataHealth/tableSql.js` | 空でないことを確認するテーブル（data_health_table_rows）。テーブルを足すときは、 | TABLE_ROWS_TABLES, SITE_FEEDBACK_BUSY_HOUR |
 | `scripts/lib/dataHealth/workflowCoverage.js` | Environment prod-jobs を使う workflow（.github/workflows）の、data_health への登録の一覧。 | usesProdJobs, findCoverageProblems, WORKFLOW_EXCLUSIONS |
 | `scripts/lib/dataReaders.js` | — | isSourceFile, pythonMentions, LEDGER_JSON, LEDGER_MD, EXTRA_FILE ほか1件 |
 | `scripts/lib/dataReadersAccess.js` | — | stripSqlNoise, sqlTableRefs, relationAccess, functionAccess, resolveImport ほか3件 |
@@ -690,4 +690,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 648 ファイル / export 3488 件。
+対象 648 ファイル / export 3489 件。

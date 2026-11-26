@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2989 |
+| 読んだファイル | 2990 |
 | 読み書きのあるファイル | 331 |
 | 表の読み手（箇所） | 975 |
 | 表の書き手（箇所） | 200 |
@@ -155,17 +155,17 @@
 | compute_today_course_win_stats | service だけ |  | scripts/lib/morningDigestFetch.js:180 |  | race_entries, race_results, races |  |  |
 | compute_venue_course_entry_baseline | service だけ |  | なし |  | race_entries, race_results, races |  |  |
 | compute_venue_course_technique_baseline | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:349 |  | race_entries, race_results, races |  |  |
-| data_health_cancellation_with_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:355, scripts/lib/dataHealth/functions.js:118 |  | race_results, races |  |  |
-| data_health_coverage | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:72, scripts/lib/dataHealth/functions.js:53, scripts/maintenance/verifyData/data-health-job-fixtures.js:76 ほか6 |  | exhibition_data, race_conditions, race_odds, race_results, race_start_timings, races |  |  |
-| data_health_entries_duplicates | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:335, scripts/lib/dataHealth/functions.js:109 |  | race_entries, race_results, races |  |  |
-| data_health_monthly_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:382, scripts/lib/dataHealth/functions.js:98, scripts/maintenance/verifyData/data-health-job-for-job.js:42 ほか1 |  | race_results, races |  |  |
+| data_health_cancellation_with_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:355, scripts/lib/dataHealth/functions.js:119 |  | race_results, races |  |  |
+| data_health_coverage | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:72, scripts/lib/dataHealth/functions.js:54, scripts/maintenance/verifyData/data-health-job-fixtures.js:76 ほか6 |  | exhibition_data, race_conditions, race_odds, race_results, race_start_timings, races |  |  |
+| data_health_entries_duplicates | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:335, scripts/lib/dataHealth/functions.js:110 |  | race_entries, race_results, races |  |  |
+| data_health_monthly_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:413, scripts/lib/dataHealth/functions.js:99, scripts/maintenance/verifyData/data-health-job-for-job.js:42 ほか1 |  | race_results, races |  |  |
 | data_health_morning_freshness | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:211, scripts/lib/dataHealth/checks.js:220, scripts/lib/dataHealth/checks.js:230 ほか4 |  | analogy_v16_snapshots, bet_recommendations, poirot_predictions, races |  |  |
-| data_health_nightly_freshness | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:111, scripts/lib/dataHealth/functions.js:127, scripts/maintenance/verifyData/data-health-job-scenes-2.js:39 ほか3 |  | accuracy_cache, bet_recommendations, exhibition_time_top_stats, losing_technique_stats, model_performance_daily, nige_outcome_distribution, nige_second_by_course, outcome_distribution, race_conditions, race_history_cache, race_results, racer_aggregated_stats, racer_grade_cache, racer_series_points, races, st_course_baseline, top_start_stats, venue_grade_boat_stats, venue_technique_period_stats, venues, winning_technique_stats |  |  |
-| data_health_pit_reports | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:280, scripts/lib/dataHealth/functions.js:71, scripts/maintenance/verifyData/data-health-job-scenes-1.js:231 ほか2 |  | race_pit_reports, races |  |  |
-| data_health_pre_race_fields | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:254, scripts/lib/dataHealth/checks.js:267, scripts/lib/dataHealth/functions.js:62 ほか1 |  | race_conditions, race_entries, races |  |  |
-| data_health_race_series | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:305, scripts/lib/dataHealth/functions.js:80, scripts/maintenance/verifyData/data-health-job-scenes-1.js:250 ほか3 |  | race_series, races |  |  |
-| data_health_racer_period_stats | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:316, scripts/lib/dataHealth/functions.js:89, scripts/maintenance/verifyData/data-health-job-scenes-1.js:267 |  | race_entries, racer_period_stats, races |  |  |
-| data_health_table_rows | service だけ |  | 名前の文字列: scripts/lib/dataHealth/functions.js:147, scripts/lib/dataHealth/jobParts.js:10, scripts/maintenance/verifyData/data-health-job-fixtures.js:77 ほか2 |  | exhibition_data, external_predictions, race_conditions, race_entries, race_odds, race_payouts, race_pit_reports, race_results, race_series, race_special_notes, race_start_timings, racer_period_stats, racer_profiles, racer_series_points, races, venue_entry_course_stats, venue_motor_stats |  |  |
+| data_health_nightly_freshness | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:111, scripts/lib/dataHealth/functions.js:137, scripts/maintenance/verifyData/data-health-job-scenes-2.js:39 ほか3 |  | accuracy_cache, bet_recommendations, exhibition_time_top_stats, losing_technique_stats, model_performance_daily, nige_outcome_distribution, nige_second_by_course, outcome_distribution, race_conditions, race_history_cache, race_results, racer_aggregated_stats, racer_grade_cache, racer_series_points, races, st_course_baseline, top_start_stats, venue_grade_boat_stats, venue_technique_period_stats, venues, winning_technique_stats |  |  |
+| data_health_pit_reports | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:280, scripts/lib/dataHealth/functions.js:72, scripts/maintenance/verifyData/data-health-job-scenes-1.js:231 ほか2 |  | race_pit_reports, races |  |  |
+| data_health_pre_race_fields | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:254, scripts/lib/dataHealth/checks.js:267, scripts/lib/dataHealth/functions.js:63 ほか1 |  | race_conditions, race_entries, races |  |  |
+| data_health_race_series | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:305, scripts/lib/dataHealth/functions.js:81, scripts/maintenance/verifyData/data-health-job-scenes-1.js:250 ほか3 |  | race_series, races |  |  |
+| data_health_racer_period_stats | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:316, scripts/lib/dataHealth/functions.js:90, scripts/maintenance/verifyData/data-health-job-scenes-1.js:267 |  | race_entries, racer_period_stats, races |  |  |
+| data_health_table_rows | service だけ |  | 名前の文字列: scripts/lib/dataHealth/functions.js:157, scripts/lib/dataHealth/jobParts.js:10, scripts/maintenance/verifyData/data-health-job-fixtures.js:77 ほか2 |  | exhibition_data, external_predictions, race_conditions, race_entries, race_odds, race_payouts, race_pit_reports, race_results, race_series, race_special_notes, race_start_timings, racer_period_stats, racer_profiles, racer_series_points, races, venue_entry_course_stats, venue_motor_stats |  |  |
 | enqueue_sns_metric_jobs | service だけ |  | トリガー: sns_x_send_jobs |  | sns_drafts | sns_metric_jobs |  |
 | ensure_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:134, scripts/maintenance/verify-scrape-slots-on-db.js:54 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:16, scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133, scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:315 |  | races | scrape_slots |  |
 | fetch_counts_daily | service だけ |  | なし |  | fetch_counts |  |  |
