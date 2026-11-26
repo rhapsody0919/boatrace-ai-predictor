@@ -10,9 +10,9 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2942 |
+| 読んだファイル | 2944 |
 | 読み書きのあるファイル | 329 |
-| 表の読み手（箇所） | 973 |
+| 表の読み手（箇所） | 974 |
 | 表の書き手（箇所） | 200 |
 | RPC の呼び手（箇所） | 57 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
@@ -74,7 +74,7 @@
 | [race_payouts](#t-race_payouts) | table | anon 可 | 3 | 2 | data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light |  | kfile_sync, result, result_catchup |  |
 | [race_pit_comments](#t-race_pit_comments) | table | anon 可 | 2 | 2 |  |  | pit_reports |  |
 | [race_pit_reports](#t-race_pit_reports) | table | anon 可 | 4 | 1 | data_health_pit_reports, data_health_table_rows |  | pit_reports |  |
-| [race_results](#t-race_results) | table | anon 可 | 113 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, result, result_catchup |  |
+| [race_results](#t-race_results) | table | anon 可 | 114 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, result, result_catchup |  |
 | [race_series](#t-race_series) | table | anon 可 | 17 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
 | [race_special_notes](#t-race_special_notes) | table | service だけ | 1 | 1 | data_health_table_rows |  | race_notices |  |
 | [race_start_timings](#t-race_start_timings) | table | anon 可 | 29 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, result, result_catchup |  |
@@ -1144,7 +1144,7 @@
 - 本体で読む RPC: compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats, compute_venue_course_entry_baseline, compute_venue_course_technique_baseline, data_health_cancellation_with_result, data_health_coverage, data_health_entries_duplicates, data_health_monthly_result, data_health_nightly_freshness, data_health_table_rows, get_admin_rule_performance, get_predictions_by_date, get_predictions_by_date_light, get_race_return_rate, get_race_technique_profile, get_today_races, update_venue_stats
 - 取得のジョブ: kfile_sync, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:76`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:10`, `scripts/lib/raceResultSchema.js:25`, `scripts/maintenance/delete-phantom-races.js:74`, `scripts/maintenance/fix-opening-day-race-id-date.js:69`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:42`
-- 読み手（113）: 
+- 読み手（114）: 
   - `api/_lib/snsClaimCheckReaders.js:316` rest(rest) [race_id, rank1]
   - `scripts/analysis/aggregate-racer-stats.js:81` select(helper:fetchAll)
   - `scripts/analysis/analogy-finder-md6/export-actual-course.js:20` select(helper:fetchAll)
@@ -1254,6 +1254,7 @@
   - `src/services/racerQueries2.js:188` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:323` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:37` select(helper:fetchAllByIn)
+  - `src/services/racerQueries3.js:371` select(helper:fetchAllByIn)
   - `src/services/racerQueries6.js:35` select(helper:selectByRaceIds)
   - `src/services/ruleMatchService.js:146` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
   - `src/services/venueQueries2.js:57` select(helper:fetchAllByIn)

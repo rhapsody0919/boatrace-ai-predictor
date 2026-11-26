@@ -65,7 +65,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/raceModel.js` | — | makeRaceEntry, makeRace |
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
-| `src/pure/racerBoatReturns.js` | 選手ページの枠番別回収率（表と、枠番ごとの通算の推移）を、絞り込みが効く走ごとの履歴から数える | boatReturnRows, boatReturnSeries, boatTopWinShares, BIG_WIN_PAYOUT |
+| `src/pure/racerBoatReturns.js` | 選手ページの枠番別回収率（表と、枠番ごとの通算の推移）を、絞り込みが効く走ごとの履歴から数える | matchesFilter, boatReturnRows, boatReturnSeries, boatTopWinShares, BIG_WIN_PAYOUT |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
 | `src/pure/racerConditionDiff.js` | — | twoGroupZ, isConditionDiffSignificant, COND_RATE_MIN_RUNS, COND_Z_CRITICAL |
 | `src/pure/racerEntryCourseFilter.js` | 選手ページの成績の絞り込み「進入コース」（オーナー 2026-11-25）。 | filterByEntryCourse, entryCourseCounts, firstEntryCourseDate, ENTRY_COURSES |
@@ -76,6 +76,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerTodayContext.js` | 選手ページの「今日の出走」の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地成績・今節の着順。 | pickContextRun, courseCell, venueCell, meetFinishes, SMALL_RUNS |
 | `src/pure/racerTodayRuns.js` | — | splitTodayRaceId, finishLabelOf, buildRacerTodayRuns, todayRunsMeetLabel |
 | `src/pure/racerTrendSeries.js` | 選手の成績の「推移の線」（直近 N 走ごとの移動）を作る（2026-11-24 オーナー決定、モック改訂3）。 | trendSeries, trendGapIndexes, TREND_WINDOW, TREND_MAX_POINTS, TREND_GAP_DAYS ほか1件 |
+| `src/pure/racerTrifectaInvolvement.js` | 選手ページの「3着以内のレースの3連単配当」（表と通算の推移）を、絞り込みが効く走ごとの履歴から数える | trifectaInvolvementRows, trifectaInvolvementSeries, MANSHU_PAYOUT, TRIFECTA_TREND_START |
 | `src/pure/racerWinRateSteps.js` | 選手の勝率の推移を公式の期ごとの段で出すための形（2026-11-24 オーナー決定「勝率は期ごとの段」）。 | winRateSteps, stepLabelParts |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
@@ -665,7 +666,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/raceQueries4.js` | — | getRaceStartTimings, getRacePitReport, getRaceOriginalExhibition |
 | `src/services/racerQueries.js` | — | fetchRacerEntriesSince, getRacerFormTrend, getRacerFormSummary, getRacerTechniqueProfile, getRacerAggregatedStats ほか5件 |
 | `src/services/racerQueries2.js` | — | getRacerVenueStats, getRacerScopedRaceStats, getRacerRaceHistory |
-| `src/services/racerQueries3.js` | — | getRacerBoatReturnRate, getStDeviationTrend, getExhibitionTimeTrend, getTodaysRacerFormRanking |
+| `src/services/racerQueries3.js` | — | getRacerBoatReturnRate, getStDeviationTrend, getExhibitionTimeTrend, getTodaysRacerFormRanking, getRaceTrifectaPayouts |
 | `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords, fetchRacerScopedRunsOrNull, fetchRacerFrontTakingCountsOrNull |
 | `src/services/racerQueries5.js` | — | getRacerPageData, getRacerAllPeriodStats, getRacerStats |
 | `src/services/racerQueries6.js` | — | getRacerTodayRuns, getRaceFrontTakingByRacer, getRacerLatestEntry |
@@ -684,4 +685,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 642 ファイル / export 3457 件。
+対象 643 ファイル / export 3463 件。
