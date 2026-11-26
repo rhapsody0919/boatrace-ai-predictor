@@ -480,6 +480,10 @@
       "toolsIntroSonarOnly": "In Ryujin Sonar, you can check the results of past races under close conditions, and the past rates when you change the entry or start pattern.",
       "faqTitle": "Frequently asked questions",
       "faq": {
+        "q6": "Are the AI predictions accurate?",
+        "a6": "Some predictions hit and some miss, and no result is guaranteed. The record of predictions checked against actual race results, including misses, is published on the results page (in Japanese).",
+        "q7": "What data does the AI look at to make predictions?",
+        "a7": "It compares, race by race, each racer's win rate and class, the motor's and boat's top-2 rates, exhibition times and exhibition starts, average start timing, wind and waves, and more.",
         "q1": "Can I see the AI boat race predictions for free?",
         "a1": "Ryujin Radar's AI predictions are free, with no sign-up required. The past rates in Ryujin Sonar, and racers' records and past tendencies in Thinking Assist, can also be checked without signing up.",
         "a1SonarOnly": "Ryujin Radar's AI predictions are free, with no sign-up required. The past rates in Ryujin Sonar can also be checked without signing up.",
