@@ -126,6 +126,20 @@ function readOrNull(file) {
   return existsSync(file) ? readFileSync(file, "utf8") : null;
 }
 
+/** このセッションの一枚（書く先・中身・読んだ元） */
+function progressFor(sessionId, branch) {
+  const dir =
+    process.env.RYUJIN_PROGRESS_DIR ||
+    path.join(os.homedir(), ".config/ryujin/progress");
+  const chosen = chooseProgressFile({
+    sessionFile: sessionProgressPath(sessionId, dir),
+    branchFile: progressPath(branch, dir),
+    exists: existsSync,
+  });
+  const content = chosen.read === null ? null : readOrNull(chosen.read);
+  return { file: chosen.write, content, from: chosen.read ?? chosen.write };
+}
+
 function main(event) {
   const payload = JSON.parse(readFileSync(0, "utf8"));
   if (payload?.agent_id) return;
@@ -135,21 +149,12 @@ function main(event) {
     path.resolve(cwd, git(cwd, ["rev-parse", "--git-dir"])) !==
     path.resolve(cwd, git(cwd, ["rev-parse", "--git-common-dir"]));
   if (!applies({ branch, isLinkedWorktree })) return;
-  const dir =
-    process.env.RYUJIN_PROGRESS_DIR ||
-    path.join(os.homedir(), ".config/ryujin/progress");
-  const chosen = chooseProgressFile({
-    sessionFile: sessionProgressPath(payload?.session_id, dir),
-    branchFile: progressPath(branch, dir),
-    exists: existsSync,
-  });
-  const file = chosen.write;
-  const content = chosen.read === null ? null : readOrNull(chosen.read);
+  const { file, content, from } = progressFor(payload?.session_id, branch);
   if (event === "start") {
     const additionalContext = startContext({
       file,
       content,
-      from: chosen.read ?? file,
+      from,
     });
     process.stdout.write(
       JSON.stringify({
