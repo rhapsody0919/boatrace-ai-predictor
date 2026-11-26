@@ -28,6 +28,7 @@ node scripts/maintenance/session-start-check.js
 | `deprecatedTerms` | 廃止済み用語の残存件数 |
 | `contentIndexCoverage` / `missingContentIndex` | トレーサビリティ索引の欠落・形式エラー |
 | `schemaSnapshot` | 本番スキーマの写し `docs/reference/schema-snapshot.json` が7日以上古い（または本番と食い違う）か。食い違いは台帳 `APPLIED.md` で写しの後に適用済みになったファイルで見る（本番には接続しない） |
+| `siteUpdates` | 更新のお知らせ（`src/data/siteUpdates.js`）の最新の日付が7日以上前か。stale なら窓口が `site-updates-candidates.js` の候補からファンに見える変更を選んで足す PR を出す（11/22 で止まった、2026-11-26 オーナーの指摘） |
 
 窓口はあわせて、記事の定時の作業（オーナーの Mac の定期の作業 `seo-article`、毎日 JST 06:02）の前の回を見る。`mcp__scheduled-tasks__list_task_runs`（taskId `seo-article`）で最新の回の状態を見て、24時間以内に記事の PR（枝が `claude/content-`、manifest の `author.lane` が `routine:seo-article`）が出たかを `gh pr list` で確かめる。出ていなければ、その回のセッションを `mcp__ccd_session_mgmt__list_events` で読んで止まった理由を見て、最初の応答に1行で書く（定期の作業の回は、作った会話にしか知らせが来ないため。2026-11-24 オーナー。クラウドの routine は push の鍵が無いので使わない）。同じ止まり方が2回続いたら、GitHub の側の見張りに上げる案をオーナーに出す
 
