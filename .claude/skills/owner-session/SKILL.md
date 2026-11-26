@@ -28,6 +28,7 @@ node scripts/maintenance/session-start-check.js
 | `deprecatedTerms` | 廃止済み用語の残存件数 |
 | `contentIndexCoverage` / `missingContentIndex` | トレーサビリティ索引の欠落・形式エラー |
 | `schemaSnapshot` | 本番スキーマの写し `docs/reference/schema-snapshot.json` が7日以上古い（または本番と食い違う）か。食い違いは台帳 `APPLIED.md` で写しの後に適用済みになったファイルで見る（本番には接続しない） |
+| `siteUpdates` | 更新のお知らせ（`src/data/siteUpdates.js`）の最新の日付が7日以上前か。stale なら窓口が `site-updates-candidates.js` の候補からファンに見える変更を選んで足す PR を出す（11/22 で止まった、2026-11-26 オーナーの指摘） |
 
 窓口はあわせて、記事の定時の作業（オーナーの Mac の定期の作業 `seo-article`、毎日 JST 06:02）の前の回を見る。`mcp__scheduled-tasks__list_task_runs`（taskId `seo-article`）で最新の回の状態を見て、24時間以内に記事の PR（枝が `claude/content-`、manifest の `author.lane` が `routine:seo-article`）が出たかを `gh pr list` で確かめる。出ていなければ、その回のセッションを `mcp__ccd_session_mgmt__list_events` で読んで止まった理由を見て、最初の応答に1行で書く（定期の作業の回は、作った会話にしか知らせが来ないため。2026-11-24 オーナー。クラウドの routine は push の鍵が無いので使わない）。同じ止まり方が2回続いたら、GitHub の側の見張りに上げる案をオーナーに出す
 
@@ -320,6 +321,7 @@ pr-lane の heavy（H5 を含む）は、上の1〜4を満たせばこの道で�
 - 判断待ちの1枚 `~/.config/ryujin/private/owner-queue.md`（リポジトリの外）。オーナーに問うセッションが1行足し（日付・セッション名と id・問い・推奨）、答えを受けたセッションが同じ行を「済: 答えの要旨」に変える。窓口が起動したセッションへの指示文にもこの2つを書く
 - 窓口は、オーナーに問う前・「状況を整理して」に答える前にこの1枚を読む。済の行の問いは聞かない。ほかのセッションにも関わる答え（例: AI タブ・用語）は、窓口が関わるセッションへ伝える
 - 7日を過ぎた済の行は消してよい
+- 新機能・画面の判断（承認・案の選択）をオーナーに聞く返答には、その返答の中で画像（before/after の compare のライト、要ればダーク）を SendUserFile で添える。「送ってある」「共有ノートの○○」だけにしない。子セッションの承認待ちを取り次ぐときも、窓口が共有ノートから画像を探して添える（2026-11-26 オーナー「チャットをスクロールして探しに行っている」）
 - マイグレーションの適用（db-apply）を頼むときは、PR のリンクに加えて、ファイルのパス（`docs/db-migration/NNN_xxx.sql`）をそれだけの1行のコードブロックで毎回書く。複数ならファイルごとに別のブロック（2026-11-25 オーナー。スマホからコピペして db-apply に入れるため。番号だけの依頼で聞き返しが出た）
 - 子の通知が切れていたら、子の進捗の一枚 `~/.config/ryujin/progress/<枝の名の / を __ に>.md` を読む（子の claude/ の worktree で SessionStart・Stop の hook が持たせる。`scripts/maintenance/session-progress-file.js`）
 
