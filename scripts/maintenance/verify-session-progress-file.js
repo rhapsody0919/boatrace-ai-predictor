@@ -3,7 +3,9 @@
  * 枝ごとの判定（置き場・止める条件）は verify-session-progress.js が見る。ここは足した置き場の選び方と見出しだけ。
  */
 import {
+  branchLine,
   chooseProgressFile,
+  latestSameBranch,
   HEADINGS,
   sessionProgressPath,
   startContext,
@@ -100,6 +102,45 @@ check(
   "同じ一枚の続きなら移しの文を出さない",
   startContext({ file: "/p/s.md", content: "続き" }).includes("以後は"),
   false,
+);
+
+check(
+  "新しく始めたセッションは、同じ枝の前のセッションの一枚を読む（旧い枝の一枚より先）",
+  chooseProgressFile({
+    sessionFile: "/p/s2.md",
+    branchFile: "/p/b.md",
+    sameBranchFile: "/p/s1.md",
+    exists: has("/p/s1.md", "/p/b.md"),
+  }),
+  { write: "/p/s2.md", read: "/p/s1.md" },
+);
+check(
+  "同じ枝の一枚は1行目の branch: で照らし、最も新しい物を取る",
+  latestSameBranch(
+    [
+      { name: "/p/a.md", firstLine: branchLine("claude/x"), mtimeMs: 1 },
+      { name: "/p/b.md", firstLine: branchLine("claude/x"), mtimeMs: 2 },
+      { name: "/p/c.md", firstLine: branchLine("claude/y"), mtimeMs: 3 },
+      { name: "/p/self.md", firstLine: branchLine("claude/x"), mtimeMs: 4 },
+    ],
+    "claude/x",
+    "/p/self.md",
+  ),
+  "/p/b.md",
+);
+check(
+  "1行目に枝の名が無い一枚は拾わない",
+  latestSameBranch(
+    [{ name: "/p/a.md", firstLine: "# claude/x の作業", mtimeMs: 1 }],
+    "claude/x",
+    null,
+  ),
+  null,
+);
+check(
+  "新しい一枚の案内に1行目の書き方を出す",
+  startContext({ file: "/p/s.md", content: null }).includes("branch: <今の枝>"),
+  true,
 );
 
 if (failures.length > 0) {

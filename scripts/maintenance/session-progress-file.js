@@ -18,7 +18,7 @@
  * 検証: scripts/maintenance/verify-session-progress.js（進捗の一枚の節）
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,10 +50,37 @@ export function sessionProgressPath(sessionId, dir) {
  * 読む物は、セッションの一枚が無く枝の一枚（旧い置き方）があればそれ
  * @param {{sessionFile: string|null, branchFile: string, exists: (f: string) => boolean}} o
  */
-export function chooseProgressFile({ sessionFile, branchFile, exists }) {
+export function chooseProgressFile({
+  sessionFile,
+  branchFile,
+  exists,
+  sameBranchFile = null,
+}) {
   const write = sessionFile ?? branchFile;
-  const read = exists(write) ? write : exists(branchFile) ? branchFile : null;
+  const read = exists(write)
+    ? write
+    : sameBranchFile && exists(sameBranchFile)
+      ? sameBranchFile
+      : exists(branchFile)
+        ? branchFile
+        : null;
   return { write, read };
+}
+
+/** 一枚の1行目に書かせる枝の名（窓口は grep -l "branch: <枝>" で引く。片付けもこれで枝と結ぶ） */
+export function branchLine(branch) {
+  return `branch: ${branch}`;
+}
+
+/**
+ * 同じ枝の別のセッションの一枚（新しく始めたセッションで続きを渡す）。1行目が branch: <枝> の物のうち最も新しい物
+ * @param {{name: string, firstLine: string, mtimeMs: number}[]} files session-*.md の一覧
+ */
+export function latestSameBranch(files, branch, self) {
+  const hits = files
+    .filter((f) => f.name !== self && f.firstLine.trim() === branchLine(branch))
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return hits[0]?.name ?? null;
 }
 
 /** 動く枝か（claude/ の枝の worktree だけ） */
@@ -69,7 +96,7 @@ export function applies({ branch, isLinkedWorktree }) {
 export function startContext({ file, content, from = file }) {
   if (content === null) {
     return [
-      `[進捗の一枚] このセッションの進捗を ${file} に書く（リポジトリの外。1セッション1枚。PR ごとに枝を切っても同じ一枚に書く）。`,
+      `[進捗の一枚] このセッションの進捗を ${file} に書く（リポジトリの外。1セッション1枚。PR ごとに枝を切っても同じ一枚に書く）。1行目は「${branchLine("<今の枝>")}」（窓口が枝で引く）。`,
       `見出し: ${HEADINGS.join("・")}（状態・待ちは窓口のボードが PR と CI から出すので書かない）`,
     ].join("\n");
   }
@@ -126,15 +153,30 @@ function readOrNull(file) {
   return existsSync(file) ? readFileSync(file, "utf8") : null;
 }
 
+/** 置き場の session-*.md から同じ枝の最新の一枚を探す（読めなければ null） */
+function sameBranchIn(dir, branch, self) {
+  if (!existsSync(dir)) return null;
+  const files = readdirSync(dir)
+    .filter((n) => /^session-.*\.md$/.test(n))
+    .map((n) => {
+      const full = path.join(dir, n);
+      const firstLine = readFileSync(full, "utf8").split("\n", 1)[0] ?? "";
+      return { name: full, firstLine, mtimeMs: statSync(full).mtimeMs };
+    });
+  return latestSameBranch(files, branch, self);
+}
+
 /** このセッションの一枚（書く先・中身・読んだ元） */
 function progressFor(sessionId, branch) {
   const dir =
     process.env.RYUJIN_PROGRESS_DIR ||
     path.join(os.homedir(), ".config/ryujin/progress");
+  const sessionFile = sessionProgressPath(sessionId, dir);
   const chosen = chooseProgressFile({
-    sessionFile: sessionProgressPath(sessionId, dir),
+    sessionFile,
     branchFile: progressPath(branch, dir),
     exists: existsSync,
+    sameBranchFile: sameBranchIn(dir, branch, sessionFile),
   });
   const content = chosen.read === null ? null : readOrNull(chosen.read);
   return { file: chosen.write, content, from: chosen.read ?? chosen.write };
