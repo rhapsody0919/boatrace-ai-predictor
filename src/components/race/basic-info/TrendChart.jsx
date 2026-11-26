@@ -67,6 +67,36 @@ export function GridLines({ ticks, y, x1, x2, label }) {
   ));
 }
 
+// 縦軸の目盛りと頭の単位
+function ValueAxis({ ticks, y, W, scale, t }) {
+  return (
+    <>
+      <GridLines
+        ticks={ticks}
+        y={y}
+        x1={PAD.l}
+        x2={W - PAD.r}
+        label={(g) =>
+          // 目盛りの数字を間引く尺度（ST の 0.05 刻み）は、線は残して数字だけ1つおきに出す
+          scale.labelEvery &&
+          Math.round(g / scale.tickStep) % scale.labelEvery !== 0
+            ? ""
+            : fmtValue(g, scale.tickDigits, scale)
+        }
+      />
+      {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
+      <text
+        x={scale.unitKey ? 2 : PAD.l - 4}
+        y={PAD.t - 6}
+        className="trc-tick"
+        textAnchor={scale.unitKey ? "start" : "end"}
+      >
+        {scale.unitKey ? t(scale.unitKey) : scale.unit}
+      </text>
+    </>
+  );
+}
+
 // 選んだ艇の日付の目盛り・「最新」・休みの印
 function SelectedAxis({ sel, selected, x, W }) {
   const { t } = useTranslation();
@@ -220,28 +250,7 @@ export default function TrendChart({
           })
         }
       >
-        <GridLines
-          ticks={ticks}
-          y={y}
-          x1={PAD.l}
-          x2={W - PAD.r}
-          label={(g) =>
-            // 目盛りの数字を間引く尺度（ST の 0.05 刻み）は、線は残して数字だけ1つおきに出す
-            scale.labelEvery &&
-            Math.round(g / scale.tickStep) % scale.labelEvery !== 0
-              ? ""
-              : fmtValue(g, scale.tickDigits, scale)
-          }
-        />
-        {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
-        <text
-          x={scale.unitKey ? 2 : PAD.l - 4}
-          y={PAD.t - 6}
-          className="trc-tick"
-          textAnchor={scale.unitKey ? "start" : "end"}
-        >
-          {scale.unitKey ? t(scale.unitKey) : scale.unit}
-        </text>
+        <ValueAxis ticks={ticks} y={y} W={W} scale={scale} t={t} />
         <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
         {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
         {renderOver?.({ x, y, W, pad: PAD, sel })}
