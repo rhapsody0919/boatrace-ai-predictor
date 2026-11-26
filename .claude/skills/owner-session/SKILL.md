@@ -323,7 +323,7 @@ pr-lane の heavy（H5 を含む）は、上の1〜4を満たせばこの道で�
 - 7日を過ぎた済の行は消してよい
 - 新機能・画面の判断（承認・案の選択）をオーナーに聞く返答には、その返答の中で画像（before/after の compare のライト、要ればダーク）を SendUserFile で添える。「送ってある」「共有ノートの○○」だけにしない。子セッションの承認待ちを取り次ぐときも、窓口が共有ノートから画像を探して添える（2026-11-26 オーナー「チャットをスクロールして探しに行っている」）
 - マイグレーションの適用（db-apply）を頼むときは、PR のリンクに加えて、ファイルのパス（`docs/db-migration/NNN_xxx.sql`）をそれだけの1行のコードブロックで毎回書く。複数ならファイルごとに別のブロック（2026-11-25 オーナー。スマホからコピペして db-apply に入れるため。番号だけの依頼で聞き返しが出た）
-- 子の通知が切れていたら、子の進捗の一枚 `~/.config/ryujin/progress/<枝の名の / を __ に>.md` を読む（子の claude/ の worktree で SessionStart・Stop の hook が持たせる。`scripts/maintenance/session-progress-file.js`）
+- 子の通知が切れていたら、子の進捗の一枚を `grep -l "branch: <子の枝>" ~/.config/ryujin/progress/session-*.md` で引いて読む（1セッション1枚、1行目が枝の名。11/26 までの物は `progress/<枝の名の / を __ に>.md`。子の claude/ の worktree で SessionStart・Stop の hook が持たせる。`scripts/maintenance/session-progress-file.js`）。状態・待ちは一枚でなく窓口のボード（PR・CI・セッションの状態から組む）で見る
 
 定時の前後はマージしない（2026-11-24。17:45 の前後に窓口がマージを続け、release-dispatch が「検査が走っている」「master の先が10分以内」で2回とも待ちになり、出なかった）。JST 05:30〜06:10・11:30〜12:10・17:30〜18:10 は、auto-merge を付けず手のマージもしない（定時と20分後の見直しの両方が新しい commit を見ないため）。急ぐ物はこの外で入れる
 

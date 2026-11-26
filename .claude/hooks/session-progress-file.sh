@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SessionStart・Stop: claude/ の枝の作業ごとに進捗の一枚（リポジトリの外 ~/.config/ryujin/progress/<枝>.md）を持たせる。
+# SessionStart・Stop: claude/ の枝で働くセッションごとに進捗の一枚（リポジトリの外 ~/.config/ryujin/progress/session-<id>.md、1行目は branch: <枝>）を持たせる。
 # 判定と根拠は scripts/maintenance/session-progress-file.js の冒頭の注釈。止めるのは Stop で1回だけ、読んだだけのセッションは止めない。
 # 記録できない・node が無い場合は黙って素通しする（作業を止めない）。
 # NODE_USE_SYSTEM_CA があると node の起動が遅くなる（BOA-657）。外部へ通信しないので外す
