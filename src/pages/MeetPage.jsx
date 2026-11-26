@@ -305,22 +305,13 @@ const buildPenaltyByRacer = (board) =>
  */
 function seriesViewsOf(board) {
   if (!board?.seriesBoards) return [{ key: null, goal: "semifinal", board }];
-  return board.seriesBoards.map((s) => {
-    const ids = new Set(s.racerIds);
-    return {
-      key: s.key,
-      goal: s.goal,
-      board: {
-        ...board,
-        seriesRacerIds: s.racerIds,
-        semifinalSlots: s.slots,
-        prelimEndRaceId: s.prelimEndRaceId,
-        notYetStartedRacerIds: (board.notYetStartedRacerIds ?? []).filter((id) =>
-          ids.has(id),
-        ),
-      },
-    };
-  });
+  return board.seriesBoards.map(({ key, goal, racerIds, slots, prelimEndRaceId }) => ({
+    key,
+    goal,
+    // prettier-ignore
+    board: { ...board, seriesRacerIds: racerIds, semifinalSlots: slots, prelimEndRaceId,
+      notYetStartedRacerIds: (board.notYetStartedRacerIds ?? []).filter((id) => racerIds.includes(id)) },
+  }));
 }
 
 /** 順位表まわりの値（board から導く。副作用なし） */
@@ -408,13 +399,10 @@ function MeetRankingBlock({ page, m }) {
 /** 予選中〜節終了のランキングと勝ち上がり */
 function MeetBody({ page }) {
   const { t } = useTranslation();
-  const models = seriesViewsOf(page.board).map((v) =>
-    buildMeetBodyModel(page, v),
-  );
-  const rowCount = models.reduce((n, m) => n + m.rows.length, 0);
-  const notYetStarted = models.reduce((n, m) => n + m.notYetStarted, 0);
+  const models = seriesViewsOf(page.board).map((v) => buildMeetBodyModel(page, v));
+  const sum = (f) => models.reduce((n, m) => n + f(m), 0);
+  const [rowCount, notYetStarted] = [sum((m) => m.rows.length), sum((m) => m.notYetStarted)];
   const { confirmed } = models[0];
-  const joint = models.length > 1;
 
   return (
     <div className="meet-page__body">
@@ -427,7 +415,7 @@ function MeetBody({ page }) {
         {page.state === "prelim" && rowCount > 0 && (
           <p className="meet-page__note">{t("meetPage.shobugakePending")}</p>
         )}
-        {joint && (
+        {models.length > 1 && (
           <>
             <h2 className="meet-ranking__joint-title">{t("meetPage.rankingTitle")}</h2>
             <p className="meet-page__note">{t("meetPage.jointNote")}</p>
