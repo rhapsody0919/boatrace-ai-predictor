@@ -216,6 +216,9 @@ export function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
     .sort((a, b) => yOf(a) - yOf(b));
   let last = -99;
   const lx = W - PAD.r + 14;
+  // 1走目からそろえる図（今節の走）は、全艇の最後の走より手前で終わった艇の引き出し線も点線にする
+  // （実線だと先の走まで同じ値が続いて見える。ファン評価 11/26）
+  const n = Math.max(...[...seriesByBoat.values()].map((s) => s.length));
   return ends.map((e) => {
     const py = yOf(e);
     const yy = Math.max(py, last + 16);
@@ -239,7 +242,9 @@ export function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
           x2={lx - 8}
           y2={yy}
           className="trc-leader"
-          strokeDasharray={e.stale ? "2 2" : undefined}
+          strokeDasharray={
+            e.stale || (scale.alignStart && e.at < n - 1) ? "2 2" : undefined
+          }
         />
         <Badge cx={lx} cy={yy} boat={e.boat} />
         <text

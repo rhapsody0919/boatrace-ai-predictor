@@ -16,6 +16,10 @@ test("点を押すとその走の吹き出しが出て、レースへ飛べる",
   // 選んだ3号艇の点の中に着順（今節7走）、右端に6艇の札
   await expect(card.locator(".trc-mark-text")).toHaveCount(7);
   await expect(card.locator(".trc-end")).toHaveCount(6);
+  // 9走まで走った2号艇のほかは7走で終わる。その5艇の札への引き出し線は点線（先の走に値が続いて見えない）
+  await expect(card.locator('.trc-leader[stroke-dasharray="2 2"]')).toHaveCount(
+    5,
+  );
 
   // 5走目（10/12 12R、1着）の点を押す。横は各艇の1走目から並ぶ
   await svg.scrollIntoViewIfNeeded();
