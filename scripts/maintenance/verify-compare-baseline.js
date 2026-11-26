@@ -69,9 +69,9 @@ const failures = run(await import(pathToFileURL(SRC).href));
 
 const source = fs.readFileSync(SRC, "utf8");
 const MUTANTS = [
-  ["線を見ない", "if (z >= zLine) return { diff, dir: \"high\" };\n  if (z <= -zLine) return { diff, dir: \"low\" };\n  return { diff, dir: \"unclear\" };\n}\n\n/**\n * 平均", "if (z >= 0) return { diff, dir: \"high\" };\n  if (z < 0) return { diff, dir: \"low\" };\n  return { diff, dir: \"unclear\" };\n}\n\n/**\n * 平均"],
+  ["線を見ない", "if (z >= zLine) return \"high\";\n  if (z <= -zLine) return \"low\";", "if (z >= 0) return \"high\";\n  if (z < 0) return \"low\";"],
   ["走数の下限を見ない", "if (n < minN || n <= 0) return { diff, dir: \"few\" };\n  const p", "if (n <= 0) return { diff, dir: \"few\" };\n  const p"],
-  ["正確な二項を使わない", "if (n * p < EXACT_MIN_EXPECTED", "if (false && n * p < EXACT_MIN_EXPECTED"],
+  ["正確な二項を使わない", "const exact = n * p < EXACT_MIN_EXPECTED", "const exact = false && n * p < EXACT_MIN_EXPECTED"],
   ["大きい率を裏返さない", "if (p > 0.5) {", "if (false) {"],
   ["同値を同順位にしない", "if (betterCount < size) tiers.set", "if (values.indexOf(c) < size && betterCount < size + 1) tiers.set"],
   ["丸めない", "(digits === undefined ? v : Number(v.toFixed(digits)))", "v"],

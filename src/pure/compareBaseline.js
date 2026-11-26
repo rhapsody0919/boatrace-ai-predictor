@@ -61,18 +61,26 @@ export function judgeRateVsBaseline({ rate, baseline, n, minN = 1, zLine = Z_LIN
   if (n < minN || n <= 0) return { diff, dir: "few" };
   const p = baseline / 100;
   if (p <= 0 || p >= 1) return { diff, dir: "unclear" };
-  const alpha = upperTail(zLine);
-  if (n * p < EXACT_MIN_EXPECTED || n * (1 - p) < EXACT_MIN_EXPECTED) {
-    const k = Math.round((rate / 100) * n);
-    const { atLeast, atMost } = binomialTails(n, p, k);
-    if (k > n * p && atLeast < alpha) return { diff, dir: "high" };
-    if (k < n * p && atMost < alpha) return { diff, dir: "low" };
-    return { diff, dir: "unclear" };
-  }
-  const z = (rate / 100 - p) / Math.sqrt((p * (1 - p)) / n);
-  if (z >= zLine) return { diff, dir: "high" };
-  if (z <= -zLine) return { diff, dir: "low" };
-  return { diff, dir: "unclear" };
+  const exact = n * p < EXACT_MIN_EXPECTED || n * (1 - p) < EXACT_MIN_EXPECTED;
+  const dir = exact
+    ? exactDir(n, p, Math.round((rate / 100) * n), upperTail(zLine))
+    : zDir((rate / 100 - p) / Math.sqrt((p * (1 - p)) / n), zLine);
+  return { diff, dir };
+}
+
+// z が線を超えたかの向き
+function zDir(z, zLine) {
+  if (z >= zLine) return "high";
+  if (z <= -zLine) return "low";
+  return "unclear";
+}
+
+// 正確な二項で、k 勝が基準 p から片側 alpha を超えて離れたかの向き
+function exactDir(n, p, k, alpha) {
+  const { atLeast, atMost } = binomialTails(n, p, k);
+  if (k > n * p && atLeast < alpha) return "high";
+  if (k < n * p && atMost < alpha) return "low";
+  return "unclear";
 }
 
 /**
@@ -85,10 +93,7 @@ export function judgeMeanVsBaseline({ mean, baseline, n, sd, minN = 1, zLine = Z
   if (!isNum(mean) || !isNum(baseline) || !isNum(n) || !isNum(sd) || sd <= 0) return null;
   const diff = mean - baseline;
   if (n < minN || n <= 0) return { diff, dir: "few" };
-  const z = diff / (sd / Math.sqrt(n));
-  if (z >= zLine) return { diff, dir: "high" };
-  if (z <= -zLine) return { diff, dir: "low" };
-  return { diff, dir: "unclear" };
+  return { diff, dir: zDir(diff / (sd / Math.sqrt(n)), zLine) };
 }
 
 /**
