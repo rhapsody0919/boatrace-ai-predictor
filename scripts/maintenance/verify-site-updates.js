@@ -12,7 +12,12 @@ import {
   pickBannerItem,
   visibleUpdates,
 } from "../../src/pure/siteUpdates.js";
-import { parseLog, pickCandidates } from "./site-updates-candidates.js";
+import {
+  attachDeploys,
+  deployedSince,
+  parseLog,
+  pickCandidates,
+} from "./site-updates-candidates.js";
 
 const KINDS = ["feature", "improvement", "minor"];
 const TITLE_MAX = 40;
@@ -144,3 +149,32 @@ const log = [
 const picked = pickCandidates(parseLog(log), new Set([15])).map((c) => c.pr);
 assert.deepEqual(picked, [10, 16], "画面に触れ、内部の変更でなく、既出でない PR だけ");
 console.log("OK 候補の機械の残す・外す");
+
+// 5. 候補の機械は配備の日で比べる。11/25 の夕方にマージし 11/26 05:48 JST の定時で出た PR を、起点 11/26 で落とさない
+const commits = parseLog(
+  [
+    "2026-11-25\u0002feat: 夕方にマージ (#20)\u0002aaa\nsrc/pages/A.jsx",
+    "2026-11-24\u0002feat: 前の日に出た (#21)\u0002bbb\nsrc/pages/B.jsx",
+    "2026-11-26\u0002feat: まだ出ていない (#22)\u0002ccc\nsrc/pages/C.jsx",
+  ]
+    .map((c) => `\u0001${c}`)
+    .join("\n"),
+);
+assert.deepEqual(commits.map((c) => c.sha), ["aaa", "bbb", "ccc"], "git log の sha を読む");
+const deploys = [
+  { id: 1, sha: "d1", createdAt: "2026-11-24T20:49:26Z" },
+  { id: 2, sha: "d2", createdAt: "2026-11-25T20:48:15Z" },
+];
+const contains = { d1: ["bbb"], d2: ["aaa", "bbb"] };
+const withDeploys = attachDeploys(commits, deploys, (c, d) => contains[d].includes(c));
+assert.deepEqual(
+  withDeploys.map((c) => c.deploy),
+  [{ id: 2, date: "2026-11-26" }, { id: 1, date: "2026-11-25" }, null],
+  "初めて含んだ配備と、その JST の日（UTC 20:48 は翌日）",
+);
+assert.deepEqual(
+  deployedSince(withDeploys, "2026-11-26").map((c) => c.pr),
+  [20, 22],
+  "起点の日以降に出た物と未配備を残し、起点より前に出た物を外す",
+);
+console.log("OK 候補の機械は配備の日で比べる");
