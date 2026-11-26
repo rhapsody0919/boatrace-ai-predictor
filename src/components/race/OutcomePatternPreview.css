@@ -180,3 +180,16 @@
     font-size: var(--font-size-xs);
   }
 }
+
+/* 1着の回数と、分析ツールとの分母の違い（オーナー 2026-11-25）。ページの地に乗るので意味トークンだけ */
+.outcome-preview-wins {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.outcome-preview-note {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}

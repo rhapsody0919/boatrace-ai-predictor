@@ -55,6 +55,7 @@ function OutcomePatternPreview({
               topPatterns={topPatterns}
               firstBoat={firstBoat}
               boatTotalRaces={boatTotalRaces}
+              venueTotalRaces={outcomeData?.total_races ?? null}
               venueCode={venueCode}
               venueName={venueName}
             />

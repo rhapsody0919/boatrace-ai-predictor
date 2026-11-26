@@ -163,6 +163,15 @@ test.describe("レースページ再設計（BOA-168）", () => {
     const minDenom = Math.min(...impliedDenominators);
     // 丸め誤差を許容しつつ、全行が同じ分母を使っていることを確認する
     expect(maxDenom - minDenom).toBeLessThan(maxDenom * 0.05);
+
+    // 分母（その艇が1着だったレースの数）を表の上に数で出し、表の下で分析ツールの分母（会場の全レース）との違いを書く
+    // （オーナー 2026-11-25）。出した数は、行から逆算した分母と合う
+    const winsText = await page.locator(".outcome-preview-wins").textContent();
+    const shownWins = Number(winsText.match(/1着になったのは([\d,]+)レース/)[1].replace(/,/g, ""));
+    expect(Math.abs(shownWins - maxDenom)).toBeLessThan(maxDenom * 0.05);
+    await expect(page.locator(".outcome-preview-note")).toContainText(
+      `${shownWins.toLocaleString()}レース中の割合`,
+    );
   });
 
   test("過去日付ページで結果確定レースを選ぶと結果タブに着順・配当・決まり手が表示され、展開予測検証はAI予想タブに表示される（BOA-312/BOA-346）", async ({

@@ -11,12 +11,24 @@ function OutcomePatternPreviewTable({
   topPatterns,
   firstBoat,
   boatTotalRaces,
+  venueTotalRaces,
   venueCode,
   venueName,
 }) {
   const { t } = useTranslation();
+  // 分母を数で見せる。分析ツールの出目分布（会場の全レースが分母）と値が違うため（オーナー 2026-11-25、#3468 の対）
+  const wins = boatTotalRaces ? boatTotalRaces.toLocaleString() : null;
   return (
     <div className="table-wrapper">
+      {wins && (
+        <p className="outcome-preview-wins">
+          {t("outcomePreview.wins", {
+            venue: venueName,
+            boat: firstBoat,
+            wins,
+          })}
+        </p>
+      )}
       <table className="pattern-table">
         <thead>
           <tr>
@@ -47,6 +59,16 @@ function OutcomePatternPreviewTable({
           ))}
         </tbody>
       </table>
+
+      {wins && venueTotalRaces > 0 && (
+        <p className="outcome-preview-note">
+          {t("outcomePreview.denominatorNote", {
+            boat: firstBoat,
+            wins,
+            total: venueTotalRaces.toLocaleString(),
+          })}
+        </p>
+      )}
 
       <Link
         to={`/winning-technique?venue_code=${venueCode}&tab=outcome`}

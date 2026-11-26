@@ -637,7 +637,9 @@
     "rate": "Rate (%)",
     "avgPayout": "Avg payout (¥)",
     "detailLink": "→ View detailed {{venue}} analysis",
-    "noData": "No pattern data for this lane"
+    "noData": "No pattern data for this lane",
+    "wins": "Boat {{boat}} won {{wins}} races at {{venue}} in the past 90 days",
+    "denominatorNote": "The rate is the share of the {{wins}} races Boat {{boat}} won. The Trifecta Outcome Distribution in the analysis tools uses all {{total}} races at the venue, so the same combination shows a different value."
   },
   "modelDesc": {
     "sectionTitle": "About the prediction models",
