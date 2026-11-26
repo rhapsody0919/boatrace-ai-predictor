@@ -6,17 +6,24 @@
  * （--tickets N は「SEO:」票の雛形。語・帯・桁だけで数字は無い）。ファイルには書かない。
  *
  * 使い方: node scripts/maintenance/seo-morning-sheet.js [--articles a.json] [--changes c.json] [--core-updates u.json] [--tickets N]
+ *          [--local-dir <dir> [--series s.json]]
+ *   --local-dir: Supabase を読まず、<dir>/gsc_daily.json・gsc_page_daily.json（google-detail-collect.js の日別の出力）を読む（鍵が要らない）。
+ *     見張りはファイルの最新の date から同じ規則で出す。growth_url_inspection は空。
+ *   --series s.json: [{ venue_code, start_date, end_date, title, grade }]（race_series の代わり。--local-dir のときだけ。無ければ空）
  *   a.json: [{ id, url, publishDate, measuredAt?, editDate?, mergedAt? }]（editDate がある物は改稿の判定に使う）
  *   c.json: [{ id, mergedAt, pages: [正規化した page], siteWide }]（同じ反映の枠の変更。git のマージ時刻から窓口が組む）
  *   u.json: [{ from, to }]（コアアップデートの期間の台帳。無ければ空）
- * 環境変数: SUPABASE_URL・SUPABASE_SERVICE_KEY（読むだけ）
+ * 環境変数: SUPABASE_URL・SUPABASE_SERVICE_KEY（読むだけ。--local-dir のときは要らない）
  * 終了コード: 0 出せた（見張りが赤でも出せた）、1 設定の誤り・読みの失敗
  */
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { ptToday, safeError } from "../lib/growth/gscDaily.js";
 import { isMissingTable } from "../lib/growth/gscPageDaily.js";
 import { buildSignals, freshnessReport, isGreen, articleLines, renderSheet, rewriteLine, ticketTemplate } from "../lib/growth/morningSheet.js";
+import { localSource } from "../lib/growth/localSheetSource.js";
 import { detectMovers, normalizePage, windows } from "../lib/growth/seoDetect.js";
 
 const PAGE = 1000;
@@ -28,14 +35,15 @@ const TABLES = [
 ];
 
 function parseArgs(argv) {
-  const o = { articles: null, changes: null, coreUpdates: null, tickets: 0 };
-  const keys = { "--articles": "articles", "--changes": "changes", "--core-updates": "coreUpdates", "--tickets": "tickets" };
+  const o = { articles: null, changes: null, coreUpdates: null, tickets: 0, localDir: null, series: null };
+  const keys = { "--articles": "articles", "--changes": "changes", "--core-updates": "coreUpdates", "--tickets": "tickets", "--local-dir": "localDir", "--series": "series" };
   for (let i = 0; i < argv.length; i++) {
     const k = keys[argv[i]];
     if (!k) throw new Error(`知らない引数: ${argv[i]}`);
     o[k] = k === "tickets" ? Number(argv[++i]) : argv[++i];
   }
   if (!Number.isInteger(o.tickets) || o.tickets < 0) throw new Error("--tickets は 0 以上の整数");
+  if (o.series && !o.localDir) throw new Error("--series は --local-dir と一緒に使う（Supabase の版は race_series を読む）");
   return o;
 }
 
@@ -68,13 +76,28 @@ async function tableStats(db, { table, required }) {
   return { table, required, rowCount: latest.count, maxDate: data[0]?.[col] ?? null };
 }
 
-async function loadSignals(db, today) {
+/** Supabase の読み口。口は localSource と同じ（tableStats・daily・series・inspections・pageDaily） */
+function supabaseSource(db) {
+  return {
+    tableStats: (t) => tableStats(db, t),
+    daily: (from, to) =>
+      readAll(db, "growth_gsc_daily", "date,query,page,clicks,impressions,position", (q) =>
+        q.gte("date", from).lte("date", to).order("date").order("query").order("page")),
+    series: (from, to) =>
+      readAll(db, "race_series", "venue_code,start_date,end_date,title,grade", (q) =>
+        q.lte("start_date", to).gte("end_date", from).order("venue_code").order("start_date")),
+    inspections: async () =>
+      (await readAll(db, "growth_url_inspection", "url,inspected_on,canonical_ok,verdict", (q) => q.order("url").order("inspected_on"))) ?? [],
+    pageDaily: async (from) =>
+      (await readAll(db, "growth_gsc_page_daily", "date,page,clicks,impressions", (q) => q.gte("date", from).order("date").order("page"))) ?? [],
+  };
+}
+
+async function loadSignals(src, today) {
   const w = windows(today);
-  const rows = await readAll(db, "growth_gsc_daily", "date,query,page,clicks,impressions,position", (q) =>
-    q.gte("date", w.prev.from).lte("date", today).order("date").order("query").order("page"));
-  const series = await readAll(db, "race_series", "venue_code,start_date,end_date,title,grade", (q) =>
-    q.lte("start_date", today).gte("end_date", w.prev.from).order("venue_code").order("start_date"));
-  const insp = (await readAll(db, "growth_url_inspection", "url,inspected_on,canonical_ok,verdict", (q) => q.order("url").order("inspected_on"))) ?? [];
+  const rows = await src.daily(w.prev.from, today);
+  const series = await src.series(w.prev.from, today);
+  const insp = await src.inspections();
   const latest = {};
   for (const r of insp) latest[r.url] = r; // inspected_on の昇順なので最後が最新
   const inspections = Object.fromEntries(Object.values(latest).map((r) => [normalizePage(r.url), r.canonical_ok]));
@@ -83,10 +106,10 @@ async function loadSignals(db, today) {
   return { signals, falling, inspectionRows: latest };
 }
 
-async function loadArticleLines(db, today, articles, args, inspectionRows) {
+async function loadArticleLines(src, today, articles, args, inspectionRows) {
   if (articles.length === 0) return [];
   const from = isoDay(Math.min(...articles.map((a) => Date.parse(`${a.editDate ?? a.publishDate}T00:00:00Z`) - 28 * DAY)));
-  const pageDaily = (await readAll(db, "growth_gsc_page_daily", "date,page,clicks,impressions", (q) => q.gte("date", from).order("date").order("page"))) ?? [];
+  const pageDaily = await src.pageDaily(from);
   const totals = {};
   for (const r of pageDaily) {
     const k = normalizePage(r.page);
@@ -102,22 +125,34 @@ async function loadArticleLines(db, today, articles, args, inspectionRows) {
   return lines;
 }
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-    throw new Error("環境変数が無い: SUPABASE_URL・SUPABASE_SERVICE_KEY（読むだけ。鍵は窓口が用意する。作り手は本番に繋がない）");
-  }
-  const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
-  const today = ptToday(new Date());
-  const freshness = freshnessReport(await Promise.all(TABLES.map((t) => tableStats(db, t))), today);
+/** 読み口から1枚（と票の雛形）を組む。出力は行の配列 */
+export async function buildSheetLines(src, args, today) {
+  const freshness = freshnessReport(await Promise.all(TABLES.map((t) => src.tableStats(t))), today);
   const green = isGreen(freshness);
-  const loaded = green ? await loadSignals(db, today) : { signals: [], falling: 0, inspectionRows: {} };
-  const articleLinesOut = green ? await loadArticleLines(db, today, readJson(args.articles), args, loaded.inspectionRows) : [];
-  console.log(renderSheet({ today, freshness, signals: loaded.signals, articleLinesOut, fallingCount: loaded.falling }));
-  for (const s of loaded.signals.slice(0, args.tickets)) console.log(`\n--- 「SEO:」票の雛形 ---\n${ticketTemplate(s, today)}`);
+  const loaded = green ? await loadSignals(src, today) : { signals: [], falling: 0, inspectionRows: {} };
+  const articleLinesOut = green ? await loadArticleLines(src, today, readJson(args.articles), args, loaded.inspectionRows) : [];
+  const out = [renderSheet({ today, freshness, signals: loaded.signals, articleLinesOut, fallingCount: loaded.falling })];
+  for (const s of loaded.signals.slice(0, args.tickets)) out.push(`\n--- 「SEO:」票の雛形 ---\n${ticketTemplate(s, today)}`);
+  return out;
 }
 
-main().catch((err) => {
-  console.error(`seo-morning-sheet: ${err.message}`);
-  process.exit(1);
-});
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  let src;
+  if (args.localDir) {
+    src = localSource(args.localDir, args.series);
+  } else {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+      throw new Error("環境変数が無い: SUPABASE_URL・SUPABASE_SERVICE_KEY（読むだけ。鍵が無ければ --local-dir <dir> で手元の JSON を読む。作り手は本番に繋がない）");
+    }
+    src = supabaseSource(createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } }));
+  }
+  for (const line of await buildSheetLines(src, args, ptToday(new Date()))) console.log(line);
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch((err) => {
+    console.error(`seo-morning-sheet: ${err.message}`);
+    process.exit(1);
+  });
+}
