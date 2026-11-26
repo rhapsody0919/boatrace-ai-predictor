@@ -12,6 +12,10 @@ import "./RacerBoatReturns.css";
  */
 
 const FEW_RUNS = 6;
+// 推移の線は6走目から（最初の数走の跳ねで縦軸が取られ、今の値と100%の線が潰れた。ファン評価 2026-11-26）
+const TREND_FROM = 6;
+// 単勝の払戻のうち最大の1回がこの割合以上なら、表の行に添えて大穴1回の値だと分かるようにする（ファン評価 2026-11-26）
+const ONE_SHOT_SHARE = 0.5;
 
 function Rate({ value }) {
   if (value === null) return "—";
@@ -43,6 +47,9 @@ function ReturnTable({ rows }) {
               <td>
                 <Rate value={row.winReturn} />
                 {row.n > 0 && <span className="rbr-sub">1着{row.wins}回</span>}
+                {row.topWinShare >= ONE_SHOT_SHARE && row.wins > 1 && (
+                  <span className="rbr-sub">1回で{Math.round(row.topWinShare * 100)}%</span>
+                )}
               </td>
               <td>
                 <Rate value={row.placeReturn} />
@@ -79,16 +86,14 @@ function BoatPicker({ selected, onSelect }) {
 }
 
 function ReturnTrend({ vc, filter, boat, onSelect }) {
-  const points = useMemo(
-    () => boatReturnSeries(vc.vcHistory, filter, boat),
-    [vc.vcHistory, filter, boat],
-  );
+  const all = useMemo(() => boatReturnSeries(vc.vcHistory, filter, boat), [vc.vcHistory, filter, boat]);
+  const points = all.slice(TREND_FROM - 1);
   return (
     <div className="rbr-trend">
       <p className="rbr-trend-title">推移（各走の時点までの通算）</p>
       {!vc.vcBoatFixed && <BoatPicker selected={boat} onSelect={onSelect} />}
       <p className="rbr-trend-sub">
-        {boat}号艇・{points.length}走・点線は100%
+        {boat}号艇・{all.length}走・{TREND_FROM}走目から・点線は100%
       </p>
       {points.length >= 2 ? (
         <>
@@ -98,14 +103,14 @@ function ReturnTrend({ vc, filter, boat, onSelect }) {
           </p>
         </>
       ) : (
-        <p className="racer-stat-note">この枠番の走が2走未満のため、推移の線は出しません</p>
+        <p className="racer-vc-note">この枠番の走が{TREND_FROM + 1}走未満のため、推移の線は出しません</p>
       )}
     </div>
   );
 }
 
 export default function RacerBoatReturns({ vc, vcLabel }) {
-  const [picked, setPicked] = useState(1);
+  const [picked, setPicked] = useState(null);
   // 会場・枠番・グレード・種別の絞り。進入コースは vc.vcHistory の時点で絞られている
   const venueCode = vc.vcVenueFixed ? Number(vc.vcVenue) : null;
   const boatNumber = vc.vcBoatFixed ? Number(vc.vcBoat) : null;
@@ -118,13 +123,14 @@ export default function RacerBoatReturns({ vc, vcLabel }) {
   const rows = useMemo(() => boatReturnRows(vc.vcHistory, filter), [vc.vcHistory, filter]);
   if (!vc.vcHistory?.length) return null;
   const total = rows.reduce((sum, row) => sum + row.n, 0);
-  const boat = filter.boatNumber ?? picked;
+  // 最初は推移の線を引ける走のある枠番（無ければ1号艇）を選んでおく（ファン評価 2026-11-26）
+  const boat = filter.boatNumber ?? picked ?? rows.find((r) => r.n > TREND_FROM)?.boat ?? 1;
   return (
     <details className="racer-technique-profile racer-return-fold rbr-fold">
       <summary>
         枠番別回収率
         {vc.vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
-        <span className="racer-return-fold-hint">参考・{total}走・期間と会場は上の絞り込み</span>
+        <span className="racer-return-fold-hint">参考・{total}走・上の絞り込みが全て効きます</span>
       </summary>
       <ReturnTable rows={rows} />
       <ReturnTrend vc={vc} filter={filter} boat={boat} onSelect={setPicked} />

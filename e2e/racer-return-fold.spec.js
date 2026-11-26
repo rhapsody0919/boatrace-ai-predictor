@@ -18,7 +18,7 @@ test("枠番別回収率は絞り込みの枠の中で畳んで参考・N走、�
   await expect(fold).toHaveCount(1, { timeout: 30000 });
   await expect(fold).not.toHaveAttribute("open", "");
   await expect(fold.locator("summary")).toHaveText(
-    /^枠番別回収率.*参考・\d+走・期間と会場は上の絞り込み$/,
+    /^枠番別回収率.*参考・\d+走・上の絞り込みが全て効きます$/,
   );
 
   // タップ領域は44px以上で、▶ の印（list-item）が残る
@@ -33,7 +33,7 @@ test("枠番別回収率は絞り込みの枠の中で畳んで参考・N走、�
     const cells = rows.nth(i).locator("td");
     const n = Number(await cells.nth(1).innerText());
     // 30走未満も「-」で隠さない。走が無い枠番だけ「—」
-    await expect(cells.nth(2)).toHaveText(n > 0 ? /^[\d,]+%\s*1着\d+回$/ : /^—$/);
+    await expect(cells.nth(2)).toHaveText(n > 0 ? /^[\d,]+%\s*1着\d+回(\s*1回で\d+%)?$/ : /^—$/);
     await expect(cells.nth(3)).toHaveText(n > 0 ? /^[\d,]+%$/ : /^—$/);
   }
   await expect(fold.locator("[class*='diff'], [class*='better'], [class*='worse']")).toHaveCount(0);
@@ -47,8 +47,8 @@ test("枠番別回収率の推移は枠番を選ぶと、その枠番の通算�
   await fold.locator("summary").click();
   const picks = fold.getByRole("group", { name: "推移を見る枠番" }).getByRole("button");
   await expect(picks).toHaveCount(6);
-  await expect(picks.nth(0)).toHaveAttribute("aria-pressed", "true");
-  await expect(fold.locator(".rbr-trend-sub")).toContainText("1号艇");
+  // 最初は線を引ける枠番が選ばれている。2号艇を押すと替わる
+  await expect(fold.locator("[aria-pressed='true']")).toHaveCount(1);
   await picks.nth(1).click();
   await expect(picks.nth(1)).toHaveAttribute("aria-pressed", "true");
   await expect(fold.locator(".rbr-trend-sub")).toContainText("2号艇");

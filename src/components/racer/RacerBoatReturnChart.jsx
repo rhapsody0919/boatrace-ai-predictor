@@ -6,7 +6,7 @@
  */
 const W = 340;
 const H = 210;
-const PAD = { l: 48, r: 82, t: 18, b: 28 };
+const PAD = { l: 48, r: 82, t: 26, b: 28 };
 const STEPS = [50, 100, 250, 500, 1000, 2500, 5000];
 
 function scaleOf(points) {
@@ -78,7 +78,7 @@ export default function RacerBoatReturnChart({ points }) {
           </text>
         </g>
       ))}
-      <text x={PAD.l - 4} y={PAD.t - 5} textAnchor="end" fontSize={11} fill="var(--text-secondary)">
+      <text x={PAD.l - 4} y={PAD.t - 12} textAnchor="end" fontSize={11} fill="var(--text-secondary)">
         （%）
       </text>
       <line x1={PAD.l} x2={W - PAD.r} y1={y(100)} y2={y(100)} stroke="var(--text-secondary)" strokeDasharray="4 3" />

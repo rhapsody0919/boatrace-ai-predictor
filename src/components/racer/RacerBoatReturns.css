@@ -71,6 +71,7 @@
 .rbr-chart {
   display: block;
   width: 100%;
-  max-width: 500px;
+  /* PC の右の列で拡大しすぎて図の字が表より大きくならない幅（ファン評価 2026-11-26） */
+  max-width: 400px;
   height: auto;
 }

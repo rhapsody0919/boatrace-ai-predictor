@@ -41,11 +41,12 @@ const rateOf = (sum, n) => (n > 0 ? (sum / (n * 100)) * 100 : null);
  * 枠番ごとの走数・1着の回数・単勝と複勝の回収率（%）。枠番を固定しているときはその1行だけ
  * @param {Array<Object>|null|undefined} history getRacerRaceHistory の走（raceId の昇順）
  * @param {{venueCode:number|null, boatNumber:number|null, raceGrade:string|null, raceStage:string|null}} filter
- * @returns {Array<{boat:number, n:number, wins:number, winReturn:number|null, placeReturn:number|null}>}
+ * @returns {Array<{boat:number, n:number, wins:number, winReturn:number|null, placeReturn:number|null, topWinShare:number|null}>}
+ *   topWinShare は単勝の払戻のうち最大の1回が占める割合（0〜1。1着が無ければ null）
  */
 export function boatReturnRows(history, filter) {
   const boats = filter.boatNumber ? [filter.boatNumber] : BOATS;
-  const acc = new Map(boats.map((b) => [b, { n: 0, wins: 0, win: 0, place: 0 }]));
+  const acc = new Map(boats.map((b) => [b, { n: 0, wins: 0, win: 0, place: 0, topWin: 0 }]));
   for (const row of history ?? []) {
     const a = acc.get(row.boatNumber);
     if (!a || !matchesFilter(row, filter)) continue;
@@ -53,6 +54,7 @@ export function boatReturnRows(history, filter) {
     a.n += 1;
     a.wins += p.isWin ? 1 : 0;
     a.win += p.win;
+    a.topWin = Math.max(a.topWin, p.win);
     a.place += p.place;
   }
   return boats.map((boat) => {
@@ -63,6 +65,7 @@ export function boatReturnRows(history, filter) {
       wins: a.wins,
       winReturn: rateOf(a.win, a.n),
       placeReturn: rateOf(a.place, a.n),
+      topWinShare: a.win > 0 ? a.topWin / a.win : null,
     };
   });
 }

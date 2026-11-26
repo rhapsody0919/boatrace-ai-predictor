@@ -39,7 +39,9 @@ assert.equal(b1.placeReturn, ((110 + 130) / 300) * 100);
 const b6 = rows.find((r) => r.boat === 6);
 assert.deepEqual([b6.n, b6.wins], [2, 1], "着順の付かない走は走数に入るが1着に数えない");
 assert.equal(b6.winReturn, (5010 / 200) * 100);
-assert.deepEqual(rows.find((r) => r.boat === 3), { boat: 3, n: 0, wins: 0, winReturn: null, placeReturn: null });
+assert.deepEqual(rows.find((r) => r.boat === 3), { boat: 3, n: 0, wins: 0, winReturn: null, placeReturn: null, topWinShare: null });
+assert.equal(b1.topWinShare, 1, "1着が1回なら最大の1回が全部");
+assert.equal(b6.topWinShare, 1);
 
 // 表: 会場で絞る・枠番を固定すると、その行だけ・その走だけ
 const venue2 = boatReturnRows(history, { ...ALL, venueCode: 2 });
