@@ -220,23 +220,32 @@ const statusRule = (...contexts) => ({
     strict_required_status_checks_policy: false,
   },
 });
-check("必須チェックの集合は ruleset と同じ3つ", REQUIRED_CHECK_NAMES, [
+check("必須チェックの集合は ruleset と同じ4つ", REQUIRED_CHECK_NAMES, [
   "verify",
   "ml-tests",
   "e2e",
+  "guard-weakening",
 ]);
 check(
-  "ruleset が3つとも持てば GitHub に任せる",
+  "ruleset が4つとも持てば GitHub に任せる",
   rulesetEnforcesChecks([
     { type: "deletion" },
-    statusRule("verify", "e2e", "ml-tests"),
+    statusRule("verify", "e2e", "ml-tests", "guard-weakening"),
   ]),
   true,
 );
 check(
   "2つの ruleset に分かれていても合わせて見る",
-  rulesetEnforcesChecks([statusRule("verify"), statusRule("e2e", "ml-tests")]),
+  rulesetEnforcesChecks([
+    statusRule("verify", "guard-weakening"),
+    statusRule("e2e", "ml-tests"),
+  ]),
   true,
+);
+check(
+  "guard-weakening が欠けた ruleset なら任せない",
+  rulesetEnforcesChecks([statusRule("verify", "e2e", "ml-tests")]),
+  false,
 );
 // 2026-10-18 時点の master の実物（必須チェックの無い ruleset）。--auto でもローカルで検査する
 check(

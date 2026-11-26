@@ -18,6 +18,7 @@ export const green = [
   { name: "verify", state: "SUCCESS" },
   { name: "ml-tests", state: "SUCCESS" },
   { name: "e2e", state: "SUCCESS" },
+  { name: "guard-weakening", state: "SUCCESS" },
 ];
 
 /** green のうち name だけを差し替える（state が null なら取り除く） */
@@ -119,6 +120,20 @@ function scene1() {
   );
 }
 
+// guard-weakening（2026-11-26 に ruleset の必須へ上げた）
+function sceneGuardWeakening() {
+  check(
+    "guard-weakening が無ければ待たせる",
+    judgeChecks("1", greenWith("guard-weakening", null))?.decision,
+    "ask",
+  );
+  check(
+    "guard-weakening が落ちていれば止める",
+    judgeChecks("1", greenWith("guard-weakening", "FAILURE"))?.decision,
+    "deny",
+  );
+}
+
 function scene2() {
   check(
     "verifyがSKIPPEDなら止める",
@@ -184,6 +199,7 @@ function scene2() {
 export function runGuardPrMergeScenes1(env) {
   ({ check } = env);
   scene1();
+  sceneGuardWeakening();
   scene2();
 }
 

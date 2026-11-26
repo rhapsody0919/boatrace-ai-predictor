@@ -2,7 +2,7 @@
 /**
  * PreToolUse(Bash): `gh pr merge` を3つの観点で検査する。
  *
- * 1. 必須チェック（verify・ml-tests・e2e の集約）が緑でないPRのマージを止める。
+ * 1. 必須チェック（verify・ml-tests・e2e の集約・guard-weakening）が緑でないPRのマージを止める。
  *    集合は GitHub の ruleset「master-checks」の必須チェックと同じにしてある（REQUIRED_CHECKS）。
  *
  *    `gh pr merge N --auto` は、ruleset が3つの必須チェックを全部持っているときだけチェックの結果を見ない。

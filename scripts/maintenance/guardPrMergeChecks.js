@@ -1,5 +1,5 @@
 /**
- * guard-pr-merge.js の部品: 必須チェック（verify・ml-tests・e2e の集約）の判定と、ruleset が同じ集合を持つかの判定（純関数）。
+ * guard-pr-merge.js の部品: 必須チェック（verify・ml-tests・e2e の集約・guard-weakening）の判定と、ruleset が同じ集合を持つかの判定（純関数）。
  * 検証: scripts/maintenance/verify-guard-pr-merge.js（guard-pr-merge.js 経由）
  */
 
@@ -34,6 +34,15 @@ const REQUIRED_CHECKS = [
       "e2eは録画（HAR）の再生で決定的に実行するが、録画に無い通信は本番へ素通しするため、" +
       "DBの状態で落ちることがあります（ADR-0077）。自動では止めませんが、コードの退行でないことを確認してから" +
       "マージしてください（再実行の判定: node scripts/maintenance/e2e-rerun.js）",
+  },
+  {
+    // 2026-11-26 オーナーが ruleset の必須に足した（#3483 で rule_change は殺す数が減らなければ警告）
+    name: "guard-weakening",
+    onFailure: "deny",
+    duration: "数十秒〜数分（verify の変異検査があるとき）",
+    failureNote:
+      "guard-weakening は守りのファイル（e2e の spec・許可リスト・verify）を弱める変更を止めます。" +
+      "注記の理由を読み、弱めない形に直してからマージしてください",
   },
 ];
 export const REQUIRED_CHECK_NAMES = REQUIRED_CHECKS.map((c) => c.name);
