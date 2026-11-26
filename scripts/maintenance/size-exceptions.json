@@ -3,7 +3,7 @@
   "files": {
     "api/_lib/searchBotIpRanges.js": 606,
     "scripts/analysis/generated-rules.js": 870,
-    "scripts/lib/scrapeJobs/registry.js": 457,
+    "scripts/lib/scrapeJobs/registry.js": 453,
     "scripts/maintenance/verify-pure-imports.js": 718,
     "src/config/venueRules.js": 456,
     "src/data/thinkingAssistCopy.js": 836,
