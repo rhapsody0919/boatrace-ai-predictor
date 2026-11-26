@@ -83,6 +83,7 @@
     "raceCount": "{{count}}개 경주"
   },
   "venueGrid": {
+    "title": "24개 경정장 개최 현황",
     "noRacesToday": "오늘 개최 없음",
     "nextOpen": "다음 개최 {{date}}",
     "nextRace": "다음 {{race}}R",

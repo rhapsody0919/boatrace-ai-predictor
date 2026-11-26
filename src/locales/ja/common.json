@@ -83,6 +83,7 @@
     "raceCount": "{{count}}レース"
   },
   "venueGrid": {
+    "title": "24会場の開催状況",
     "noRacesToday": "本日開催なし",
     "nextOpen": "次開催 {{date}}",
     "nextRace": "次 {{race}}R",

@@ -84,6 +84,7 @@
     "raceCount_one": "{{count}} race"
   },
   "venueGrid": {
+    "title": "Status of all 24 venues",
     "noRacesToday": "No races today",
     "nextOpen": "Next: {{date}}",
     "nextRace": "Next R{{race}}",
