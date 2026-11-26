@@ -4054,6 +4054,16 @@
     "rankingSubOfficialAsOf": "Qualifying score rate (as of the end of day {{day}}, from the official score-rate list; today's results are added around 22:00 JST) · {{count}} racers",
     "officialLiveLink": "Latest ranks including today's results: official score-rate list (reflected here around 22:00 JST)",
     "borderLineTie": "Estimated semi-final line ({{tied}} racers tied at {{rank}}th; {{seats}} spot(s) left)",
+    "joint": {
+      "cc-sg": "Challenge Cup (SG)",
+      "cc-g2": "Ladies Challenge Cup (G2)"
+    },
+    "jointNote": "This meet runs two events, SG and G2, at the same time. As in the official point-rate list, rankings are shown for each event.",
+    "jointFinalNote": "The Ladies Challenge Cup (G2) has no semi-finals. The last day has the final and special selection races. The final line is our estimate based on the top 6 of the preliminaries advancing to the final in 2025, not an official rule.",
+    "borderFinalGoal": "Final line (estimate): {{slots}}th {{rate}}",
+    "borderLineFinalGoal": "Estimated final line ({{slots}} racers)",
+    "borderLineFinalGoalTie": "Estimated final line ({{tied}} racers tied at {{rank}}th; {{seats}} spot(s) left)",
+    "shobugakeNoteFinalGoal": "On the bubble: racers near the line whose final spot depends on today's finishes",
     "points": "{{points}} pts",
     "pointsWithPenalty": "{{points}} pts, penalty {{penalty}}",
     "sourceConfirmed": "Source: score rates and ranks come from the official BOAT RACE score-rate list (as of the end of qualifying, penalties included).",

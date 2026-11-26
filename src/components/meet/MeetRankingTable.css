@@ -20,6 +20,23 @@
   color: var(--text-primary);
 }
 
+/* SG と G2 の併催の節（G3 の点検 V-61）: ページの見出しは1回、表ごとに開催の名を h3 で */
+.meet-ranking__joint-title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+}
+
+.meet-ranking__head h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--text-primary);
+}
+
+.meet-ranking + .meet-ranking {
+  margin-top: 1.5rem;
+}
+
 .meet-ranking__border {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);

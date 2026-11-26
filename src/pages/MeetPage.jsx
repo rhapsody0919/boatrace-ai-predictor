@@ -299,9 +299,33 @@ const buildPenaltyByRacer = (board) =>
       .filter(([, p]) => p > 0),
   );
 
+/**
+ * 表ごとの board。SG と G2 の併催の節は開催ごとに、母集団・枠数・予選の終わり・まだ走っていない
+ * 選手を差し替える（公式の得点率一覧と同じく2表。G3 の点検 V-61）。そうでなければ節全体の1表
+ */
+function seriesViewsOf(board) {
+  if (!board?.seriesBoards) return [{ key: null, goal: "semifinal", board }];
+  return board.seriesBoards.map((s) => {
+    const ids = new Set(s.racerIds);
+    return {
+      key: s.key,
+      goal: s.goal,
+      board: {
+        ...board,
+        seriesRacerIds: s.racerIds,
+        semifinalSlots: s.slots,
+        prelimEndRaceId: s.prelimEndRaceId,
+        notYetStartedRacerIds: (board.notYetStartedRacerIds ?? []).filter((id) =>
+          ids.has(id),
+        ),
+      },
+    };
+  });
+}
+
 /** 順位表まわりの値（board から導く。副作用なし） */
-function buildMeetBodyModel(page) {
-  const board = page.board;
+function buildMeetBodyModel(page, view) {
+  const board = view.board;
   const ranking = buildMeetRanking(board);
   const rows = ranking.filter((r) => !r.withdrawn);
   const excluded = buildExcluded(ranking, board);
@@ -321,6 +345,7 @@ function buildMeetBodyModel(page) {
     : new Set();
   const classByRacer = buildClassByRacer(board);
   return {
+    view,
     board,
     rows,
     excluded,
@@ -374,6 +399,8 @@ function MeetRankingBlock({ page, m }) {
       officialAsOfIsToday={page.officialAsOfIsToday ?? false}
       officialLink={`https://www.boatrace.jp/owpc/pc/race/pointrank?jcd=${String(page.venueCode).padStart(2, "0")}&hd=${getTodayJST().replaceAll("-", "")}`}
       penaltyByRacer={buildPenaltyByRacer(board)}
+      seriesKey={m.view.key}
+      goal={m.view.goal}
     />
   );
 }
@@ -381,21 +408,34 @@ function MeetRankingBlock({ page, m }) {
 /** 予選中〜節終了のランキングと勝ち上がり */
 function MeetBody({ page }) {
   const { t } = useTranslation();
-  const m = buildMeetBodyModel(page);
-  const { rows, notYetStarted, confirmed } = m;
+  const models = seriesViewsOf(page.board).map((v) =>
+    buildMeetBodyModel(page, v),
+  );
+  const rowCount = models.reduce((n, m) => n + m.rows.length, 0);
+  const notYetStarted = models.reduce((n, m) => n + m.notYetStarted, 0);
+  const { confirmed } = models[0];
+  const joint = models.length > 1;
 
   return (
     <div className="meet-page__body">
       <div className="meet-page__main">
-        {notYetStarted > 0 && rows.length > 0 && (
+        {notYetStarted > 0 && rowCount > 0 && (
           <p className="meet-page__note">
             {t("meetPage.borderPending", { count: notYetStarted })}
           </p>
         )}
-        {page.state === "prelim" && rows.length > 0 && (
+        {page.state === "prelim" && rowCount > 0 && (
           <p className="meet-page__note">{t("meetPage.shobugakePending")}</p>
         )}
-        <MeetRankingBlock page={page} m={m} />
+        {joint && (
+          <>
+            <h2 className="meet-ranking__joint-title">{t("meetPage.rankingTitle")}</h2>
+            <p className="meet-page__note">{t("meetPage.jointNote")}</p>
+          </>
+        )}
+        {models.map((m) => (
+          <MeetRankingBlock key={m.view.key ?? "all"} page={page} m={m} />
+        ))}
         <p className="meet-page__source">
           {t(confirmed ? "meetPage.sourceConfirmed" : "meetPage.source")}
         </p>
