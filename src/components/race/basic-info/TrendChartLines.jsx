@@ -25,10 +25,11 @@ export function Badge({ cx, cy, boat, r = 7 }) {
   );
 }
 
-// 値の無い点で線を切る（フライング・出遅れの走など）
+// 値の無い点で線を切る（フライング・出遅れの走など）。breakBefore の点（日付の横軸で走らない日をまたぐ）の前でも切る
 function segmentsOf(points, x, y) {
   const segs = [[]];
   points.forEach((p, i) => {
+    if (p.breakBefore) segs.push([]);
     if (p.value === null || p.value === undefined) segs.push([]);
     else segs[segs.length - 1].push(`${x(i, points.length)},${y(p.value)}`);
   });
@@ -208,7 +209,7 @@ function endOf(boat, s) {
   };
 }
 
-export function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
+export function EndLabels({ seriesByBoat, selected, xFor, y, scale, W }) {
   const yOf = (e) => (e.flag ? FLAG_Y : y(e.v));
   const ends = [...seriesByBoat.entries()]
     .map(([boat, s]) => endOf(boat, s))
@@ -217,13 +218,17 @@ export function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
   let last = -99;
   const lx = W - PAD.r + 14;
   // 1走目からそろえる図（今節の走）は、全艇の最後の走より手前で終わった艇の引き出し線も点線にする
-  // （実線だと先の走まで同じ値が続いて見える。ファン評価 11/26）
+  // （実線だと先の走まで同じ値が続いて見える。ファン評価 11/26）。日付の横軸の図は、最後の日より前に終わった艇
   const n = Math.max(...[...seriesByBoat.values()].map((s) => s.length));
+  const xrOf = (e) => seriesByBoat.get(e.boat)[e.at]?.xr;
+  const lastXr = Math.max(...ends.map((e) => xrOf(e) ?? -1));
+  const early = (e) =>
+    xrOf(e) == null ? scale.alignStart && e.at < n - 1 : xrOf(e) < lastXr;
   return ends.map((e) => {
     const py = yOf(e);
     const yy = Math.max(py, last + 16);
     last = yy;
-    const px = x(e.at, e.len);
+    const px = xFor(seriesByBoat.get(e.boat))(e.at, e.len);
     return (
       <g key={e.boat}>
         {/* 点の中に着順を描く図（dotLabel）は、選んだ艇の右端の点で着順を隠さない */}
@@ -243,7 +248,7 @@ export function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
           y2={yy}
           className="trc-leader"
           strokeDasharray={
-            e.stale || (scale.alignStart && e.at < n - 1) ? "2 2" : undefined
+            e.stale || early(e) ? "2 2" : undefined
           }
         />
         <Badge cx={lx} cy={yy} boat={e.boat} />

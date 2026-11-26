@@ -12,6 +12,12 @@ A の型: 龍神 origin/master の許可リスト 6 本。1本ずつ検査の本
   kyotei-wording-allowlist.json        {entries:[{file,line}]}                  行 = (file, line の trim)
   verify-no-undef-allowlist.json       {rules:{規則:{file:{names|count,reason}}}} 行 = names は名前ごと、count は 1..N の単位
 比べ方: 行を（パス, 残りの中身）の多重集合にし、「head の行 ⊆ base の行」なら A。増えた行が1つでもあれば C（人）。
+例外（メタの行・オーナー 2026-11-26 の案1。verify-kyotei-wording.js の例外1＝メタ（title・description・keywords・OGP）の「競艇」は人が許可リストに足して通す決まり）:
+  kyotei-wording-allowlist.json に限り、増えた行を1行ずつ見て、全部が次のどれかに当たれば A。1行でも外れれば今どおり人（C）。
+    locales-meta-key: src/locales/ja/*.json の metaTitle*・metaDescription*・metaKeywords*・ogTitle/ogDescription・twitterTitle/twitterDescription のキーの行（1行1キー）
+    meta-file:        src/utils/pageMeta.js・src/hooks/useSocialMeta.js（title・description・canonical を作るだけのファイル）の title:・description:・keywords: の行（新しい行でも通す）
+    locales-replace:  src/locales/ja/*.json の素の "title":・"description":。同じファイル・同じキー名の行が base から同じ数だけ消えている（置き換え）ときだけ。新しく足す素の行は画面の見出しと見分けられないので人
+  rec に meta_passed（通した行の数）と meta_rules（規則名ごとの行数）を残す。すり抜けの残り: メタの行を消して同じキー名の画面の行を足す差し替えは規則 locales-replace を通る（P2）。
   多重集合にするのは、同じ内容の行が2箇所あれば2エントリ要る検査（e2e-no-unroute 等）で、複製が緩めになるため。reason・$comment の書き換えは向きに関係しない。
   それ以外の欄（骨格）が変わっていれば人。
 付け替え（rename）: git の rename（類似度 90% 以上）の旧→新が 1対1 のときだけ、head の行のパスを新→旧に戻して比べる。
@@ -20,6 +26,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import re
 import subprocess
 from collections import Counter
 from dataclasses import dataclass, field
@@ -175,6 +182,55 @@ def one_to_one(renames: Sequence[Tuple[str, str]]) -> Dict[str, str]:
     return {n: o for o, n in renames if olds[o] == 1 and news[n] == 1 and o != n}
 
 
+KY_PATH = M + "kyotei-wording-allowlist.json"
+META_FILES = frozenset({"src/utils/pageMeta.js", "src/hooks/useSocialMeta.js"})
+LOCALES_GLOB = "src/locales/ja/*.json"
+RE_META_KEY = re.compile(r'^"(meta(Title|Description|Keywords)[A-Za-z]*|og(Title|Description)|twitter(Title|Description))"\s*:\s*"')
+RE_BARE_KEY = re.compile(r'^"(title|description)"\s*:\s*"')
+RE_TWO_KEYS = re.compile(r'"\s*,\s*"')  # 仕様の `","` より広く、`", "` も2キーとみなす
+RE_META_JS = re.compile(r"^(title|description|keywords)\s*:")
+
+
+def _one_json_entry(line: str) -> bool:
+    """JSON の1行1キー（`",` か `"` で終わり、途中に `","` が無い）"""
+    return (line.endswith('",') or line.endswith('"')) and not RE_TWO_KEYS.search(line)
+
+
+def _meta_rule(path: str, line: str) -> Optional[str]:
+    """規則1・2に当たる行の規則名。当たらなければ None（規則3は置き換えの数が要るので別）"""
+    if _glob(LOCALES_GLOB, path) and RE_META_KEY.match(line) and _one_json_entry(line):
+        return "locales-meta-key"
+    if path in META_FILES and RE_META_JS.match(line):
+        return "meta-file"
+    return None
+
+
+def _meta_pass(extra: Counter, removed: Counter) -> Tuple[Counter, Counter]:
+    """増えた行のうちメタの規則で通る物を引く。(残り, 規則名ごとの行数)。removed は base から消えた行"""
+    left: Counter = Counter()
+    passed: Counter = Counter()
+    credit: Counter = Counter()  # 規則3: (パス, キー名) ごとに消えた行の数だけ置き換えを通す
+    for (p, rest), n in removed.items():
+        m = RE_BARE_KEY.match(rest[0]) if len(rest) == 1 and _glob(LOCALES_GLOB, p) else None
+        if m and _one_json_entry(rest[0]):
+            credit[(p, m.group(1))] += n
+    for (p, rest), n in sorted(extra.items()):
+        line = rest[0] if len(rest) == 1 else ""
+        rule = _meta_rule(p, line)
+        if rule is None:
+            m = RE_BARE_KEY.match(line) if _glob(LOCALES_GLOB, p) and _one_json_entry(line) else None
+            k = (p, m.group(1)) if m else None
+            take = min(n, credit[k]) if k else 0
+            if take:
+                credit[k] -= take
+                passed["locales-replace"] += take
+            if n - take:
+                left[(p, rest)] += n - take
+            continue
+        passed[rule] += n
+    return left, passed
+
+
 def judge_path(path: str, status: str, base_text: Optional[str], head_text: Optional[str], inv: Mapping[str, str]) -> Tuple[bool, str, Json]:
     """1パスの向き。(A か, 理由, 記録)。inv は {新: 旧}"""
     parse = PARSERS.get(path)
@@ -196,11 +252,16 @@ def judge_path(path: str, status: str, base_text: Optional[str], head_text: Opti
         relabeled += n if o != p else 0
         back[(o, rest)] += n
     extra = back - b_rows
+    meta: Json = {}
+    if extra and path == KY_PATH:
+        extra, passed = _meta_pass(extra, b_rows - back)
+        if passed:
+            meta = {"meta_passed": sum(passed.values()), "meta_rules": dict(passed)}
     if extra:
         sample = "・".join(f"{p} {'|'.join(r)[:60]}" for (p, r) in sorted(extra)[:3])
         return False, f"C 弱める: {path} の行が増える（{sum(extra.values())} 行。付け替え（rename の1対1・中身が同じ）で説明できない: {sample}）", {"added": sum(extra.values())}
     removed = sum((b_rows - back).values())
-    return True, "", {"direction": "A", "removed": removed, "relabeled": relabeled}
+    return True, "", {"direction": "A", "removed": removed, "relabeled": relabeled, **meta}
 
 
 def judge(changes: Mapping[str, str], base_text: Callable[[str], Optional[str]], head_text: Callable[[str], Optional[str]],
