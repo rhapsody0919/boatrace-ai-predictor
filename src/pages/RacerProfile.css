@@ -36,3 +36,121 @@
     padding: var(--spacing-3);
   }
 }
+
+/* PC（1200px 以上）の並び、前半（オーナー承認 2026-11-26、side-session-notes の g2-racer/pc/compare-*.png）。
+   今日の出走｜成績の要約、プロフィール｜前付けの傾向、進入コース別の棒｜表、今節のモーターの文｜図を2列に。
+   1199px 以下は包み .racer-profile-top が無いのと同じで、今の縦並びのまま。手本は RaceWakuInfoTabPc.css。
+   セレクタは .racer-profile-page か .racer-profile-top で始める（verify-css-class-collisions） */
+.racer-profile-top {
+  display: contents;
+}
+
+@media (min-width: 1200px) {
+  /* 今日の出走が無い日は要約が全幅（auto-fit）。短い2枚なので高さはそろえる */
+  .racer-profile-top {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(calc((100% - var(--spacing-4)) / 2), 1fr));
+    column-gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .racer-profile-top:empty {
+    display: none;
+  }
+
+  .racer-profile-top > .racer-summary {
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  .racer-profile-page #racer-profile {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(calc((100% - var(--spacing-4)) / 2), 1fr));
+    column-gap: var(--spacing-4);
+    align-items: start;
+  }
+
+  .racer-profile-page #racer-profile > * {
+    min-width: 0;
+    margin-top: 0;
+  }
+
+  /* 半分の幅でも値の短い3枚を1行に */
+  .racer-profile-page #racer-profile .racer-profile-facts-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  /* 進入コース別: 棒｜表。表の見出しの高さだけ棒を下げ、1行の高さを表とそろえて左右で同じコースを見比べる */
+  .racer-profile-page .racer-official-block:has(> .racer-official-bars) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--spacing-5);
+    align-items: start;
+  }
+
+  .racer-profile-page .racer-official-block:has(> .racer-official-bars) > * {
+    grid-column: 1 / -1;
+  }
+
+  .racer-profile-page .racer-official-block > .racer-official-bars {
+    grid-column: 1;
+    gap: 0;
+    margin-top: 0;
+    padding-top: 38px;
+  }
+
+  .racer-profile-page .racer-official-block > .racer-official-bars > li {
+    height: 38px;
+    margin: 0;
+    align-content: center;
+  }
+
+  .racer-profile-page .racer-official-block > .racer-official-bars + .racer-official-table-wrap {
+    grid-column: 2;
+  }
+
+  .racer-profile-page .racer-official-bars + .racer-official-table-wrap tr {
+    height: 38px;
+  }
+
+  .racer-profile-page .racer-official-bars + .racer-official-table-wrap :is(th, td) {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* 今節のモーター: 文（左）｜展示タイムの図（右）。図が無い（1走以下）ときは今のまま */
+  .racer-profile-page .racer-motor-status-card:has(> .recharts-responsive-container) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--spacing-5);
+    align-content: start;
+  }
+
+  .racer-profile-page .racer-motor-status-card:has(> .recharts-responsive-container) > * {
+    grid-column: 1;
+  }
+
+  .racer-profile-page .racer-motor-status-card > .racer-motor-status-chart-caption {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .racer-profile-page .racer-motor-status-card > .racer-motor-status-chart-caption + .racer-motor-status-note {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .racer-profile-page .racer-motor-status-card > .recharts-responsive-container {
+    grid-column: 2;
+    grid-row: 3 / span 6;
+  }
+
+  /* 半分の幅の図は、目盛りの字をページの他の図（11px）にそろえ、見出しと重なる凡例を消す */
+  .racer-profile-page .racer-motor-status-card :is(.recharts-cartesian-axis-tick-value, .recharts-label) {
+    font-size: 11px;
+  }
+
+  .racer-profile-page .racer-motor-status-card .recharts-legend-wrapper {
+    display: none;
+  }
+}
