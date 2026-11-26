@@ -8,48 +8,11 @@
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { createRequire } from "node:module";
-import { build as bundle } from "esbuild";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { loadComponent } from "./verifyData/loadComponent.js";
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const requireHere = createRequire(import.meta.url);
-const i18nStub = {
-  name: "i18n-stub",
-  setup(build) {
-    build.onResolve({ filter: /^react-i18next$/ }, () => ({
-      path: "x",
-      namespace: "i18n",
-    }));
-    build.onLoad({ filter: /.*/, namespace: "i18n" }, () => ({
-      loader: "js",
-      contents:
-        "export const useTranslation = () => ({ t: (k) => k, i18n: { resolvedLanguage: 'ja' } });",
-    }));
-  },
-};
-const {
-  outputFiles: [chart],
-} = await bundle({
-  entryPoints: [
-    path.join(ROOT, "src/components/race/basic-info/TrendChart.jsx"),
-  ],
-  write: false,
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  packages: "external",
-  jsx: "automatic",
-  plugins: [i18nStub],
-});
-const loaded = { exports: {} };
-new Function("require", "module", "exports", chart.text)(
-  requireHere,
-  loaded,
-  loaded.exports,
+const TrendChart = await loadComponent(
+  "src/components/race/basic-info/TrendChart.jsx",
 );
-const TrendChart = loaded.exports.default;
 
 const failures = [];
 const check = (name, ok, detail = "") => {
