@@ -39,7 +39,7 @@ export default function TrendTooltip({
   const { t, i18n } = useTranslation();
   const lp = (path) => localizePath(path, i18n.resolvedLanguage);
   const run = point.run;
-  const value = formatTrendValue(point.value, scale);
+  const showValue = scale.tipValue && point.value != null;
   return (
     <div
       className={`trc-tip${pinned ? " is-pinned" : ""}${leftPct > 55 ? " is-flip" : ""}`}
@@ -76,12 +76,14 @@ export default function TrendTooltip({
           {finishText(t, run)} ST {stText(run)}
         </p>
       )}
-      <p className="trc-tip-line trc-tip-value">
-        {t("basicInfo.trend.tipValue", {
-          metric: t(`basicInfo.metrics.${metric}`),
-          value,
-        })}
-      </p>
+      {showValue && (
+        <p className="trc-tip-line trc-tip-value">
+          {t("basicInfo.trend.tipValue", {
+            metric: t(`basicInfo.metrics.${metric}`),
+            value: formatTrendValue(point.value, scale),
+          })}
+        </p>
+      )}
     </div>
   );
 }

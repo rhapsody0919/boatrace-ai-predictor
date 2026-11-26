@@ -8,6 +8,9 @@
  * - invert: 小さいほど良い指標を上に描く（平均ST・展示タイム・順位）
  * - digits: 値の小数の桁（右端の札・吹き出し）。目盛りは tickDigits
  * - unit: 値に付ける字（"%" 等）。unitKey は縦軸の頭に出す訳の鍵（無ければ unit をそのまま出す）
+ * - tipValue: 吹き出しに値の行（「直近30走の◯◯」）を出すか。走ごとの生の値は2行目と重なるので出さない
+ * - min: 縦軸の下の端の下限（負にならない値）
+ * - flags・dimOthers・dots・dropZero: 走ごとの生の値の図（R-36）だけ。F・L の印の帯、選んでいない艇を薄く、選んだ艇に点、ST の .12 の書き方
  */
 
 export const TREND_SCALES = Object.freeze({
@@ -19,6 +22,7 @@ export const TREND_SCALES = Object.freeze({
     tickDigits: 0,
     unit: "%",
     unitKey: null,
+    tipValue: true,
   }),
   top3Rate: Object.freeze({
     step: 5,
@@ -28,6 +32,7 @@ export const TREND_SCALES = Object.freeze({
     tickDigits: 0,
     unit: "%",
     unitKey: null,
+    tipValue: true,
   }),
   avgSt: Object.freeze({
     step: 0.01,
@@ -37,6 +42,24 @@ export const TREND_SCALES = Object.freeze({
     tickDigits: 2,
     unit: "",
     unitKey: "basicInfo.trend.unitSec",
+    tipValue: true,
+  }),
+  // 走ごとの生の ST（窓の平均でなく1走の値。枠別の ST 履歴 R-36、11/26）。フライング・出遅れは値を持たず印で描く
+  st: Object.freeze({
+    step: 0.05,
+    tickStep: 0.05,
+    invert: true,
+    digits: 2,
+    tickDigits: 2,
+    unit: "",
+    unitKey: "basicInfo.trend.unitSec",
+    tipValue: false,
+    min: 0,
+    labelEvery: 2,
+    flags: true,
+    dimOthers: true,
+    dots: true,
+    dropZero: true,
   }),
 });
 
