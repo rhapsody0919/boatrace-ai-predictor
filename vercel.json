@@ -325,6 +325,14 @@
     {
       "path": "/api/cron/in-caution-today-health",
       "schedule": "45 20 * * *"
+    },
+    {
+      "path": "/api/cron/racer-boat-return-baseline",
+      "schedule": "20 16 * * *"
+    },
+    {
+      "path": "/api/cron/racer-boat-return-baseline",
+      "schedule": "20 20 * * *"
     }
   ],
   "functions": {
