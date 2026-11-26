@@ -354,3 +354,21 @@ function buildFormRanking(currentByRacer, pastByRacer, raceMetaByRaceId, limit) 
 
   return { rising, falling };
 }
+
+/**
+ * レースごとの3連単の払戻（円、100円あたり）。選手ページの「3着以内のレースの3連単配当」用（G2 2026-11-26）。
+ * 列名と中身が逆で race_results.payout_trio が3連単（docs/knowledge/data-columns.md。本番の結果の画面の ¥1,880 と一致を確認）。
+ * 走ごとの履歴（getRacerRaceHistory）の形は全貌動画の材料と共有して verify-full-picture-screen-shared.js が固定しているので、
+ * そこへは足さず別に読む。race_payouts は匿名から読めない（079）。失敗は throw する（呼ぶ側が失敗の表示を出す）
+ * @param {string|number} racerId キャッシュの鍵に使う
+ * @param {string[]} raceIds
+ * @returns {Promise<Object<string, number|null>>} race_id → 3連単の払戻
+ */
+export function getRaceTrifectaPayouts(racerId, raceIds) {
+  const last = raceIds[raceIds.length - 1] ?? "";
+  return withCache(`racer-trifecta-payouts-v1-${racerId}-${raceIds.length}-${last}`, async () => {
+    if (!supabase) throw new Error("Supabase のクライアントが無いので3連単の払戻を読めない");
+    const rows = await fetchAllByIn("race_results", "race_id, payout_trio", "race_id", raceIds);
+    return Object.fromEntries(rows.map((r) => [r.race_id, r.payout_trio ?? null]));
+  });
+}
