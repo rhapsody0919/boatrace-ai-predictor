@@ -12,22 +12,34 @@ import { trendScaleOf } from "../../../pure/trendMetricScale.js";
 import { useChartWidth } from "./useChartWidth.js";
 import TrendTooltip from "./TrendTooltip";
 import { useChartPick } from "./useChartPick.js";
+import { Badge, Line, EndLabels } from "./TrendChartLines.jsx";
+import { H, PAD, BAND, FLAG_Y, fmtValue } from "./trendChartGeom.js";
 
-const H = 240;
-const PAD = { l: 30, r: 66, t: 18, b: 34 };
+// 勝率の段・モーターの推移が使う（線の部品は TrendChartLines.jsx）
+export { Badge };
 
 const slash = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
 
 function scaleOf(seriesByBoat, scale, W) {
-  const all = [...seriesByBoat.values()].flat().map((p) => p.value);
+  // 値の無い点（フライング・出遅れ等。印だけ描く）は尺度に入れない
+  const all = [...seriesByBoat.values()]
+    .flat()
+    .map((p) => p.value)
+    .filter((v) => v !== null && v !== undefined);
   const { step } = scale;
-  const lo = Math.floor(Math.min(...all) / step) * step - step;
+  // 負にならない指標（ST）は 0 より下に伸ばさない
+  const lo = Math.max(
+    scale.min ?? -Infinity,
+    Math.floor(Math.min(...all) / step) * step - step,
+  );
   const hi = Math.ceil(Math.max(...all) / step) * step + step;
   const n = Math.max(...[...seriesByBoat.values()].map((s) => s.length));
   // 平均ST は小さいほど良いので上に描く
   const y = (v) => {
     const r = (v - lo) / (hi - lo);
-    return PAD.t + (H - PAD.t - PAD.b) * (scale.invert ? r : 1 - r);
+    // 印の帯（F・L）がある尺度は、値の線をその下から描く
+    const top = PAD.t + (scale.flags ? BAND : 0);
+    return top + (H - top - PAD.b) * (scale.invert ? r : 1 - r);
   };
   // 右端（最新）をそろえる。点の少ない艇は左を空ける
   const x = (i, len) =>
@@ -53,82 +65,6 @@ export function GridLines({ ticks, y, x1, x2, label }) {
       </text>
     </g>
   ));
-}
-
-export function Badge({ cx, cy, boat, r = 7 }) {
-  const c = BOAT_COLORS[boat];
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={r} fill={c.bg} stroke="#9ca3af" />
-      <text
-        x={cx}
-        y={cy + r / 2}
-        fontSize={r + 2}
-        fontWeight="700"
-        textAnchor="middle"
-        fill={c.text}
-      >
-        {boat}
-      </text>
-    </g>
-  );
-}
-
-function Line({ points, boat, selected, x, y }) {
-  const d = points
-    .map((p, i) => `${x(i, points.length)},${y(p.value)}`)
-    .join(" ");
-  const w = selected ? 3 : 1.4;
-  return (
-    <g className={`trc-line trc-line-${boat}`}>
-      {/* 1号艇の白・2号艇の黒は地に溶けるので縁を付ける */}
-      {(boat === 1 || boat === 2) && (
-        <polyline
-          className="trc-halo"
-          points={d}
-          fill="none"
-          strokeWidth={w + 1.4}
-        />
-      )}
-      <polyline className="trc-stroke" points={d} fill="none" strokeWidth={w} />
-    </g>
-  );
-}
-
-// 右端の値の札。重ならないよう下へずらし、点から引き出し線を付ける（visual-designer 11/24）
-function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
-  const ends = [...seriesByBoat.entries()]
-    .map(([boat, s]) => ({ boat, v: s[s.length - 1].value, len: s.length }))
-    .sort((a, b) => y(a.v) - y(b.v));
-  let last = -99;
-  const lx = W - PAD.r + 14;
-  return ends.map((e) => {
-    const py = y(e.v);
-    const yy = Math.max(py, last + 16);
-    last = yy;
-    const px = x(e.len - 1, e.len);
-    return (
-      <g key={e.boat}>
-        <circle
-          cx={px}
-          cy={py}
-          r={e.boat === selected ? 4.5 : 3}
-          fill={BOAT_COLORS[e.boat].bg}
-          stroke="#9ca3af"
-        />
-        <line x1={px + 4} y1={py} x2={lx - 8} y2={yy} className="trc-leader" />
-        <Badge cx={lx} cy={yy} boat={e.boat} />
-        <text
-          x={lx + 10}
-          y={yy + 4}
-          className="trc-end"
-          fontWeight={e.boat === selected ? 700 : 400}
-        >
-          {e.v.toFixed(scale.digits)}
-        </text>
-      </g>
-    );
-  });
 }
 
 // 選んだ艇の日付の目盛り・「最新」・休みの印
@@ -165,8 +101,14 @@ function SelectedAxis({ sel, selected, x, W }) {
       <text x={PAD.l + 16} y={H - 2} className="trc-axisnote">
         {t("basicInfo.trend.axisNote")}
       </text>
-      {trendGapIndexes(sel).map((i) => {
+      {trendGapIndexes(sel).map((i, k, all) => {
         const gx = (x(i - 1, sel.length) + x(i, sel.length)) / 2;
+        // 前の空きの札と近い（70 より狭い）ときは1段下げる（くっついて1本の帯に読めた。visual-designer 11/26）
+        const prev = k > 0 ? all[k - 1] : null;
+        const gxPrev = prev
+          ? (x(prev - 1, sel.length) + x(prev, sel.length)) / 2
+          : -Infinity;
+        const dy = gx - gxPrev < 70 && k % 2 === 1 ? 12 : 0;
         return (
           <g key={i}>
             <line
@@ -176,8 +118,8 @@ function SelectedAxis({ sel, selected, x, W }) {
               y2={H - PAD.b}
               className="trc-gap"
             />
-            <Badge cx={gx - 40} cy={PAD.t - 8} boat={selected} r={6} />
-            <text x={gx - 31} y={PAD.t - 4} className="trc-axisnote">
+            <Badge cx={gx - 40} cy={PAD.t - 8 + dy} boat={selected} r={6} />
+            <text x={gx - 31} y={PAD.t - 4 + dy} className="trc-axisnote">
               {t("basicInfo.trend.gap", { days: sel[i].gapDays })}
             </text>
           </g>
@@ -202,13 +144,13 @@ function PickLayer({ picked, px, y, selected, W, pointer }) {
           />
           <circle
             cx={px}
-            cy={y(picked.value)}
+            cy={picked.value == null ? FLAG_Y : y(picked.value)}
             r={7.5}
             className="trc-pick-ring"
           />
           <circle
             cx={px}
-            cy={y(picked.value)}
+            cy={picked.value == null ? FLAG_Y : y(picked.value)}
             r={6}
             fill={BOAT_COLORS[selected].bg}
             className="trc-pick-dot"
@@ -273,7 +215,13 @@ export default function TrendChart({
           y={y}
           x1={PAD.l}
           x2={W - PAD.r}
-          label={(g) => g.toFixed(scale.tickDigits)}
+          label={(g) =>
+            // 目盛りの数字を間引く尺度（ST の 0.05 刻み）は、線は残して数字だけ1つおきに出す
+            scale.labelEvery &&
+            Math.round(g / scale.tickStep) % scale.labelEvery !== 0
+              ? ""
+              : fmtValue(g, scale.tickDigits, scale)
+          }
         />
         {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
         <text
@@ -293,6 +241,7 @@ export default function TrendChart({
             selected={boat === selected}
             x={x}
             y={y}
+            scale={scale}
           />
         ))}
         <EndLabels
