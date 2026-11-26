@@ -4,12 +4,6 @@
  * 11/22 の分で4日止まった（2026-11-26 オーナーの指摘）ので、session-start-check で古さを出す。
  * 検証: scripts/maintenance/verify-site-updates-freshness.js
  */
-import { promises as fs } from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.join(__dirname, "../../..");
 const DATA_FILE = "src/data/siteUpdates.js";
 export const SITE_UPDATES_STALE_DAYS = 7;
 
@@ -50,8 +44,10 @@ export function judgeSiteUpdatesFreshness(latestDate, now = new Date()) {
 
 export async function checkSiteUpdatesFreshness(now = new Date()) {
   try {
-    const text = await fs.readFile(path.join(REPO_ROOT, DATA_FILE), "utf-8");
-    return judgeSiteUpdatesFreshness(latestUpdateDate(text), now);
+    // 中身は月ごとのファイルに分かれている（src/data/siteUpdates/）。つないだ配列を読む
+    const { SITE_UPDATES } = await import("../../../src/data/siteUpdates.js");
+    const latest = SITE_UPDATES.map((u) => u.date).sort().at(-1) ?? null;
+    return judgeSiteUpdatesFreshness(latest, now);
   } catch (error) {
     return { stale: null, error: `${DATA_FILE} を読めない: ${error.message}` };
   }
