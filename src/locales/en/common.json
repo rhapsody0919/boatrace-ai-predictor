@@ -2329,7 +2329,7 @@
     "meetFormRowValue_lap": "Lap",
     "meetFormRowValue_turn": "Turn",
     "meetFormRowValue_straight": "Straight",
-    "meetFormNote": "Higher is faster. The number in each point is the actual finish (gold = 1st). Runs where the entry course differed from the boat number are colored. Runs without exhibition data skip the point and are joined by a dotted line. Each boat ran different races (the x-axis counts each boat's runs from the first).",
+    "meetFormNote": "The number inside each point is the actual finish (gold = 1st). Tap a point to see that run's values and a link to the race. The number at the right edge is each boat's value from its last run this meet before this race; it is not this race's value. Each boat ran different races on different days, so the x-axis starts at each boat's first run. Runs where the entry course differed from the boat number are colored. Runs without exhibition data skip the point and are joined by a dotted line.",
     "meetFormNoteAvg": " The dashed line is the venue average for that day.",
     "meetFormFinishFailed": "Could not load finishes"
   },
