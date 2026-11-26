@@ -88,6 +88,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/snsObservationWindows.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。窓・取得元・指標・時刻の判定（src/utils/snsObservations.js から移し… | windowsFor, displayWindowFor, observationPeriod, OBSERVATION_WINDOWS, FULL_PICTURE_FORMAT ほか10件 |
 | `src/pure/snsPostText.js` | — | buildPostText |
 | `src/pure/techniqueNames.js` | 決まり手の英語キー → 日本語の名前。展開予測（src/utils/turnPrediction.js）をやめた後も、データ出走表などの | TECHNIQUE_NAMES |
+| `src/pure/trendMetricScale.js` | 推移の図（TrendChart・TrendTooltip）の指標ごとの尺度（オーナー 2026-11-26、時系列の残り44件の前提 PR-0）。 | trendScaleOf, formatTrendValue, TREND_SCALES |
 | `src/pure/upcomingDeadlineRaces.js` | トップの「まもなく締切のレース」の節（PV09 T1・案 B、BOA-1690）の行を選ぶ純関数。 | selectUpcomingDeadlineRaces, moreButtonVenues, UPCOMING_MAX_ROWS, UPCOMING_MOBILE_VISIBLE, UPCOMING_MORE_VENUE_NAMES |
 | `src/pure/venueCourseTableRows.js` | 会場ページの「コース別成績と特徴（直近1年）」の表の行を組む（BOA-1687 GS02 V1）。 | venueCourseTableRows, VENUE_COURSE_SECTION_ID |
 | `src/pure/venueGuideArticles.js` | 会場ページの「<会場>の攻略記事」に出す記事を選ぶ（BOA-1692 GS02 V2）。 | venueGuideTitle, selectVenueGuideArticles, VENUE_GUIDE_CATEGORY, MAX_VENUE_GUIDE_ARTICLES |
@@ -683,4 +684,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 641 ファイル / export 3453 件。
+対象 642 ファイル / export 3456 件。
