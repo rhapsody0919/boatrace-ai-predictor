@@ -74,16 +74,6 @@ function scene1() {
     ])?.decision,
     "ask",
   );
-  check(
-    "guard-weakening が無ければ待たせる",
-    judgeChecks("1", greenWith("guard-weakening", null))?.decision,
-    "ask",
-  );
-  check(
-    "guard-weakening が落ちていれば止める",
-    judgeChecks("1", greenWith("guard-weakening", "FAILURE"))?.decision,
-    "deny",
-  );
   // 以前は ml-tests を見ていなかった
   check(
     "ml-tests が無ければ待たせる",
@@ -127,6 +117,20 @@ function scene1() {
     "verifyの結果がまだ無ければ待たせる",
     judgeChecks("1", [{ name: "e2e", state: "SUCCESS" }])?.decision,
     "ask",
+  );
+}
+
+// guard-weakening（2026-11-26 に ruleset の必須へ上げた）
+function sceneGuardWeakening() {
+  check(
+    "guard-weakening が無ければ待たせる",
+    judgeChecks("1", greenWith("guard-weakening", null))?.decision,
+    "ask",
+  );
+  check(
+    "guard-weakening が落ちていれば止める",
+    judgeChecks("1", greenWith("guard-weakening", "FAILURE"))?.decision,
+    "deny",
   );
 }
 
@@ -195,6 +199,7 @@ function scene2() {
 export function runGuardPrMergeScenes1(env) {
   ({ check } = env);
   scene1();
+  sceneGuardWeakening();
   scene2();
 }
 
