@@ -72,11 +72,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(row.locator(".rmt-trend-last")).toHaveText("F", {
       timeout: 30000,
     });
-    // 前走が F なので、1つ前の走に「前走」の大きい点（r=3.2）を付けない
-    // （ファン評価1周目: 右端は F なのに大きい点が 0.09 の走に付いていた）
-    await expect(row.locator('circle[r="3.2"]')).toHaveCount(0);
-    const other = page.locator(".rmt-trend-row").filter({ hasNotText: "古川" });
-    await expect(other.first().locator('circle[r="3.2"]')).toHaveCount(1);
+    // 前走が F なので、6艇を重ねた図の右端の札も値でなく F（共通の推移の図、R-43）。
+    // 1つ前の走の値（0.09）を前走として出さない（ファン評価1周目）
+    const trend = page.locator(".rmt-trend-chart");
+    await expect(trend.locator(".trc-end-flag")).toHaveText(["F"]);
+    await expect(trend.locator(".trc-end")).toHaveCount(6);
     await row.click();
     await expect(page.locator(".rmt-spark-foot").first()).toContainText(
       "前走 F",
@@ -242,7 +242,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 横軸は日付（BOA-538）。範囲は「ここに出ている走」の範囲で、節の全日程ではない
     // （表示中レースの直前までしか持たない）。以前は「走った順」と断っていた
     await expect(page.locator(".rmt-trend-range")).toHaveText(
-      /^横軸は日付（\d+\/\d+〜\d+\/\d+）。1日に2走した日は左右にずらし、その選手が走らなかった日は線を切っています。各行の最後の点がその選手の前走です。$/,
+      /^横軸は日付（\d+\/\d+〜\d+\/\d+）。1日に2走した日は左右にずらし、その選手が走らなかった日は線を切っています。右端の札の数字は各艇の前走の値です。$/,
     );
     // 行を押すと下の詳細が変わることを、グラフ側にも書く（表側にだけあった）
     await expect(page.locator(".rmt-hint").last()).toContainText(
@@ -315,15 +315,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rmt-trend-row")).toHaveCount(6, {
       timeout: 25000,
     });
-    // 行のどこを押しても選手が切り替わる（BOA-550）。以前は艇番・選手名だけが押せて、
-    // いちばん大きい的の折れ線を押しても何も起きなかった。3行目の折れ線の上を押す
+    // 行のどこを押しても選手が切り替わる（BOA-550）。以前は艇番・選手名だけが押せた。
+    // 3行目の名前と値の間（右寄りの空き）を押す
     const trendRow = page.locator(".rmt-trend-row").nth(2);
     // 座標で押すと画面下の固定バーに当たることがあるので、ロケーターで押す
     // （見える位置までスクロールしてから押す）
-    const spark = trendRow.locator(".meet-sparkline-wrap");
-    const box = await spark.boundingBox();
-    await spark.click({
-      position: { x: box.width * 0.6, y: box.height / 2 },
+    const box = await trendRow.boundingBox();
+    await trendRow.click({
+      position: { x: box.width * 0.9, y: box.height / 2 },
     });
     await expect(trendRow).toHaveAttribute("aria-pressed", "true");
     // 右端の前走の値を押しても切り替わる

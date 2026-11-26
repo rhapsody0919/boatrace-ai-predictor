@@ -555,26 +555,26 @@
   border-color: var(--text-primary);
 }
 
-.rmt-trend-head {
-  display: grid;
-  grid-template-columns: 7.5em 1fr 3em;
-  gap: var(--spacing-2);
-  margin-bottom: 2px;
-}
-
 .rmt-trend-rows {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   gap: var(--spacing-1);
+  /* 広い画面で名前と値が端と端に離れない（visual-designer 11/26） */
+  max-width: 560px;
+}
+
+/* 6艇を重ねた共通の推移の図（R-43、11/26）。広い画面で横に伸びすぎて山と谷がつぶれない幅 */
+.rmt-trend-chart {
+  max-width: 760px;
 }
 
 /* 行全体が1つのボタン（BOA-550）。名前・線・前走値のどこを押しても選手が切り替わる */
 .rmt-trend-row {
   display: grid;
-  /* 名前・線・前走値。名前は固定幅にして6行の線の左端を揃える */
-  grid-template-columns: 7.5em 1fr 3em;
+  /* 名前・前走値・今節平均 ST を1行に（R-43 で線の列は上の図へ移した） */
+  grid-template-columns: 7.5em 3em 1fr;
   align-items: center;
   gap: var(--spacing-2);
   width: 100%;
@@ -586,8 +586,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  /* 1走しかない選手は線が出ない。行の高さを線のある行と揃える（2026-09-29 ファン評価） */
-  min-height: 34px;
+  min-height: 32px;
 }
 
 .rmt-trend-row:hover {
@@ -613,7 +612,7 @@
 .rmt-trend-last {
   /* 線が無い行（1走のみ）でも前走の値を右端の列に置く。無指定だと
      中央の列に詰まり、6艇の前走が縦に揃わない（2026-09-29 ファン評価） */
-  grid-column: 3;
+  grid-column: 2;
   font-size: var(--font-size-2xs);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -692,40 +691,17 @@
   color: var(--text-secondary);
 }
 
-/* 推移の見出しの「点の下＝着順」（BOA-537）。線の列の左に小さく */
-.rmt-trend-head-sub {
-  font-size: var(--font-size-2xs);
-  color: var(--text-secondary);
-}
-
 /* スマホでは名前の列を詰めて、推移の線と着順の段に幅を回す（BOA-537 ファン評価3周目）。
    7.5em（120px）だと 375px で線の幅が109pxしかなく、名前の右に約64pxの空きが
    あった。5em でも5文字の名前と艇番が入る。長い名前は省略記号で切る */
 @media (max-width: 480px) {
-  .rmt-trend-row,
-  .rmt-trend-head {
-    grid-template-columns: 5em 1fr 3em;
+  .rmt-trend-row {
+    grid-template-columns: 6em 3em 1fr;
   }
 
   .rmt-trend-label .rmt-name {
     white-space: nowrap;
   }
-}
-
-/* 日付の目盛り（BOA-538）。推移の線の列と同じ幅で、点と同じ横位置に置く */
-.rmt-trend-days {
-  position: relative;
-  height: 1.2em;
-}
-
-.rmt-trend-day {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  font-size: var(--font-size-2xs);
-  color: var(--text-secondary);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 /* 予選後にFを切った選手の印（順位の下、BOA-626）。順位より小さく出し、
@@ -774,9 +750,8 @@
 }
 
 .rmt-trend-st-avg {
-  grid-column: 2 / -1;
-  grid-row: 2;
-  justify-self: end;
+  grid-column: 3;
+  justify-self: start;
   display: block;
   white-space: nowrap;
   font-size: var(--font-size-2xs);
