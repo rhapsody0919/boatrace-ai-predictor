@@ -1,0 +1,76 @@
+/* 枠番別回収率（RacerBoatReturns.jsx・RacerBoatReturnChart.jsx）。クラスは rbr- で始める（verify-css-class-collisions）。
+   数字は右揃え・等幅、単位は小さい字（design-system.md「表とグラフ」5）。色・矢印・順位は付けない */
+.rbr-table th,
+.rbr-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  vertical-align: top;
+}
+
+.rbr-table th:first-child,
+.rbr-table td:first-child {
+  text-align: center;
+}
+
+.rbr-unit {
+  margin-left: 1px;
+  font-size: 0.8em;
+}
+
+.rbr-sub {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rbr-few td {
+  opacity: 0.7;
+}
+
+.rbr-trend {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.rbr-trend-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rbr-trend-sub {
+  margin: var(--spacing-1) 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rbr-picker {
+  display: flex;
+  gap: var(--spacing-2);
+  margin: var(--spacing-2) 0;
+}
+
+.rbr-pick {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.rbr-pick[aria-pressed="true"] {
+  border: 2px solid var(--text-primary);
+}
+
+.rbr-chart {
+  display: block;
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+}

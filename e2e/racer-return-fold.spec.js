@@ -2,20 +2,23 @@ import { test, expect } from "./fixtures.js";
 
 /**
  * 選手ページの枠番別回収率の扱いと、公式の期別の値の呼び名（UI/UX 改善 #8・#9、承認 docs/design/racer-wt-uiux-2026-11/mock/approved.md）の固定。
- * - 「枠番別回収率（過去180日）」は畳んで「参考・N走」を付け、30走未満の枠番の回収率は「-」。矢印・色は付けない
+ * - 枠番別回収率は「この枠の中は絞り込みが効きます」の枠の中で畳んで「参考・N走」を付ける。矢印・色は付けない
+ * - 30走未満も走数つきで率を出す（0走は「—」）。過去180日の固定と30走未満の「-」は、オーナーの指摘で
+ *   絞り込みに合わせる形へ改めた（G2、オーナー承認 2026-11-26、side-session-notes の g2-racer/rr2・rr3）
+ * - 推移は枠番を選んで、各走の時点までの通算の線
  * - 公式の期別成績の2連の率は「2連対率」（出走表・当サイト集計の「2連率」と呼び分ける）
  * 録画の再生で 4320
  */
 
-test("枠番別回収率は畳んで参考・N走、30走未満の枠番は「-」で矢印・色は無い", async ({
+test("枠番別回収率は絞り込みの枠の中で畳んで参考・N走、全行に率を出し矢印・色は無い", async ({
   page,
 }) => {
   await page.goto("/racer/4320");
-  const fold = page.locator("details.racer-return-fold");
+  const fold = page.locator("#racer-filtered details.racer-return-fold");
   await expect(fold).toHaveCount(1, { timeout: 30000 });
   await expect(fold).not.toHaveAttribute("open", "");
   await expect(fold.locator("summary")).toHaveText(
-    /^枠番別回収率（過去180日）参考・\d+走$/,
+    /^枠番別回収率.*参考・\d+走・期間と会場は上の絞り込み$/,
   );
 
   // タップ領域は44px以上で、▶ の印（list-item）が残る
@@ -25,17 +28,30 @@ test("枠番別回収率は畳んで参考・N走、30走未満の枠番は「-�
 
   await fold.locator("summary").click();
   const rows = fold.locator("tbody tr");
-  const count = await rows.count();
-  expect(count).toBeGreaterThan(0);
-  for (let i = 0; i < count; i++) {
+  await expect(rows).toHaveCount(6);
+  for (let i = 0; i < 6; i++) {
     const cells = rows.nth(i).locator("td");
     const n = Number(await cells.nth(1).innerText());
-    const expected = n < 30 ? /^-$/ : /^(\d+%|-)$/;
-    await expect(cells.nth(2)).toHaveText(expected);
-    await expect(cells.nth(3)).toHaveText(expected);
+    // 30走未満も「-」で隠さない。走が無い枠番だけ「—」
+    await expect(cells.nth(2)).toHaveText(n > 0 ? /^[\d,]+%\s*1着\d+回$/ : /^—$/);
+    await expect(cells.nth(3)).toHaveText(n > 0 ? /^[\d,]+%$/ : /^—$/);
   }
   await expect(fold.locator("[class*='diff'], [class*='better'], [class*='worse']")).toHaveCount(0);
   await expect(fold).not.toContainText(/[↑↓]/);
+});
+
+test("枠番別回収率の推移は枠番を選ぶと、その枠番の通算の線に替わる", async ({ page }) => {
+  await page.goto("/racer/4320");
+  const fold = page.locator("#racer-filtered details.racer-return-fold");
+  await expect(fold).toHaveCount(1, { timeout: 30000 });
+  await fold.locator("summary").click();
+  const picks = fold.getByRole("group", { name: "推移を見る枠番" }).getByRole("button");
+  await expect(picks).toHaveCount(6);
+  await expect(picks.nth(0)).toHaveAttribute("aria-pressed", "true");
+  await expect(fold.locator(".rbr-trend-sub")).toContainText("1号艇");
+  await picks.nth(1).click();
+  await expect(picks.nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(fold.locator(".rbr-trend-sub")).toContainText("2号艇");
 });
 
 test("冒頭の要約の公式の期別の値は「2連対率」と呼ぶ", async ({ page }) => {
