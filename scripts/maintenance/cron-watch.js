@@ -209,19 +209,19 @@ export async function runWatch({
 const readJson = (f, fallback) =>
   existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : fallback;
 
-/** Keychain の汎用パスワード。無ければ null。値は返すだけで出さない（標準エラーも捨てる） */
-function readKeychain(service, account) {
+/** Keychain の汎用パスワード。無ければ null。値は返すだけで出さない */
+const readKeychain = (service, account) => {
+  const args = ["find-generic-password", "-s", service, "-a", account, "-w"];
   try {
-    const v = execFileSync(
-      "/usr/bin/security",
-      ["find-generic-password", "-s", service, "-a", account, "-w"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
-    ).trim();
-    return v || null;
+    const out = execFileSync("/usr/bin/security", args, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return out.trim() || null;
   } catch {
     return null;
   }
-}
+};
 
 async function main() {
   const root = path.join(os.homedir(), ".config/ryujin/private");

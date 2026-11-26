@@ -59,58 +59,67 @@ function tally(counts, cut) {
   return per;
 }
 
+/** 経路1本の警報（無ければ null）。settled はこの時間より前の失敗だけ「戻っていない」と見る（拾い直しを待つ） */
+function judgePath(path, a, settled) {
+  const fails = a.f4 + a.f5;
+  if (fails === 0) return null;
+  const name = path.split("/").pop();
+  const codes = Object.entries(a.codes)
+    .sort(([x], [y]) => (x < y ? -1 : 1))
+    .map(([k, v]) => `${k} ${v}回`)
+    .join("・");
+  const day = jstDay(a.first5 ?? a.first4);
+  const head = `Vercel Cron ${name} が直近24時間で失敗（${codes}、成功 ${a.ok}回、${day} から）`;
+  const alert = (prefix, level, text) => ({
+    key: `${prefix}:${path}:${day}`,
+    level,
+    text: `${head}。${text}`,
+  });
+  const recovered = a.lastOk && a.lastOk >= a.last5;
+  if (SHIP.includes(path) && a.f5 >= 2 && a.ok === 0)
+    return alert(
+      "cron_down",
+      "high",
+      `定時と拾い直しが両方落ちて本番の出荷が止まっている。Vercel のログ（${path}）を見る。鍵・環境変数ならオーナー`,
+    );
+  if (
+    (path.includes("-dispatch") || path === WATCHER) &&
+    a.f5 >= 1 &&
+    a.last5 < settled &&
+    !recovered
+  )
+    return alert(
+      "cron_fail",
+      "mid",
+      `最後の失敗の後に成功が無い（${path === WATCHER ? "見張り自身の失敗" : "拾い直しも戻っていない"}）。Vercel のログを見る`,
+    );
+  if (
+    (a.ok === 0 && (a.f5 >= 1 || a.f4 >= 2)) ||
+    (fails >= RATE_MIN && fails >= RATE * (a.ok + fails))
+  )
+    return alert(
+      "cron_fail",
+      "mid",
+      "成功0か半分以上の失敗。Vercel のログを見る（401 が全経路なら CRON_SECRET の不一致＝オーナー）",
+    );
+  return null;
+}
+
 /** 直近 JUDGE_H 時間の数から警報の候補（{key, level, text}） */
 export function judge(counts, now, coveredFrom) {
   const cut = hourOf(new Date(now.getTime() - JUDGE_H * HOUR));
   const settled = hourOf(new Date(now.getTime() - HOUR));
   const per = tally(counts, cut);
-  const out = [];
-  for (const [path, a] of Object.entries(per).sort(([x], [y]) =>
-    x < y ? -1 : 1,
-  )) {
-    const fails = a.f4 + a.f5;
-    const name = path.split("/").pop();
-    const codes = Object.entries(a.codes)
-      .sort(([x], [y]) => (x < y ? -1 : 1))
-      .map(([k, v]) => `${k} ${v}回`)
-      .join("・");
-    const first = a.first5 ?? a.first4;
-    const day = first ? jstDay(first) : "";
-    const head = `Vercel Cron ${name} が直近24時間で失敗（${codes}、成功 ${a.ok}回、${day} から）`;
-    if (SHIP.includes(path) && a.f5 >= 2 && a.ok === 0)
-      out.push({
-        key: `cron_down:${path}:${day}`,
-        level: "high",
-        text: `${head}。定時と拾い直しが両方落ちて本番の出荷が止まっている。Vercel のログ（${path}）を見る。鍵・環境変数ならオーナー`,
-      });
-    else if (
-      (path.includes("-dispatch") || path === WATCHER) &&
-      a.f5 >= 1 &&
-      a.last5 < settled &&
-      !(a.lastOk && a.lastOk >= a.last5)
-    )
-      out.push({
-        key: `cron_fail:${path}:${day}`,
-        level: "mid",
-        text: `${head}。最後の失敗の後に成功が無い（${path === WATCHER ? "見張り自身の失敗" : "拾い直しも戻っていない"}）。Vercel のログを見る`,
-      });
-    else if (
-      (a.ok === 0 && (a.f5 >= 1 || a.f4 >= 2)) ||
-      (fails >= RATE_MIN && fails >= RATE * (a.ok + fails))
-    )
-      out.push({
-        key: `cron_fail:${path}:${day}`,
-        level: "mid",
-        text: `${head}。成功0か半分以上の失敗。Vercel のログを見る（401 が全経路なら CRON_SECRET の不一致＝オーナー）`,
-      });
-  }
+  const out = Object.entries(per)
+    .sort(([x], [y]) => (x < y ? -1 : 1))
+    .map(([path, a]) => judgePath(path, a, settled))
+    .filter(Boolean);
   if (coveredFrom && now.getTime() - Date.parse(coveredFrom) >= JUDGE_H * HOUR)
-    for (const path of SHIP)
-      if (!per[path])
-        out.push({
-          key: `cron_silent:${path}:${jstDay(hourOf(now))}`,
-          level: "mid",
-          text: `Vercel Cron ${path.split("/").pop()} が直近24時間に1回も呼ばれていない（cron の登録が消えた・Vercel の cron が止まった恐れ）。vercel.json と Vercel の Cron の画面を見る`,
-        });
+    for (const path of SHIP.filter((p) => !per[p]))
+      out.push({
+        key: `cron_silent:${path}:${jstDay(hourOf(now))}`,
+        level: "mid",
+        text: `Vercel Cron ${path.split("/").pop()} が直近24時間に1回も呼ばれていない（cron の登録が消えた・Vercel の cron が止まった恐れ）。vercel.json と Vercel の Cron の画面を見る`,
+      });
   return out;
 }
