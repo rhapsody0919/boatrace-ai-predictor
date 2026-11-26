@@ -8,23 +8,16 @@
 // 外部接続なし
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
   RACES,
   WINDOW,
   EXPECTED,
 } from "./verifyData/racer-boat-return-baseline.js";
+import { MIGRATION_210_SQL } from "./verifyData/racer-boat-return-baseline-sql.js";
 
 const db = new PGlite();
-// 210 はマイグレーションの PR を作るときの番号に置き換える
-const sql = await readFile(
-  new URL(
-    "../../docs/db-migration/210_racer_boat_return_baseline.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
+const sql = MIGRATION_210_SQL;
 
 const races = RACES;
 const FROM = WINDOW.from;
