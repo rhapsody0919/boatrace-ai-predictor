@@ -153,57 +153,33 @@ function readWebhook() {
 
 const isDue = (site, now) => site.every !== "weekly" || now.getUTCDay() === 1; // 毎週は月曜（UTC）
 
-async function main(argv) {
-  const cfgPath = argv[argv.indexOf("--config") + 1];
-  if (!argv.includes("--config") || !cfgPath)
-    throw new Error("--config <設定の JSON> が要る");
-  const dry = argv.includes("--dry-run");
-  const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
-  const now = new Date();
-  const lines = [];
-  const errors = [];
-  for (const site of cfg.sites) {
-    if (!isDue(site, now)) continue;
-    const file = path.join(
-      cfg.stateDir,
-      `${new URL(site.sitemap).hostname}.json`,
-    ); // 名前は日本語なのでホスト名で分ける
-    const prev = fs.existsSync(file)
-      ? JSON.parse(fs.readFileSync(file, "utf8"))
-      : null;
-    try {
-      const cur = await snapshotSite(site, prev);
-      const line = prev
-        ? alertLine(
-            site.name,
-            diffSnapshots(
-              prev.snap,
-              cur.snap,
-              prev.listed ?? Object.keys(prev.snap),
-            ),
-          )
-        : null;
-      if (line) lines.push(line);
-      const count = Object.values(cur.snap).flat().length;
-      if (!dry) {
-        fs.mkdirSync(cfg.stateDir, { recursive: true });
-        fs.writeFileSync(
-          file,
-          JSON.stringify({ at: now.toISOString(), ...cur }),
-        );
-      }
-      console.log(
-        `competitor-watch: ${site.name} ${count} ページ${prev ? "" : "（初めての回、基準だけ）"}`,
-      );
-    } catch (e) {
-      errors.push(`${site.name}: ${e.message}`);
-    }
+/** 1サイトを読み、前の回と比べて知らせの1行を返す（初めての回・新しいページ無しは null） */
+async function watchSite(site, cfg, now, dry) {
+  // 名前は日本語なのでホスト名で分ける
+  const file = path.join(
+    cfg.stateDir,
+    `${new URL(site.sitemap).hostname}.json`,
+  );
+  const prev = fs.existsSync(file)
+    ? JSON.parse(fs.readFileSync(file, "utf8"))
+    : null;
+  const cur = await snapshotSite(site, prev);
+  if (!dry) {
+    fs.mkdirSync(cfg.stateDir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify({ at: now.toISOString(), ...cur }));
   }
-  for (const e of errors) console.error(`competitor-watch: 読めない ${e}`);
-  if (lines.length === 0 || dry) {
-    if (dry) for (const l of lines) console.log(l);
-    return;
-  }
+  const count = Object.values(cur.snap).flat().length;
+  console.log(
+    `competitor-watch: ${site.name} ${count} ページ${prev ? "" : "（初めての回、基準だけ）"}`,
+  );
+  if (!prev) return null;
+  return alertLine(
+    site.name,
+    diffSnapshots(prev.snap, cur.snap, prev.listed ?? Object.keys(prev.snap)),
+  );
+}
+
+async function postSlack(lines) {
   const hook = readWebhook();
   if (!hook)
     throw new Error(
@@ -216,6 +192,26 @@ async function main(argv) {
   });
   if (!res.ok) throw new Error(`Slack に出せない: HTTP ${res.status}`);
   console.log(`competitor-watch: Slack に ${lines.length} 件`);
+}
+
+async function main(argv) {
+  const cfgPath = argv[argv.indexOf("--config") + 1];
+  if (!argv.includes("--config") || !cfgPath)
+    throw new Error("--config <設定の JSON> が要る");
+  const dry = argv.includes("--dry-run");
+  const cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
+  const now = new Date();
+  const lines = [];
+  for (const site of cfg.sites.filter((x) => isDue(x, now))) {
+    try {
+      const line = await watchSite(site, cfg, now, dry);
+      if (line) lines.push(line);
+    } catch (e) {
+      console.error(`competitor-watch: 読めない ${site.name}: ${e.message}`);
+    }
+  }
+  if (dry) for (const l of lines) console.log(l);
+  else if (lines.length > 0) await postSlack(lines);
 }
 
 if (
