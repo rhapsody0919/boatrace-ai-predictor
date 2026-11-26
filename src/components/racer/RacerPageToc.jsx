@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRootClass } from "../../hooks/useRootClass";
 import "./RacerPageToc.css";
 
 // 選手ページ内の目次（UI/UX 改善 #6、docs/design/racer-wt-uiux-2026-11/mock/approved.md）
@@ -95,6 +96,7 @@ export function RacerPageToc() {
   const items = RACER_SECTIONS.filter((s) => ids.includes(s.id));
   const shown = items.length > 0;
   useTocHeightVar(navRef, shown);
+  useRootClass("html", "racer-toc-shown", shown);
   if (!shown) return null;
 
   const jump = (event, id) => {

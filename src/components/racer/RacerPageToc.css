@@ -34,7 +34,8 @@
 }
 
 /* 目次が出ている間は、スクロールで寄せた要素（#st-trend への移動・scrollIntoView）が目次の下に
-   隠れないよう、目次の高さの分だけ上を空ける。ヘッダーの分は従来どおり各節の scroll-margin-top */
-html:has(.racer-toc) {
+   隠れないよう、目次の高さの分だけ上を空ける。ヘッダーの分は従来どおり各節の scroll-margin-top。
+   目次が出ている間のクラスは RacerPageToc.jsx が付ける（:has() は描画の再計算を重くする、2026-11-26） */
+html.racer-toc-shown {
   scroll-padding-top: var(--racer-toc-height, 0px);
 }
