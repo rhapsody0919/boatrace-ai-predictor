@@ -26,6 +26,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
 | `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
 | `src/pure/clientKey.js` | ブラウザごとの匿名の識別番号（乱数の uuid v4）。個人と結びつけず、匿名の声の重複除外と連投の制限だけに使う | newUuidV4, readOrCreateClientKey |
+| `src/pure/compareBaseline.js` | 数字に「基準との比べ」「6艇の中の比べ」を付けるための判定（意味づけ、2026-11-26 オーナー承認）。 | judgeRateVsBaseline, judgeMeanVsBaseline, toneOf, rankTiers, Z_LINE ほか1件 |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
 | `src/pure/dataFormat.js` | 表とグラフの数字の書き方（docs/reference/design-system.md「表とグラフ」決まり5・6、 | EMPTY, SMALL_SAMPLE_N, fixed, formatWinRate, rateParts ほか5件 |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
@@ -685,4 +686,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 643 ファイル / export 3463 件。
+対象 644 ファイル / export 3469 件。
