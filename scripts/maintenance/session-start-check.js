@@ -34,6 +34,8 @@
  *     （オーナー 2026-10-27）。写しの取得日と台帳を読むだけで、DB には触れない
  * 12) siteUpdates… 更新のお知らせ（src/data/siteUpdates.js）の最新の日付が JST の暦日で7日以上前なら
  *     stale=true と候補を出す手順（書き手は窓口。11/22 で止まった、2026-11-26 オーナーの指摘）
+ * 13) siteFeedback… ご意見ボックスの新着の件数（直近24時間・7日、最も多かった時間）。時ごとの件数の表
+ *     site_feedback_hourly だけを読み、本文は読まない。窓口が朝夜のまとめに1行で出す（2026-11-26 オーナー決定）
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -50,6 +52,7 @@ import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-term
 import { checkMissingContentIndex } from "../lib/contentTopics/missingContentIndex.js";
 import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
 import { checkPendingInsights } from "./content-ops-checks/check-pending-insights.js";
+import { checkSiteFeedbackReceived } from "./content-ops-checks/check-site-feedback-received.js";
 import { checkSiteUpdatesFreshness } from "./content-ops-checks/check-site-updates-freshness.js";
 import { supabase } from "../lib/supabaseClient.js";
 import {
@@ -221,6 +224,7 @@ async function main() {
     pendingInsights,
     schemaSnapshot,
     siteUpdates,
+    siteFeedback,
   ] = await Promise.all([
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
     checkRacerNewsPending(),
@@ -247,6 +251,7 @@ async function main() {
     checkPendingInsights(),
     checkSchemaSnapshot(),
     checkSiteUpdatesFreshness(),
+    checkSiteFeedbackReceived(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -280,6 +285,7 @@ async function main() {
     pendingInsights,
     schemaSnapshot,
     siteUpdates,
+    siteFeedback,
   };
 
   if (process.argv.includes("--json")) {
