@@ -26,3 +26,60 @@
 .rbr-few td {
   opacity: 0.7;
 }
+
+.rbr-trend {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.rbr-trend-title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.rbr-trend-sub {
+  margin: var(--spacing-1) 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rbr-picker {
+  display: flex;
+  gap: var(--spacing-2);
+  margin: var(--spacing-2) 0;
+}
+
+.rbr-pick {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.rbr-pick[aria-pressed="true"] {
+  border: 2px solid var(--text-primary);
+}
+
+.rbr-readout {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.rbr-chart {
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  /* PC の右の列で拡大しすぎて図の字が表より大きくならない幅（ファン評価 2026-11-26） */
+  max-width: 400px;
+  height: auto;
+}
