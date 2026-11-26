@@ -9,28 +9,33 @@
 import { toneOf } from "../../pure/compareBaseline.js";
 import "./CompareBar.css";
 
-export default function CompareBar({ diff, dir, better = "high", range = 30, baseLabel }) {
-  if (typeof diff !== "number" || !Number.isFinite(diff)) return null;
-  const tone = toneOf(dir, better);
+// 棒の位置（中央の基準から左右へ、±range で切る）
+function geometry(diff, range) {
   const clipped = Math.max(-range, Math.min(range, diff));
   const half = (Math.abs(clipped) / range) * 50;
-  const kind = dir === "few" ? "few" : (tone ?? "unclear");
-  const marked = dir === "high" || dir === "low";
-  const over = Math.abs(diff) > range;
-  const mark = `${dir === "high" ? "▲" : "▼"}${over ? (diff > 0 ? "▶" : "◀") : ""}`;
+  return { half, left: clipped < 0 ? 50 - half : 50 };
+}
+
+// 偶然の幅を超えたときだけ ▲▼（範囲の外は ▶◀ を足す）。超えなければ印なし
+function markOf(dir, diff, range) {
+  if (dir !== "high" && dir !== "low") return null;
+  const over = Math.abs(diff) > range ? (diff > 0 ? "▶" : "◀") : "";
+  return `${dir === "high" ? "▲" : "▼"}${over}`;
+}
+
+export default function CompareBar({ diff, dir, better = "high", range = 30, baseLabel }) {
+  if (typeof diff !== "number" || !Number.isFinite(diff)) return null;
+  const kind = dir === "few" ? "few" : (toneOf(dir, better) ?? "unclear");
+  const { half, left } = geometry(diff, range);
+  const mark = markOf(dir, diff, range);
+  const markSide = `calc(${50 + half}% + 2px)`;
   return (
     <span className={`compare-bar compare-bar--${kind}`} data-dir={dir ?? "none"}>
       <span className="compare-bar__track" aria-hidden="true">
-        <span
-          className="compare-bar__bar"
-          style={{ left: `${clipped < 0 ? 50 - half : 50}%`, width: `${Math.max(half, 1)}%` }}
-        />
+        <span className="compare-bar__bar" style={{ left: `${left}%`, width: `${Math.max(half, 1)}%` }} />
         <span className="compare-bar__base" />
-        {marked && (
-          <span
-            className="compare-bar__mark"
-            style={diff > 0 ? { left: `calc(${50 + half}% + 2px)` } : { right: `calc(${50 + half}% + 2px)` }}
-          >
+        {mark && (
+          <span className="compare-bar__mark" style={diff > 0 ? { left: markSide } : { right: markSide }}>
             {mark}
           </span>
         )}
