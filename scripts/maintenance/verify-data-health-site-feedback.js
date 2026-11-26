@@ -7,7 +7,8 @@
  *   (c) JST の日で区切る（UTC 15:00 は JST の翌日 0 時）
  *   (d) 残っている行と時ごとの件数の和がそろう日は counted = kept、足し込みが止まった日は counted < kept、
  *       行を消した日は counted が kept で頭を抑えられる
- *   (e) 登録表: 上限の見張りは閾値100%・分母の下限1・前日だけ、足し込みの見張りは閾値100%・分母の下限1
+ *   (e) 登録表: 上限の見張りは閾値100%・分母の下限1・前日だけ、足し込みの見張りは閾値100%・分母の下限1。
+ *       関数は 211 に載り、期間の2引数で日ごとの行を返す
  *   (f) 権限: anon・authenticated は EXECUTE できず、service_role は呼べる。SECURITY INVOKER
  *
  * 実行: node scripts/maintenance/verify-data-health-site-feedback.js
@@ -20,14 +21,10 @@ import {
   renderFunctionDdl,
 } from "../lib/dataHealth/functions.js";
 
-let failures = 0;
-function check(label, pass, detail = "") {
-  if (pass) console.log(`[OK] ${label}`);
-  else {
-    failures++;
-    console.error(`[NG] ${label}${detail ? `: ${detail}` : ""}`);
-  }
-}
+/** 結果は貯めて最後にまとめて出す */
+const results = [];
+const check = (label, pass, detail = "") =>
+  results.push({ label, pass: Boolean(pass), detail });
 
 const db = new PGlite();
 await db.exec(`
@@ -157,6 +154,24 @@ check(
   JSON.stringify(cnt),
 );
 
+// (e) 関数の登録（functions.js）: 211 に載り、期間の2引数で日ごとの行を返す
+{
+  const fn = functionByName("data_health_site_feedback");
+  check(
+    "(e) 関数は 211 に載り、p_from・p_to の date を取り、日ごとの行（rows）を返す",
+    fn?.migration === "211_data_health_site_feedback.sql" &&
+      fn.shape === "rows" &&
+      JSON.stringify(fn.args) ===
+        JSON.stringify([
+          { name: "p_from", type: "date" },
+          { name: "p_to", type: "date" },
+        ]) &&
+      /ご意見ボックス/.test(fn.description) &&
+      /件数だけ/.test(fn.description),
+    JSON.stringify(fn && { ...fn, body: undefined }),
+  );
+}
+
 // (f) 権限
 for (const role of ["anon", "authenticated"]) {
   const r = await call(role);
@@ -172,6 +187,10 @@ const def = await db.query(
 check("(f) SECURITY INVOKER", def.rows[0]?.prosecdef === false);
 
 await db.close();
+for (const r of results)
+  if (r.pass) console.log(`[OK] ${r.label}`);
+  else console.error(`[NG] ${r.label}${r.detail ? `: ${r.detail}` : ""}`);
+const failures = results.filter((r) => !r.pass).length;
 if (failures > 0) {
   console.error(`\nverify-data-health-site-feedback: NG（${failures} 件）`);
   process.exit(1);
