@@ -83,6 +83,7 @@
     "raceCount": "{{count}} 場比賽"
   },
   "venueGrid": {
+    "title": "24個賽場的舉辦狀況",
     "noRacesToday": "今日未舉辦",
     "nextOpen": "下次舉辦 {{date}}",
     "nextRace": "下一場 {{race}}R",

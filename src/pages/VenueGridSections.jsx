@@ -105,12 +105,16 @@ function TodayVenuesSection({
                 )}
                 {/* i18n-allow-end */}
                 {!error && (
-                  <VenueGrid
-                    venuesData={venuesData}
-                    getVenueLink={(code) => localize(`/venue/${code}`)}
-                    nowHHMM={nowHHMM}
-                    nextOpenDates={nextOpenDates}
-                  />
+                  <>
+                    {/* 締切の欄の続きに見えないよう、会場の一覧に見出しを付ける（G3 の点検 2026-11-26、オーナー承認） */}
+                    <h3 className="home-venue-grid-title">{t("venueGrid.title")}</h3>
+                    <VenueGrid
+                      venuesData={venuesData}
+                      getVenueLink={(code) => localize(`/venue/${code}`)}
+                      nowHHMM={nowHHMM}
+                      nextOpenDates={nextOpenDates}
+                    />
+                  </>
                 )}
               </>
             )}
