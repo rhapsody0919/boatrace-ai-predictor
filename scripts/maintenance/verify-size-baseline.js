@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 /**
- * verify-size-baseline.js - 大きさの関所の部品（sizeBaselines.js、BOA-1429）を固定の入力で試す。
- * 基準・単位の hash・判定の純関数だけを見る（lint-changed.js への接続は後の票）。
+ * verify-size-baseline.js - 大きさの関所の部品（sizeBaselines.js）の線と例外の表の判定を固定の入力で試す（ADR-0110）。
+ * 関数の行数・複雑さの境目、実質の行の数え方、例外の表の上限と減る向きだけを見る。
  */
 import {
-  buildBaseline,
-  checkAgainstBaseline,
-  checkBaselineShrink,
   judgeTreeSize,
   sizeExceptionsGrowth,
   substantiveLineNumbers,
@@ -29,178 +26,39 @@ const fn = (name, total) =>
   ].join("\n");
 const filler = (n) =>
   Array.from({ length: n }, (_, i) => `export const k${i} = ${i};`).join("\n");
-const hashes = (src) => unitsOfSource(src).map((u) => u.hash).sort();
-const check = (baseline, files, strictExisting = false) =>
-  checkAgainstBaseline({ baseline, files, strictExisting });
+const judge = (source) => judgeTreeSize({ files: { "src/a.js": source }, exceptions: { files: {} } });
 const verdict = (r) => `${r.errors.length}赤/${r.warnings.length}警告`;
 
-const BIG = fn("big", 120);
-const baseline = buildBaseline({ "src/a.js": BIG });
-const same = [{ file: "src/a.js", source: BIG, isNew: false }];
-
-ok(
-  baseline.initial_count === 1 && Object.keys(baseline.units).length === 1,
-  "基準は線を越える単位だけを載せる",
-);
-ok(
-  !Object.keys(buildBaseline({ "x.js": fn("small", 50) }).units).length,
-  "線の内の単位は載せない",
-);
-
-let r = check(baseline, same);
-ok(r.errors.length === 0 && r.warnings.length === 0, `基準の単位だけ→緑（${verdict(r)}）`);
-
-const edited = BIG.replace("const a5 = 5;", "const a5 = 50;");
-r = check(baseline, [{ file: "src/a.js", source: edited, isNew: false }]);
-ok(r.errors.length === 0 && r.warnings.length === 1, `同じ場所で1行直す→警告（${verdict(r)}）`);
-
-r = check(baseline, [{ file: "src/a.js", source: edited, isNew: false }], true);
-ok(r.errors.length === 1, `旗が立つと同じ直しも赤（${verdict(r)}）`);
-
-const grown = BIG.replace("const a5 = 5;", "const a5 = 5;\n  const extra = 1;");
-r = check(baseline, [{ file: "src/a.js", source: grown, isNew: false }]);
-ok(
-  r.errors.length === 0 && r.warnings.length === 1,
-  `同じ場所で行を増やす→半分の線までは警告（${verdict(r)}）`,
-);
-
-r = check(baseline, [{ file: "src/a.js", source: grown, isNew: false }], true);
-ok(r.errors.length === 1, `旗が立つと行を増やす直しは赤（${verdict(r)}）`);
-
-const branchy = BIG.replace(
-  "const a5 = 5;",
-  Array.from({ length: 16 }, (_, i) => `if (a${i}) a${i};`).join(" "),
-);
-r = check(baseline, [{ file: "src/a.js", source: branchy, isNew: false }]);
-ok(
-  r.errors.length === 0 && r.warnings.length === 1,
-  `複雑さを増やす→半分の線までは警告（${verdict(r)}）`,
-);
-
-r = check(baseline, [{ file: "src/a.js", source: branchy, isNew: false }], true);
-ok(r.errors.length === 1, `旗が立つと複雑さを増やす直しは赤（${verdict(r)}）`);
-
-r = check(baseline, [
-  { file: "src/a.js", source: grown.replace("function big(", "function big2("), isNew: false },
-]);
-ok(r.errors.length === 1, `同じファイルで名前を変えて伸ばす→赤（${verdict(r)}）`);
-
-r = check(baseline, [{ file: "src/other.js", source: grown, isNew: false }]);
-ok(r.errors.length === 1, `別のファイルの同じ名前は既にある単位と見なさない→赤（${verdict(r)}）`);
-
-r = check(baseline, [{ file: "src/new.js", source: fn("fresh", 101), isNew: true }]);
-ok(r.errors.length === 1, `線を越える新しい関数（101行）→赤（${verdict(r)}）`);
-
-r = check(baseline, [{ file: "src/new.js", source: fn("edge", 100), isNew: true }]);
+// --- 関数の線（100 行・複雑さ 15）の境目 ---
+let r = judge(fn("edge", 100));
 ok(r.errors.length === 0, `100行ちょうど→緑（${verdict(r)}）`);
+r = judge(fn("fresh", 101));
+ok(r.errors.length === 1, `101行の関数→赤（${verdict(r)}）`);
+const ifs = (n) => `export function cx(a) {\n${Array.from({ length: n }, () => "  if (a) a();").join("\n")}\n}\n`;
+r = judge(ifs(14));
+ok(r.errors.length === 0, `複雑さ 15（if 14本）→緑（${verdict(r)}）`);
+r = judge(ifs(15));
+ok(r.errors.length === 1, `複雑さ 16（if 15本）→赤（${verdict(r)}）`);
+// 枝の種類ごとに複雑さに数える（三項・論理・?? ・?.・for・while・catch・既定値・論理の代入）
+const kinds = [
+  "a ? 1 : 2;", "a && b;", "a || b;", "a ?? b;", "a?.b;", "a?.();", "for (;;) break;", "for (const k in a) k;",
+  "for (const k of a) k;", "while (a) break;", "do { break; } while (a);", "try { a(); } catch { b(); }",
+  "a &&= b;", "a ||= b;", "a ??= b;",
+];
+for (const k of kinds) {
+  const src = `export function one(a, b) {\n${Array.from({ length: 15 }, () => `  ${k}`).join("\n")}\n}\n`;
+  ok(unitsOfSource(src)[0].complexity === 16, `「${k}」を15個→複雑さ 16（${unitsOfSource(src)[0].complexity}）`);
+}
+ok(unitsOfSource("export function d(a = 1, b = 2) {\n  return a + b;\n}\n")[0].complexity === 3, "既定値の引数も枝に数える");
+// 単位の取り方: class・object のメソッド・変数の関数も1つずつ
+const cls = "class S {\n  async getX() {\n    return 1;\n  }\n}\nexport default {\n  getY() {\n    return 2;\n  },\n};\nconst h = async () => 1;\n";
+ok(JSON.stringify(unitsOfSource(cls).map((u) => u.name).sort()) === JSON.stringify(["getX", "getY", "h"]), "class・object のメソッドと変数の関数を単位に取る");
 
-const cx = `export function cx(a) {\n${Array.from({ length: 15 }, () => "  if (a) a();").join("\n")}\n}\n`;
-r = check(baseline, [{ file: "src/cx.js", source: cx, isNew: true }]);
-ok(r.errors.length === 1, `複雑さ 16 の新しい関数→赤（${verdict(r)}）`);
-
-const moved = [{ file: "src/b.js", source: BIG, isNew: true }];
-r = check(baseline, moved);
-ok(r.errors.length === 0, `基準の関数を字のまま別ファイルへ移す→緑（${verdict(r)}）`);
-
-r = check(baseline, [
-  { file: "src/b.js", source: BIG.replace("a5 = 5", "a5 = 6"), isNew: true },
-]);
-ok(r.errors.length === 1, `移して1字変える→赤（${verdict(r)}）`);
-
-r = check(baseline, [
-  { file: "src/b.js", source: `${BIG}${filler(350)}\n`, isNew: true },
-]);
-ok(r.errors.length === 0, "新しいファイルの max-lines は基準の単位の行を除く（緑）");
-r = check(baseline, [
-  { file: "src/b.js", source: `${BIG}${filler(401)}\n`, isNew: true },
-]);
-ok(r.errors.length === 1, "基準の単位の行を除いても 400 を越える新しいファイル→赤");
-
-// 旗の後の既存ファイル（案A）: 実質の行が 400 を越え、base から増えたときだけ赤
-const HUGE = `import { a } from "./a.js";\n${filler(450)}\n`;
-const gate = (source, baseSource) =>
-  check(baseline, [{ file: "src/h.js", source, isNew: false, baseSource }], true);
-r = gate(HUGE.replace('"./a.js"', '"./b.js"'), HUGE);
-ok(r.errors.length === 0, `旗の後 import 1行の差し替え→緑（${verdict(r)}）`);
-r = gate(`${HUGE}export const more = 1;\n`, HUGE);
-ok(r.errors.length === 1, `旗の後 1行足す→赤（${verdict(r)}）`);
-r = gate(
-  `${HUGE.replace("export const k0 = 0;", "export const k0 = 0; // 長い説明")}export const more = 1;\n`,
-  `${HUGE.replace("export const k0 = 0;", "// 説明1\n// 説明2\nexport const k0 = 0;")}`,
-);
-ok(r.errors.length === 1, `旗の後 コメントを削って処理を足す→赤（${verdict(r)}）`);
-r = gate(`${HUGE}\n\n// コメントだけ足す\n`, HUGE);
-ok(r.errors.length === 0, `旗の後 空行・コメントだけ足す→緑（${verdict(r)}）`);
-r = gate(HUGE, filler(100));
-ok(r.errors.length === 1, `小さいファイルが 400 を越える→赤（${verdict(r)}）`);
-r = gate(HUGE, null);
-ok(r.errors.length === 1, `base に無い（oldFile も無い）ファイルが 400 超→赤（${verdict(r)}）`);
-
-// 基準を持つ単位（BIG の 120 行）は数えない。境界は 400 行ちょうどが緑・401 が赤
-const withBig = (n) => `${BIG}${filler(n)}\n`;
-r = gate(withBig(400), filler(100));
-ok(r.errors.length === 0, `基準の単位を除いて 400 行ちょうど→緑（${verdict(r)}）`);
-r = gate(withBig(401), filler(100));
-ok(r.errors.length === 1, `基準の単位を除いて 401 行→赤（${verdict(r)}）`);
-r = gate(withBig(391), withBig(390));
-ok(r.errors.length === 0, `基準の単位を除くと 400 以内（生の行なら越える）→緑（${verdict(r)}）`);
-r = gate(HUGE, null);
-ok(r.errors[0]?.includes("base の なし から"), "base に無いときの文に「なし」が出る");
-r = gate(`${HUGE}export const more = 1;\n`, HUGE);
-ok(r.errors[0]?.includes("base の 451 から"), "赤の文に base の実質の行（451）が出る");
-
-r = gate(`${filler(400)}\n${BIG}`, filler(100));
-ok(r.errors.length === 0, `基準の単位がファイルの末尾にあっても 400 行ちょうど→緑（${verdict(r)}）`);
-r = gate(HUGE, "// コメントだけ\n");
-ok(r.errors[0]?.includes("base の 0 から"), "base の実質が 0 行でも「0」と出る（なし と区別）");
-
-ok(
-  substantiveLineNumbers("/* c */x\n\n// d\ny;\n").join() === "1,4",
-  "実質の行: コメントの直後の1字も数える・空行とコメントだけの行は除く",
-);
-
-const spaced = BIG.replace(/\n {2}/g, "\n\n    /* コメント */\n      ");
-ok(
-  hashes(spaced).join() === hashes(BIG).join() && spaced !== BIG,
-  "コメント・空白だけ変える→同じ hash",
-);
-ok(hashes(BIG.replace("big", "bigger")).join() !== hashes(BIG).join(), "名前が変われば hash も変わる");
-
-const cls = `class S {\n  async getX() {\n    return (await this.getY()) + this.other(1);\n  }\n  async getY() {\n    return 2;\n  }\n}\n`;
-const fns = `export async function getX() {\n  return (await getY()) + this.other(1);\n}\nexport async function getY() {\n  return 2;\n}\n`;
-const clsX = unitsOfSource(cls).find((u) => u.name === "getX").hash;
-ok(
-  clsX === unitsOfSource(fns).find((u) => u.name === "getX").hash,
-  "class のメソッドを export async function へ移し this.getY( を getY( にする→同じ hash（領域外の this.other( は別）",
-);
-const fnsAll = fns.replace("this.other(1)", "other(1)");
-ok(
-  clsX !== unitsOfSource(fnsAll).find((u) => u.name === "getX").hash,
-  "領域の外の this.other( を other( にすると hash が変わる",
-);
-const obj = `export default {\n  async getY() {\n    return 2;\n  },\n};\nconst h = async () => 1;\n`;
-ok(
-  unitsOfSource(obj).map((u) => u.name).join() === "getY,h",
-  "object のメソッド・変数に入れた関数も単位",
-);
-
-const more = {
-  initial_count: 1,
-  units: { ...baseline.units, deadbeef: { lines: 101, complexity: 1, file: "x.js", name: "x" } },
-};
-let s = checkBaselineShrink({ base: baseline, current: more });
-ok(s.errors.length === 1, `基準の units を足す→赤（${s.errors.length}件）`);
-s = checkBaselineShrink({ base: baseline, current: { ...baseline, initial_count: 2 } });
-ok(s.errors.length === 1, `initial_count を変える→赤（${s.errors.length}件）`);
-s = checkBaselineShrink({ base: baseline, current: baseline });
-ok(s.errors.length === 0 && s.strictExisting === false, "基準が同じ→緑で旗は立たない");
-
-const four = { initial_count: 4, units: { a: baseline.units[Object.keys(baseline.units)[0]], b: {}, c: {} } };
-s = checkBaselineShrink({ base: { ...four, units: { ...four.units } }, current: four });
-ok(s.errors.length === 0 && s.strictExisting === false, "4件のうち3件→旗は立たない");
-const half = { initial_count: 4, units: { a: four.units.a, b: {} } };
-s = checkBaselineShrink({ base: four, current: half });
-ok(s.errors.length === 0 && s.strictExisting === true, "件数が initial_count の半分以下→旗が立つ");
+// --- 実質の行 ---
+ok(substantiveLineNumbers("const a = 1;\n\n// x\n/* y\n z */\nconst b = 2;\n").join() === "1,6", "空行・注釈だけの行は実質の行に数えない");
+const spaced = `/* 頭 */\n${filler(400)}\n\n// 尾\n`;
+r = judge(spaced);
+ok(r.errors.length === 0, `注釈と空行を除いて 400 行ちょうど→緑（${verdict(r)}）`);
 
 // --- 全体で0＋例外の表（2026-11-25、ADR-0110） ---
 const big = filler(401); // 実質 401 行
