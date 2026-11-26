@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RankingBody } from "./MeetRankingBody";
 import { borderTieOf } from "../../utils/meetPageModel";
@@ -19,10 +19,17 @@ const FINISH_MARKS = [
   ["不", "dnf"],
 ];
 
-function borderTextOf(t, border, confirmed, slots) {
+// 準優の無い開催（併催の G2）の線は優勝戦の目安。予選の後も公式の決まりでないので「目安」のまま
+function borderTextOf(t, border, confirmed, slots, goal) {
+  const key =
+    goal === "final"
+      ? "meetPage.borderFinalGoal"
+      : confirmed
+        ? "meetPage.borderFinal"
+        : "meetPage.borderPrelim";
   return border == null
     ? null
-    : t(confirmed ? "meetPage.borderFinal" : "meetPage.borderPrelim", {
+    : t(key, {
         slots,
         rate: border.toFixed(2),
       });
@@ -38,11 +45,14 @@ function subKeyOf(confirmed, officialAsOfDay, officialAsOfIsToday) {
       : "meetPage.rankingSubPrelim";
 }
 
-function RankingHead({ borderText }) {
+// 併催の節は表ごとに開催の名を見出しにする（ページの「得点率ランキング」は MeetPage が1回だけ）
+function RankingHead({ borderText, seriesKey, titleId }) {
   const { t } = useTranslation();
   return (
     <div className="meet-ranking__head">
-      <h2 id="meet-ranking-title">{t("meetPage.rankingTitle")}</h2>
+      <h2 id={titleId}>
+        {t(seriesKey ? `meetPage.joint.${seriesKey}` : "meetPage.rankingTitle")}
+      </h2>
       {borderText && <span className="meet-ranking__border">{borderText}</span>}
     </div>
   );
@@ -102,7 +112,7 @@ function MarksLegend({ rows, excluded }) {
   );
 }
 
-function ShobugakeFilter({ onlyShobugake, setOnlyShobugake }) {
+function ShobugakeFilter({ onlyShobugake, setOnlyShobugake, goal }) {
   const { t } = useTranslation();
   return (
     <>
@@ -126,7 +136,13 @@ function ShobugakeFilter({ onlyShobugake, setOnlyShobugake }) {
           {t("meetPage.filterShobugake")}
         </button>
       </div>
-      <p className="meet-ranking__sub">{t("meetPage.shobugakeNote")}</p>
+      <p className="meet-ranking__sub">
+        {t(
+          goal === "final"
+            ? "meetPage.shobugakeNoteFinalGoal"
+            : "meetPage.shobugakeNote",
+        )}
+      </p>
     </>
   );
 }
@@ -176,6 +192,8 @@ function RankingTableHead() {
  * @param {string|null} [props.officialLink] 公式の得点率一覧（当日のリアルタイム）の URL
  * @param {boolean} [props.officialAsOfIsToday] 公式の表が今日の終了時点（夜の取得後）か
  * @param {Object<number, number>} [props.penaltyByRacer] 公式の減点（賞典除外の印の99は除く）
+ * @param {string|null} [props.seriesKey] 併催の節の開催（`seriesBoards` の key）。null なら節全体の1表
+ * @param {"semifinal"|"final"} [props.goal] 線の先。準優の無い開催（併催の G2）は "final"
  */
 function MeetRankingTable({
   rows,
@@ -192,8 +210,12 @@ function MeetRankingTable({
   officialLink = null,
   officialAsOfIsToday = false,
   penaltyByRacer = {},
+  seriesKey = null,
+  goal = "semifinal",
 }) {
   const { t } = useTranslation();
+  // 併催で表が2つ並ぶので、見出しの id を表ごとに分ける
+  const titleId = `meet-ranking-title${useId().replaceAll(":", "")}`;
   const [onlyShobugake, setOnlyShobugake] = useState(false);
   const bestRate = rows.length > 0 ? rows[0].rate : null;
   const tie = borderTieOf(rows, slots);
@@ -201,11 +223,15 @@ function MeetRankingTable({
     showRemaining && onlyShobugake
       ? rows.filter((r) => shobugake.has(r.racerId))
       : rows;
-  const borderText = borderTextOf(t, border, confirmed, slots);
+  const borderText = borderTextOf(t, border, confirmed, slots, goal);
 
   return (
-    <section className="meet-ranking" aria-labelledby="meet-ranking-title">
-      <RankingHead borderText={borderText} />
+    <section className="meet-ranking" aria-labelledby={titleId}>
+      <RankingHead
+        borderText={borderText}
+        seriesKey={seriesKey}
+        titleId={titleId}
+      />
       <RankingSubs
         confirmed={confirmed}
         officialAsOfDay={officialAsOfDay}
@@ -213,11 +239,15 @@ function MeetRankingTable({
         officialLink={officialLink}
         count={rows.length + excluded.length}
       />
+      {goal === "final" && (
+        <p className="meet-ranking__sub">{t("meetPage.jointFinalNote")}</p>
+      )}
       <MarksLegend rows={rows} excluded={excluded} />
       {showRemaining && (
         <ShobugakeFilter
           onlyShobugake={onlyShobugake}
           setOnlyShobugake={setOnlyShobugake}
+          goal={goal}
         />
       )}
       <table className="meet-ranking__table">
@@ -236,6 +266,7 @@ function MeetRankingTable({
           penaltyByRacer={penaltyByRacer}
           bestRate={bestRate}
           tie={tie}
+          goal={goal}
         />
       </table>
     </section>

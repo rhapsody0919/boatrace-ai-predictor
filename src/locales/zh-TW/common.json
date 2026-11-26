@@ -4045,6 +4045,16 @@
     "rankingSubOfficialAsOf": "預賽得分率（第{{day}}天結束時、官方得分率一覽的數值。今天的結果於22時左右反映）、共{{count}}人",
     "officialLiveLink": "含今天結果的最新名次請見官方得分率一覽（本頁每晚22時左右反映）",
     "borderLineTie": "以上為準優門檻估計（第{{rank}}名同分{{tied}}人，可晉級{{seats}}人）",
+    "joint": {
+      "cc-sg": "挑戰盃（SG）",
+      "cc-g2": "女子挑戰盃（G2）"
+    },
+    "jointNote": "本節同時舉辦SG與G2兩項賽事。與官方得分率一覽相同，依賽事分別排名。",
+    "jointFinalNote": "女子挑戰盃（G2）沒有準優勝戰。最終日為優勝戰與特別選拔戰。優勝戰門檻是依據2025年預賽前6名晉級優勝戰所做的本站估計，並非官方規定。",
+    "borderFinalGoal": "優勝戰門檻（估計）第{{slots}}名 {{rate}}",
+    "borderLineFinalGoal": "以上為優勝戰門檻估計（{{slots}}人）",
+    "borderLineFinalGoalTie": "以上為優勝戰門檻估計（第{{rank}}名同分{{tied}}人，可晉級{{seats}}人）",
+    "shobugakeNoteFinalGoal": "關鍵一戰：門檻附近、今天的名次將決定能否晉級優勝戰的選手",
     "points": "{{points}}分",
     "pointsWithPenalty": "{{points}}分、扣分{{penalty}}",
     "sourceConfirmed": "出處：得分率、名次來自BOAT RACE官方網站的得分率一覽（預賽結束時，含扣分）。",
