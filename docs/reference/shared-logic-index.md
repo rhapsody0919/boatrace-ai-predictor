@@ -39,6 +39,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/indicatorRacerPower.js` | 指標の定義: 大分類「選手の力」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | RACER_POWER_INDICATORS |
 | `src/pure/indicatorRegistry.js` | 指標の登録簿（ADR-0108）。指標の定義の正はここに並ぶ定義だけ。 | bestOfIndicator, formatIndicatorParts, INDICATORS, ALIASES, getIndicator |
 | `src/pure/indicatorStart.js` | 指標の定義: 大分類「スタート」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | START_INDICATORS |
+| `src/pure/jointMeetSeries.js` | 同じ節に格の違う2つの開催が同居する「併催」を、選手の組に分ける（純関数、G3 の点検 V-61、2026-11-26）。 | jointMeetSeriesOf, JOINT_FINAL_SLOTS |
 | `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetCompareSideRows.js` | RaceMeetTab 比較表の注記（RaceMeetTabCompareSide.jsx）の人数の行の文言を作る純関数（副作用なし）。 | countLineText |
@@ -82,7 +83,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerWinRateSteps.js` | 選手の勝率の推移を公式の期ごとの段で出すための形（2026-11-24 オーナー決定「勝率は期ごとの段」）。 | winRateSteps, stepLabelParts |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
-| `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか20件 |
+| `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか21件 |
 | `src/pure/seriesPointsParts.js` | — | prelimEndDayOf, noRaceDaysOf, semifinalRaceIdsOf, semifinalSlotsOf, isAbsentStartRow ほか10件 |
 | `src/pure/siteFeedback.js` | サイト全体のご意見ボックス（site_feedback）の決まり。画面（src/components/siteFeedback/）と | feedbackPageType, isFeedbackHiddenPath, canSendFeedback, buildSiteFeedbackRow, FEEDBACK_KINDS ほか4件 |
 | `src/pure/siteUpdates.js` | — | BANNER_DAYS, NEW_DAYS, MAKING_MAX, isWithinJstDays, visibleUpdates ほか3件 |
@@ -688,4 +689,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 646 ファイル / export 3480 件。
+対象 647 ファイル / export 3483 件。
