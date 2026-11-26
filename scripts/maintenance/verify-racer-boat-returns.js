@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 選手ページの枠番別回収率（src/pure/racerBoatReturns.js）が、絞り込み・着順の付かない走・払戻の積み方・通算の推移を正しく数えることを守る
 import assert from "node:assert/strict";
-import { boatReturnRows, boatReturnSeries, BIG_WIN_PAYOUT } from "../../src/pure/racerBoatReturns.js";
+import { boatReturnRows, boatReturnSeries, boatTopWinShares, BIG_WIN_PAYOUT } from "../../src/pure/racerBoatReturns.js";
 
 const run = (raceId, boatNumber, over = {}) => ({
   raceId,
@@ -41,6 +41,20 @@ assert.deepEqual([b6.n, b6.wins], [2, 1], "着順の付かない走は走数に�
 assert.equal(b6.winReturn, (5010 / 200) * 100);
 assert.deepEqual(rows.find((r) => r.boat === 3), { boat: 3, n: 0, wins: 0, winReturn: null, placeReturn: null });
 
+// 最大の1回の割合: 1着が2回（単勝 300・900）なら 900 ÷ 1200。払戻の無い枠番は null、走の無い枠番は持たない
+const shares = boatTopWinShares(
+  [
+    run("2026-02-01-01-01", 2, { rank1: 2, payoutWin: 300 }),
+    run("2026-02-02-01-01", 2, { rank1: 2, payoutWin: 900 }),
+    run("2026-02-03-01-01", 2, { rank1: 1, rank2: 2, payoutPlace2: 200 }),
+    run("2026-02-04-01-01", 5, { rank1: 1, rank2: 3 }),
+    run("2026-02-05-02-01", 2, { rank1: 2, payoutWin: 5000, venueCode: 2 }),
+  ],
+  { ...ALL, venueCode: 1 },
+);
+assert.deepEqual(shares, { 2: 900 / 1200, 5: null });
+assert.equal(boatTopWinShares(history, ALL)[6], 1, "F で払戻の無い走は最大に入らない");
+
 // 表: 会場で絞る・枠番を固定すると、その行だけ・その走だけ
 const venue2 = boatReturnRows(history, { ...ALL, venueCode: 2 });
 assert.equal(venue2.find((r) => r.boat === 1).n, 1);
@@ -50,6 +64,8 @@ assert.deepEqual(fixed.map((r) => r.boat), [6]);
 // 推移: 各走の時点までの通算。大きな単勝の走に印
 const s1 = boatReturnSeries(history, ALL, 1);
 assert.deepEqual(s1.map((p) => p.date), ["01/01", "01/02", "01/03"]);
+assert.deepEqual(s1.map((p) => p.n), [1, 2, 3], "各点に何走目かを持つ");
+assert.deepEqual(boatReturnSeries(history, { ...ALL, venueCode: 2 }, 1).map((p) => p.n), [1], "絞った走だけで数える");
 assert.deepEqual(s1.map((p) => Math.round(p.win)), [150, 75, 50]);
 assert.deepEqual(s1.map((p) => Math.round(p.place)), [110, 120, 80]);
 const s6 = boatReturnSeries(history, ALL, 6);

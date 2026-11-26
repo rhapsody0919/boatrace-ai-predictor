@@ -69,8 +69,8 @@ export function boatReturnRows(history, filter) {
 
 /**
  * 1つの枠番の、各走の時点までの通算の回収率（%）。古い順
- * @returns {Array<{raceId:string, date:string, win:number, place:number, bigWin:number|null}>}
- *   date は MM/DD。bigWin は単勝の払戻金が BIG_WIN_PAYOUT 以上だった走のその払戻金
+ * @returns {Array<{raceId:string, n:number, date:string, win:number, place:number, bigWin:number|null}>}
+ *   n はその走が何走目か（オーナー 2026-11-26「推移は全部の点に走数」）。date は MM/DD。bigWin は単勝の払戻金が BIG_WIN_PAYOUT 以上だった走のその払戻金
  */
 export function boatReturnSeries(history, filter, boat) {
   let n = 0;
@@ -85,6 +85,7 @@ export function boatReturnSeries(history, filter, boat) {
     place += p.place;
     points.push({
       raceId: row.raceId,
+      n,
       date: `${row.raceId.slice(5, 7)}/${row.raceId.slice(8, 10)}`,
       win: rateOf(win, n),
       place: rateOf(place, n),
@@ -92,4 +93,21 @@ export function boatReturnSeries(history, filter, boat) {
     });
   }
   return points;
+}
+
+/**
+ * 枠番ごとの、単勝の払戻のうち最大の1回が占める割合（0〜1。払戻が無ければ null）。
+ * 表で「1回で◯%」を添え、大穴1回でできた値だと分かるようにする（ファン評価 2026-11-26）
+ * @returns {Object<number, number|null>} 枠番 → 割合
+ */
+export function boatTopWinShares(history, filter) {
+  const acc = {};
+  for (const row of history ?? []) {
+    if (!matchesFilter(row, filter)) continue;
+    const { win } = payoutsOf(row);
+    const a = (acc[row.boatNumber] ??= { sum: 0, top: 0 });
+    a.sum += win;
+    a.top = Math.max(a.top, win);
+  }
+  return Object.fromEntries(Object.entries(acc).map(([boat, a]) => [boat, a.sum > 0 ? a.top / a.sum : null]));
 }
