@@ -2,61 +2,63 @@
  "schema": "content-pr-manifest/v1",
  "id": "rough-race-signals",
  "kind": "revision",
- "ticket": "OC-20261026T100015-seo-human-1",
+ "ticket": "BOA-1715",
  "paths": [
   "public/blog/rough-race-signals.md",
   "src/data/blog-posts/rough-race-signals.json"
  ],
  "files": {
-  "public/blog/rough-race-signals.md": "6c6ea1ac20fac9590c72569165909daf199569021ea8519361a635132f0869fd",
-  "src/data/blog-posts/rough-race-signals.json": "6727b57deb21eea8ef7a8e9fe991cfd0c871427897e05ebd4223843ac6dad877"
+  "public/blog/rough-race-signals.md": "9dccabaf1d621bea7ee024dc1cadb5101d0173c2ac0ade879d032f66045ae9f9",
+  "src/data/blog-posts/rough-race-signals.json": "a1b7eb8285ded6ea989861a5bb83c86c0062ed3ab6968c2cb238137547b10ea5"
  },
- "content_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
+ "content_sha256": "c1503f0d0776063d65fdec3426d2fc98bde5b539f5a8fc42ce71220f55ea2394",
+ "content_at": "2026-11-27T06:15:28+09:00",
  "judgement_words": [],
  "reviews": [
   {
    "role": "content-qa",
-   "agent": "hq-review:article+content-qa",
+   "agent": "content-qa",
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
-   "model": "codex-default/high",
-   "at": "2026-10-26T10:07:06+09:00"
+   "reviewed_sha256": "c1503f0d0776063d65fdec3426d2fc98bde5b539f5a8fc42ce71220f55ea2394",
+   "model": "sonnet",
+   "at": "2026-11-27T06:17:05+09:00"
   },
   {
    "role": "wording-editor",
-   "agent": "hq-review:wording",
+   "agent": "wording-editor",
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
-   "model": "codex-default/high",
-   "at": "2026-10-26T10:07:06+09:00"
+   "reviewed_sha256": "c1503f0d0776063d65fdec3426d2fc98bde5b539f5a8fc42ce71220f55ea2394",
+   "model": "sonnet",
+   "at": "2026-11-27T06:16:26+09:00"
   },
   {
    "role": "fan",
-   "agent": "hq-review:fan",
+   "agent": "boatrace-fan-reviewer",
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
-   "model": "codex-default/high",
-   "at": "2026-10-26T10:07:06+09:00"
+   "reviewed_sha256": "c1503f0d0776063d65fdec3426d2fc98bde5b539f5a8fc42ce71220f55ea2394",
+   "model": "opus",
+   "at": "2026-11-27T06:17:26+09:00"
   },
   {
    "role": "seo-marketer",
-   "agent": "hq-review:seo+marketing",
+   "agent": "seo-marketer",
    "result": "pass",
    "p0": 0,
-   "p1": 1,
-   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
-   "model": "codex-default/high",
-   "at": "2026-10-26T10:07:06+09:00"
+   "p1": 0,
+   "reviewed_sha256": "c1503f0d0776063d65fdec3426d2fc98bde5b539f5a8fc42ce71220f55ea2394",
+   "model": "sonnet",
+   "at": "2026-11-27T06:17:37+09:00"
   }
  ],
- "author": "hq-employee:seo-human",
- "created_at": "2026-10-26T10:08:47+09:00",
- "run": "20261026T100015-seo-human",
- "engine": "codex"
+ "author": {
+  "model": "claude-opus-5-5",
+  "lane": "routine:seo-article"
+ },
+ "created_at": "2026-11-27T06:17:38+09:00"
 }
