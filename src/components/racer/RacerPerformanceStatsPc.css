@@ -1,0 +1,63 @@
+/* 選手ページの PC（1200px 以上）の並び、後半（オーナー承認 2026-11-26、side-session-notes の g2-racer/pc/compare-*.png）。
+   成績・調子: 左に 選手調子→全国勝率の推移→平均ST、右に レース条件別の成績（高さの差を短い側に積んで詰める）。
+   絞り込みの枠: 会場別（左）｜枠番別＋決まり手（右）。1199px 以下は包みが無いのと同じで今の縦並び。
+   セレクタは #racer-stats・#racer-filtered・.racer-vc-pair で始める（verify-css-class-collisions） */
+.racer-vc-pair,
+.racer-vc-pair-side {
+  display: contents;
+}
+
+@media (min-width: 1200px) {
+  /* 3つがそろうときだけ組み替える。:where で詳細度を ID 1つに抑え、下の個別の置き場の指定を勝たせる */
+  #racer-stats:where(:has(> .racer-stat-cards-grid + .racer-stat-chart + .racer-cond-stats)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--spacing-4);
+    align-items: start;
+  }
+
+  #racer-stats:where(:has(> .racer-stat-cards-grid + .racer-stat-chart + .racer-cond-stats)) > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  #racer-stats:where(:has(> .racer-stat-cards-grid + .racer-stat-chart + .racer-cond-stats)) > .racer-stat-cards-grid {
+    display: contents;
+  }
+
+  #racer-stats > .racer-stat-cards-grid > .racer-stat-card {
+    grid-column: 1;
+    margin-bottom: var(--spacing-4);
+  }
+
+  #racer-stats > .racer-stat-cards-grid > .racer-stat-card:first-child {
+    grid-row: 2;
+  }
+
+  #racer-stats > .racer-stat-cards-grid > .racer-stat-card:last-child {
+    grid-row: 4;
+  }
+
+  #racer-stats > .racer-stat-cards-grid + .racer-stat-chart {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  #racer-stats > .racer-stat-chart + .racer-cond-stats {
+    grid-column: 2;
+    grid-row: 2 / span 3;
+  }
+
+  /* 右の列は1つの入れ物にまとめ、会場別が長くても枠番別と決まり手の間を空けない（ファン評価 P2） */
+  .racer-vc-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--spacing-4);
+    align-items: start;
+  }
+
+  .racer-vc-pair-side {
+    display: block;
+    min-width: 0;
+  }
+}
