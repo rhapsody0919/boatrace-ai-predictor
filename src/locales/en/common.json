@@ -890,6 +890,7 @@
       "avg": "Avg. {{value}}",
       "smallSampleTitle": "Few entries mean rates are more prone to random variation",
       "noteDiff": "Difference = gap from the all-racer 1st-place rate for the same course (no colors). The ST analysis in this tab compares against the average for the same class.",
+      "noteDiffBar": "Bar = gap from the all-racer 1st-place rate for the same course (center line). Green ▲ / red ▼ appear only when, given the number of entries, the gap is hard to explain by chance alone (they do not mark the size of the gap). Dashed bars are boats with too few entries to show a gap. The ST analysis in this tab compares against the average for the same class.",
       "noteSample": "Boats with few entries (under 10 for course 1, 30 for courses 2–4, 42 for course 5, or 67 for course 6) are shown in gray with no difference, as rates are more prone to random variation. Rates are also hidden for fewer than 10 entries.",
       "notePeriod": "Last 3 terms = the 3 latest published official term records (aggregated for May–October and November–April). These are the same values as the last 3 terms on the racer page. Select a row to show that racer's record by course.",
       "fetchError": "Could not load course records for the last 3 terms.",
