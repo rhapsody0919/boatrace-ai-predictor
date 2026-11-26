@@ -32,6 +32,8 @@
  *     「適用済み」になったファイルがあるか、取得（capturedAt）から7日以上なら stale=true と理由・
  *     取り直しのコマンドを出す。日数は台帳に載らない変更（SQL Editor で直に当てた等）を拾うため
  *     （オーナー 2026-10-27）。写しの取得日と台帳を読むだけで、DB には触れない
+ * 12) siteUpdates… 更新のお知らせ（src/data/siteUpdates.js）の最新の日付が JST の暦日で7日以上前なら
+ *     stale=true と候補を出す手順（書き手は窓口。11/22 で止まった、2026-11-26 オーナーの指摘）
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -48,6 +50,7 @@ import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-term
 import { checkMissingContentIndex } from "../lib/contentTopics/missingContentIndex.js";
 import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
 import { checkPendingInsights } from "./content-ops-checks/check-pending-insights.js";
+import { checkSiteUpdatesFreshness } from "./content-ops-checks/check-site-updates-freshness.js";
 import { supabase } from "../lib/supabaseClient.js";
 import {
   createDbPendingStore,
@@ -217,6 +220,7 @@ async function main() {
     contentQualityAudit,
     pendingInsights,
     schemaSnapshot,
+    siteUpdates,
   ] = await Promise.all([
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
     checkRacerNewsPending(),
@@ -242,6 +246,7 @@ async function main() {
     })),
     checkPendingInsights(),
     checkSchemaSnapshot(),
+    checkSiteUpdatesFreshness(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -274,6 +279,7 @@ async function main() {
     },
     pendingInsights,
     schemaSnapshot,
+    siteUpdates,
   };
 
   if (process.argv.includes("--json")) {
