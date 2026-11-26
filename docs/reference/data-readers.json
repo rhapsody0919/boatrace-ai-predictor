@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2979,
+    "sourceFiles": 2981,
     "filesWithAccess": 330,
     "tableReaders": 974,
     "tableWriters": 200,
@@ -12730,7 +12730,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/seo-morning-sheet.js:75",
+          "ref": "scripts/maintenance/seo-morning-sheet.js:87",
           "op": "select",
           "via": "helper:readAll",
           "columns": []
@@ -30540,12 +30540,12 @@
     },
     {
       "file": "scripts/maintenance/seo-morning-sheet.js",
-      "line": 60,
+      "line": 68,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/seo-morning-sheet.js",
-      "line": 66,
+      "line": 74,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
