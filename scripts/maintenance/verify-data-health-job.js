@@ -134,6 +134,7 @@ const MIGRATION_FILES = Object.freeze([
   "121_data_health_pre_race_series_day.sql",
   "170_data_health_freshness.sql",
   "207_data_health_growth_gsc_freshness.sql",
+  "211_data_health_site_feedback.sql",
 ]);
 const MIGRATION_FILE = MIGRATION_FILES[0];
 const migrationSqlByFile = new Map(
@@ -167,6 +168,8 @@ CREATE TABLE race_history_cache (key text primary key, updated_at timestamptz);
 CREATE TABLE racer_grade_cache (key text primary key, updated_at timestamptz);
 CREATE TABLE model_performance_daily (model_id text, date date);
 CREATE TABLE growth_gsc_daily (date date, query text, page text);
+CREATE TABLE site_feedback_hourly (hour timestamptz primary key, received integer);
+CREATE TABLE site_feedback (created_at timestamptz);
 ALTER TABLE racer_series_points ADD COLUMN scraped_at timestamptz;
 CREATE TABLE venues (code smallint, updated_at timestamptz);
 CREATE TABLE racer_aggregated_stats (racer_id integer, calculated_at timestamptz);

@@ -363,6 +363,37 @@ export const COUNT_CHECKS = Object.freeze([
     note: "原理的に0件のため閾値は100%。2026-09-12の32件（修正SQLの適用前）で、この定義が過不足なく拾うことを本番で確認済み。後から結果が入る日を拾うため14日遡る",
   },
 
+  // ご意見ボックス（208・209、2026-11-26 オーナー決定）。荒らしで全体の上限（10分30行）に張り付くと、正規の人も送れない。
+  // 拒否した送信は DB に残らないので、時ごとの受け付けた件数（209）が上限に近い時間で見る。1件の時間でも異常なので閾値は100%。
+  // 分母は24（時間）で既定の minDenominator（30）を下回るため1にする。days: 1 で荒れた日ごとに1回知らせる（days: 7 だと、
+  // 古い荒れが窓から抜けた日と新しい荒れが重なると知らせが漏れる。system-architect 2026-11-26）
+  {
+    id: "site_feedback.saturation",
+    label: "ご意見ボックス: 全体の上限に近い時間（1時間90件以上）が無い",
+    classification: "count",
+    severity: "alert",
+    fn: "data_health_site_feedback",
+    numerator: "calm_hours",
+    denominator: "hours",
+    threshold: 1,
+    minDenominator: 1,
+    days: 1,
+    note: "上限は1時間180件。時の区切りをまたぐ張り付きは長さ 2T/3 分まで見落とすため、90件で60分以上の荒らしを拾う（目安・根拠なし）。荒れていればオーナーが制限の作りを見直す",
+  },
+  // 時ごとの件数の足し込み（209 のトリガー）が止まると、上の見張りが黙って盲になる。残っている行の数と件数の和を比べる
+  {
+    id: "site_feedback.hourly_counting",
+    label: "ご意見ボックス: 時ごとの件数の足し込みが止まっていない",
+    classification: "count",
+    severity: "alert",
+    fn: "data_health_site_feedback",
+    numerator: "counted",
+    denominator: "kept",
+    threshold: 1,
+    minDenominator: 1,
+    note: "209 の site_feedback_guard を 208 の本文で差し替えると足し込みが消える。行を消すと件数の和の方が多くなるので、分子は残っている行の数で頭を抑える",
+  },
+
   // 月別の結果充足率（全期間）。**2026-09-28に全10か月が100.00%になったため、severity を info から
   // alert に上げた**（BOA-468）。以降、どの月かが99%を割ったら通知する。
   //

@@ -203,6 +203,43 @@ group by r.race_date
 order by 1`;
 
 /**
+ * ご意見ボックス（208 の site_feedback・209 の site_feedback_hourly）の見張り（2026-11-26 オーナー決定、system-architect の審査）。
+ * JST の日ごとに、24時間のうち全体の上限（10分30行＝1時間180件）に近い時間（1時間 SITE_FEEDBACK_BUSY_HOUR 件以上）が無いかと、
+ * 時ごとの件数の足し込みが止まっていないか（209 のトリガーの差し替えで黙って消えると、上限の見張りが盲になる）を返す。
+ *   hours       分母。常に24（受け付けが0件の日も行を出す）
+ *   calm_hours  上限に近くない時間の数。荒らしで張り付いた時間があると24を割る
+ *   kept        その日に残っている site_feedback の行の数
+ *   counted     その日の site_feedback_hourly の received の和（行を消すと kept より多くなるので kept で頭を抑える）
+ * UTC の時の区切りは JST の時の区切りと一致する（+9時間ちょうど）。返すのは件数だけで、本文・識別番号は読まない。
+ */
+export const SITE_FEEDBACK_BUSY_HOUR = 90;
+const siteFeedbackSql = ({ fromDate, toDate }) => `
+with dd as (
+  select g::date as d from generate_series(${fromDate}::date, ${toDate}::date, interval '1 day') g
+), h as (
+  select (hour at time zone 'Asia/Tokyo')::date as d, received
+  from site_feedback_hourly
+  where hour >= (${fromDate}::date::timestamp at time zone 'Asia/Tokyo')
+    and hour < ((${toDate}::date + 1)::timestamp at time zone 'Asia/Tokyo')
+), f as (
+  select (created_at at time zone 'Asia/Tokyo')::date as d, count(*) as kept
+  from site_feedback
+  where created_at >= (${fromDate}::date::timestamp at time zone 'Asia/Tokyo')
+    and created_at < ((${toDate}::date + 1)::timestamp at time zone 'Asia/Tokyo')
+  group by 1
+)
+select dd.d::text as d,
+    24 as hours,
+    24 - count(h.received) filter (where h.received >= ${SITE_FEEDBACK_BUSY_HOUR}) as calm_hours,
+    coalesce(max(h.received), 0) as max_received,
+    coalesce((select kept from f where f.d = dd.d), 0) as kept,
+    least(coalesce(sum(h.received), 0), coalesce((select kept from f where f.d = dd.d), 0)) as counted
+from dd
+left join h on h.d = dd.d
+group by dd.d
+order by 1`;
+
+/**
  * @typedef {Object} DataHealthFunction
  * @property {string} name 関数名（public スキーマ）
  * @property {Array<{name: string, type: "date"}>} args 引数
@@ -227,5 +264,6 @@ export {
   tableRowsSql,
   entriesDuplicatesSql,
   cancellationWithResultSql,
+  siteFeedbackSql,
   FROM_TO,
 };
