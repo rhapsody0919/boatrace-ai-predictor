@@ -53,9 +53,11 @@
   }
 }
 
-/* ホームの PC（1200px 以上）: 主役の会場の一覧を左に、短い案内（初めての方へ・SG の帯・お気に入り・
+/* ホームの PC（1200px 以上）: 主役の会場の一覧を左に、短い案内（初めての方へ・SG の帯・
    本日のデータ一覧・紹介の帯）を右の列に置き、会場の一覧を最初の画面に入れる（G3 の点検 2026-11-26。
    1列のままだと会場の一覧の上端が 1472px、初めての人で 2695px だった）。長いイン崩れ注意度は2列の下に全幅で置く。
+   お気に入り選手の出走は 1024px 以上で「1件1行」（約570px）なので右の列に入らず、2列の上に全幅で置く
+   （1024〜1199px と同じく会場の一覧より前。右に置くと 1440px でページが横にはみ出した。PR #3528 の e2e）。
    DOM の順は変えず grid の置き場だけを決めるので、1199px 以下は今のまま */
 .home-today-board {
   display: contents;
@@ -76,23 +78,22 @@
     grid-column: 1 / -1;
   }
 
+  .home-today-board > .favorite-runs {
+    grid-row: 1;
+  }
+
   .home-today-board > .venue-grid {
     grid-column: 1;
-    grid-row: 1 / 6;
+    grid-row: 2 / 6;
     margin-top: 0;
   }
 
   .home-today-board > .first-visit-guide-card {
     grid-column: 2;
-    grid-row: 1;
-  }
-
-  .home-today-board > .sg-now-banner {
-    grid-column: 2;
     grid-row: 2;
   }
 
-  .home-today-board > .favorite-runs {
+  .home-today-board > .sg-now-banner {
     grid-column: 2;
     grid-row: 3;
   }
@@ -116,7 +117,6 @@
     > :is(
       .first-visit-guide-card,
       .sg-now-banner,
-      .favorite-runs,
       .home-digest-link,
       .intro-banner
     ) {

@@ -27,7 +27,7 @@ test("ホームの会場の一覧が、1200px 以上で案内の列の左に並�
       side: (() => {
         const rs = [
           ...document.querySelectorAll(
-            ".home-today-board > :is(.first-visit-guide-card, .intro-banner, .favorite-runs, .sg-now-banner, .home-digest-link)",
+            ".home-today-board > :is(.first-visit-guide-card, .intro-banner, .sg-now-banner, .home-digest-link)",
           ),
         ].map((el) => el.getBoundingClientRect());
         if (!rs.length) return null;
