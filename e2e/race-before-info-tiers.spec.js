@@ -19,7 +19,12 @@ async function cellValues(row) {
     out.push({
       value: Number.parseFloat(text.replace(/[()]/g, "")),
       cls: (await cell.getAttribute("class")) ?? "",
+      // 印は ::after（data-mark）で出す。セルの文字（値）に混ざらないことも確かめる
       text: (await cell.textContent()) ?? "",
+      mark: await cell.evaluate((el) => {
+        const m = el.querySelector(".drt-tier-mark");
+        return m ? getComputedStyle(m, "::after").content : "";
+      }),
     });
   }
   return out;
@@ -38,8 +43,9 @@ for (const width of [375, 1440]) {
       const bottom = cells.filter((c) => c.cls.includes("drt-tier-bottom"));
       expect(top.length, `${label} の上位`).toBeGreaterThanOrEqual(2);
       expect(bottom.length, `${label} の下位`).toBeGreaterThanOrEqual(2);
-      top.forEach((c) => expect(c.text).toContain("▲速い"));
-      bottom.forEach((c) => expect(c.text).toContain("▼遅い"));
+      top.forEach((c) => expect(c.mark).toContain("▲速い"));
+      bottom.forEach((c) => expect(c.mark).toContain("▼遅い"));
+      cells.forEach((c) => expect(c.text).not.toMatch(/[▲▼]/));
       // 上位は印の無い艇より速く（小さく）、下位は遅い
       const others = cells.filter((c) => !c.cls.includes("drt-tier-") && Number.isFinite(c.value));
       for (const o of others) {

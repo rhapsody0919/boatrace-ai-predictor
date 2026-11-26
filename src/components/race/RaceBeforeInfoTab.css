@@ -251,3 +251,4 @@
 .race-before-info-tab .drt-cell.drt-tier-bottom .drt-value,
 .race-before-info-tab .drt-cell.drt-tier-bottom .drt-tier-mark { color: var(--color-error-text); }
 .race-before-info-tab .drt-tier-mark { display: block; font-size: var(--font-size-2xs, 0.625rem); line-height: 1.2; font-weight: normal; }
+.race-before-info-tab .drt-tier-mark::after { content: attr(data-mark); }

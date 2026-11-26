@@ -78,14 +78,16 @@ function TableHead({ sortedPlayers }) {
   );
 }
 
-// 6艇の上位2・下位2の印（意味づけ 2026-11-26、型2）。色だけに頼らず ▲▼ と言葉を添える
+// 6艇の上位2・下位2の印（意味づけ 2026-11-26、型2）。色だけに頼らず ▲▼ と言葉を添える。
+// 字は CSS の ::after（data-mark）で出し、セルの文字（値）には混ぜない（値を読む既存の試験・コピーを崩さない）
 function TierMark({ tier }) {
   const { t } = useTranslation();
   if (!tier) return null;
   return (
-    <span className="drt-tier-mark">
-      {t(tier === "top" ? "beforeInfo.tierTop" : "beforeInfo.tierBottom")}
-    </span>
+    <span
+      className="drt-tier-mark"
+      data-mark={t(tier === "top" ? "beforeInfo.tierTop" : "beforeInfo.tierBottom")}
+    />
   );
 }
 
