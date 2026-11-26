@@ -7,26 +7,34 @@
 import fs from "node:fs";
 import path from "node:path";
 
-/** ファイルを読んで行の配列にする。無ければ null。{meta, rows} も行の配列もよい */
+/** JSON の中身を行の配列にする。{meta, rows} も行の配列もよい。形が違えば投げる */
+export function parseRows(data, label) {
+  const rows = Array.isArray(data) ? data : data?.rows;
+  if (!Array.isArray(rows)) throw new Error(`${label} は行の配列か { rows: [...] } でない`);
+  return rows;
+}
+
+/** ファイルを読んで行の配列にする。無ければ null */
 export function readRowsFile(file) {
   if (!fs.existsSync(file)) return null;
-  const data = JSON.parse(fs.readFileSync(file, "utf8"));
-  const rows = Array.isArray(data) ? data : data?.rows;
-  if (!Array.isArray(rows)) throw new Error(`${file} は行の配列か { rows: [...] } でない`);
-  return rows;
+  return parseRows(JSON.parse(fs.readFileSync(file, "utf8")), file);
 }
 
 const maxDate = (rows) => rows.reduce((m, r) => (r.date > m ? r.date : m), "");
 const between = (rows, from, to) => rows.filter((r) => r.date >= from && r.date <= to);
 const byDate = (rows) => [...rows].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-/** seo-morning-sheet の読み口（Supabase の版と同じ4つの口）。dir: 日別の JSON の置き場、seriesFile: 任意 */
+/** ディレクトリ（と任意の series のファイル）から読み口を作る */
 export function localSource(dir, seriesFile = null) {
   const daily = readRowsFile(path.join(dir, "gsc_daily.json"));
   if (daily === null) throw new Error(`${path.join(dir, "gsc_daily.json")} が無い（google-detail-collect.js の出力の置き場を渡す）`);
-  const pageDaily = readRowsFile(path.join(dir, "gsc_page_daily.json"));
   const series = seriesFile ? readRowsFile(seriesFile) : [];
   if (series === null) throw new Error(`${seriesFile} が無い`);
+  return sourceFromRows({ daily, pageDaily: readRowsFile(path.join(dir, "gsc_page_daily.json")), series });
+}
+
+/** seo-morning-sheet の読み口（Supabase の版と同じ口）。行は読み済みの配列（pageDaily は無ければ null）。試験はこちらにメモリの行を渡す */
+export function sourceFromRows({ daily, pageDaily = null, series = [] }) {
   return {
     tableStats({ table, required }) {
       if (table === "growth_gsc_daily") return { table, required, rowCount: daily.length, maxDate: maxDate(daily) || null };

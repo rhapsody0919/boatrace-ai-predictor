@@ -126,11 +126,11 @@ async function loadArticleLines(src, today, articles, args, inspectionRows) {
 }
 
 /** 読み口から1枚（と票の雛形）を組む。出力は行の配列 */
-export async function buildSheetLines(src, args, today) {
+export async function buildSheetLines(src, args, today, articles = readJson(args.articles)) {
   const freshness = freshnessReport(await Promise.all(TABLES.map((t) => src.tableStats(t))), today);
   const green = isGreen(freshness);
   const loaded = green ? await loadSignals(src, today) : { signals: [], falling: 0, inspectionRows: {} };
-  const articleLinesOut = green ? await loadArticleLines(src, today, readJson(args.articles), args, loaded.inspectionRows) : [];
+  const articleLinesOut = green ? await loadArticleLines(src, today, articles, args, loaded.inspectionRows) : [];
   const out = [renderSheet({ today, freshness, signals: loaded.signals, articleLinesOut, fallingCount: loaded.falling })];
   for (const s of loaded.signals.slice(0, args.tickets)) out.push(`\n--- 「SEO:」票の雛形 ---\n${ticketTemplate(s, today)}`);
   return out;
