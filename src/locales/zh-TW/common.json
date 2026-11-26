@@ -631,7 +631,9 @@
     "rate": "比率（%）",
     "avgPayout": "平均派彩（¥）",
     "detailLink": "→ 查看{{venue}}詳細分析",
-    "noData": "此艇號沒有開獎組合資料"
+    "noData": "此艇號沒有開獎組合資料",
+    "wins": "{{venue}}近90天內，{{boat}}號艇獲得第1名的比賽有{{wins}}場",
+    "denominatorNote": "出現率是{{boat}}號艇獲得第1名的{{wins}}場比賽中的比例。分析工具的名次組合分布是此賽場全部{{total}}場比賽中的比例，因此同一組合的數值會不同。"
   },
   "modelDesc": {
     "sectionTitle": "關於預測模型",

@@ -631,7 +631,9 @@
     "rate": "비율 (%)",
     "avgPayout": "평균 배당 (¥)",
     "detailLink": "→ {{venue}} 상세 분석 보기",
-    "noData": "이 번호의 조합 데이터가 없습니다"
+    "noData": "이 번호의 조합 데이터가 없습니다",
+    "wins": "{{venue}}의 최근 90일 동안 {{boat}}번 보트가 1착한 경주는 {{wins}}경주",
+    "denominatorNote": "출현율은 {{boat}}번 보트가 1착한 {{wins}}경주 중의 비율입니다. 분석 도구의 결과 조합 분포는 경기장 전체 {{total}}경주 중의 비율이므로 같은 조합이라도 값이 다릅니다."
   },
   "modelDesc": {
     "sectionTitle": "예측 모델 소개",
