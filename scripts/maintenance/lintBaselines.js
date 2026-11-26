@@ -3,31 +3,6 @@
  * 辺は { from, to, rule }。基準は { "<rule>": { "<from>": ["<to>", ...] } }。
  */
 
-// データ層の和（src/services の core*.js・*Queries*.js）。一覧はここ1か所の関数に分ける
-const DATA_LAYER_PATTERNS = [
-  /^src\/services\/core[^/]*\.js$/,
-  /^src\/services\/[^/]*Queries[^/]*\.js$/,
-];
-export const dataLayerPatterns = () => DATA_LAYER_PATTERNS;
-
-export const isDataLayer = (file) =>
-  dataLayerPatterns().some((re) => re.test(file));
-
-export const DATA_LAYER_KEY = "<data-layer>";
-
-/** 基準の key。和の中の from は1つにまとめる（関数が別ファイルへ移っても変わらない） */
-const fromKey = (from) => (isDataLayer(from) ? DATA_LAYER_KEY : from);
-
-const toSets = (edges) => {
-  const map = new Map();
-  for (const { rule, from, to } of edges) {
-    const key = `${rule}\t${fromKey(from)}`;
-    if (!map.has(key)) map.set(key, new Set());
-    map.get(key).add(to);
-  }
-  return map;
-};
-
 /** 基準の object を Map<"rule\tfrom", Set<to>> にする */
 const baselineSets = (baseline) => {
   const map = new Map();
@@ -38,28 +13,6 @@ const baselineSets = (baseline) => {
   }
   return map;
 };
-
-/**
- * 違反の辺を基準と比べる。
- * 基準に無い from、または基準の to の集合を越える to があれば赤（problems に出す）。
- */
-export function compareEdgesToBaseline(edges, baseline) {
-  const base = baselineSets(baseline);
-  const problems = [];
-  for (const [key, tos] of toSets(edges)) {
-    const allowed = base.get(key);
-    const [rule, from] = key.split("\t");
-    if (!allowed) {
-      problems.push(`${rule}: 基準に無い辺 ${from} → ${[...tos].join(", ")}`);
-      continue;
-    }
-    const extra = [...tos].filter((t) => !allowed.has(t));
-    if (extra.length > 0) {
-      problems.push(`${rule}: 基準を越える辺 ${from} → ${extra.join(", ")}`);
-    }
-  }
-  return { ok: problems.length === 0, problems };
-}
 
 const baselineRows = (baseline) => {
   const rows = new Set();

@@ -1,15 +1,11 @@
 /**
- * sizeBaselines.js - 大きさの関所の部品（BOA-1429、BOA-1425 を割った 2/2）。
- * 関数の単位の AST hash と、基準（{initial_count, units}）と比べる判定の純関数。
+ * sizeBaselines.js - 大きさの関所の部品（BOA-1429、2026-11-25 に全体で0＋例外の表へ、ADR-0110）。
+ * 関数の単位の行数・複雑さと、ファイルの実質の行（空行・注釈を除く）を数え、線と例外の表で判定する純関数。
  * child_process・ネットワーク・ファイルの読み書きをしない（字は呼び出し側が渡す）。
  *
  * 単位: 最上位の関数の宣言・変数に入れた関数・class のメソッド・object のメソッド。
- * hash: コメント・空白・export を除き、識別子の名前は残した AST の sha256。
- *   メソッドは関数の宣言と同じ形にし、同じ領域（同じファイルの単位）の `this.X(` は `X(` にする
- *   （メソッドを `export async function` へ移すだけの変更で hash を変えないため。async は残す）。
- * 基準は減る向きだけ。線は目安（根拠なし）。
+ * 線は目安（根拠なし）。表は減る向きだけ。
  */
-import crypto from "node:crypto";
 import { parse } from "@babel/parser";
 
 export const MAX_FN_LINES = 100; // max-lines-per-function
@@ -142,59 +138,10 @@ export function extractUnits(source) {
   });
 }
 
-const isRegionThisCall = (v, names) =>
-  (v.type === "CallExpression" || v.type === "OptionalCallExpression") &&
-  v.callee?.type === "MemberExpression" &&
-  v.callee.object.type === "ThisExpression" &&
-  !v.callee.computed &&
-  v.callee.property.type === "Identifier" &&
-  names.has(v.callee.property.name);
-
-function canon(v, names) {
-  if (Array.isArray(v)) return v.map((x) => canon(x, names));
-  if (v === null || typeof v !== "object") return v;
-  const src = isRegionThisCall(v, names) ? { ...v, callee: v.callee.property } : v;
-  const out = {};
-  for (const k of Object.keys(src).sort()) {
-    if (!SKIP_KEYS.has(k)) out[k] = canon(src[k], names);
-  }
-  return out;
-}
-
-/**
- * hash の前の正規化（これ1つを使う。RA02 の pr-lane の「移すだけ」も同じ）。
- * メソッド・変数の関数・宣言を {type:"Fn", name, async, generator, params, body} の同じ形にする。
- * names: 同じ領域の単位の名前の Set（`this.X(` を `X(` にする対象）
- */
-export function normalizeForHash({ name, fn }, names = new Set()) {
-  const accessor = fn.kind === "get" || fn.kind === "set" ? fn.kind : null;
-  return canon(
-    {
-      type: "Fn",
-      name,
-      async: Boolean(fn.async),
-      generator: Boolean(fn.generator),
-      accessor,
-      params: fn.params,
-      body: fn.body,
-    },
-    names,
-  );
-}
-
-export const hashUnit = (unit, names) =>
-  crypto
-    .createHash("sha256")
-    .update(JSON.stringify(normalizeForHash(unit, names)))
-    .digest("hex");
-
-/** ファイルの字 → 単位ごとの {name, hash, lines, complexity} */
+/** ファイルの字 → 単位ごとの {name, lines, start, end, complexity} */
 export function unitsOfSource(source) {
-  const units = extractUnits(source);
-  const names = new Set(units.map((u) => u.name));
-  return units.map((u) => ({
+  return extractUnits(source).map((u) => ({
     name: u.name,
-    hash: hashUnit(u, names),
     lines: u.fn.loc.end.line - u.fn.loc.start.line + 1,
     start: u.fn.loc.start.line,
     end: u.fn.loc.end.line,
@@ -204,9 +151,6 @@ export function unitsOfSource(source) {
 
 export const isOverLine = (u) =>
   u.lines > MAX_FN_LINES || u.complexity > MAX_COMPLEXITY;
-
-export const countLines = (text) =>
-  text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
 
 /** 空行とコメントだけの行を除いた行の番号（1 始まり）の一覧。parse できなければ throw */
 export function substantiveLineNumbers(source) {
@@ -221,113 +165,6 @@ export function substantiveLineNumbers(source) {
     .join("")
     .split("\n")
     .flatMap((t, i) => (t.trim() === "" ? [] : [i + 1]));
-}
-
-/** 実質の行数（空行・コメントを除く）から、基準を持つ単位の実質の行を除いた数 */
-export function restSubstantive(source, baseline) {
-  const own = unitsOfSource(source).filter((u) => baseline.units[u.hash]);
-  return substantiveLineNumbers(source).filter(
-    (n) => !own.some((u) => n >= u.start && n <= u.end),
-  ).length;
-}
-
-/** 木の全部のファイルの字（{path: source}）→ 基準。線を越える単位だけ載せる */
-export function buildBaseline(files) {
-  const units = {};
-  for (const file of Object.keys(files).sort()) {
-    for (const u of unitsOfSource(files[file])) {
-      if (!isOverLine(u) || units[u.hash]) continue;
-      units[u.hash] = {
-        lines: u.lines,
-        complexity: u.complexity,
-        file,
-        name: u.name,
-      };
-    }
-  }
-  const sorted = Object.fromEntries(Object.keys(units).sort().map((h) => [h, units[h]]));
-  return { initial_count: Object.keys(sorted).length, units: sorted };
-}
-
-function judgeUnit(u, file, baseline, strictExisting) {
-  if (!isOverLine(u) || baseline.units[u.hash]) return null;
-  const where = `${file} ${u.name}（${u.lines} 行・複雑さ ${u.complexity}）`;
-  const prev = Object.values(baseline.units).find(
-    (b) => b.file === file && b.name === u.name,
-  );
-  // 既にある単位は増えても半分の線（strictExisting）まで警告（設計図 §4.5）
-  if (prev && !strictExisting) {
-    const grown = u.lines > prev.lines || u.complexity > prev.complexity;
-    const was = `base は ${prev.lines} 行・複雑さ ${prev.complexity}`;
-    return {
-      level: "warn",
-      text: `${where} 既にある大きい単位（${grown ? `増えた、${was}` : "増えていない"}）`,
-    };
-  }
-  return { level: "error", text: `${where} 線を越える単位で基準に無い` };
-}
-
-function fileLineError(file, source, units, baseline) {
-  const baselined = units
-    .filter((u) => baseline.units[u.hash])
-    .reduce((sum, u) => sum + u.lines, 0);
-  const rest = countLines(source) - baselined;
-  return rest > MAX_FILE_LINES
-    ? `${file} ファイル ${rest} 行（基準を持つ単位の ${baselined} 行を除く）が ${MAX_FILE_LINES} を越えた`
-    : null;
-}
-
-// 旗の後の既存ファイル（案A）: 実質の行が 400 を越え、base の実質の行から増えたときだけ赤。
-// baseSource が null（base に無い）ときは増えたとみなす
-function substantiveGrowthError(file, source, baseSource, baseline) {
-  const now = restSubstantive(source, baseline);
-  if (now <= MAX_FILE_LINES) return null;
-  const was =
-    typeof baseSource === "string" ? restSubstantive(baseSource, baseline) : null;
-  return was !== null && now <= was
-    ? null
-    : `${file} ファイルの実質の行（空行・コメント・基準を持つ単位を除く）が ${now} 行で ${MAX_FILE_LINES} を越え、base の ${was ?? "なし"} から増えた`;
-}
-
-/**
- * 基準と比べる。files: [{file, source, isNew, baseSource}]。
- * baseSource: base（origin/master。名前を変えたファイルは oldFile）の同じファイルの字。
- * strictExisting: 基準が半分以下になった旗。立てると既存のファイルの線の越えも赤にする
- */
-export function checkAgainstBaseline({ baseline, files, strictExisting = false }) {
-  const errors = [];
-  const warnings = [];
-  for (const { file, source, isNew, baseSource } of files) {
-    const units = unitsOfSource(source);
-    for (const u of units) {
-      const r = judgeUnit(u, file, baseline, strictExisting);
-      if (r) (r.level === "error" ? errors : warnings).push(r.text);
-    }
-    const e =
-      isNew || (strictExisting && baseSource === undefined)
-        ? fileLineError(file, source, units, baseline)
-        : strictExisting
-          ? substantiveGrowthError(file, source, baseSource, baseline)
-          : null;
-    if (e) errors.push(e);
-  }
-  return { errors, warnings };
-}
-
-/** 基準は減る向きだけ。base（merge-base の基準）と今の基準を比べ、半分以下の旗も返す */
-export function checkBaselineShrink({ base, current }) {
-  const errors = [];
-  if (current.initial_count !== base.initial_count) {
-    errors.push(
-      `initial_count を変えた（${base.initial_count} → ${current.initial_count}）`,
-    );
-  }
-  const added = Object.keys(current.units).filter((h) => !base.units[h]);
-  if (added.length > 0) {
-    errors.push(`基準の units が増えた（${added.length} 件: ${added.join(", ")}）`);
-  }
-  const count = Object.keys(current.units).length;
-  return { errors, strictExisting: count <= current.initial_count / 2 };
 }
 
 /**
