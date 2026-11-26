@@ -125,6 +125,22 @@ function DateAxis({ xTicks, at }) {
   ));
 }
 
+// 横の目盛り。日付の横軸（xTicks）か、選んだ艇の走の日付・「最新」・休みの印
+function XAxis({ xTicks, at, ...rest }) {
+  return xTicks ? (
+    <DateAxis xTicks={xTicks} at={at} />
+  ) : (
+    <SelectedAxis {...rest} />
+  );
+}
+
+// 描く順。選んだ艇を最後に描いて上に出す
+function drawOrder(seriesByBoat, selected) {
+  const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
+  if (seriesByBoat.has(selected)) order.push(selected);
+  return order;
+}
+
 // 選んだ艇の日付の目盛り・「最新」・休みの印
 function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
   const { t } = useTranslation();
@@ -284,8 +300,7 @@ export default function TrendChart({
   );
   const sel = seriesByBoat.get(selected) ?? [];
   const xSel = xFor(sel);
-  const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
-  if (seriesByBoat.has(selected)) order.push(selected);
+  const order = drawOrder(seriesByBoat, selected);
   const boxRef = useRef(null);
   const {
     pick,
@@ -314,18 +329,10 @@ export default function TrendChart({
         }
       >
         <ValueAxis ticks={ticks} y={y} W={W} scale={scale} t={t} />
-        {xTicks ? (
-          <DateAxis xTicks={xTicks} at={at} />
-        ) : (
-          <SelectedAxis
-            sel={sel}
-            selected={selected}
-            x={x}
-            W={W}
-            runAxisKey={scale.runAxisKey}
-            n={n}
-          />
-        )}
+        <XAxis
+          {...{ xTicks, at, sel, selected, x, W, n }}
+          runAxisKey={scale.runAxisKey}
+        />
         {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
         {renderOver?.({ x, y, W, h: H, pad: PAD, sel })}
         {order.map((boat) => (
