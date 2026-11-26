@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 選手ページの枠番別回収率（src/pure/racerBoatReturns.js）が、絞り込み・着順の付かない走・払戻の積み方・通算の推移を正しく数えることを守る
 import assert from "node:assert/strict";
-import { boatReturnRows, boatReturnSeries, BIG_WIN_PAYOUT } from "../../src/pure/racerBoatReturns.js";
+import { boatReturnRows, boatReturnSeries, boatTopWinShares, BIG_WIN_PAYOUT } from "../../src/pure/racerBoatReturns.js";
 
 const run = (raceId, boatNumber, over = {}) => ({
   raceId,
@@ -39,24 +39,21 @@ assert.equal(b1.placeReturn, ((110 + 130) / 300) * 100);
 const b6 = rows.find((r) => r.boat === 6);
 assert.deepEqual([b6.n, b6.wins], [2, 1], "着順の付かない走は走数に入るが1着に数えない");
 assert.equal(b6.winReturn, (5010 / 200) * 100);
-assert.deepEqual(rows.find((r) => r.boat === 3), { boat: 3, n: 0, wins: 0, winReturn: null, placeReturn: null, topWinShare: null });
-assert.equal(b1.topWinShare, 1, "1着が1回なら最大の1回が全部");
-assert.equal(b6.topWinShare, 1);
+assert.deepEqual(rows.find((r) => r.boat === 3), { boat: 3, n: 0, wins: 0, winReturn: null, placeReturn: null });
 
-// 最大の1回の割合: 1着が2回（単勝 300・900）なら 900 ÷ 1200。1着の無い枠番は null
-const shares = boatReturnRows(
+// 最大の1回の割合: 1着が2回（単勝 300・900）なら 900 ÷ 1200。払戻の無い枠番は null、走の無い枠番は持たない
+const shares = boatTopWinShares(
   [
     run("2026-02-01-01-01", 2, { rank1: 2, payoutWin: 300 }),
     run("2026-02-02-01-01", 2, { rank1: 2, payoutWin: 900 }),
     run("2026-02-03-01-01", 2, { rank1: 1, rank2: 2, payoutPlace2: 200 }),
     run("2026-02-04-01-01", 5, { rank1: 1, rank2: 3 }),
+    run("2026-02-05-02-01", 2, { rank1: 2, payoutWin: 5000, venueCode: 2 }),
   ],
-  ALL,
+  { ...ALL, venueCode: 1 },
 );
-assert.equal(shares.find((r) => r.boat === 2).topWinShare, 900 / 1200);
-assert.equal(shares.find((r) => r.boat === 2).wins, 2);
-assert.equal(shares.find((r) => r.boat === 5).topWinShare, null, "払戻が無ければ null");
-assert.equal(shares.find((r) => r.boat === 5).n, 1);
+assert.deepEqual(shares, { 2: 900 / 1200, 5: null });
+assert.equal(boatTopWinShares(history, ALL)[6], 1, "F で払戻の無い走は最大に入らない");
 
 // 表: 会場で絞る・枠番を固定すると、その行だけ・その走だけ
 const venue2 = boatReturnRows(history, { ...ALL, venueCode: 2 });
