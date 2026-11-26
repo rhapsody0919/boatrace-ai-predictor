@@ -179,15 +179,15 @@ test.describe("よくある質問と FAQPage（A2）", () => {
     ]);
     expect(faq.every((f) => f.answer.length > 0)).toBe(true);
     expect(faq[0].answer).toContain("無料・会員登録なし");
-    // 「当たるか」の答えは保証しないと言い、外れを含む記録へ案内する（BOA-1722）
-    expect(faq[1].answer).toContain("結果を保証するものではありません");
-    expect(faq[1].answer).toContain("外れを含めて");
 
     // 閉じた状態で始まり、押すと答えが見える
     const first = section.locator(".home-ai-intro__faq-item").first();
     await expect(first.locator("p")).toBeHidden();
     await first.locator("summary").click();
     await expect(first.locator("p")).toBeVisible();
+    // 「当たるか」の答えは保証しないと言い、外れを含む記録へ案内する（BOA-1722）
+    expect(faq[1].answer).toContain("結果を保証するものではありません");
+    expect(faq[1].answer).toContain("外れを含めて");
   });
 
   test("ja: FAQPage の JSON-LD は画面の問いと答えと一致し、index.html の型と重ならない", async ({
