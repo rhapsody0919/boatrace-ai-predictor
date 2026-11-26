@@ -28,7 +28,7 @@ test("全国勝率の推移の縦軸は0から始めず、値の幅に合わせ�
   const chart = page.locator(".racer-stat-chart", {
     has: page.locator("h3", { hasText: "全国勝率の推移" }),
   });
-  const ticks = chart.locator(".recharts-yAxis .recharts-cartesian-axis-tick-value");
+  const ticks = chart.locator(".recharts-yAxis-tick-labels text");
   await expect(ticks.first()).toBeVisible({ timeout: 30000 });
   const values = (await ticks.allTextContents()).map(Number);
   expect(values).not.toContain(0);
