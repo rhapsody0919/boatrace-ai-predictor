@@ -246,8 +246,8 @@
 }
 
 /* 6艇の上位2・下位2（意味づけ 2026-11-26、型2）。色は意味トークンだけ、▲▼ と言葉を必ず添える */
-.drt-cell.drt-tier-top .drt-value,
-.drt-cell.drt-tier-top .drt-tier-mark { color: var(--color-success-text); }
-.drt-cell.drt-tier-bottom .drt-value,
-.drt-cell.drt-tier-bottom .drt-tier-mark { color: var(--color-error-text); }
-.drt-tier-mark { display: block; font-size: var(--font-size-2xs, 0.625rem); line-height: 1.2; font-weight: normal; }
+.race-before-info-tab .drt-cell.drt-tier-top .drt-value,
+.race-before-info-tab .drt-cell.drt-tier-top .drt-tier-mark { color: var(--color-success-text); }
+.race-before-info-tab .drt-cell.drt-tier-bottom .drt-value,
+.race-before-info-tab .drt-cell.drt-tier-bottom .drt-tier-mark { color: var(--color-error-text); }
+.race-before-info-tab .drt-tier-mark { display: block; font-size: var(--font-size-2xs, 0.625rem); line-height: 1.2; font-weight: normal; }

@@ -47,6 +47,12 @@ for (const width of [375, 1440]) {
         bottom.forEach((c) => expect(c.value).toBeGreaterThanOrEqual(o.value));
       }
     }
+    // 印の色は意味トークン（緑・赤）で、印の無いセルの字の色と違う
+    const exRow = await rowByLabel(table, "展示T");
+    const colorOf = (loc) => loc.evaluate((el) => getComputedStyle(el).color);
+    const plainColor = await colorOf(exRow.locator("td.drt-cell:not([class*='drt-tier-']) .drt-value").first());
+    expect(await colorOf(exRow.locator("td.drt-tier-top .drt-tier-mark").first())).not.toBe(plainColor);
+    expect(await colorOf(exRow.locator("td.drt-tier-bottom .drt-tier-mark").first())).not.toBe(plainColor);
     const straight = await cellValues(await rowByLabel(table, "直線"));
     expect(straight.some((c) => c.cls.includes("drt-tier-"))).toBe(false);
     await expect(page.getByTestId("rbi-tier-legend")).toContainText("当社の過去データで確かめた行");
