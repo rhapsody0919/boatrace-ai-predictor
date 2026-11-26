@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import RacerConditionStats from "./RacerConditionStats";
 import { aggregateRacerVenueBoatStats } from "../../utils/racerVenueBoatStats.js";
 import "./RacerPerformanceStats.css";
+import "./RacerPerformanceStatsPc.css";
 import { techniqueColor } from "../../utils/techniqueColors";
 import { ST_TREND_ID } from "../../utils/racerPagePath";
 import { useRacerVcState } from "./useRacerVcState";
@@ -197,13 +198,25 @@ const hasAnyDataOf = (stats, view) =>
 
 // 全会場の会場別・枠番別の表はグレード・レース種別で集計し直していない。枠の中で「絞り込みが効く」と
 // 言う以上、選んでいる間は出さない（効かない値を同じ顔で並べない。ファン評価 #3279 1周 P1）
-function overviewBlocks(t, vc, view, venueStats) {
+function overviewBlocks(t, vc, view, venueStats, technique) {
   if (vc.vcGrade !== "all" || vc.vcStage !== "all") {
     if (!view.hasVenueStats && !view.hasCourseStats) return [];
     return [
       <p key="overviewHidden" className="racer-stat-note" data-testid="racer-overview-hidden">
         全会場の会場別・枠番別の表はグレード・レース種別では絞れないため、選んでいる間は出しません。会場か枠番を選ぶと、絞った表が出ます
       </p>,
+    ];
+  }
+  // PC で 会場別｜枠番別＋決まり手 の2列にする包み。1199px 以下は display: contents（RacerPerformanceStatsPc.css）
+  if (view.hasVenueStats && view.hasCourseStats) {
+    return [
+      <div key="pair" className="racer-vc-pair">
+        <VenueBreakdown t={t} vc={vc} venueStats={venueStats} />
+        <div className="racer-vc-pair-side">
+          <CourseBreakdown vc={vc} courseStats={view.courseStats} />
+          {technique}
+        </div>
+      </div>,
     ];
   }
   return [
@@ -216,12 +229,27 @@ function overviewBlocks(t, vc, view, venueStats) {
   ];
 }
 
+/** 決まり手の節。絞らずに会場別・枠番別がそろうときは overviewBlocks の包みへ入れ、下で二重に出さない */
+function techniqueBlocks(vc, view) {
+  const technique = view.showTechniqueSection && (
+    <TechniqueSection view={view} vcActive={vc.vcActive} vcLabel={view.vcLabel} />
+  );
+  const paired =
+    !vc.vcVenueFixed &&
+    !vc.vcBoatFixed &&
+    vc.vcGrade === "all" &&
+    vc.vcStage === "all" &&
+    view.hasVenueStats &&
+    view.hasCourseStats;
+  return { technique, pairedTechnique: paired ? technique : null };
+}
+
 /** 成績ブロック（会場・枠番の固定状況で4分岐、ADR-0063）。並びは元の4つの枠のまま */
-function breakdownBlocks(t, vc, view, venueStats) {
+function breakdownBlocks(t, vc, view, venueStats, technique) {
   const { vcVenueFixed, vcBoatFixed, vcHistoryLoading, vcHistoryError } = vc;
   const settled = !vcHistoryLoading && !vcHistoryError;
   return [
-    ...(!vcVenueFixed && !vcBoatFixed ? overviewBlocks(t, vc, view, venueStats) : []),
+    ...(!vcVenueFixed && !vcBoatFixed ? overviewBlocks(t, vc, view, venueStats, technique) : []),
     vcVenueFixed && !vcBoatFixed && settled && (
       <CrossBoatBreakdown key="crossBoat" vc={vc} vcLabel={view.vcLabel} />
     ),
@@ -299,6 +327,8 @@ export default function RacerPerformanceStats({
     "成績・調子"
   );
 
+  const { technique, pairedTechnique } = techniqueBlocks(vc, view);
+
   if (loading) {
     return (
       <div
@@ -345,12 +375,10 @@ export default function RacerPerformanceStats({
         <VcHistoryError vc={vc} />
         {/* 逃し率（進入コース別、オーナー 2026-11-25）。絞り込みが効く履歴から数える */}
         <RacerNigashiCourses history={vc.vcHistory} />
-        {breakdownBlocks(t, vc, view, venueStats)}
+        {breakdownBlocks(t, vc, view, venueStats, pairedTechnique)}
         <BothFixedNoRuns vc={vc} vcData={vcData} vcLabel={vcLabel} />
         <VcCards vc={vc} vcData={vcData} />
-        {view.showTechniqueSection && (
-          <TechniqueSection view={view} vcActive={vcActive} vcLabel={vcLabel} />
-        )}
+        {!pairedTechnique && technique}
         {view.hasVcData && vcData.series.length === 0 && (
           <p className="racer-stat-note">
             推移を表示するにはデータが不足しています
