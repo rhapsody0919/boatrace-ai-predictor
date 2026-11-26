@@ -9,11 +9,16 @@ import {
   initAdSense,
   trackPageView,
 } from "../utils/analytics";
+import { useRootClass } from "../hooks/useRootClass";
 import "./CookieConsent.css";
 
 export default function CookieConsent() {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(() => getCookieConsent() === null);
+  // 出ている間は、意見の箱の入口を隠す（SiteFeedback.css の body.site-fb-cookie-shown・Footer.css の
+  // body.site-footer-cookie-shown。クラス名は読む CSS ごとに分ける: verify-css-class-collisions）
+  useRootClass("body", "site-fb-cookie-shown", visible);
+  useRootClass("body", "site-footer-cookie-shown", visible);
 
   if (!visible) return null;
 

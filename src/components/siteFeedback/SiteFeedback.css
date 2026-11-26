@@ -9,6 +9,8 @@
  * - スマホ幅のレース詳細（.race-bottom-nav が出ている間）は、下部ナビ（高さ 100px）の上にアイコンだけで置く
  * - ブログ記事の「先頭へ戻る」（.back-to-top-button、右下 48px）があるときは、その上に置く
  * - 入力パネル（SiteFeedbackPanel.css）は 1700（トーストより上、Cookie の確認 9999 より下）
+ * - 「出ている間」は、それぞれの部品が useRootClass（src/hooks）で body に付ける *-shown のクラスで見る
+ *   （body:has() は recharts が文字を測るたびの再計算を重くする、2026-11-26）
  */
 .site-fb-btn {
   position: fixed;
@@ -68,11 +70,11 @@
   outline-offset: 2px;
 }
 
-body:has(> .cookie-consent) .site-fb-btn {
+body.site-fb-cookie-shown .site-fb-btn {
   display: none;
 }
 
-body:has(.back-to-top-button) .site-fb-btn {
+body.back-to-top-shown .site-fb-btn {
   /* 「先頭へ戻る」（下 1.25rem・高さ 48px）の上に 12px 空けて置く */
   bottom: calc(
     1.25rem + 48px + var(--spacing-3) + env(safe-area-inset-bottom, 0px)
@@ -82,12 +84,12 @@ body:has(.back-to-top-button) .site-fb-btn {
 
 @media (max-width: 768px) {
   /* 下部ナビは height: 100px で、safe-area の分は伸びない（RaceBottomNav.css） */
-  body:has(.race-bottom-nav) .site-fb-btn {
+  body.race-bottom-nav-shown .site-fb-btn {
     bottom: calc(100px + var(--spacing-3));
     padding: 0;
   }
 
-  body:has(.race-bottom-nav) .site-fb-btn-label {
+  body.race-bottom-nav-shown .site-fb-btn-label {
     display: none;
   }
 

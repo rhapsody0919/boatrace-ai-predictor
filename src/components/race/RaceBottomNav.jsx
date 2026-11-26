@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useRootClass } from "../../hooks/useRootClass";
 import "./RaceBottomNav.css";
 
 function RaceBottomNav({
@@ -14,6 +15,9 @@ function RaceBottomNav({
   const prevRace = currentIndex > 0 ? races[currentIndex - 1] : null;
   const nextRace =
     currentIndex < races.length - 1 ? races[currentIndex + 1] : null;
+
+  // 出ている間は、意見の箱の入口をその上に置く（SiteFeedback.css の body.race-bottom-nav-shown）
+  useRootClass("body", "race-bottom-nav-shown", !!selectedRace);
 
   if (!selectedRace) return null;
 

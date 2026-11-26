@@ -57,6 +57,6 @@
 }
 
 /* Cookie の確認（下端の全幅、z-index 9999）が出ている間は出さない。開いたパネルの「送る」が帯に隠れる */
-body:has(> .cookie-consent) .site-footer-feedback {
+body.site-footer-cookie-shown .site-footer-feedback {
   display: none;
 }

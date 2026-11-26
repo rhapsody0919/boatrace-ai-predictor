@@ -4,6 +4,7 @@
 import { Link } from "react-router-dom";
 import { localizePath } from "../config/languages";
 import { buildFaqPageSchema } from "../utils/blogFaqSchema";
+import { useRootClass } from "../hooks/useRootClass";
 
 function ArticleHeadMeta({
   post,
@@ -128,6 +129,8 @@ function ErrorView({ t, error }) {
 }
 
 function BackToTopButton({ t }) {
+  // 出ている間は、意見の箱の入口をその上に置く（SiteFeedback.css の body.back-to-top-shown）
+  useRootClass("body", "back-to-top-shown");
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
