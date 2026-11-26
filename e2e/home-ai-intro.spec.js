@@ -232,8 +232,8 @@ test.describe("よくある質問と FAQPage（A2）", () => {
     const section = intro(page);
     await expect(section).toBeVisible({ timeout: 30000 });
     const items = section.locator(".home-ai-intro__faq-item");
-    await expect(items).toHaveCount(5);
-    for (let i = 0; i < 5; i++) {
+    await expect(items).toHaveCount(7);
+    for (let i = 0; i < 7; i++) {
       await items.nth(i).locator("summary").click();
       const box = await items.nth(i).locator("summary").boundingBox();
       expect(box.height).toBeGreaterThanOrEqual(44);
