@@ -52,6 +52,11 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
     inset +
     ((W - PAD.l - inset - PAD.r) * (scale.alignStart ? i : n - len + i)) /
       Math.max(1, n - 1);
+  // 日付の横軸（今節タブの6艇の推移 R-43）: 点が横の位置 xr（0〜1）を持てば、走の順でなくその位置に置く。
+  // 艇ごとに同じ日の点が同じ縦の列に並ぶ。xr の無い点は今までどおり
+  const at = (r) => PAD.l + inset + (W - PAD.l - inset - PAD.r) * r;
+  const xFor = (pts) => (i, len) =>
+    pts[i]?.xr == null ? x(i, len) : at(pts[i].xr);
   const { tickStep } = scale;
   const ticks = [];
   for (
@@ -60,7 +65,7 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
     g += tickStep
   )
     ticks.push(g);
-  return { x, y, ticks, n };
+  return { x, y, ticks, n, at, xFor };
 }
 
 /** 横の目盛りの線と左の数字（走ごとの線と勝率の段で共通） */
@@ -103,6 +108,21 @@ function ValueAxis({ ticks, y, W, scale, t }) {
       </text>
     </>
   );
+}
+
+// 日付の横軸の目盛り（xTicks を渡す図だけ。走の順の目盛りの代わり）
+function DateAxis({ xTicks, at }) {
+  return xTicks.map((k) => (
+    <text
+      key={`${k.xr}-${k.label}`}
+      x={at(k.xr)}
+      y={H - 18}
+      className="trc-tick"
+      textAnchor="middle"
+    >
+      {k.label}
+    </text>
+  ));
 }
 
 // 選んだ艇の日付の目盛り・「最新」・休みの印
@@ -238,7 +258,8 @@ function PickLayer({ picked, px, y, selected, W, pointer, scale }) {
  *   scale を渡さなければ metric の既定の尺度。label は図の読み上げの名前（無ければ基本情報の題）。
  *   renderOver は線の下に重ねる SVG、renderBelow は図の下に描く物（どちらも図と同じ横の座標 x(i, len)）。
  *   extraValues は縦軸の範囲に含める重ね書きの値、lineClass は線の g に足すクラス（使う側の試験の当て先）。
- *   extraHeight は図の下に足す高さで、renderOver が y >= h に同じ svg の中で描く（今節の足の走の行）
+ *   extraHeight は図の下に足す高さで、renderOver が y >= h に同じ svg の中で描く（今節の足の走の行）。
+ *   xTicks（[{xr, label}]）は日付の横軸の目盛り。点の xr（0〜1）と breakBefore（走らない日をまたぐ）と組で使う
  */
 export default function TrendChart({
   seriesByBoat,
@@ -251,11 +272,18 @@ export default function TrendChart({
   extraValues,
   lineClass,
   extraHeight = 0,
+  xTicks,
 }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
-  const { x, y, ticks, n } = scaleOf(seriesByBoat, scale, W, extraValues);
+  const { x, y, ticks, n, at, xFor } = scaleOf(
+    seriesByBoat,
+    scale,
+    W,
+    extraValues,
+  );
   const sel = seriesByBoat.get(selected) ?? [];
+  const xSel = xFor(sel);
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
   const boxRef = useRef(null);
@@ -264,13 +292,13 @@ export default function TrendChart({
     close,
     handlers: pointer,
   } = useChartPick({
-    xs: sel.map((_, i) => x(i, sel.length)),
+    xs: sel.map((_, i) => xSel(i, sel.length)),
     key: selected,
     W,
     boxRef,
   });
   const picked = pick ? sel[pick.i] : null;
-  const px = pick ? x(pick.i, sel.length) : 0;
+  const px = pick ? xSel(pick.i, sel.length) : 0;
   return (
     <div className="trc-chartbox" ref={boxRef}>
       <svg
@@ -286,14 +314,18 @@ export default function TrendChart({
         }
       >
         <ValueAxis ticks={ticks} y={y} W={W} scale={scale} t={t} />
-        <SelectedAxis
-          sel={sel}
-          selected={selected}
-          x={x}
-          W={W}
-          runAxisKey={scale.runAxisKey}
-          n={n}
-        />
+        {xTicks ? (
+          <DateAxis xTicks={xTicks} at={at} />
+        ) : (
+          <SelectedAxis
+            sel={sel}
+            selected={selected}
+            x={x}
+            W={W}
+            runAxisKey={scale.runAxisKey}
+            n={n}
+          />
+        )}
         {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
         {renderOver?.({ x, y, W, h: H, pad: PAD, sel })}
         {order.map((boat) => (
@@ -302,7 +334,7 @@ export default function TrendChart({
             points={seriesByBoat.get(boat)}
             boat={boat}
             selected={boat === selected}
-            x={x}
+            x={xFor(seriesByBoat.get(boat))}
             y={y}
             scale={scale}
             lineClass={lineClass}
@@ -311,7 +343,7 @@ export default function TrendChart({
         <EndLabels
           seriesByBoat={seriesByBoat}
           selected={selected}
-          x={x}
+          xFor={xFor}
           y={y}
           scale={scale}
           W={W}

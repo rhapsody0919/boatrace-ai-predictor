@@ -13,6 +13,8 @@
  *   - 今節の走の尺度（展示タイム等、BOA-885）: 各艇の1走目を左にそろえ、値の無い走を挟んで点線でつなぐ、
  *     選んだ艇の点の中に着順（1着は is-win）で右端の点で隠さない、横の目盛りは「N走」、薄くした1号艇にも縁、
  *     lineClass は線の g にクラス・is-active・data-boat、extraHeight は図の高さを伸ばす、extraValues は縦軸に含める
+ *   - 日付の横軸（今節タブの6艇の推移 R-43）: 点の xr の位置に置き、breakBefore の前で線を切り、目盛りは xTicks、
+ *     最後の日より前に終わった艇の引き出し線は点線
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -215,6 +217,68 @@ check(
 );
 check("extraHeight で図を伸ばす", meet.includes('viewBox="0 0 343 340"'));
 check("extraValues を縦軸に含める", meet.includes(">7.50<"));
+
+// 日付の横軸（点が xr を持つ）。図の幅 343 で、横の位置は 30 + 247 * xr
+const dated = (b, xrs, breakAt = -1) =>
+  xrs.map((xr, i) => ({
+    raceId: `2026-09-2${i}-09-0${b}`,
+    date: `2026-09-2${i}`,
+    value: 0.1 + b / 100 + i / 100,
+    mark: 2,
+    xr,
+    breakBefore: i === breakAt,
+    gapDays: null,
+    run: null,
+  }));
+const dateChart = renderToStaticMarkup(
+  createElement(TrendChart, {
+    seriesByBoat: new Map([
+      [1, dated(1, [0, 0.5], 1)],
+      [3, dated(3, [0, 0.25, 1])],
+    ]),
+    metric: "st",
+    selected: 3,
+    scale: {
+      step: 0.05,
+      tickStep: 0.05,
+      invert: true,
+      digits: 2,
+      tickDigits: 2,
+      unit: "",
+      dimOthers: true,
+      dotLabel: true,
+    },
+    xTicks: [
+      { xr: 0, label: "9/21" },
+      { xr: 1, label: "9/28" },
+    ],
+  }),
+);
+const dateGroup = (b) =>
+  new RegExp(
+    `<g class="trc-line trc-line-${b}[^"]*"[^>]*>([\\s\\S]*?)(?=<g class="trc-line|<g><circle|$)`,
+  ).exec(dateChart)?.[0] ?? "";
+check(
+  "日付の横軸: 点を xr の位置に置く",
+  /<polyline class="trc-stroke" points="30,[\d.]+ 91.75,[\d.]+ 277,/.test(
+    dateGroup(3),
+  ),
+);
+check(
+  "日付の横軸: breakBefore の前で線を切る",
+  (dateGroup(1).match(/class="trc-stroke"/g) ?? []).length === 2,
+);
+check(
+  "日付の横軸: 目盛りは xTicks（走の順の目盛りは出さない）",
+  /x="30"[^>]*>9\/21</.test(dateChart) &&
+    /x="277"[^>]*>9\/28</.test(dateChart) &&
+    !dateChart.includes("basicInfo.trend.latest"),
+);
+check(
+  "日付の横軸: 最後の日より前に終わった艇だけ引き出し線が点線",
+  (dateChart.match(/class="trc-leader" stroke-dasharray="2 2"/g) ?? [])
+    .length === 1,
+);
 
 if (failures.length > 0) {
   console.error(`verify-trend-chart-flags: NG\n- ${failures.join("\n- ")}`);
