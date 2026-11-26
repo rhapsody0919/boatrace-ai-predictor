@@ -218,14 +218,15 @@
 }
 
 /* レース詳細・思考アシストでは、ヘッダーの左右を本文の列（最大1200・画面の中央）にそろえる（BOA-881、
-   BOA-828 を含む）。全ページ共通の部品なので、ほかのページの幅は変えない */
+   BOA-828 を含む）。全ページ共通の部品なので、ほかのページの幅は変えない。
+   クラスは RaceDetailView.jsx・ThinkingAssistPage.jsx が useRootClass で付ける（body:has() は描画の再計算を重くする、2026-11-26） */
 @media (min-width: 1025px) {
-  body:has(.race-detail-page-v2, .ta-page) .app-header {
+  body.race-wide-header .app-header {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
 
-  body:has(.race-detail-page-v2, .ta-page) .header-content {
+  body.race-wide-header .header-content {
     max-width: 1200px;
   }
 }
