@@ -33,6 +33,7 @@ import {
   isExhibitionCourseOutOfRange,
   originalExhibitionKindLabels,
 } from "../../pure/raceIndicatorText.js";
+import { rankTiers } from "../../pure/compareBaseline.js";
 import {
   buildPartsChangedRow,
   buildPrevResultRow,
@@ -57,6 +58,10 @@ export {
 
 // 行の素（key・label・値の字・best の候補）は src/pure/raceIndicatorText.js（表とコピーで共有、RA41d）。
 // ここは画面の分だけ（best の印と render）を足す。速いほど良い数字なので best は最小値（dir: "min"）
+// 6艇の上位2・下位2の印を付ける種別（意味づけ 2026-11-26）。上位・下位で1着に差が出ると検証した物だけ
+// （一周・まわり足。docs/knowledge/stat-findings.md 23行）。直線は効き目が確かめられず付けない（同 27行）
+const TIER_KINDS = ["一周", "まわり足"];
+
 export function buildOriginalExhibitionRows(t, originalExhibition) {
   const byBoat = originalExhibition?.byBoat ?? {};
   return buildOriginalExhibitionRowBases(t, originalExhibition).map(
@@ -67,6 +72,9 @@ export function buildOriginalExhibitionRows(t, originalExhibition) {
       // 発走の直前に出る値なので直前情報タブへ（展示タイムと同じ扱い）
       category: "beforeInfo",
       best: bestOf(candidates, "min", { digits: 2 }),
+      tiers: TIER_KINDS.includes(kind)
+        ? rankTiers(candidates, "min", { digits: 2 })
+        : null,
       formatValue,
       render: (p) => {
         const value = toNumber(byBoat[p.number]?.[kind]);
