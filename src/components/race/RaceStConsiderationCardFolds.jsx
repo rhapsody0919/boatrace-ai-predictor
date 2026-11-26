@@ -11,6 +11,7 @@ import {
   getStHistory,
   ST_HISTOGRAM_BINS,
 } from "../../utils/stConsideration";
+import RaceStHistoryTrend from "./RaceStHistoryTrend";
 
 /** 選んだ艇の ST分布・ST履歴・ベースライン分布(%)をまとめて組み立てる */
 function buildDetail(columns, scopedByRacer, detailBoat) {
@@ -250,7 +251,16 @@ function RaceStConsiderationCardFolds({
             setDetailBoat={setDetailBoat}
           />
           {openSection === "histogram" && <HistogramView detail={detail} />}
-          {openSection === "history" && <HistoryView detail={detail} />}
+          {openSection === "history" && (
+            <>
+              <RaceStHistoryTrend
+                columns={columns}
+                scopedByRacer={scopedByRacer}
+                selected={detail.detailColumn.player.number}
+              />
+              <HistoryView detail={detail} />
+            </>
+          )}
         </div>
       )}
     </div>

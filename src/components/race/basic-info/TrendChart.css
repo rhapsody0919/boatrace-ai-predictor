@@ -386,3 +386,23 @@
     height: 44px;
   }
 }
+
+/* 走ごとの値の無い点の印（F＝フライング・L＝出遅れ）。値の線の上の帯に、選んだ艇は枠の札で出す（R-36、11/26） */
+.trc-flag text,
+.trc-end-flag {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.trc-flag-tag {
+  fill: var(--surface-card);
+  stroke-width: 1.5;
+}
+
+/* 枠別の ST の推移と、その下の表の境 */
+.rsc-st-trend {
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--border-hairline);
+}
