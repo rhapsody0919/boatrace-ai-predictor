@@ -25,6 +25,24 @@ function scaleOf(points) {
 
 const linePoints = (points, key, x, y) => points.map((p, i) => `${x(i)},${y(p[key])}`).join(" ");
 
+/**
+ * 点 (px, py) に、描く所（box: top・bottom・left・right）の空いている側へ引き出し線で札を置く。
+ * 3連単配当の図（RacerTrifectaChart）と共用する
+ */
+export function LeaderLabel({ px, py, label, box }) {
+  const below = py < (box.top + box.bottom) / 2;
+  const ly = below ? Math.min(py + 26, box.bottom - 4) : Math.max(py - 20, box.top + 8);
+  const lx = Math.min(Math.max(px, box.left + 18), box.right - 18);
+  return (
+    <g>
+      <line x1={px} y1={py + (below ? 4 : -4)} x2={lx} y2={ly + (below ? -11 : 3)} stroke="var(--text-secondary)" />
+      <text x={lx} y={ly} textAnchor="middle" fontSize={10.5} fill="var(--text-primary)">
+        {label}
+      </text>
+    </g>
+  );
+}
+
 /** いちばん大きい単勝の払戻の走に、空いている側へ引き出し線で日付を置く */
 function TopMark({ points, x, y }) {
   let top = -1;
@@ -32,19 +50,8 @@ function TopMark({ points, x, y }) {
     if (p.bigWin && (top < 0 || p.bigWin > points[top].bigWin)) top = i;
   });
   if (top < 0) return null;
-  const px = x(top);
-  const py = y(points[top].win);
-  const below = py < (PAD.t + H - PAD.b) / 2;
-  const ly = below ? Math.min(py + 26, H - PAD.b - 4) : Math.max(py - 20, PAD.t + 8);
-  const lx = Math.min(Math.max(px, PAD.l + 18), W - PAD.r - 18);
-  return (
-    <g>
-      <line x1={px} y1={py + (below ? 4 : -4)} x2={lx} y2={ly + (below ? -11 : 3)} stroke="var(--text-secondary)" />
-      <text x={lx} y={ly} textAnchor="middle" fontSize={10.5} fill="var(--text-primary)">
-        {points[top].date}
-      </text>
-    </g>
-  );
+  const box = { top: PAD.t, bottom: H - PAD.b, left: PAD.l, right: W - PAD.r };
+  return <LeaderLabel px={x(top)} py={y(points[top].win)} label={points[top].date} box={box} />;
 }
 
 function EndLabels({ last, x, y, index }) {

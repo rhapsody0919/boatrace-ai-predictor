@@ -3,6 +3,8 @@
  * 基準の線が無いので縦軸は値の幅に合わせ（0から始めない）、単位は軸に1回だけ（visual-designer 2026-11-26）。
  * 万舟の走に○、いちばん大きい走だけに日付（金額は札にしない。wording-editor 2026-11-26）。帯は付けない
  */
+import { LeaderLabel } from "./RacerBoatReturnChart";
+
 const W = 340;
 const H = 190;
 const PAD = { l: 52, r: 74, t: 26, b: 26 };
@@ -22,26 +24,15 @@ function scaleOf(points) {
   return { x, y, ticks };
 }
 
-/** いちばん大きい万舟の走に、空いている側へ引き出し線で日付を置く */
+/** 配当がいちばん大きかった万舟の走に、空いている側へ引き出し線で日付を置く */
 function TopMark({ points, x, y }) {
   let top = -1;
   points.forEach((p, i) => {
     if (p.manshu && (top < 0 || p.manshu > points[top].manshu)) top = i;
   });
   if (top < 0) return null;
-  const px = x(top);
-  const py = y(points[top].value);
-  const below = py < (PAD.t + H - PAD.b) / 2;
-  const ly = below ? Math.min(py + 26, H - PAD.b - 4) : Math.max(py - 20, PAD.t + 8);
-  const lx = Math.min(Math.max(px, PAD.l + 18), W - PAD.r - 18);
-  return (
-    <g>
-      <line x1={px} y1={py + (below ? 4 : -4)} x2={lx} y2={ly + (below ? -11 : 3)} stroke="var(--text-secondary)" />
-      <text x={lx} y={ly} textAnchor="middle" fontSize={10.5} fill="var(--text-primary)">
-        {points[top].date}
-      </text>
-    </g>
-  );
+  const box = { top: PAD.t, bottom: H - PAD.b, left: PAD.l, right: W - PAD.r };
+  return <LeaderLabel px={x(top)} py={y(points[top].value)} label={points[top].date} box={box} />;
 }
 
 export default function RacerTrifectaChart({ points }) {
