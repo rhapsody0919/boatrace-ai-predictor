@@ -11,10 +11,11 @@
 // - id は変えない（帯の×の記録に使う）。title は40字・body は90字まで。minor は body を書かない
 // - path は「見てみる」の行き先（ja のパス）。blogId は src/data/blog-posts/{id}.json
 // - prs は元の PR の番号（画面には出さない。候補の機械が既出を外すのに使う）
+import m202611b from "./siteUpdates/2026-11-2.js";
 import m202611 from "./siteUpdates/2026-11.js";
 import m202610 from "./siteUpdates/2026-10.js";
 
-export const SITE_UPDATES = [...m202611, ...m202610];
+export const SITE_UPDATES = [...m202611b, ...m202611, ...m202610];
 
 export const SITE_MAKING = [
   { id: "analysis-tool", title: "データ分析ツールを見やすく" },
