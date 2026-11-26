@@ -103,33 +103,72 @@ function Flags({ points, boat, selected, x }) {
   );
 }
 
+// 選んだ艇の点（走ごとの生の値の図）
+function Dots({ points, boat, x, y }) {
+  return points.map((p, i) =>
+    p.value == null ? null : (
+      <circle
+        key={`d${p.raceId}`}
+        cx={x(i, points.length)}
+        cy={y(p.value)}
+        r={2}
+        fill={BOAT_COLORS[boat].bg}
+        stroke="#9ca3af"
+        strokeWidth={0.5}
+      />
+    ),
+  );
+}
+
+function Bridges({ points, x, y, w }) {
+  return bridgesOf(points, x, y).map((d) => (
+    <polyline
+      key={`b${d}`}
+      className="trc-stroke trc-bridge"
+      points={d}
+      fill="none"
+      strokeWidth={w}
+      strokeDasharray="3 4"
+    />
+  ));
+}
+
+// 線の g の印。1走ごとの生の値は6本が重なって塊になるので、選んでいない艇を薄くする（visual-designer 11/26）。
+// lineClass は使う側の試験・撮影の当て先（今節の足の mft-series）。選んだ艇に is-active
+function lineAttrs(boat, selected, scale, lineClass) {
+  const dim = Boolean(scale.dimOthers && !selected);
+  const extra = lineClass ? ` ${lineClass}${selected ? " is-active" : ""}` : "";
+  return {
+    dim,
+    attrs: {
+      className: `trc-line trc-line-${boat}${extra}`,
+      "data-boat": lineClass ? boat : undefined,
+      opacity: dim ? 0.35 : undefined,
+    },
+  };
+}
+
+// 1号艇の白・2号艇の黒は地に溶けるので縁を付ける。薄くした艇は dimHalo の尺度だけ
+function Halo({ segs, boat, dim, scale, w }) {
+  if ((boat !== 1 && boat !== 2) || (dim && !scale.dimHalo)) return null;
+  return segs.map((d) => (
+    <polyline
+      key={`h${d}`}
+      className="trc-halo"
+      points={d}
+      fill="none"
+      strokeWidth={w + 1.4}
+    />
+  ));
+}
+
 export function Line({ points, boat, selected, x, y, scale, lineClass }) {
   const segs = segmentsOf(points, x, y);
   const w = selected ? 3 : 1.4;
-  // 1走ごとの生の値は6本が重なって塊になるので、選んでいない艇を薄くする（visual-designer 11/26）
-  const dim = scale.dimOthers && !selected;
-  // lineClass は使う側の試験・撮影の当て先（今節の足の mft-series）。選んだ艇に is-active
-  const cls = lineClass
-    ? ` ${lineClass}${selected ? " is-active" : ""}`
-    : "";
+  const { dim, attrs } = lineAttrs(boat, selected, scale, lineClass);
   return (
-    <g
-      className={`trc-line trc-line-${boat}${cls}`}
-      data-boat={lineClass ? boat : undefined}
-      opacity={dim ? 0.35 : undefined}
-    >
-      {/* 1号艇の白・2号艇の黒は地に溶けるので縁を付ける */}
-      {(boat === 1 || boat === 2) &&
-        (!dim || scale.dimHalo) &&
-        segs.map((d) => (
-          <polyline
-            key={`h${d}`}
-            className="trc-halo"
-            points={d}
-            fill="none"
-            strokeWidth={w + 1.4}
-          />
-        ))}
+    <g {...attrs}>
+      <Halo segs={segs} boat={boat} dim={dim} scale={scale} w={w} />
       {segs.map((d) => (
         <polyline
           key={d}
@@ -139,35 +178,13 @@ export function Line({ points, boat, selected, x, y, scale, lineClass }) {
           strokeWidth={w}
         />
       ))}
-      {scale.bridgeGaps &&
-        bridgesOf(points, x, y).map((d) => (
-          <polyline
-            key={`b${d}`}
-            className="trc-stroke trc-bridge"
-            points={d}
-            fill="none"
-            strokeWidth={w}
-            strokeDasharray="3 4"
-          />
-        ))}
+      {scale.bridgeGaps && <Bridges points={points} x={x} y={y} w={w} />}
       {scale.dotLabel && selected && (
         <DotMarks points={points} boat={boat} x={x} y={y} />
       )}
-      {scale.dots &&
-        selected &&
-        points.map((p, i) =>
-          p.value == null ? null : (
-            <circle
-              key={`d${p.raceId}`}
-              cx={x(i, points.length)}
-              cy={y(p.value)}
-              r={2}
-              fill={BOAT_COLORS[boat].bg}
-              stroke="#9ca3af"
-              strokeWidth={0.5}
-            />
-          ),
-        )}
+      {scale.dots && selected && (
+        <Dots points={points} boat={boat} x={x} y={y} />
+      )}
       {scale.flags && (
         <Flags points={points} boat={boat} selected={selected} x={x} />
       )}

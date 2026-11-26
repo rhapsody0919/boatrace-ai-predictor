@@ -60,7 +60,7 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
     g += tickStep
   )
     ticks.push(g);
-  return { x, y, ticks };
+  return { x, y, ticks, n };
 }
 
 /** 横の目盛りの線と左の数字（走ごとの線と勝率の段で共通） */
@@ -254,8 +254,7 @@ export default function TrendChart({
 }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
-  const { x, y, ticks } = scaleOf(seriesByBoat, scale, W, extraValues);
-  const n = Math.max(0, ...[...seriesByBoat.values()].map((s) => s.length));
+  const { x, y, ticks, n } = scaleOf(seriesByBoat, scale, W, extraValues);
   const sel = seriesByBoat.get(selected) ?? [];
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
@@ -327,7 +326,6 @@ export default function TrendChart({
           scale={scale}
         />
       </svg>
-      {/* 使う側が図の下に描く物（選んだ艇の走ごとの行・モーターの段など）。横の座標は図と同じ */}
       {renderBelow?.({ x, W, pad: PAD, sel })}
       {picked && (
         <TrendTooltip
