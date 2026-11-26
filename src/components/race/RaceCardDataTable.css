@@ -84,6 +84,12 @@
   display: block;
 }
 
+/* 今節前走の「6コース」「11/25 11R」は .drt-sub の 12px のままだと、カード 340〜390px（412〜440px の幅）で
+   列（約50px）を越えて表が 4〜32px 広がった（PR #3525 ファン評価 P1）。表の値（10〜10.5px）と同じ大きさにする */
+.rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap {
+  font-size: 10px;
+}
+
 .rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap:last-child,
 .rcdt-table .rcdt-collapsed-rows .drt-badge {
   white-space: normal;

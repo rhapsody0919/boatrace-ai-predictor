@@ -21,9 +21,7 @@ const PARTS = [
   "—",
 ];
 
-test("会場のレースカード: 開いた行の今節前走・部品交換が折れ、6号艇の列が枠の中にある", async ({
-  page,
-}) => {
+async function expectSixthBoatInside(page) {
   await page.goto("/races/2026-09-24/1", { waitUntil: "domcontentloaded" });
   const card = page.locator(".race-list-section .race-card").first();
   await expect(card.locator(".rcdt-table")).toBeVisible({ timeout: 30000 });
@@ -62,4 +60,21 @@ test("会場のレースカード: 開いた行の今節前走・部品交換が
   expect(m.lastBoatRight, "6号艇の列が枠の外").toBeLessThanOrEqual(
     m.wrapRight + 0.5,
   );
+}
+
+test("会場のレースカード: 開いた行の今節前走・部品交換が折れ、6号艇の列が枠の中にある", async ({
+  page,
+}) => {
+  await expectSixthBoatInside(page);
 });
+
+// layout の幅（375・768・1024・1440・1920）の間で、カードが 340〜390px になる 412〜440px は、
+// 「6コース」が 12px のまま列を越えて 4〜32px はみ出した（PR #3525 ファン評価 P1）。Android の多くと iPhone の幅で見る
+for (const width of [412, 430]) {
+  test(`会場のレースカード: ${width}px でも開いた行で6号艇の列が枠の中にある`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await expectSixthBoatInside(page);
+  });
+}
