@@ -20,6 +20,21 @@ import {
   formatDateLongLocalized,
 } from "../utils/formatters";
 
+// 会場の一覧と、その見出し。締切の欄の続きに見えないよう見出しを付ける（G3 の点検 2026-11-26、オーナー承認）
+function TitledVenueGrid({ t, localize, venuesData, nowHHMM, nextOpenDates }) {
+  return (
+    <>
+      <h3 className="home-venue-grid-title">{t("venueGrid.title")}</h3>
+      <VenueGrid
+        venuesData={venuesData}
+        getVenueLink={(code) => localize(`/venue/${code}`)}
+        nowHHMM={nowHHMM}
+        nextOpenDates={nextOpenDates}
+      />
+    </>
+  );
+}
+
 // 本日の会場グリッドのセクション（見出し・更新表示・導入・グリッド）
 function TodayVenuesSection({
   t,
@@ -105,16 +120,9 @@ function TodayVenuesSection({
                 )}
                 {/* i18n-allow-end */}
                 {!error && (
-                  <>
-                    {/* 締切の欄の続きに見えないよう、会場の一覧に見出しを付ける（G3 の点検 2026-11-26、オーナー承認） */}
-                    <h3 className="home-venue-grid-title">{t("venueGrid.title")}</h3>
-                    <VenueGrid
-                      venuesData={venuesData}
-                      getVenueLink={(code) => localize(`/venue/${code}`)}
-                      nowHHMM={nowHHMM}
-                      nextOpenDates={nextOpenDates}
-                    />
-                  </>
+                  <TitledVenueGrid
+                    {...{ t, localize, venuesData, nowHHMM, nextOpenDates }}
+                  />
                 )}
               </>
             )}
