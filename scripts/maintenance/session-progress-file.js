@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
- * SessionStart・Stop: claude/ の枝の作業ごとに進捗の一枚（リポジトリの外 ~/.config/ryujin/progress/<枝>.md）を持たせる
- * （設計 docs/design/harness-migration/dev-friction-2026-11-25.md §2）。
+ * SessionStart・Stop: claude/ の枝で働くセッションごとに進捗の一枚（リポジトリの外
+ * ~/.config/ryujin/progress/session-<セッションの id>.md）を持たせる（設計 docs/design/harness-migration/dev-friction-2026-11-25.md §2）。
  *
- * 目的: 窓口が子のセッションの400字の通知から状況を組み直す手間を減らす。窓口は子の枝の名で一枚を読む。
+ * 目的: セッションが文脈を失った後に続きから始められること。状態・待ちは窓口のボードが PR・CI・セッションの状態から
+ * 出すので書かせない（2026-11-26 オーナー）。一枚はゴール・枝と PR・判断・次にやることだけ。
+ * 単位は枝でなくセッション（1つのレーンが PR ごとに枝を切ると、枝の数だけ同じ中身が複製されていた）。
+ * 前のセッションの id の一枚が無く、今の枝の名の一枚（11/26 までの置き方）があればそれを渡す（続きを失わない）。
  * - SessionStart: claude/ の枝の worktree（メインの作業ツリーでない）だけ。一枚があれば中身（8000 バイトまで）を渡し、
  *   無ければ置き場とひな形の見出しを知らせる
  * - Stop: このセッションで最後にファイルを変えた時刻（session-progress.js の .claude/session-state/<id>.json の updatedAt）が
@@ -25,19 +28,32 @@ export const MAX_CONTEXT_BYTES = 8000;
 // 一枚を書いた直後の PostToolUse が編集の時刻を少し後に進めるので、その分は「一枚の後に変えた」と数えない（目安・根拠なし）
 export const WRITE_MARGIN_MS = 30 * 1000;
 export const HEADINGS = [
-  "状態（調査中・実行中・待ち・完了）",
-  "待ち（誰の何を）",
-  "枝と PR",
   "ゴール",
-  "完了の条件（[x] と根拠）",
-  "分かったこと",
-  "次にやること",
+  "枝と PR（#番号）",
   "判断の記録（日付つき）",
+  "次にやること",
 ];
 
 /** 一枚の置き場（枝の名の / は __ に） */
 export function progressPath(branch, dir) {
   return path.join(dir, `${branch.replace(/\//g, "__")}.md`);
+}
+
+/** セッションごとの一枚の置き場。id が読めなければ null */
+export function sessionProgressPath(sessionId, dir) {
+  const key = safeStateKey(sessionId);
+  return key ? path.join(dir, `session-${key}.md`) : null;
+}
+
+/**
+ * 使う一枚を選ぶ。書く先はいつもセッションの一枚（id が読めなければ枝の一枚）。
+ * 読む物は、セッションの一枚が無く枝の一枚（旧い置き方）があればそれ
+ * @param {{sessionFile: string|null, branchFile: string, exists: (f: string) => boolean}} o
+ */
+export function chooseProgressFile({ sessionFile, branchFile, exists }) {
+  const write = sessionFile ?? branchFile;
+  const read = exists(write) ? write : exists(branchFile) ? branchFile : null;
+  return { write, read };
 }
 
 /** 動く枝か（claude/ の枝の worktree だけ） */
@@ -50,16 +66,19 @@ export function applies({ branch, isLinkedWorktree }) {
 }
 
 /** SessionStart で渡す文 */
-export function startContext({ file, content }) {
+export function startContext({ file, content, from = file }) {
   if (content === null) {
     return [
-      `[進捗の一枚] この作業の進捗を ${file} に書く（リポジトリの外。窓口が枝の名で読む）。`,
-      `見出し: ${HEADINGS.join("・")}`,
-      "-v2 で作り直したときは、頭に旧い枝の名を書く。",
+      `[進捗の一枚] このセッションの進捗を ${file} に書く（リポジトリの外。1セッション1枚。PR ごとに枝を切っても同じ一枚に書く）。`,
+      `見出し: ${HEADINGS.join("・")}（状態・待ちは窓口のボードが PR と CI から出すので書かない）`,
     ].join("\n");
   }
   const body = Buffer.from(content).subarray(0, MAX_CONTEXT_BYTES).toString();
-  return `[進捗の一枚] ${file}（前のセッションの続き）\n\n${body}`;
+  const moved =
+    from === file
+      ? ""
+      : `。旧い置き方 ${from} から読んだ。以後は ${file} に書く`;
+  return `[進捗の一枚] ${from}（前のセッションの続き${moved}）\n\n${body}`;
 }
 
 /** 一枚の状態が「完了」か */
@@ -91,7 +110,7 @@ export function stopDecision({
     return null;
   return {
     decision: "block",
-    reason: `進捗の一枚（${file}）がこのセッションの作業に追いついていない。状態・待ち・枝と PR・次にやることを更新してから終える（見出し: ${HEADINGS.join("・")}）`,
+    reason: `進捗の一枚（${file}）がこのセッションの作業に追いついていない。枝と PR・判断・次にやることを更新してから終える（見出し: ${HEADINGS.join("・")}）`,
   };
 }
 
@@ -119,10 +138,19 @@ function main(event) {
   const dir =
     process.env.RYUJIN_PROGRESS_DIR ||
     path.join(os.homedir(), ".config/ryujin/progress");
-  const file = progressPath(branch, dir);
-  const content = readOrNull(file);
+  const chosen = chooseProgressFile({
+    sessionFile: sessionProgressPath(payload?.session_id, dir),
+    branchFile: progressPath(branch, dir),
+    exists: existsSync,
+  });
+  const file = chosen.write;
+  const content = chosen.read === null ? null : readOrNull(chosen.read);
   if (event === "start") {
-    const additionalContext = startContext({ file, content });
+    const additionalContext = startContext({
+      file,
+      content,
+      from: chosen.read ?? file,
+    });
     process.stdout.write(
       JSON.stringify({
         hookSpecificOutput: {
@@ -147,7 +175,7 @@ function main(event) {
   const decision = stopDecision({
     stopHookActive: payload?.stop_hook_active === true,
     lastEditAt: Date.parse(state.updatedAt ?? ""),
-    progressMtime: content === null ? null : statSync(file).mtimeMs,
+    progressMtime: existsSync(file) ? statSync(file).mtimeMs : null,
     content,
     file,
   });
