@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import TermHintButton from "./TermHintButton";
+import ExhibitionPositionDots from "./ExhibitionPositionDots";
 
 const cellClass = (boat, best) =>
   `drt-cell ${best?.has(boat) ? "drt-best" : ""}`;
@@ -78,6 +79,30 @@ function TableHead({ sortedPlayers }) {
   );
 }
 
+// 行の名の下の札（意味づけ 2026-11-26、承認のモック）。色を付けない理由を行ごとに言う。
+// fact: 良し悪しの無い事実。bestOnly: 1位の金枠だけで、上位・下位で1着に差が出るとは確かめられていない
+// （展示ST・直線。stat-findings.md 10行・27行で、上位・下位の効き目は確かめられていない）
+const ROW_NOTE = {
+  exhibitionCourse: "fact",
+  exSt: "bestOnly",
+  oriStraight: "bestOnly",
+  todayWeight: "fact",
+  tilt: "fact",
+  adjustmentWeight: "fact",
+  partsChanged: "fact",
+};
+
+function RowNote({ rowKey }) {
+  const { t } = useTranslation();
+  const note = ROW_NOTE[rowKey];
+  if (!note) return null;
+  return (
+    <span className="drt-row-note" data-note={note}>
+      {t(note === "fact" ? "beforeInfo.rowNoteFact" : "beforeInfo.rowNoteBestOnly")}
+    </span>
+  );
+}
+
 // 6艇の上位2・下位2の印（意味づけ 2026-11-26、型2）。色だけに頼らず ▲▼ と言葉を添える。
 // 字は CSS の ::after（data-mark）で出し、セルの文字（値）には混ぜない（値を読む既存の試験・コピーを崩さない）
 function TierMark({ tier }) {
@@ -110,6 +135,7 @@ function TableRow({ row, sortedPlayers, deepLink, onLinkClick }) {
         ) : (
           <PlainLabel row={row} deepLink={deepLink} onLinkClick={onLinkClick} />
         )}
+        <RowNote rowKey={row.key} />
       </td>
       {sortedPlayers.map((p) => (
         <td
@@ -163,6 +189,9 @@ export default function RaceBeforeInfoTabTable({
           </tbody>
         </table>
       </div>
+      <ExhibitionPositionDots
+        values={rows.find((row) => row.key === "exhibition" && row.tiers?.size > 0)?.values}
+      />
       <TierLegend rows={rows} />
     </div>
   );

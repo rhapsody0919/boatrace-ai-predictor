@@ -252,3 +252,58 @@
 .race-before-info-tab .drt-cell.drt-tier-bottom .drt-tier-mark { color: var(--color-error-text); }
 .race-before-info-tab .drt-tier-mark { display: block; font-size: var(--font-size-2xs, 0.625rem); line-height: 1.2; font-weight: normal; }
 .race-before-info-tab .drt-tier-mark::after { content: attr(data-mark); }
+
+/* 行の名の下の札（事実のみ・1位だけ。意味づけ 2026-11-26） */
+.race-before-info-tab .drt-row-note {
+  display: block;
+  font-size: var(--font-size-2xs, 0.625rem);
+  font-weight: normal;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  white-space: normal;
+}
+
+/* 展示タイムの6艇の位置（型3）。札は艇の色、良し悪しの色は付けない */
+.race-before-info-tab .rbi-posdots {
+  --rbi-posdots-step: 26px;
+  margin: var(--spacing-3) 0 0;
+  padding: var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+.race-before-info-tab .rbi-posdots-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-2);
+}
+.race-before-info-tab .rbi-posdots-track {
+  position: relative;
+  margin: 0 12px;
+  height: calc(var(--rbi-posdots-levels) * var(--rbi-posdots-step));
+  border-bottom: 2px solid var(--text-secondary);
+}
+.race-before-info-tab .rbi-posdots-chip {
+  position: absolute;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border: 1px solid var(--text-secondary);
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+.race-before-info-tab .rbi-posdots-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}

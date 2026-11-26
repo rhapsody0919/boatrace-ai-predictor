@@ -1,0 +1,59 @@
+// 直前情報の展示の表で、色を付けない行に理由の札（事実のみ・1位だけ）を出し、展示タイムの6艇の位置を数直線で出す
+// （見せ方の型3と札、意味づけ 2026-11-26 オーナー承認）。位置の札は艇の色のままで、左ほど速い。
+import { test, expect } from "./fixtures.js";
+
+// オリジナル展示（一周・まわり足・直線）がそろう録画のレース（race-before-info-tiers.spec.js と同じ）
+const RACE = "/race/2026-09-29-16-12";
+
+const labelCell = (table, label) =>
+  table
+    .locator("tbody tr")
+    .locator(".drt-label-cell")
+    .filter({ hasText: new RegExp(`^${label}`) })
+    .first();
+
+for (const width of [375, 1440]) {
+  test(`色を付けない行に札、展示タイムの6艇の位置を左ほど速い順に出す ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(RACE);
+    await page.locator(".race-tabs-btn", { hasText: /^直前情報$/ }).click();
+    const table = page.locator(".drt-table").first();
+    await expect(table.locator("tbody tr")).toHaveCount(15, { timeout: 30000 });
+
+    // 札: 事実（良し悪しなし）と、1位だけ（上位・下位の効き目は未確認）。印の付く行には札が無い
+    for (const label of ["展示進入", "当日体重", "チルト", "調整重量", "部品交換"]) {
+      await expect(labelCell(table, label).locator(".drt-row-note")).toHaveText("事実のみ");
+    }
+    for (const label of ["展示ST", "直線"]) {
+      await expect(labelCell(table, label).locator(".drt-row-note")).toHaveText("1位だけ（効き目は未確認）");
+    }
+    for (const label of ["展示T", "一周", "まわり足"]) {
+      await expect(labelCell(table, label).locator(".drt-row-note")).toHaveCount(0);
+    }
+
+    // 位置: 展示タイムの値のある艇が全部並び、値の小さい（速い）艇ほど左。同じ値は同じ位置
+    const dots = page.getByTestId("rbi-position-dots");
+    await expect(dots).toBeVisible();
+    await expect(dots).toContainText("左ほど速い");
+    const chips = await dots.locator(".rbi-posdots-chip").evaluateAll((els) =>
+      els.map((el) => ({
+        value: Number(el.dataset.value),
+        center: el.getBoundingClientRect().left + el.getBoundingClientRect().width / 2,
+        bg: getComputedStyle(el).backgroundColor,
+      })),
+    );
+    expect(chips.length).toBeGreaterThanOrEqual(5);
+    for (const a of chips) {
+      for (const b of chips) {
+        if (a.value < b.value) expect(a.center).toBeLessThan(b.center);
+        if (a.value === b.value) expect(Math.abs(a.center - b.center)).toBeLessThan(1);
+      }
+    }
+    // 札は艇の色（6艇で違う色）。良し悪しの色（緑・赤）に塗り替えない
+    expect(new Set(chips.map((c) => c.bg)).size).toBe(chips.length);
+    const scale = await dots.locator(".rbi-posdots-scale span").allTextContents();
+    const values = chips.map((c) => c.value);
+    expect(scale).toEqual([Math.min(...values).toFixed(2), Math.max(...values).toFixed(2)]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  });
+}
