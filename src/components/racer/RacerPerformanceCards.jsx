@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatPercent, slashDate } from "../../utils/formatters";
+import { winRateAxis } from "../../utils/chartDomain";
 
 // 選手ページの成績・調子（RacerPerformanceStats）のカード（選手調子・平均ST・会場×枠番の固定時）と勝率の推移
 
@@ -103,9 +104,12 @@ export function SummaryCards({ formSummary, officialAvgSt, aggregatedStats }) {
 /**
  * 全国勝率の推移。当地勝率の線は出さない: 当地勝率は節ごとに会場が変わる値で、線でつなぐと
  * 会場の切り替わりが調子の上下に見え、0.00（当地の出走なし）を0として描いてしまう（number-scope.md §5）
+ * 縦軸は期別成績の図と同じ winRateAxis で値の幅に合わせる。0〜12 だと 0.4 の上下が平らに見えた
+ * （design-system.md「推移の軸は0から始めず値の幅に合わせる」、G2 の点検 2026-11-26）
  */
 export function WinRateChart({ chartData }) {
   if (!(chartData.length > 0)) return null;
+  const axis = winRateAxis(chartData.map((row) => row.national_win_rate));
   return (
     <div className="racer-stat-chart">
       <h3>全国勝率の推移</h3>
@@ -116,7 +120,12 @@ export function WinRateChart({ chartData }) {
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            domain={axis?.domain}
+            ticks={axis?.ticks}
+            interval={0}
+          />
           <Tooltip formatter={(value) => value?.toFixed(2)} />
           <Line
             type="stepAfter"
