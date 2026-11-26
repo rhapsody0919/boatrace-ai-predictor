@@ -17,6 +17,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { COUNT_CHECKS as DATA_HEALTH_CHECKS } from "../lib/dataHealth/checks.js";
 import { SITE_FEEDBACK_BUSY_HOUR } from "../lib/dataHealth/tableSql.js";
 import {
+  DATA_HEALTH_FUNCTIONS,
   functionByName,
   renderFunctionDdl,
 } from "../lib/dataHealth/functions.js";
@@ -169,6 +170,43 @@ check(
       /ご意見ボックス/.test(fn.description) &&
       /件数だけ/.test(fn.description),
     JSON.stringify(fn && { ...fn, body: undefined }),
+  );
+}
+
+// (e) 登録表の形（全件）: 211 の関数を足しても、名前・マイグレーション名・引数の形がそろい、名前が重ならない
+{
+  const bad = DATA_HEALTH_FUNCTIONS.filter(
+    (f) =>
+      !/^data_health_[a-z_]+$/.test(f.name) ||
+      !/^\d{3}_[a-z0-9_]+\.sql$/.test(f.migration) ||
+      !["rows", "object"].includes(f.shape) ||
+      !f.args.every((a) => /^p_[a-z]+$/.test(a.name) && a.type === "date") ||
+      !f.description,
+  );
+  const names = DATA_HEALTH_FUNCTIONS.map((f) => f.name);
+  check(
+    "(e) 登録表の全件で、名前・マイグレーション名・形・引数がそろい、名前が重ならない",
+    bad.length === 0 && new Set(names).size === names.length,
+    JSON.stringify(bad.map((f) => f.name)),
+  );
+}
+// (f) 期間の上限（32日）を越える呼び出しは落とす（日次の関数の共通の歯止め）
+{
+  await db.exec("SET ROLE service_role");
+  let err = null;
+  try {
+    await db.query(
+      "SELECT data_health_site_feedback('2026-10-01', '2026-11-01')",
+    );
+  } catch (e) {
+    err = e;
+  } finally {
+    await db.exec("RESET ROLE");
+  }
+  check(
+    "(f) 32日を越える期間（33日）は例外にする",
+    err && /期間が不正/.test(err.message),
+    err?.message ?? "通ってしまった",
   );
 }
 
