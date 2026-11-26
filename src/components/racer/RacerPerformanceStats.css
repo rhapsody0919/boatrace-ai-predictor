@@ -223,6 +223,11 @@ tr.racer-vc-row-highlight td:first-child {
   color: var(--text-secondary);
 }
 
+/* 1列目は折り返さない。375px で「住之/江」と折れた（最長3文字、はみ出しは .table-wrapper が受ける。G2 2026-11-26） */
+.racer-return-rate-table td:first-child {
+  white-space: nowrap;
+}
+
 .racer-return-rate-table th {
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
