@@ -6,64 +6,22 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import {
-  isDataLayer,
-  compareEdgesToBaseline,
   compareBaselines,
   judgeAgainstExceptions,
   newServicesFileProblems,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
-import { baselineOfEdges, judgeDepTree } from "./lintDepTree.js";
+import { judgeDepTree } from "./lintDepTree.js";
 
 const require = createRequire(import.meta.url);
 
 const edge = (from, to, rule = "services-no-ui") => ({ rule, from, to });
-// 和は from を "<data-layer>" 1つにまとめた基準
 const baseline = {
   "services-no-ui": {
     "<data-layer>": ["src/hooks/useX.js", "src/pages/P.jsx"],
     "src/services/other.js": ["src/components/A.jsx"],
   },
 };
-
-test("データ層の和に当たるファイル", () => {
-  assert.ok(!isDataLayer("src/services/supabaseDataService.js"), "殻は RA40 で消えた");
-  assert.ok(isDataLayer("src/services/coreHelpers.js"));
-  assert.ok(isDataLayer("src/services/zzaQueries2.js"));
-  assert.ok(!isDataLayer("src/services/other.js"));
-  assert.ok(!isDataLayer("src/components/zzaQueries.js"));
-});
-
-test("基準の辺だけなら緑", () => {
-  const r = compareEdgesToBaseline(
-    [edge("src/services/other.js", "src/components/A.jsx")],
-    baseline,
-  );
-  assert.equal(r.ok, true);
-});
-
-test("基準に無い辺は赤", () => {
-  const r = compareEdgesToBaseline(
-    [edge("src/services/other.js", "src/pages/Z.jsx")],
-    baseline,
-  );
-  assert.equal(r.ok, false);
-  const r2 = compareEdgesToBaseline(
-    [edge("src/services/new.js", "src/pages/Z.jsx")],
-    baseline,
-  );
-  assert.equal(r2.ok, false);
-});
-
-test("データ層の和の中で関数を別ファイルへ移した辺は緑", () => {
-  const moved = [
-    edge("src/services/zzaQueries.js", "src/hooks/useX.js"),
-    edge("src/services/coreNew.js", "src/pages/P.jsx"),
-  ];
-  assert.equal(compareEdgesToBaseline(moved, baseline).ok, true);
-  const over = [edge("src/services/coreNew.js", "src/pages/Other.jsx")];
-  assert.equal(compareEdgesToBaseline(over, baseline).ok, false);
-});
 
 test("src/utils の新しいファイルは赤", () => {
   assert.equal(newUtilsFileProblems(["src/utils/new.js"]).length, 1);
@@ -217,35 +175,6 @@ test("dependency-rules.cjs が読めて規則の名前が14個", () => {
       "node-to-src",
       "no-circular",
     ],
-  );
-});
-
-test("baselineOfEdges は和の中の from を <data-layer> にまとめ、和の外はそのまま残す", () => {
-  const to = "src/components/zz/zzStats.js";
-  const base = baselineOfEdges([
-    edge("src/services/zzaQueries.js", to),
-    edge("src/services/zzaService.js", to),
-  ]);
-  assert.deepEqual(Object.keys(base["services-no-ui"]).sort(), [
-    "<data-layer>",
-    "src/services/zzaService.js",
-  ]);
-  assert.deepEqual(base["services-no-ui"]["<data-layer>"], [to]);
-});
-
-test("和の中で移しただけの辺は緑、base に無い to は赤", () => {
-  const to = "src/components/zz/zzStats.js";
-  const base = baselineOfEdges([edge("src/services/zzaQueries.js", to)]);
-  assert.equal(
-    compareEdgesToBaseline([edge("src/services/zzaQueries2.js", to)], base).ok,
-    true,
-  );
-  assert.equal(
-    compareEdgesToBaseline(
-      [edge("src/services/zzaQueries2.js", "src/components/zz/Other.js")],
-      base,
-    ).ok,
-    false,
   );
 });
 

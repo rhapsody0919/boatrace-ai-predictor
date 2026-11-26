@@ -80,7 +80,7 @@ export default function SixBoatCourseTable({
   const diffTitle = text(isLocal ? "colDiffLocal" : "colDiff");
   const notes = isLocal
     ? ["noteLocal", "noteSample"]
-    : ["noteDiff", "noteSample", "notePeriod"];
+    : ["noteDiffBar", "noteSample", "notePeriod"];
   return (
     <section className="six-boat-course">
       <h3>{text("title")}</h3>
@@ -102,7 +102,12 @@ export default function SixBoatCourseTable({
               <tr>
                 {["colBoat", "colWin", "colTop2", "colTop3", "colEntries"].map(
                   (key) => (
-                    <th key={key} scope="col">
+                    <th
+                      key={key}
+                      scope="col"
+                      // 1着率の列は基準と比べる棒を入れるので広く取る（意味づけ 2026-11-26）
+                      style={key === "colWin" ? { width: "34%" } : undefined}
+                    >
                       {text(key)}
                       {key === "colWin" && (
                         <small className="six-boat-course-diff-head">
@@ -122,6 +127,7 @@ export default function SixBoatCourseTable({
                   player={players.find((p) => Number(p.number) === row.boat)}
                   text={text}
                   diffTitle={diffTitle}
+                  isLocal={isLocal}
                   focusedBoat={focusedBoat}
                   onFocusBoat={onFocusBoat}
                 />

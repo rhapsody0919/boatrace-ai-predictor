@@ -8,6 +8,9 @@
  */
 const FAQ_KEYS = [
   { q: "q1", a: "a1", aSonarOnly: "a1SonarOnly" },
+  // 検索の問い「当たるか」「AI は何を見ているか」に答える（BOA-1722。材料は scripts/ml/features.py の FEATURE_COLS の範囲）
+  { q: "q6", a: "a6" },
+  { q: "q7", a: "a7" },
   { q: "q2", a: "a2", aSonarOnly: "a2SonarOnly" },
   { q: "q3", a: "a3", qSonarOnly: "q3SonarOnly", aSonarOnly: "a3SonarOnly" },
   { q: "q4", a: "a4" },

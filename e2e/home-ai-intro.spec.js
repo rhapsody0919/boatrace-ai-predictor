@@ -155,7 +155,7 @@ test.describe("よくある質問と FAQPage（A2）", () => {
     }));
   };
 
-  test("ja: 短文とよくある質問5問が出て、答えは閉じていても DOM にある", async ({
+  test("ja: 短文とよくある質問7問が出て、答えは閉じていても DOM にある", async ({
     page,
   }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -170,6 +170,8 @@ test.describe("よくある質問と FAQPage（A2）", () => {
     const faq = await readFaq(section);
     expect(faq.map((f) => f.question)).toEqual([
       "ボートレースのAI予想は無料で見られますか？",
+      "AI予想は当たりますか？",
+      "AIは何のデータを見て予想していますか？",
       "AI予想を見るとき、どのデータを確かめられますか？",
       "龍神ソナーと思考アシストは、どの順番で使いますか？",
       "展示前でも見られますか？",
@@ -183,6 +185,9 @@ test.describe("よくある質問と FAQPage（A2）", () => {
     await expect(first.locator("p")).toBeHidden();
     await first.locator("summary").click();
     await expect(first.locator("p")).toBeVisible();
+    // 「当たるか」の答えは保証しないと言い、外れを含む記録へ案内する（BOA-1722）
+    expect(faq[1].answer).toContain("結果を保証するものではありません");
+    expect(faq[1].answer).toContain("外れを含めて");
   });
 
   test("ja: FAQPage の JSON-LD は画面の問いと答えと一致し、index.html の型と重ならない", async ({
@@ -211,8 +216,8 @@ test.describe("よくある質問と FAQPage（A2）", () => {
       "Ryujin Sonar",
     );
     const faq = await readFaq(section);
-    expect(faq).toHaveLength(5);
-    expect(faq[2].question).toBe("In what order should I read Ryujin Sonar?");
+    expect(faq).toHaveLength(7);
+    expect(faq[4].question).toBe("In what order should I read Ryujin Sonar?");
     for (const f of faq) {
       expect(`${f.question} ${f.answer}`).not.toContain("Thinking Assist");
     }
@@ -227,8 +232,8 @@ test.describe("よくある質問と FAQPage（A2）", () => {
     const section = intro(page);
     await expect(section).toBeVisible({ timeout: 30000 });
     const items = section.locator(".home-ai-intro__faq-item");
-    await expect(items).toHaveCount(5);
-    for (let i = 0; i < 5; i++) {
+    await expect(items).toHaveCount(7);
+    for (let i = 0; i < 7; i++) {
       await items.nth(i).locator("summary").click();
       const box = await items.nth(i).locator("summary").boundingBox();
       expect(box.height).toBeGreaterThanOrEqual(44);

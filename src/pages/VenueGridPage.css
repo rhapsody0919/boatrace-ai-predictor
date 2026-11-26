@@ -63,13 +63,21 @@
   display: contents;
 }
 
+.home-venue-grid-title {
+  margin: 1rem 0 0.5rem;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
 @media (min-width: 1200px) {
   .home-today-board {
     display: grid;
     grid-template-columns: minmax(0, 1fr) clamp(320px, 27vw, 400px);
-    /* 会場の一覧（1〜5行目にまたがる）が右より高いとき、余りを空の行（2回目以降の1行目等）に
-       配らず5行目へ寄せる。配ると右の列の頭が左より数px 下がった */
-    grid-template-rows: auto auto auto auto 1fr auto;
+    /* 2行目は会場の一覧の見出しだけ（右の列は空けて、案内の頭を会場の一覧の頭にそろえる）。
+       会場の一覧（3〜6行目にまたがる）が右より高いとき、余りを空の行（2回目以降の1行目等）に
+       配らず6行目へ寄せる。配ると右の列の頭が左より数px 下がった */
+    grid-template-rows: auto auto auto auto auto 1fr auto;
     column-gap: 1.5rem;
     align-items: start;
   }
@@ -82,34 +90,40 @@
     grid-row: 1;
   }
 
+  .home-today-board > .home-venue-grid-title {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 0;
+  }
+
   .home-today-board > .venue-grid {
     grid-column: 1;
-    grid-row: 2 / 6;
+    grid-row: 3 / 7;
     margin-top: 0;
   }
 
   .home-today-board > .first-visit-guide-card {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 3;
   }
 
   .home-today-board > .sg-now-banner {
     grid-column: 2;
-    grid-row: 3;
+    grid-row: 4;
   }
 
   .home-today-board > .home-digest-link {
     grid-column: 2;
-    grid-row: 4;
+    grid-row: 5;
   }
 
   .home-today-board > .intro-banner {
     grid-column: 2;
-    grid-row: 5;
+    grid-row: 6;
   }
 
   .home-today-board > .volatility-highlights {
-    grid-row: 6;
+    grid-row: 7;
     margin-top: 1.5rem;
   }
 
