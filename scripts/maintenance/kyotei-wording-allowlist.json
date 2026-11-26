@@ -75,11 +75,11 @@
     },
     {
       "file": "src/locales/ja/common.json",
-      "line": "\"metaTitle\": \"{{venue}}競艇の予想・出走表｜本日の全レースAI予想 - 龍神レーダー\","
+      "line": "\"metaTitle\": \"{{venue}}競艇の予想・出走表・結果｜本日の全レースAI予想 - 龍神レーダー\","
     },
     {
       "file": "src/locales/ja/common.json",
-      "line": "\"metaDescription\": \"{{venue}}競艇（ボートレース{{venue}}）の本日の出走表と全レースのAI予想。締切時刻、1マークの展開予測、直近1年の1コースの1着率と決まり手を無料・登録不要で確認できます。\","
+      "line": "\"metaDescription\": \"{{venue}}競艇（ボートレース{{venue}}）の今日の出走表・レース結果と全レースのAI予想。終わったレースは着順・決まり手・3連単の配当、ほかに締切時刻、1マークの展開予測、直近1年の1コースの1着率を無料・登録不要で確認できます。\","
     },
     {
       "file": "src/locales/ja/common.json",
@@ -87,7 +87,7 @@
     },
     {
       "file": "src/locales/ja/common.json",
-      "line": "\"metaDescriptionSeries\": \"{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の出走表と全レースのAI予想、節の得点率ランキングを無料・登録不要で公開しています。\""
+      "line": "\"metaDescriptionSeries\": \"{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。今日の出走表・レース結果と全レースのAI予想、節の得点率ランキングを無料・登録不要で公開しています。\""
     },
     {
       "file": "src/locales/ja/common.json",
