@@ -2571,7 +2571,8 @@
       "noRecord": "No record",
       "startsLabel": "Races",
       "winRateNote": "💡 Each term shows the official term win rate (half-year calculation periods; all races). A break in the line means no races in that term. The national win rate on the race card (current value for national, all races) is calculated from recent results and does not match the rightmost term.",
-      "winRateNotYet": "The next term ({{from}}–{{to}}) has not been imported yet."
+      "winRateNotYet": "The next term ({{from}}–{{to}}) has not been imported yet.",
+      "tipValueRun": "{{metric}} {{value}}"
     },
     "title": "Racer record comparison",
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
@@ -2583,7 +2584,11 @@
       "top2Rate": "Top-2 rate",
       "top3Rate": "Top-3 rate",
       "avgSt": "Avg. ST",
-      "st": "ST"
+      "st": "ST",
+      "exhibition": "Exhibition time",
+      "lap": "Full lap",
+      "turn": "Turn speed",
+      "straight": "Straight"
     },
     "scopes": {
       "local": "Local",

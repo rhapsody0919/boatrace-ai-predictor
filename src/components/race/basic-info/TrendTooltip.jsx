@@ -73,12 +73,13 @@ export default function TrendTooltip({
             boat: run.boatNumber,
             course: run.entryCourse ?? "-",
           })}{" "}
-          {finishText(t, run)} ST {stText(run)}
+          {finishText(t, run)}
+          {scale.tipSt === false ? "" : ` ST ${stText(run)}`}
         </p>
       )}
       {showValue && (
         <p className="trc-tip-line trc-tip-value">
-          {t("basicInfo.trend.tipValue", {
+          {t(scale.tipValueKey ?? "basicInfo.trend.tipValue", {
             metric: t(`basicInfo.metrics.${metric}`),
             value: formatTrendValue(point.value, scale),
           })}

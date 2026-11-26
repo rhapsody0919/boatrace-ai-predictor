@@ -9,6 +9,7 @@
  *   - ST は公式の表記（.12・F.03）。率は % を付け、平均ST は付けない
  *   - 着順が無い走は欠場・公式の記号を出す
  *   - 留めたときだけ閉じる印を出す。右寄りの点は左へ出す
+ *   - 今節の走の図（展示タイム等）は ST を出さず、値の行は「直近30走の」を付けない
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -146,6 +147,27 @@ check(
   "走の無い点は値の行だけ",
   (noRun.match(/class="trc-tip-line/g) ?? []).length === 1 &&
     !noRun.includes("href"),
+);
+
+const meet = html({
+  point: { value: 6.84, run: run({ startTiming: undefined }) },
+  metric: "exhibition",
+  // 今節の走の尺度（src/pure/trendMetricScale.js の exhibition）の吹き出しに関わる所
+  scale: {
+    digits: 2,
+    unit: "",
+    tipValue: true,
+    tipValueKey: "basicInfo.trend.tipValueRun",
+    tipSt: false,
+  },
+});
+check("今節の走は ST を出さない", !meet.includes("ST "), meet);
+check(
+  "今節の走の値の行",
+  meet.includes("basicInfo.trend.tipValueRun") &&
+    !meet.includes("basicInfo.trend.tipValue:") &&
+    meet.includes("6.84"),
+  meet,
 );
 
 if (failures.length > 0) {
