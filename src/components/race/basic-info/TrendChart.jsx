@@ -67,6 +67,36 @@ export function GridLines({ ticks, y, x1, x2, label }) {
   ));
 }
 
+// 縦軸の目盛りと頭の単位
+function ValueAxis({ ticks, y, W, scale, t }) {
+  return (
+    <>
+      <GridLines
+        ticks={ticks}
+        y={y}
+        x1={PAD.l}
+        x2={W - PAD.r}
+        label={(g) =>
+          // 目盛りの数字を間引く尺度（ST の 0.05 刻み）は、線は残して数字だけ1つおきに出す
+          scale.labelEvery &&
+          Math.round(g / scale.tickStep) % scale.labelEvery !== 0
+            ? ""
+            : fmtValue(g, scale.tickDigits, scale)
+        }
+      />
+      {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
+      <text
+        x={scale.unitKey ? 2 : PAD.l - 4}
+        y={PAD.t - 6}
+        className="trc-tick"
+        textAnchor={scale.unitKey ? "start" : "end"}
+      >
+        {scale.unitKey ? t(scale.unitKey) : scale.unit}
+      </text>
+    </>
+  );
+}
+
 // 選んだ艇の日付の目盛り・「最新」・休みの印
 function SelectedAxis({ sel, selected, x, W }) {
   const { t } = useTranslation();
@@ -172,13 +202,20 @@ function PickLayer({ picked, px, y, selected, W, pointer }) {
 
 /**
  * @param {{ seriesByBoat: Map<number, Array<object>>, metric: string, selected: number,
- *   scale?: ReturnType<typeof trendScaleOf> }} props scale を渡さなければ metric の既定の尺度
+ *   scale?: ReturnType<typeof trendScaleOf>, label?: string,
+ *   renderOver?: (g: {x: Function, y: Function, W: number, pad: object, sel: Array<object>}) => any,
+ *   renderBelow?: (g: {x: Function, W: number, pad: object, sel: Array<object>}) => any }} props
+ *   scale を渡さなければ metric の既定の尺度。label は図の読み上げの名前（無ければ基本情報の題）。
+ *   renderOver は線の下に重ねる SVG、renderBelow は図の下に描く物（どちらも図と同じ横の座標 x(i, len)）
  */
 export default function TrendChart({
   seriesByBoat,
   metric,
   selected,
   scale = trendScaleOf(metric),
+  label,
+  renderOver,
+  renderBelow,
 }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
@@ -206,33 +243,17 @@ export default function TrendChart({
         className="trc-svg"
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={t("basicInfo.trend.title", {
-          metric: t(`basicInfo.metrics.${metric}`),
-        })}
+        aria-label={
+          label ??
+          t("basicInfo.trend.title", {
+            metric: t(`basicInfo.metrics.${metric}`),
+          })
+        }
       >
-        <GridLines
-          ticks={ticks}
-          y={y}
-          x1={PAD.l}
-          x2={W - PAD.r}
-          label={(g) =>
-            // 目盛りの数字を間引く尺度（ST の 0.05 刻み）は、線は残して数字だけ1つおきに出す
-            scale.labelEvery &&
-            Math.round(g / scale.tickStep) % scale.labelEvery !== 0
-              ? ""
-              : fmtValue(g, scale.tickDigits, scale)
-          }
-        />
-        {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
-        <text
-          x={scale.unitKey ? 2 : PAD.l - 4}
-          y={PAD.t - 6}
-          className="trc-tick"
-          textAnchor={scale.unitKey ? "start" : "end"}
-        >
-          {scale.unitKey ? t(scale.unitKey) : scale.unit}
-        </text>
+        <ValueAxis ticks={ticks} y={y} W={W} scale={scale} t={t} />
         <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
+        {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
+        {renderOver?.({ x, y, W, pad: PAD, sel })}
         {order.map((boat) => (
           <Line
             key={boat}
@@ -261,6 +282,8 @@ export default function TrendChart({
           pointer={pointer}
         />
       </svg>
+      {/* 使う側が図の下に描く物（選んだ艇の走ごとの行・モーターの段など）。横の座標は図と同じ */}
+      {renderBelow?.({ x, W, pad: PAD, sel })}
       {picked && (
         <TrendTooltip
           point={picked}

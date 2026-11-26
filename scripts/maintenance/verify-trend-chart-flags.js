@@ -9,6 +9,7 @@
  *   - 選んだ艇の最新の走が F なら、右端の札は値でなく「F」（直前の値を最新に読ませない）
  *   - 選んでいない艇は薄く（0.35）、その縁は付けない。選んだ艇は点を打つ
  *   - 縦軸は 0 より下に伸ばさず、目盛りの数字は1つおき、値は .12 の書き方
+ *   - 使う側の口: renderOver は図の中で線より下に、renderBelow は図の外の下に、同じ横の座標で描く
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -124,6 +125,39 @@ check(
   ticks.includes("") && ticks.includes(".00"),
   JSON.stringify(ticks),
 );
+
+// 使う側の口（会場平均の線・走ごとの行を載せる）
+const slots = renderToStaticMarkup(
+  createElement(TrendChart, {
+    seriesByBoat,
+    metric: "st",
+    selected: 1,
+    label: "LBL",
+    renderOver: ({ x, sel }) =>
+      createElement("line", { className: "slot-over", x1: x(3, sel.length) }),
+    renderBelow: ({ x, sel }) =>
+      createElement("div", {
+        className: "slot-below",
+        "data-x": x(3, sel.length),
+      }),
+  }),
+);
+const overX = /class="slot-over" x1="([\d.]+)"/.exec(slots)?.[1];
+check(
+  "renderOver は線より前（下）",
+  slots.indexOf("slot-over") > 0 &&
+    slots.indexOf("slot-over") < slots.indexOf('<g class="trc-line'),
+);
+check(
+  "renderBelow は svg の外の後",
+  slots.indexOf("slot-below") > slots.indexOf("</svg>"),
+);
+check(
+  "renderBelow の横の座標は図と同じ",
+  overX !== undefined && slots.includes(`data-x="${overX}"`),
+  String(overX),
+);
+check("label が aria-label になる", slots.includes('aria-label="LBL"'));
 
 if (failures.length > 0) {
   console.error(`verify-trend-chart-flags: NG\n- ${failures.join("\n- ")}`);
