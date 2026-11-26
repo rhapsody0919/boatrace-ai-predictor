@@ -18,6 +18,7 @@ export const green = [
   { name: "verify", state: "SUCCESS" },
   { name: "ml-tests", state: "SUCCESS" },
   { name: "e2e", state: "SUCCESS" },
+  { name: "guard-weakening", state: "SUCCESS" },
 ];
 
 /** green のうち name だけを差し替える（state が null なら取り除く） */
