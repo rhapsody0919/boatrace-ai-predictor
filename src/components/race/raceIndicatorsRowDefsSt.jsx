@@ -4,6 +4,7 @@
 import { formatExhibitionSt, slashDate } from "../../utils/formatters";
 import { EMPTY } from "../../pure/dataFormat.js";
 import { rowFromIndicator } from "./raceIndicatorsRowDefs";
+import { rankTiers } from "../../pure/compareBaseline.js";
 
 export function buildStRows(c) {
   const { t, ph, players, analysis, stByBoat, officialPeriod } = c;
@@ -81,6 +82,12 @@ export function buildExhibitionRow(c) {
       ...exhibition,
       // 直前情報タブへ分離（BOA-304）: 発走30/15/10分前まで未確定のため
       category: "beforeInfo",
+      // 6艇の上位2・下位2（意味づけ 2026-11-26。展示タイムの順位の効き目は stat-findings.md 6・80行）
+      tiers: rankTiers(
+        [...exhibition.values].map(([boat, v]) => ({ boat, value: v?.value ?? null })),
+        "min",
+        { digits: 2 },
+      ),
       render: (p) => {
         const row = exByBoat.get(p.number);
         if (!row) return ph("exhibitionTime");

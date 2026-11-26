@@ -3,6 +3,7 @@
  * RaceBeforeInfoTab.jsx から移しただけ（出力は変えない）。
  */
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import TermHintButton from "./TermHintButton";
@@ -77,6 +78,27 @@ function TableHead({ sortedPlayers }) {
   );
 }
 
+// 6艇の上位2・下位2の印（意味づけ 2026-11-26、型2）。色だけに頼らず ▲▼ と言葉を添える
+function TierMark({ tier }) {
+  const { t } = useTranslation();
+  if (!tier) return null;
+  return (
+    <span className="drt-tier-mark">
+      {t(tier === "top" ? "beforeInfo.tierTop" : "beforeInfo.tierBottom")}
+    </span>
+  );
+}
+
+function TierLegend({ rows }) {
+  const { t } = useTranslation();
+  if (!rows.some((row) => row.tiers?.size > 0)) return null;
+  return (
+    <p className="rbi-note" data-testid="rbi-tier-legend">
+      {t("beforeInfo.tierLegend")}
+    </p>
+  );
+}
+
 function TableRow({ row, sortedPlayers, deepLink, onLinkClick }) {
   return (
     <tr>
@@ -90,9 +112,10 @@ function TableRow({ row, sortedPlayers, deepLink, onLinkClick }) {
       {sortedPlayers.map((p) => (
         <td
           key={p.number}
-          className={`${cellClass(p.number, row.best)} ${row.cellClass?.(p) ?? ""}`}
+          className={`${cellClass(p.number, row.best)} ${row.cellClass?.(p) ?? ""}${row.tiers?.has(p.number) ? ` drt-tier-${row.tiers.get(p.number)}` : ""}`}
         >
           {row.render(p)}
+          <TierMark tier={row.tiers?.get(p.number)} />
         </td>
       ))}
     </tr>
@@ -138,6 +161,7 @@ export default function RaceBeforeInfoTabTable({
           </tbody>
         </table>
       </div>
+      <TierLegend rows={rows} />
     </div>
   );
 }
