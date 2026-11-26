@@ -65,6 +65,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/raceModel.js` | — | makeRaceEntry, makeRace |
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
+| `src/pure/racerBoatReturns.js` | 選手ページの枠番別回収率（表と、枠番ごとの通算の推移）を、絞り込みが効く走ごとの履歴から数える | boatReturnRows, boatReturnSeries, BIG_WIN_PAYOUT |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
 | `src/pure/racerConditionDiff.js` | — | twoGroupZ, isConditionDiffSignificant, COND_RATE_MIN_RUNS, COND_Z_CRITICAL |
 | `src/pure/racerEntryCourseFilter.js` | 選手ページの成績の絞り込み「進入コース」（オーナー 2026-11-25）。 | filterByEntryCourse, entryCourseCounts, firstEntryCourseDate, ENTRY_COURSES |
@@ -682,4 +683,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 640 ファイル / export 3450 件。
+対象 641 ファイル / export 3453 件。
