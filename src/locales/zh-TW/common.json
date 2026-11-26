@@ -3796,7 +3796,7 @@
     "histogramOwnTitle": "本選手 {{pct}}%（{{n}}場）",
     "histogramBaseTitle": "相同航道、相同級別的平均 {{pct}}%",
     "historyNote": "從第{{course}}航道出賽的全部{{n}}場（由新至舊）",
-    "trendNote": "以預想道次出賽的所有場次 ST（越上越快、最右為最新）。F 偷跑、L 起跑延遲",
+    "trendNote": "以預想道次出賽的最近60場以內 ST（越上越快、最右為最新）。F＝偷跑、L＝起跑延遲",
     "histDate": "日期",
     "histVenue": "場地",
     "histSt": "ST",

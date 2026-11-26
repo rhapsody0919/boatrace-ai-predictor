@@ -118,12 +118,12 @@ export function Line({ points, boat, selected, x, y, scale }) {
   );
 }
 
-// 右端の札の1艇ぶん。選んだ艇の最新の走が F・L なら値でなく印を出す（直前の値を最新に読ませない。visual-designer 11/26）。
-// ほかの艇で右端に値が無いときは値のある最後の点から点線で引く
-function endOf(boat, s, selected) {
+// 右端の札の1艇ぶん。最新の走が F・L なら値でなく印を出す（直前の値を最新に読ませない。visual-designer 11/26、
+// 選んでいない艇もそろえる。ファン評価 11/26）。右端に値が無く印も無いときは値のある最後の点から点線で引く
+function endOf(boat, s) {
   const last = s[s.length - 1];
   const i = s.findLastIndex((p) => p.value !== null && p.value !== undefined);
-  if (boat === selected && last.value == null && last.flag)
+  if (last.value == null && last.flag)
     return { boat, flag: last.flag, at: s.length - 1, len: s.length };
   return {
     boat,
@@ -137,7 +137,7 @@ function endOf(boat, s, selected) {
 export function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
   const yOf = (e) => (e.flag ? FLAG_Y : y(e.v));
   const ends = [...seriesByBoat.entries()]
-    .map(([boat, s]) => endOf(boat, s, selected))
+    .map(([boat, s]) => endOf(boat, s))
     .filter((e) => e.at >= 0)
     .sort((a, b) => yOf(a) - yOf(b));
   let last = -99;
