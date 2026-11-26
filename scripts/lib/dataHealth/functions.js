@@ -41,6 +41,7 @@ import {
   tableRowsSql,
   entriesDuplicatesSql,
   cancellationWithResultSql,
+  siteFeedbackSql,
   FROM_TO,
 } from "./tableSql.js";
 
@@ -122,6 +123,15 @@ export const DATA_HEALTH_FUNCTIONS = Object.freeze([
       "データ健全性の日次監視: 確定中止（cancellation_status='confirmed'）なのに着順（rank1）のある結果が入っているレース（中止の誤検出。原理的に0件）。BOA-512",
     migration: "107_data_health_cancellation_with_result.sql",
     body: cancellationWithResultSql,
+  },
+  {
+    name: "data_health_site_feedback",
+    args: FROM_TO,
+    shape: "rows",
+    description:
+      "データ健全性の日次監視: ご意見ボックス（site_feedback・site_feedback_hourly）の JST の日ごとの、上限に近い時間（1時間90件以上）の無い時間の数と、時ごとの件数の足し込みが止まっていないか。件数だけを返す",
+    migration: "211_data_health_site_feedback.sql",
+    body: siteFeedbackSql,
   },
   {
     name: "data_health_nightly_freshness",

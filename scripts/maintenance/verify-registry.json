@@ -364,6 +364,11 @@
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
     },
     {
+      "script": "verify-data-health-site-feedback.js",
+      "tier": "ci",
+      "guards": "data_health の ご意見ボックスの見張り（マイグレーション211の data_health_site_feedback と checks.js の site_feedback.*）を PGlite で確かめる: 0件の日も分母24の行を出す、1時間89件は上限に近くなく90件は近い、JST の日で区切る、件数の和は残っている行の数で頭を抑え、足し込みが止まった日は欠ける、登録表は閾値100%・分母の下限1・上限の見張りは前日だけ、anon・authenticated は呼べず SECURITY INVOKER"
+    },
+    {
       "script": "verify-data-health-workflow-coverage.js",
       "tier": "ci",
       "guards": "Environment prod-jobs を使う workflow が、data_health の鮮度の項目か理由つきの除外に載ること（2026-10-20 の鍵の誤りで夜の集計が落ちて誰も気づかなかった件の再発防止）"
