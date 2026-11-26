@@ -31,6 +31,11 @@ const RACER_CONCURRENCY = 4;
 const RACER_SOURCE_ORIGIN =
   process.env.RACER_SNAPSHOT_SOURCE_ORIGIN || "https://www.boat-ai.jp";
 const RACER_COPY_CONCURRENCY = 16;
+// 選手ページを描く画面の幅。Playwright の既定（1280px）は 1200px 以上の PC の並び（RacerProfile.css・
+// RacerPerformanceStatsPc.css の :has()）になり、recharts が文字を測るたびに再計算が重くなって、1ページの描画が
+// 約1.5倍に延びた（2026-11-26、864秒→1268秒）。600px 以下は推移の図の文が変わる（RacerPerformanceStats.jsx の
+// isNarrowViewport）ので、その間の 1024px で描く。保存する HTML の文と要素は変わらない（図の幅だけが変わる）
+const RACER_VIEWPORT = { width: 1024, height: 768 };
 
 // index.htmlの静的<title>（サイト共通デフォルト）がReact描画後のページ固有<title>と
 // 並存してしまう（React管理外の初期HTMLタグのため、Reactの重複排除が効かない）。
@@ -161,7 +166,7 @@ async function renderRacerSnapshots(openPage, baseUrl, ids, outDir) {
   const skipped = [];
   const { succeeded, failed: failedItems } = await renderWithFreshPage(ids, {
     concurrency: RACER_CONCURRENCY,
-    openPage,
+    openPage: () => openPage({ viewport: RACER_VIEWPORT }),
     retries: 2,
     render: async (page, id) => {
       await page.goto(`${baseUrl}/racer/${id}`, {
@@ -301,6 +306,8 @@ export {
   ROOT,
   DIST_DIR,
   SNAPSHOT_DIR,
+  RACER_VIEWPORT,
   dedupeDefaultTitle,
   generateRacerSnapshots,
+  renderRacerSnapshots,
 };
