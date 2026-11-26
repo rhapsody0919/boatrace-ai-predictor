@@ -3,14 +3,12 @@
  * 対象: scripts/maintenance/content-ops-checks/check-site-updates-freshness.js
  * 時刻は固定の値を渡し、今の時刻に依らない。
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   checkSiteUpdatesFreshness,
   judgeSiteUpdatesFreshness,
   latestUpdateDate,
 } from "./content-ops-checks/check-site-updates-freshness.js";
+import { SITE_UPDATES } from "../../src/data/siteUpdates.js";
 
 const failures = [];
 const check = (name, actual, expected) => {
@@ -43,11 +41,10 @@ check("日付が無ければ判定しない", judgeSiteUpdatesFreshness(null).st
 // 実物のデータも読める（日付は動くので形だけ）
 const real = await checkSiteUpdatesFreshness(at("2026-11-26T03:00:00Z"));
 check("実物のデータから日付を読める", /^\d{4}-\d{2}-\d{2}$/.test(real.latestDate ?? ""), true);
-const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 check(
-  "実物の最新と本文の最初の date がそろう",
+  "実物の最新はデータの date の最大",
   real.latestDate,
-  latestUpdateDate(readFileSync(path.join(repoRoot, "src/data/siteUpdates.js"), "utf8")),
+  SITE_UPDATES.map((u) => u.date).sort().at(-1),
 );
 
 if (failures.length) {
