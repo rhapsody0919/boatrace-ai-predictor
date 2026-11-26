@@ -7,19 +7,22 @@ import {
   MANSHU_PAYOUT,
 } from "../../src/pure/racerTrifectaInvolvement.js";
 
-const run = (raceId, ranks, payoutTrifecta, over = {}) => ({
-  raceId,
-  venueCode: 1,
-  raceGrade: "ippan",
-  raceStage: null,
-  boatNumber: 4,
-  rank1: ranks[0],
-  rank2: ranks[1],
-  rank3: ranks[2],
-  payoutTrifecta,
-  unranked: false,
-  ...over,
-});
+const payouts = {};
+const run = (raceId, ranks, payout, over = {}) => {
+  payouts[raceId] = payout;
+  return {
+    raceId,
+    venueCode: 1,
+    raceGrade: "ippan",
+    raceStage: null,
+    boatNumber: 4,
+    rank1: ranks[0],
+    rank2: ranks[1],
+    rank3: ranks[2],
+    unranked: false,
+    ...over,
+  };
+};
 const ALL = { venueCode: null, boatNumber: null, raceGrade: null, raceStage: null };
 
 const history = [
@@ -32,7 +35,7 @@ const history = [
   run("2026-01-07-02-01", [1, 2, 4], null, { venueCode: 2 }), // 3着だが配当が無い走
 ];
 
-const { runs, rows } = trifectaInvolvementRows(history, ALL);
+const { runs, rows } = trifectaInvolvementRows(history, ALL, payouts);
 assert.equal(runs, 7);
 const byKey = Object.fromEntries(rows.map((r) => [r.key, r]));
 assert.equal(byKey[1].count, 1);
@@ -50,12 +53,12 @@ assert.equal(byKey.all.manshu, 1);
 assert.ok(30000 >= MANSHU_PAYOUT);
 
 // 会場で絞ると分母も絞った走だけ
-const v2 = trifectaInvolvementRows(history, { ...ALL, venueCode: 2 });
+const v2 = trifectaInvolvementRows(history, { ...ALL, venueCode: 2 }, payouts);
 assert.equal(v2.runs, 1);
 assert.equal(v2.rows.find((r) => r.key === 3).count, 1);
 
 // 推移: 各走の時点までの通算。引き始めの走より前は出さない
-const s = trifectaInvolvementSeries(history, ALL, 3);
+const s = trifectaInvolvementSeries(history, ALL, payouts, 3);
 assert.deepEqual(s.map((p) => p.date), ["01/03", "01/04", "01/05", "01/06", "01/07"]);
 assert.equal(s[0].value, (2000 + 1500 + 30000) / 3);
 assert.equal(s[0].manshu, 30000);

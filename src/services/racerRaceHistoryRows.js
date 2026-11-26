@@ -83,8 +83,6 @@ export function buildRacerRaceHistoryRows({
         payoutWin: result.payout_win ?? null,
         payoutPlace1: result.payout_place_1 ?? null,
         payoutPlace2: result.payout_place_2 ?? null,
-        // 3連単の払戻（100円あたり）。列名と中身が逆で、race_results.payout_trio が3連単（docs/knowledge/data-columns.md）
-        payoutTrifecta: result.payout_trio ?? null,
         exhibitionTime: exhibition?.exhibition_time ?? null,
         startTiming: st?.start_timing ?? null,
         isFlying: st?.is_flying === true,

@@ -5,6 +5,7 @@
  *   配当の中央値（2回以下は値そのもの）・万舟（10,000円以上）の回数
  * - 「1走あたり配当」は舟券1点の成績ではない。円で出し、回収率・% と並べない（data-scientist 2026-11-26）
  * - 着順の付かない走（F・欠など）は3着以内に数えない。配当が無い走（null）は回数に入れ、配当の集計から外す
+ * - 配当は走ごとの履歴とは別に読む（getRaceTrifectaPayouts の race_id → 配当）。履歴の形は全貌動画と共有して固定されているため
  */
 import { matchesFilter } from "./racerBoatReturns.js";
 
@@ -26,8 +27,8 @@ function medianOf(values) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-function summarize(key, picked, runs) {
-  const paid = picked.map((r) => r.payoutTrifecta).filter((v) => typeof v === "number");
+function summarize(key, picked, runs, payouts) {
+  const paid = picked.map((r) => payouts[r.raceId]).filter((v) => typeof v === "number");
   const sum = paid.reduce((a, b) => a + b, 0);
   return {
     key,
@@ -41,15 +42,16 @@ function summarize(key, picked, runs) {
 }
 
 /**
- * @param {Array<Object>|null|undefined} history getRacerRaceHistory の走（raceId の昇順。payoutTrifecta を持つ）
+ * @param {Array<Object>|null|undefined} history getRacerRaceHistory の走（raceId の昇順）
  * @param {{venueCode:number|null, boatNumber:number|null, raceGrade:string|null, raceStage:string|null}} filter
+ * @param {Object<string, number|null>} payouts race_id → 3連単の配当
  * @returns {{runs:number, rows:Array<{key:1|2|3|"all", count:number, perRun:number|null, median:number|null, values:number[]|null, manshu:number}>}}
  */
-export function trifectaInvolvementRows(history, filter) {
+export function trifectaInvolvementRows(history, filter, payouts) {
   const matched = (history ?? []).filter((row) => matchesFilter(row, filter));
   const withPos = matched.map((row) => ({ ...row, pos: positionOf(row) }));
-  const rows = [1, 2, 3].map((pos) => summarize(pos, withPos.filter((r) => r.pos === pos), matched.length));
-  rows.push(summarize("all", withPos.filter((r) => r.pos > 0), matched.length));
+  const rows = [1, 2, 3].map((pos) => summarize(pos, withPos.filter((r) => r.pos === pos), matched.length, payouts));
+  rows.push(summarize("all", withPos.filter((r) => r.pos > 0), matched.length, payouts));
   return { runs: matched.length, rows };
 }
 
@@ -57,13 +59,14 @@ export function trifectaInvolvementRows(history, filter) {
  * 3着以内に入った走の3連単の配当の、各走の時点までの通算の1走あたり配当。TRIFECTA_TREND_START 走目から
  * @returns {Array<{raceId:string, date:string, value:number, manshu:number|null}>} 古い順。manshu は万舟の走のその配当
  */
-export function trifectaInvolvementSeries(history, filter, start = TRIFECTA_TREND_START) {
+export function trifectaInvolvementSeries(history, filter, payouts, start = TRIFECTA_TREND_START) {
   let n = 0;
   let sum = 0;
   const points = [];
   for (const row of history ?? []) {
     if (!matchesFilter(row, filter)) continue;
-    const v = positionOf(row) > 0 && typeof row.payoutTrifecta === "number" ? row.payoutTrifecta : 0;
+    const paid = payouts[row.raceId];
+    const v = positionOf(row) > 0 && typeof paid === "number" ? paid : 0;
     n += 1;
     sum += v;
     if (n < start) continue;
