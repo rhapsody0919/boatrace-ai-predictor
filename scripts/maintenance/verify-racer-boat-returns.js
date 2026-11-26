@@ -43,6 +43,21 @@ assert.deepEqual(rows.find((r) => r.boat === 3), { boat: 3, n: 0, wins: 0, winRe
 assert.equal(b1.topWinShare, 1, "1着が1回なら最大の1回が全部");
 assert.equal(b6.topWinShare, 1);
 
+// 最大の1回の割合: 1着が2回（単勝 300・900）なら 900 ÷ 1200。1着の無い枠番は null
+const shares = boatReturnRows(
+  [
+    run("2026-02-01-01-01", 2, { rank1: 2, payoutWin: 300 }),
+    run("2026-02-02-01-01", 2, { rank1: 2, payoutWin: 900 }),
+    run("2026-02-03-01-01", 2, { rank1: 1, rank2: 2, payoutPlace2: 200 }),
+    run("2026-02-04-01-01", 5, { rank1: 1, rank2: 3 }),
+  ],
+  ALL,
+);
+assert.equal(shares.find((r) => r.boat === 2).topWinShare, 900 / 1200);
+assert.equal(shares.find((r) => r.boat === 2).wins, 2);
+assert.equal(shares.find((r) => r.boat === 5).topWinShare, null, "払戻が無ければ null");
+assert.equal(shares.find((r) => r.boat === 5).n, 1);
+
 // 表: 会場で絞る・枠番を固定すると、その行だけ・その走だけ
 const venue2 = boatReturnRows(history, { ...ALL, venueCode: 2 });
 assert.equal(venue2.find((r) => r.boat === 1).n, 1);
@@ -53,6 +68,7 @@ assert.deepEqual(fixed.map((r) => r.boat), [6]);
 const s1 = boatReturnSeries(history, ALL, 1);
 assert.deepEqual(s1.map((p) => p.date), ["01/01", "01/02", "01/03"]);
 assert.deepEqual(s1.map((p) => p.n), [1, 2, 3], "各点に何走目かを持つ");
+assert.deepEqual(boatReturnSeries(history, { ...ALL, venueCode: 2 }, 1).map((p) => p.n), [1], "絞った走だけで数える");
 assert.deepEqual(s1.map((p) => Math.round(p.win)), [150, 75, 50]);
 assert.deepEqual(s1.map((p) => Math.round(p.place)), [110, 120, 80]);
 const s6 = boatReturnSeries(history, ALL, 6);
