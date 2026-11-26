@@ -8,6 +8,7 @@ import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../../utils/colors";
 import { trendGapIndexes } from "../../../pure/racerTrendSeries.js";
+import { trendScaleOf } from "../../../pure/trendMetricScale.js";
 import { useChartWidth } from "./useChartWidth.js";
 import TrendTooltip from "./TrendTooltip";
 import { useChartPick } from "./useChartPick.js";
@@ -17,21 +18,21 @@ const PAD = { l: 30, r: 66, t: 18, b: 34 };
 
 const slash = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
 
-function scaleOf(seriesByBoat, metric, W) {
+function scaleOf(seriesByBoat, scale, W) {
   const all = [...seriesByBoat.values()].flat().map((p) => p.value);
-  const step = metric === "avgSt" ? 0.01 : 5;
+  const { step } = scale;
   const lo = Math.floor(Math.min(...all) / step) * step - step;
   const hi = Math.ceil(Math.max(...all) / step) * step + step;
   const n = Math.max(...[...seriesByBoat.values()].map((s) => s.length));
   // 平均ST は小さいほど良いので上に描く
   const y = (v) => {
     const r = (v - lo) / (hi - lo);
-    return PAD.t + (H - PAD.t - PAD.b) * (metric === "avgSt" ? r : 1 - r);
+    return PAD.t + (H - PAD.t - PAD.b) * (scale.invert ? r : 1 - r);
   };
   // 右端（最新）をそろえる。点の少ない艇は左を空ける
   const x = (i, len) =>
     PAD.l + ((W - PAD.l - PAD.r) * (n - len + i)) / Math.max(1, n - 1);
-  const tickStep = metric === "avgSt" ? 0.02 : 10;
+  const { tickStep } = scale;
   const ticks = [];
   for (
     let g = Math.ceil(lo / tickStep) * tickStep;
@@ -95,7 +96,7 @@ function Line({ points, boat, selected, x, y }) {
 }
 
 // 右端の値の札。重ならないよう下へずらし、点から引き出し線を付ける（visual-designer 11/24）
-function EndLabels({ seriesByBoat, selected, x, y, metric, W }) {
+function EndLabels({ seriesByBoat, selected, x, y, scale, W }) {
   const ends = [...seriesByBoat.entries()]
     .map(([boat, s]) => ({ boat, v: s[s.length - 1].value, len: s.length }))
     .sort((a, b) => y(a.v) - y(b.v));
@@ -123,7 +124,7 @@ function EndLabels({ seriesByBoat, selected, x, y, metric, W }) {
           className="trc-end"
           fontWeight={e.boat === selected ? 700 : 400}
         >
-          {metric === "avgSt" ? e.v.toFixed(2) : e.v.toFixed(1)}
+          {e.v.toFixed(scale.digits)}
         </text>
       </g>
     );
@@ -227,10 +228,19 @@ function PickLayer({ picked, px, y, selected, W, pointer }) {
   );
 }
 
-export default function TrendChart({ seriesByBoat, metric, selected }) {
+/**
+ * @param {{ seriesByBoat: Map<number, Array<object>>, metric: string, selected: number,
+ *   scale?: ReturnType<typeof trendScaleOf> }} props scale を渡さなければ metric の既定の尺度
+ */
+export default function TrendChart({
+  seriesByBoat,
+  metric,
+  selected,
+  scale = trendScaleOf(metric),
+}) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
-  const { x, y, ticks } = scaleOf(seriesByBoat, metric, W);
+  const { x, y, ticks } = scaleOf(seriesByBoat, scale, W);
   const sel = seriesByBoat.get(selected) ?? [];
   const order = [...seriesByBoat.keys()].filter((b) => b !== selected);
   if (seriesByBoat.has(selected)) order.push(selected);
@@ -263,16 +273,16 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
           y={y}
           x1={PAD.l}
           x2={W - PAD.r}
-          label={(g) => (metric === "avgSt" ? g.toFixed(2) : Math.round(g))}
+          label={(g) => g.toFixed(scale.tickDigits)}
         />
         {/* 平均ST は「秒（上ほど速い）」と向きも書く（visual-designer 11/24） */}
         <text
-          x={metric === "avgSt" ? 2 : PAD.l - 4}
+          x={scale.unitKey ? 2 : PAD.l - 4}
           y={PAD.t - 6}
           className="trc-tick"
-          textAnchor={metric === "avgSt" ? "start" : "end"}
+          textAnchor={scale.unitKey ? "start" : "end"}
         >
-          {metric === "avgSt" ? t("basicInfo.trend.unitSec") : "%"}
+          {scale.unitKey ? t(scale.unitKey) : scale.unit}
         </text>
         <SelectedAxis sel={sel} selected={selected} x={x} W={W} />
         {order.map((boat) => (
@@ -290,7 +300,7 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
           selected={selected}
           x={x}
           y={y}
-          metric={metric}
+          scale={scale}
           W={W}
         />
         <PickLayer
@@ -306,6 +316,7 @@ export default function TrendChart({ seriesByBoat, metric, selected }) {
         <TrendTooltip
           point={picked}
           metric={metric}
+          scale={scale}
           leftPct={(px / W) * 100}
           pinned={pick.pinned}
           onClose={close}
