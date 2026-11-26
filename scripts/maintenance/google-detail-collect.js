@@ -6,13 +6,18 @@
  *
  * 動かし方（オーナーの Mac の launchd、com.terukina.ryujin.google-detail。リポジトリに置かない設定を読む）:
  *   node scripts/maintenance/google-detail-collect.js --config ~/.config/ryujin/private/google-detail.json [--now <ISO>]
- * 設定（JSON）: siteUrl・propertyId・keyFile（サービスアカウントの鍵のパス）・outDir・timezone・windowDays・lagDays・featurePages
+ * 設定（JSON）: siteUrl・propertyId・keyFile（サービスアカウントの鍵のパス）・outDir・timezone・windowDays・lagDays・featurePages・dailyDays（既定60）
+ * 日別（gsc_daily.json・gsc_page_daily.json）: 直近 dailyDays 日（末日は窓と同じ lagDays 日前、日付は GSC の PT のまま）の
+ *   date×query×page と date×page を growth_gsc_daily・growth_gsc_page_daily と同じ行で保存する（seo-morning-sheet --local-dir が読む）。
+ *   取得は scripts/lib/growth/gscDaily.js・gscPageDaily.js の fetchDay・fetchPageDay（1日ずつ・25000行のページ送り）。
  * 数字は公開リポジトリに入れない（outDir はリポジトリの外）。全部の API が取れたときだけ日付の置き場に書く。
  * --now に過去の時刻を渡すと、その日の回を取り直せる（窓は日付から決まるので、抜けた日も後から同じ物が取れる）。
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { API_ROW_CAP, fetchDay } from "../lib/growth/gscDaily.js";
+import { dateRange, fetchPageDay } from "../lib/growth/gscPageDaily.js";
 
 const DAY = 86400000;
 const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -36,6 +41,76 @@ export function windowsFor(now, { timezone, windowDays, lagDays }) {
     endDate: iso(end - i * windowDays * DAY),
   }));
   return { today, windows };
+}
+
+/** 日別の取得の日付（古い順）。末日は windowsFor と同じ（lagDays 日前）、日付は timezone（GSC は PT）の暦日 */
+export function dailyDatesFor(now, { timezone, dailyDays, lagDays }) {
+  if (!Number.isInteger(dailyDays) || dailyDays < 1)
+    throw new Error("dailyDays は正の整数");
+  const { windows } = windowsFor(now, { timezone, windowDays: 1, lagDays });
+  const end = windows[0].endDate;
+  const start = iso(Date.parse(`${end}T00:00:00Z`) - (dailyDays - 1) * DAY);
+  return dateRange(start, end);
+}
+
+/**
+ * 日別の2ファイルの中身（行は表と同じ形、fetched_at は付けない）。
+ * 1日でも落ちたら投げる（全部取れたときだけ書く決まり）。上限（API_ROW_CAP）に当たった日は meta.capped_dates に残す
+ */
+export async function collectDaily(sc, cfg, now) {
+  const dates = dailyDatesFor(now, {
+    timezone: cfg.timezone,
+    dailyDays: cfg.dailyDays ?? 60,
+    lagDays: cfg.lagDays ?? 3,
+  });
+  const daily = [];
+  const pageDaily = [];
+  const capped = [];
+  for (const date of dates) {
+    const qp = await api(`GSC ${date} date×query×page`, () =>
+      fetchDay(sc, cfg.siteUrl, date).then((rows) => ({ data: rows })),
+    );
+    const pg = await api(`GSC ${date} date×page`, () =>
+      fetchPageDay(sc, cfg.siteUrl, date).then((rows) => ({ data: rows })),
+    );
+    if (qp.length >= API_ROW_CAP) capped.push(date);
+    for (const r of qp) {
+      if (!Array.isArray(r.keys) || r.keys.length !== 3)
+        throw new Error(`GSC ${date}: keys が [date, query, page] でない`);
+      const [d, query, page] = r.keys;
+      daily.push({
+        date: d,
+        query,
+        page,
+        clicks: Math.round(r.clicks ?? 0),
+        impressions: Math.round(r.impressions ?? 0),
+        position: Number(r.position ?? 0),
+      });
+    }
+    for (const r of pg) {
+      if (!Array.isArray(r.keys) || r.keys.length !== 2)
+        throw new Error(`GSC ${date}: keys が [date, page] でない`);
+      const [d, page] = r.keys;
+      pageDaily.push({
+        date: d,
+        page,
+        clicks: Math.round(r.clicks ?? 0),
+        impressions: Math.round(r.impressions ?? 0),
+      });
+    }
+  }
+  const meta = {
+    from: dates[0],
+    to: dates.at(-1),
+    days: dates.length,
+    collected_at: now.toISOString(),
+    site: cfg.siteUrl,
+    capped_dates: capped,
+  };
+  return [
+    ["gsc_daily", { meta, rows: daily }],
+    ["gsc_page_daily", { meta, rows: pageDaily }],
+  ];
 }
 
 /** GA4 の runReport の行を {次元: 値, 指標: 数} にする */
@@ -229,6 +304,7 @@ async function main(argv) {
   const files = [];
   for (const w of windows)
     files.push(...(await collectWindow(c, cfg, property, w, now)));
+  files.push(...(await collectDaily(c.sc, cfg, now)));
   const outDir = path.join(cfg.outDir, today);
   fs.mkdirSync(outDir, { recursive: true });
   for (const [name, data] of files)
