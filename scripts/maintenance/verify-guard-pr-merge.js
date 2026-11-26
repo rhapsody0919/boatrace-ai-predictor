@@ -16,7 +16,6 @@ import {
   judgeE2eScope,
   judgeUnresolved,
   REQUIRED_CHECK_NAMES,
-  judgeChecks,
   rulesetEnforcesChecks,
 } from "./guard-pr-merge.js";
 import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
@@ -247,24 +246,6 @@ check(
   "guard-weakening が欠けた ruleset なら任せない",
   rulesetEnforcesChecks([statusRule("verify", "e2e", "ml-tests")]),
   false,
-);
-check(
-  "guard-weakening が落ちていれば止める",
-  judgeChecks(
-    "1",
-    green.map((c) =>
-      c.name === "guard-weakening" ? { ...c, state: "FAILURE" } : c,
-    ),
-  )?.decision,
-  "deny",
-);
-check(
-  "guard-weakening の結果が無ければ待たせる",
-  judgeChecks(
-    "1",
-    green.filter((c) => c.name !== "guard-weakening"),
-  )?.decision,
-  "ask",
 );
 // 2026-10-18 時点の master の実物（必須チェックの無い ruleset）。--auto でもローカルで検査する
 check(

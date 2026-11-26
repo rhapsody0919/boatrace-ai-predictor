@@ -74,6 +74,16 @@ function scene1() {
     ])?.decision,
     "ask",
   );
+  check(
+    "guard-weakening が無ければ待たせる",
+    judgeChecks("1", greenWith("guard-weakening", null))?.decision,
+    "ask",
+  );
+  check(
+    "guard-weakening が落ちていれば止める",
+    judgeChecks("1", greenWith("guard-weakening", "FAILURE"))?.decision,
+    "deny",
+  );
   // 以前は ml-tests を見ていなかった
   check(
     "ml-tests が無ければ待たせる",
