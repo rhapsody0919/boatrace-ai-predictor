@@ -25,7 +25,7 @@ for (const width of [375, 1440]) {
       await expect(labelCell(table, label).locator(".drt-row-note")).toHaveText("事実のみ");
     }
     for (const label of ["展示ST", "直線"]) {
-      await expect(labelCell(table, label).locator(".drt-row-note")).toHaveText("1位だけ（効き目は未確認）");
+      await expect(labelCell(table, label).locator(".drt-row-note")).toHaveText("1位だけ");
     }
     for (const label of ["展示T", "一周", "まわり足"]) {
       await expect(labelCell(table, label).locator(".drt-row-note")).toHaveCount(0);
@@ -51,9 +51,16 @@ for (const width of [375, 1440]) {
     }
     // 札は艇の色（6艇で違う色）。良し悪しの色（緑・赤）に塗り替えない
     expect(new Set(chips.map((c) => c.bg)).size).toBe(chips.length);
-    const scale = await dots.locator(".rbi-posdots-scale span").allTextContents();
+    // 目盛りは値の範囲の中に昇順で2本以上（値を図から読めるように）
     const values = chips.map((c) => c.value);
-    expect(scale).toEqual([Math.min(...values).toFixed(2), Math.max(...values).toFixed(2)]);
+    const ticks = (await dots.locator(".rbi-posdots-tick").allTextContents()).map(Number);
+    expect(ticks.length).toBeGreaterThanOrEqual(2);
+    expect(ticks).toEqual([...ticks].sort((a, b) => a - b));
+    ticks.forEach((v) => {
+      expect(v).toBeGreaterThanOrEqual(Math.min(...values) - 1e-9);
+      expect(v).toBeLessThanOrEqual(Math.max(...values) + 1e-9);
+    });
+    await expect(page.getByTestId("rbi-tier-legend")).toContainText("「1位だけ」の行");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }

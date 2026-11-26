@@ -10,6 +10,18 @@ import { BOAT_COLORS } from "../../utils/colors";
 // 札の幅を線の長さの何％と見て重なりを避けるか（375px で約22px の札。目安、根拠なし）
 const MIN_GAP_PCT = 9;
 
+// 目盛りの刻み（秒）。目盛りが6本以下になる一番細かい物
+const STEPS = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1];
+function ticksOf(min, max) {
+  const step = STEPS.find((s) => Math.floor(max / s + 1e-9) - Math.ceil(min / s - 1e-9) + 1 <= 6) ?? 1;
+  const out = [];
+  for (let i = Math.ceil(min / step - 1e-9); i * step <= max + 1e-9; i += 1) {
+    const v = Number((i * step).toFixed(2));
+    out.push({ v, x: ((v - min) / (max - min)) * 100 });
+  }
+  return out;
+}
+
 // 速い順に並べ、位置（％）と段を決める。重なる札は空いている一番下の段へ
 function place(points, min, max) {
   const lastX = [];
@@ -61,8 +73,11 @@ export default function ExhibitionPositionDots({ values }) {
         })}
       </div>
       <div className="rbi-posdots-scale">
-        <span>{min.toFixed(2)}</span>
-        <span>{max.toFixed(2)}</span>
+        {ticksOf(min, max).map((tick) => (
+          <span key={tick.v} className="rbi-posdots-tick" style={{ left: `${tick.x}%` }}>
+            {tick.v.toFixed(2)}
+          </span>
+        ))}
       </div>
     </figure>
   );

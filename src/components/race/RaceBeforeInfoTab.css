@@ -292,7 +292,7 @@
   height: 22px;
   padding: 0 4px;
   box-sizing: border-box;
-  border: 1px solid var(--text-secondary);
+  border: 1px solid var(--text-primary);
   border-radius: 4px;
   font-size: var(--font-size-xs);
   font-weight: 700;
@@ -300,10 +300,26 @@
   text-align: center;
 }
 .race-before-info-tab .rbi-posdots-scale {
-  display: flex;
-  justify-content: space-between;
-  margin-top: var(--spacing-1);
+  position: relative;
+  margin: 0 12px;
+  height: 1.6em;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+}
+/* 目盛り: 軸の上の短い線と値 */
+.race-before-info-tab .rbi-posdots-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  padding-top: 6px;
+}
+.race-before-info-tab .rbi-posdots-tick::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 5px;
+  background: var(--text-secondary);
 }
