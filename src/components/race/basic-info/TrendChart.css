@@ -118,6 +118,32 @@
   }
 }
 
+/* 選んでいない2号艇（g の opacity 0.35。TrendChartLines.jsx の lineAttrs）: ライトでは黒が他の艇の薄い線より
+   強いので更に薄く、縁を消す。ダークでは黒い芯が地に溶けて消えたので、明るい縁（drop-shadow）で中抜けの線に
+   する。縁の要素（.trc-halo）は尺度で有ったり無かったりするので、filter で一律に付ける（visual-designer 11/26 P1・11/27） */
+.trc-line-2[opacity="0.35"] {
+  opacity: 0.25;
+}
+.trc-line-2[opacity="0.35"] .trc-halo {
+  display: none;
+}
+[data-theme="dark"] .trc-line-2[opacity="0.35"] {
+  opacity: 0.5;
+}
+[data-theme="dark"] .trc-line-2[opacity="0.35"] .trc-stroke {
+  filter: drop-shadow(0 0 0.8px var(--color-gray-300))
+    drop-shadow(0 0 0.8px var(--color-gray-300));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .trc-line-2[opacity="0.35"] {
+    opacity: 0.5;
+  }
+  :root:not([data-theme="light"]) .trc-line-2[opacity="0.35"] .trc-stroke {
+    filter: drop-shadow(0 0 0.8px var(--color-gray-300))
+      drop-shadow(0 0 0.8px var(--color-gray-300));
+  }
+}
+
 .trc-boats {
   display: flex;
   flex-wrap: wrap;
