@@ -22,12 +22,12 @@ import FilterScopeFrame from "./RacerFilterScope";
 import RacerNigashiCourses from "./RacerNigashiCourses";
 import { VcFilterBar, VcHistoryError } from "./RacerPerformanceFilters";
 import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
+import RacerBoatReturns from "./RacerBoatReturns";
 import {
   BothFixedNoRuns,
   CourseBreakdown,
   CrossBoatBreakdown,
   CrossVenueBreakdown,
-  ReturnRateTable,
   VenueBreakdown,
 } from "./RacerPerformanceBreakdown";
 import {
@@ -229,10 +229,11 @@ function overviewBlocks(t, vc, view, venueStats, technique) {
   ];
 }
 
-/** 決まり手の節。絞らずに会場別・枠番別がそろうときは overviewBlocks の包みへ入れ、下で二重に出さない */
+/** 決まり手と枠番別回収率の節。絞らずに会場別・枠番別がそろうときは overviewBlocks の包みへ入れ、下で二重に出さない */
 function techniqueBlocks(vc, view) {
-  const technique = view.showTechniqueSection && (
-    <TechniqueSection view={view} vcActive={vc.vcActive} vcLabel={view.vcLabel} />
+  const section = <TechniqueSection view={view} vcActive={vc.vcActive} vcLabel={view.vcLabel} />;
+  const technique = (
+    <>{view.showTechniqueSection && section}<RacerBoatReturns vc={vc} vcLabel={view.vcLabel} /></>
   );
   const paired =
     !vc.vcVenueFixed &&
@@ -315,8 +316,7 @@ export default function RacerPerformanceStats({
   };
   const { vcData, vcLabel } = view;
   const { snapshotHistoryState, vcActive } = vc;
-  const { formSummary, aggregatedStats, boatReturnRate, venueStats } =
-    stats ?? {};
+  const { formSummary, aggregatedStats, venueStats } = stats ?? {};
 
   // 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
   const heading = racerName ? (
@@ -361,7 +361,6 @@ export default function RacerPerformanceStats({
       <WinRateChart chartData={view.chartData} />
       {/* レース条件別の成績（BOA-336）。フィルタには連動しない（全会場・全条件の履歴から集計） */}
       <RacerConditionStats history={vc.vcHistoryAll} />
-      <ReturnRateTable view={view} boatReturnRate={boatReturnRate} />
       {/* 絞り込みの欄と、それが効く節（会場別・枠番別の表、決まり手、推移、レース一覧）を1つの枠にまとめる */}
       <FilterScopeFrame>
         <VcFilterBar
