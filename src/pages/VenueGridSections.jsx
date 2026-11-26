@@ -53,6 +53,8 @@ function TodayVenuesSection({
             />
             {/* まもなく締切のレース（PV09 T1、BOA-1690）。案内より上。取得の失敗時は出さない */}
             {!error && <UpcomingDeadlineRaces {...{ venuesData, nowHHMM, loading }} />}
+            {/* 1200px 以上で、左＝会場の一覧・右＝案内の列にする包み（VenueGridPage.css）。未満は display: contents */}
+            <div className="home-today-board">
             {isFirstVisit && i18n.language === "ja" ? (
               <FirstVisitGuideCard />
             ) : (
@@ -112,6 +114,7 @@ function TodayVenuesSection({
                 )}
               </>
             )}
+            </div>
           </section>
   );
 }
