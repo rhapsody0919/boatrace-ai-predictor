@@ -196,7 +196,7 @@ check(
   let err = null;
   try {
     await db.query(
-      "SELECT data_health_site_feedback('2026-10-01', '2026-11-01')",
+      "SELECT data_health_site_feedback('2026-10-01', '2026-11-02')",
     );
   } catch (e) {
     err = e;
