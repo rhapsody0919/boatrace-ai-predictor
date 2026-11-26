@@ -81,14 +81,14 @@
   }
 
   /* 進入コース別: 棒｜表。表の見出しの高さだけ棒を下げ、1行の高さを表とそろえて左右で同じコースを見比べる */
-  .racer-profile-page .racer-official-block:has(> .racer-official-bars) {
+  .racer-profile-page .racer-official-block.racer-official-block--bars {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--spacing-5);
     align-items: start;
   }
 
-  .racer-profile-page .racer-official-block:has(> .racer-official-bars) > * {
+  .racer-profile-page .racer-official-block.racer-official-block--bars > * {
     grid-column: 1 / -1;
   }
 
@@ -118,15 +118,16 @@
     padding-bottom: 0;
   }
 
-  /* 今節のモーター: 文（左）｜展示タイムの図（右）。図が無い（1走以下）ときは今のまま */
-  .racer-profile-page .racer-motor-status-card:has(> .recharts-responsive-container) {
+  /* 今節のモーター: 文（左）｜展示タイムの図（右）。図が無い（1走以下）ときは今のまま。
+     図の有無は JSX の --chart で見る（:has() は recharts が文字を測るたびの再計算を重くする、2026-11-26） */
+  .racer-profile-page .racer-motor-status-card.racer-motor-status-card--chart {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: var(--spacing-5);
     align-content: start;
   }
 
-  .racer-profile-page .racer-motor-status-card:has(> .recharts-responsive-container) > * {
+  .racer-profile-page .racer-motor-status-card.racer-motor-status-card--chart > * {
     grid-column: 1;
   }
 
