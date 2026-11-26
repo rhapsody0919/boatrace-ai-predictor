@@ -5,28 +5,13 @@
  * 崩れると、「{会場} 競艇 結果」「{会場} 競艇 出走表」の検索で会場のページが表示されない（GSC 2026-10-26〜11-22 は表示ほぼ0回）か、
  * いま順位の付いている「{会場}競艇予想 ai」の語が title の後ろへ押し出される。
  * 人の画面とボット向け HTML（ADR 0089）は同じ getTodayVenuePageMeta を使うので、ここで両方の値を見たことになる。
- * locales を読み、関数を呼ぶだけ。ネットワークにも DB にも接続しない。
+ * 製品の t（api/_lib/botPage.js の getJaT）と getTodayVenuePageMeta を呼ぶだけ。ネットワークにも DB にも接続しない。
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import i18next from "i18next";
+import { getJaT } from "../../api/_lib/botPage.js";
 import { getTodayVenuePageMeta } from "../../src/utils/pageMeta.js";
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const ja = JSON.parse(
-  readFileSync(path.join(ROOT, "src/locales/ja/common.json"), "utf8"),
-);
-
-const i18n = i18next.createInstance();
-await i18n.init({
-  lng: "ja",
-  resources: { ja: { common: ja } },
-  defaultNS: "common",
-  ns: ["common"],
-  interpolation: { escapeValue: false },
-});
-const t = i18n.t.bind(i18n);
+// ボット向け HTML の関数と同じ ja の t（人の画面の src/i18n.js と同じ resources・補間）
+const t = await getJaT();
 
 const failures = [];
 let checked = 0;
