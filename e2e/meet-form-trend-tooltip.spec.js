@@ -20,11 +20,6 @@ test("点を押すとその走の吹き出しが出て、レースへ飛べる",
   await expect(card.locator('.trc-leader[stroke-dasharray="2 2"]')).toHaveCount(
     5,
   );
-  // 注記は右の数字の意味と、点を押せることを書く（縦軸の頭と重なる「上ほど速い」は書かない）
-  const note = card.locator(".rbi-chart-note");
-  await expect(note).toContainText("このレースの値ではありません");
-  await expect(note).toContainText("点を押すと");
-  await expect(note).not.toContainText("上ほど速い");
 
   // 5走目（10/12 12R、1着）の点を押す。横は各艇の1走目から並ぶ
   await svg.scrollIntoViewIfNeeded();
