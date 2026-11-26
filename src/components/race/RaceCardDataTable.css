@@ -75,6 +75,30 @@
   color: var(--text-primary);
 }
 
+/* 開いた行の「今節前走」（6着／6コース／11/25 11R）と「部品交換」の札（リング×1）は、
+   .drt-nowrap・.drt-badge の nowrap のままだと折れず、表が枠より 72〜130px 広がって
+   6号艇の列が横スクロールに隠れた（375〜1920px の全幅。G3 の点検 2026-11-26）。
+   ミニ出走表の開いた行の中だけ、段ごとに1行へ分ける。語の途中（「4コー／ス」）では折らず、
+   折ってよいのは日付と R の間（11/25｜11R）と、札の部品の間（リング｜×1）だけ */
+.rcdt-table .rcdt-collapsed-rows .drt-sub {
+  display: block;
+}
+
+/* 今節前走の「6コース」「11/25 11R」は .drt-sub の 12px のままだと、カード 340〜390px（412〜440px の幅）で
+   列（約50px）を越えて表が 4〜32px 広がった（PR #3525 ファン評価 P1）。表の値（10〜10.5px）と同じ大きさにする */
+.rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap {
+  font-size: 10px;
+}
+
+.rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap:last-child,
+.rcdt-table .rcdt-collapsed-rows .drt-badge {
+  white-space: normal;
+}
+
+.rcdt-table .rcdt-collapsed-rows .drt-part {
+  white-space: nowrap;
+}
+
 .rcdt-table tbody tr:nth-child(even) td {
   background: var(--surface-page);
 }
@@ -183,5 +207,39 @@
   .rcdt-table .rcdt-name-th {
     padding-left: 0;
     padding-right: 0;
+  }
+}
+
+/* 開いた行は「47.6kg」「6コース」「11/25 11R」等の折れない値が多く、カードが 380px 以下だと表が枠より広がって
+   6号艇の列が隠れた（360px・1024px のカード約300px、820〜850px のカード約342〜357px。PR #3525 ファン評価 1・2周目）。
+   画面の幅でなくカードの幅で、開いた行だけを詰める。今節前走の「6コース」は語の途中で折らない（.drt-nowrap） */
+@container (max-width: 380px) {
+  .rcdt-collapsed-rows .rcdt-label-cell {
+    white-space: normal;
+  }
+
+  .rcdt-table .rcdt-collapsed-rows .rcdt-cell {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap {
+    font-size: 9.5px;
+    letter-spacing: -0.03em;
+  }
+
+  /* 部品交換の札（リング×1）は 12px と左右の余白で約50px あり、それだけで列を広げた（640・820・960px） */
+  .rcdt-table .rcdt-collapsed-rows .drt-badge {
+    font-size: 9.5px;
+    padding-left: 1px;
+    padding-right: 1px;
+  }
+}
+
+/* カードが 280px 以下（620〜680px・960〜1010px）は列が約37px しかなく、9.5px の「6コース」も入らない */
+@container (max-width: 280px) {
+  .rcdt-table .rcdt-collapsed-rows .drt-sub.drt-nowrap {
+    font-size: 9px;
+    letter-spacing: -0.06em;
   }
 }
