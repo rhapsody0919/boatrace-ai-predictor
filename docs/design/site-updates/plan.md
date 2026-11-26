@@ -81,7 +81,7 @@ export const SITE_MAKING = [
 - `git log origin/master --merges` ではなく、`--first-parent` の各 commit の題と変えたファイル（`--name-only`）を読む（squash マージのため）
 - 残す: 変えたファイルに `src/pages/`・`src/components/`・`src/hooks/`・`src/locales/ja/` を含む
 - 外す: 題が `refactor`・`リファクタ`・`test`・`e2e`・`ci:`・`chore`・`docs`・`content:`・`sns`・`admin`・`機能フラグの裏` を含む（大文字と小文字を区別しない）、または PR 番号が `SITE_UPDATES[].prs` にある。「揺れ」は外さない（画面の揺れの直しは載せうる）
-- 起点: 引数 `--since`、無ければデータの最新の日付。git には `YYYY-MM-DDT00:00:00+09:00` で渡す（手元の TZ に依らない）
+- 起点: 引数 `--since`、無ければデータの最新の日付。git には `YYYY-MM-DDT00:00:00+09:00` で渡す（手元の TZ に依らない）。git log はマージの日で起点の7日前から読み、各 PR を初めて含んだ本番の success の配備（`gh api` の deployments）の JST の日が起点以降の物と、未配備の物を残す（2026-11-26。マージの翌朝の定時で出た PR を落としていた）
 - 回す前に `git fetch origin master` を案内する（手元の origin/master を読むため）
 - 出力: `- 2026-11-22 #3243 fix: …` の Markdown。書き込みはしない
 - 判定の純関数は同じファイルから export し、verify で試す
