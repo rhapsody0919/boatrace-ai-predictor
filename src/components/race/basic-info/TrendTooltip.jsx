@@ -7,6 +7,10 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 // 言語の接頭辞は純関数の localizePath で付ける（config/languages は記事の束を読み込むので通さない）
 import { localizePath } from "../../../pure/localizePath.js";
+import {
+  formatTrendValue,
+  trendScaleOf,
+} from "../../../pure/trendMetricScale.js";
 import { GRADE_LABELS } from "../raceGradeLabels";
 import { venueNameOf, raceNumberLabel } from "../../../utils/raceListDisplay";
 
@@ -30,12 +34,12 @@ export default function TrendTooltip({
   leftPct,
   pinned,
   onClose,
+  scale = trendScaleOf(metric),
 }) {
   const { t, i18n } = useTranslation();
   const lp = (path) => localizePath(path, i18n.resolvedLanguage);
   const run = point.run;
-  const value =
-    metric === "avgSt" ? point.value.toFixed(2) : `${point.value.toFixed(1)}%`;
+  const value = formatTrendValue(point.value, scale);
   return (
     <div
       className={`trc-tip${pinned ? " is-pinned" : ""}${leftPct > 55 ? " is-flip" : ""}`}
