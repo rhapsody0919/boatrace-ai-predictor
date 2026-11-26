@@ -53,6 +53,25 @@ export function dailyDatesFor(now, { timezone, dailyDays, lagDays }) {
   return dateRange(start, end);
 }
 
+const counts = (r) => ({
+  clicks: Math.round(r.clicks ?? 0),
+  impressions: Math.round(r.impressions ?? 0),
+});
+
+function dailyRow(r, date) {
+  if (!Array.isArray(r.keys) || r.keys.length !== 3)
+    throw new Error(`GSC ${date}: keys が [date, query, page] でない`);
+  const [d, query, page] = r.keys;
+  return { date: d, query, page, ...counts(r), position: Number(r.position ?? 0) };
+}
+
+function pageDailyRow(r, date) {
+  if (!Array.isArray(r.keys) || r.keys.length !== 2)
+    throw new Error(`GSC ${date}: keys が [date, page] でない`);
+  const [d, page] = r.keys;
+  return { date: d, page, ...counts(r) };
+}
+
 /**
  * 日別の2ファイルの中身（行は表と同じ形、fetched_at は付けない）。
  * 1日でも落ちたら投げる（全部取れたときだけ書く決まり）。上限（API_ROW_CAP）に当たった日は meta.capped_dates に残す
@@ -74,30 +93,8 @@ export async function collectDaily(sc, cfg, now) {
       fetchPageDay(sc, cfg.siteUrl, date).then((rows) => ({ data: rows })),
     );
     if (qp.length >= API_ROW_CAP) capped.push(date);
-    for (const r of qp) {
-      if (!Array.isArray(r.keys) || r.keys.length !== 3)
-        throw new Error(`GSC ${date}: keys が [date, query, page] でない`);
-      const [d, query, page] = r.keys;
-      daily.push({
-        date: d,
-        query,
-        page,
-        clicks: Math.round(r.clicks ?? 0),
-        impressions: Math.round(r.impressions ?? 0),
-        position: Number(r.position ?? 0),
-      });
-    }
-    for (const r of pg) {
-      if (!Array.isArray(r.keys) || r.keys.length !== 2)
-        throw new Error(`GSC ${date}: keys が [date, page] でない`);
-      const [d, page] = r.keys;
-      pageDaily.push({
-        date: d,
-        page,
-        clicks: Math.round(r.clicks ?? 0),
-        impressions: Math.round(r.impressions ?? 0),
-      });
-    }
+    daily.push(...qp.map((r) => dailyRow(r, date)));
+    pageDaily.push(...pg.map((r) => pageDailyRow(r, date)));
   }
   const meta = {
     from: dates[0],
