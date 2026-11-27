@@ -302,6 +302,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceFactsKbJob.js` | kb 層の facts の行（race_facts・run_facts の era='kb'）を、kb_archive_* から半月ずつ組み立てて書く流れ（AD… | staleKeysOf, buildWindowRows, runKbFacts |
 | `scripts/lib/raceFactsMain.js` | 本体の表（races・race_entries・race_results・race_start_timings・exhibition_data・race_con… | mainGradeOf, conditionSourceOf, buildMainRaceFact, buildMainRunFacts |
 | `scripts/lib/raceFactsMainJob.js` | facts の main 層（race_facts・run_facts の era='main'、2025-12-03〜）を本体の表から組み立て直す Cron … | windowsFor, buildMainWindowRows, runRaceFactsMainJob, seriesFinder, mainJobDeps ほか2件 |
+| `scripts/lib/raceFactsWrite.js` | facts の表（race_facts・run_facts、ADR-0113）の1つの窓を書く（kb 層の CLI scripts/maintenance/ra… | writeFactsWindow |
 | `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
 | `scripts/lib/raceInfoAccumulate.js` | レース情報の集計（update-race-info.js から分けた純粋関数）: 取得の結果を、書く行（中止・締切・条件・出走表）にためる・ | createAccumulator, accumulateRaceInfo, assertRaceInfoRunArgs, applyFetchedRaceInfo, parsedRaceOutcome |
@@ -705,4 +706,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 663 ファイル / export 3551 件。
+対象 664 ファイル / export 3552 件。

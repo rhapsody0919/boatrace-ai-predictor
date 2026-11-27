@@ -5,10 +5,10 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3055,
+    "sourceFiles": 3057,
     "filesWithAccess": 335,
     "tableReaders": 981,
-    "tableWriters": 204,
+    "tableWriters": 202,
     "rpcCallers": 58,
     "nameMentions": 286,
     "tablesWithoutReaders": 21,
@@ -29736,16 +29736,16 @@
     {
       "job": "race_facts_main",
       "entry": "api/cron/race-facts-main.js",
-      "reachableFiles": 34,
+      "reachableFiles": 35,
       "writes": {
         "race_facts": [
-          "scripts/lib/raceFactsMainJob.js:150"
+          "scripts/lib/raceFactsWrite.js:33"
         ],
         "racer_career_meta": [
           "scripts/lib/racerCareerDb.js:108"
         ],
         "run_facts": [
-          "scripts/lib/raceFactsMainJob.js:146"
+          "scripts/lib/raceFactsWrite.js:29"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -30483,8 +30483,7 @@
       "kind": "table",
       "name": "race_facts",
       "refs": [
-        "scripts/lib/raceFactsMainJob.js:150",
-        "scripts/maintenance/race-facts-backfill.js:95"
+        "scripts/lib/raceFactsWrite.js:33"
       ]
     },
     {
@@ -30500,8 +30499,7 @@
       "kind": "table",
       "name": "run_facts",
       "refs": [
-        "scripts/lib/raceFactsMainJob.js:146",
-        "scripts/maintenance/race-facts-backfill.js:91"
+        "scripts/lib/raceFactsWrite.js:29"
       ]
     },
     {
