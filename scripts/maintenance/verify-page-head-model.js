@@ -30,7 +30,7 @@ const shell = [
   '<body><div id="root"></div><script type="module" src="/assets/index-abc.js"></script></body>',
   "</html>",
 ].join("\n");
-const HOME = "ホーム"; // ja の analysisPage.breadcrumbHome（middleware の側の verify が訳と一致を見る）
+const HOME = "ホーム"; // ja の analysisPage.breadcrumbHome と同じ字
 
 let failures = 0;
 const check = (name, fn) => {
