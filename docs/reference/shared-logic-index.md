@@ -54,6 +54,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/nigashiStats.js` | 逃し率（オーナー 2026-11-25）: 2〜6コースに入った走のうち、1コースの艇に逃げで1着を取られた走の割合。 | buildNigashiBreakdown, nationalNigashiBaseline, nigashiByCourse |
 | `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
+| `src/pure/pageHead.js` | 生の HTML の head（JS の前の HTML にページごとの title・description・canonical・JSON-LD を全ての UA に… | pageHeadRoute, getPastVenuePageMeta, getPastVenueBreadcrumbItems, pastVenuePageHead, injectPageHead ほか1件 |
 | `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
 | `src/pure/predictionAssistBoardParts.js` | 思考アシスト（BOA-430）のボードの部品のうち、文言（src/data）を読まない計算。純粋関数だけ。 | firstPlaceComposite, missingFirstBoats, LENSES, stText, METRICS ほか1件 |
 | `src/pure/predictionAssistDeepDive.js` | predictionAssistDeepDive - 思考アシストの深掘りの部品（今節の各走・前の5走・コースの1着・着の色と点・会場の成績の無い艇・得意の決ま… | meetRuns, priorRuns, courseWins, finishOf, monthDay ほか2件 |
@@ -574,7 +575,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
 | `src/utils/oddsMath.js` | 再 export だけのファイル。本体は `src/pure/oddsMath.js`。 | — |
 | `src/utils/originalExhibition.js` | オリジナル展示（BOATCAST、race_original_exhibition・_values）の行を画面の形にする（純関数）。 | shapeOriginalExhibition, ORIGINAL_EXHIBITION_KINDS |
-| `src/utils/pageMeta.js` | トップ（/）と会場ページ（本日分 /venue/:code・過去日付 /races/:date/:code）の title・meta description・c… | getTopPageMeta, getTodayVenuePageMeta, getPastVenuePageMeta, getTodayVenueBreadcrumbItems |
+| `src/utils/pageMeta.js` | トップ（/）と会場ページ（本日分 /venue/:code・過去日付 /races/:date/:code）の title・meta description・c… | getTopPageMeta, getTodayVenuePageMeta, getTodayVenueBreadcrumbItems |
 | `src/utils/pastRate/count.js` | BOA-635「過去に発生した割合を見る」の数え方（docs/design/past-rate-check/spec.md FR-1・共通の数え方）。純粋関数。 | orderCombos, countPastRate, incompatibleForms, TYPES, TENKAI_TECHNIQUES ほか3件 |
 | `src/utils/pastRate/label.js` | BOA-635 の定番／レアのラベル（docs/design/past-rate-check/spec.md FR-3）。純粋関数。 | subtypeOf, rateLabel, thresholdNote |
 | `src/utils/pastRate/layer.js` | BOA-635 で layer API の応答を使えるかの判定（docs/design/past-rate-check/spec.md「データ（土台）」・pla… | hasLayerDate, usableLayer, layerKey, LAYER_FIRST_DATE, isTruncated |
@@ -696,4 +697,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 654 ファイル / export 3523 件。
+対象 655 ファイル / export 3528 件。
