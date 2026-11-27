@@ -64,6 +64,31 @@ function Section({ id, title, answer, children }) {
   );
 }
 
+/** 出場18人と獲得賞金。確定（11/29 の後）の値が入るまで棒を出さない */
+function PrizeSection() {
+  return (
+    <Section
+      id="gp-prize-h"
+      title="出場18人と獲得賞金"
+      answer={PRIZE_RANKING.confirmed ? `1位は${PRIZE_RANKING.racers[0].name}。2ndから出る6人と1stから出る12人` : null}
+    >
+      {PRIZE_RANKING.confirmed ? (
+        <>
+          <PrizeBars racers={PRIZE_RANKING.racers} />
+          <p className="gp-note">
+            獲得賞金は<External href="https://www.boatrace-grandprix.jp/">グランプリの特設サイト</External>の
+            {PRIZE_RANKING.asOf.slice(5).replace("-", "/")}現在の値です（万円未満は四捨五入）。
+          </p>
+        </>
+      ) : (
+        <p>
+          出場の18人は、チャレンジカップ（11月29日まで）の後に公式から発表されます。決まりしだい、獲得賞金の図を載せます。
+        </p>
+      )}
+    </Section>
+  );
+}
+
 export default function GrandPrixPage() {
   return (
     <>
@@ -93,25 +118,7 @@ export default function GrandPrixPage() {
             <Link to={`/venue/${venueCode}`}>{venueName}の会場ページ（その日の出走表）→</Link>
           </p>
         </header>
-        <Section
-          id="gp-prize-h"
-          title="出場18人と獲得賞金"
-          answer={PRIZE_RANKING.confirmed ? `1位は${PRIZE_RANKING.racers[0].name}。2ndから出る6人と1stから出る12人` : null}
-        >
-          {PRIZE_RANKING.confirmed ? (
-            <>
-              <PrizeBars racers={PRIZE_RANKING.racers} />
-              <p className="gp-note">
-                獲得賞金は<External href="https://www.boatrace-grandprix.jp/">グランプリの特設サイト</External>の
-                {PRIZE_RANKING.asOf.slice(5).replace("-", "/")}現在の値です（万円未満は四捨五入）。
-              </p>
-            </>
-          ) : (
-            <p>
-              出場の18人は、チャレンジカップ（11月29日まで）の後に公式から発表されます。決まりしだい、獲得賞金の図を載せます。
-            </p>
-          )}
-        </Section>
+        <PrizeSection />
         <Section id="gp-flow-h" title="勝ち上がり" answer="18人から、6日間で優勝戦の6人にしぼられる">
           <AdvanceFlow stages={FLOW} />
           <p className="gp-note">
