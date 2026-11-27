@@ -87,6 +87,25 @@ const readLocale = (lang) =>
     ),
   );
 
+/**
+ * 訳の中身から t を作る（人の画面 src/i18n.js と同じ補間の設定・ja へのフォールバック）
+ * @param {string} lang
+ * @param {Record<string, {common: object}>} resources
+ */
+export async function tFromResources(lang, resources) {
+  const i18n = i18next.createInstance();
+  await i18n.init({
+    lng: lang,
+    // 人の画面（src/i18n.js）と同じく、未翻訳のキーは ja に戻す
+    fallbackLng: DEFAULT_LANGUAGE,
+    resources,
+    defaultNS: "common",
+    ns: ["common"],
+    interpolation: { escapeValue: false },
+  });
+  return i18n.t.bind(i18n);
+}
+
 const tPromises = new Map();
 /**
  * @param {string} lang - ja・en・zh-TW・ko
@@ -102,17 +121,7 @@ export function getLocaleT(lang) {
       if (lang !== DEFAULT_LANGUAGE) {
         resources[lang] = { common: readLocale(lang) };
       }
-      const i18n = i18next.createInstance();
-      await i18n.init({
-        lng: lang,
-        // 人の画面（src/i18n.js）と同じく、未翻訳のキーは ja に戻す
-        fallbackLng: DEFAULT_LANGUAGE,
-        resources,
-        defaultNS: "common",
-        ns: ["common"],
-        interpolation: { escapeValue: false },
-      });
-      return i18n.t.bind(i18n);
+      return tFromResources(lang, resources);
     })().catch((e) => {
       tPromises.delete(lang);
       throw e;
@@ -320,8 +329,8 @@ function botPageRequestGate({ page, langMode, method, url, headers }) {
   return { lang, venueCode, origin };
 }
 
-// 会場のページのモデル。開催の帯を出せるときだけ節の行を読んで組み直す（await はここの1回だけ）
-async function venueModelOf(json, venueCode, { t, lang, today }, getSeriesRows) {
+// 会場のページのモデル。開催の帯を出せるときだけ節の行を読んで組み直す（await はここの1回だけ）。生の HTML の head（pageHeadApi.js）も使う
+export async function venueModelOf(json, venueCode, { t, lang, today }, getSeriesRows) {
   let venueModel = buildVenueModel(json, venueCode, { t, lang, today });
   if (venueModel.meetBannerEligible) {
     const seriesRows = await getSeriesRows(venueCode, today);
