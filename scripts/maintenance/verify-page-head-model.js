@@ -2,22 +2,35 @@
 /**
  * 生の HTML の head の純関数（src/pure/pageHead.js）が、人の画面と同じ値を作り、外枠の index.html に壊さず差し込むこと。
  *
- * src/ の本文は読まない（import して呼んだ値で見る。外枠はリポジトリの根の index.html を読む）。
+ * src/ の本文は読まない（import して呼んだ値で見る。外枠は index.html の head と同じ形の見本）。
  * 1. pageHeadRoute は /races/{実在する日}/{1〜24} だけを受ける（0埋め・範囲外・実在しない日・言語の接頭辞・末尾の / は null）
- * 2. 過去日の会場の title・description・canonical は人の画面の口（src/utils/pageMeta.js）と同じ関数・同じ文
+ * 2. 過去日の会場の title・description・canonical の字（人の画面は src/utils/pageMeta.js の再 export で同じ関数。その値は verify-venue-past-meta-keywords が見る）
  * 3. JSON-LD は画面の Breadcrumb が出す BreadcrumbList（src/utils/breadcrumbLd.js）と同じ値。URL の解決が要るパスは出さない
  * 4. 差し込み: title はちょうど1つで値に既定の文、description・canonical が1つずつ、JSON-LD が読めて </script> で抜けない、
  *    値はエスケープされる。外枠の title が1つでない・description か canonical が既にある・値が欠ける・サイトの外の canonical・</head> が無い、は null
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import ja from "../../src/locales/ja/common.json" with { type: "json" };
 import * as head from "../../src/pure/pageHead.js";
-import * as pageMeta from "../../src/utils/pageMeta.js";
 import { toBreadcrumbListLd } from "../../src/utils/breadcrumbLd.js";
 
-const shell = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
-const HOME = ja.analysisPage.breadcrumbHome;
+// 外枠（index.html）の head と同じ形の見本: title が1つ、description・canonical は無い、共通の JSON-LD が3つ。
+// 本物の index.html への差し込みは e2e/page-head-handoff.spec.js が配備と同じ外枠（vite の index.html）で見る
+const DEFAULT_TITLE = "ボートレースのデータ分析とAI予想が無料｜競艇 龍神レーダー";
+const shell = [
+  "<!doctype html>",
+  '<html lang="ja">',
+  "<head>",
+  '<meta charset="UTF-8" />',
+  '<meta name="robots" content="index, follow" />',
+  `<title>${DEFAULT_TITLE}</title>`,
+  ...["WebSite", "SoftwareApplication", "Organization"].map(
+    (type) => `<script type="application/ld+json">{"@context":"https://schema.org","@type":"${type}"}</script>`,
+  ),
+  "</head>",
+  '<body><div id="root"></div><script type="module" src="/assets/index-abc.js"></script></body>',
+  "</html>",
+].join("\n");
+const HOME = "ホーム"; // ja の analysisPage.breadcrumbHome と同じ字
 
 let failures = 0;
 const check = (name, fn) => {
@@ -31,7 +44,7 @@ const check = (name, fn) => {
 };
 
 const sample = () =>
-  head.pastVenuePageHead({ date: "2026-11-26", venueCode: 1, venueName: ja.venues["1"], homeName: HOME });
+  head.pastVenuePageHead({ date: "2026-11-26", venueCode: 1, venueName: "桐生", homeName: HOME });
 
 check("1. pageHeadRoute は過去日の会場ページの形だけを受ける", () => {
   assert.deepEqual(head.pageHeadRoute("/races/2026-11-26/1"), {
@@ -57,8 +70,7 @@ check("1. pageHeadRoute は過去日の会場ページの形だけを受ける",
   }
 });
 
-check("2. 過去日の会場の meta は人の画面の口と同じ", () => {
-  assert.equal(pageMeta.getPastVenuePageMeta, head.getPastVenuePageMeta);
+check("2. 過去日の会場の meta の字（人の画面は src/utils/pageMeta.js の再 export で同じ関数を読む）", () => {
   assert.deepEqual(head.getPastVenuePageMeta("桐生", "2026-11-26", 1), {
     title: "桐生競艇の結果・配当 2026年11月26日(木)のレース一覧・AIデータ分析 - 龍神レーダー",
     description:
@@ -83,7 +95,7 @@ check("4a. 差し込んだ head は title・description・canonical が1つず�
   const out = head.injectPageHead(shell, sample());
   assert.ok(out, "差し込めない");
   const h = headOf(out);
-  const defaultTitle = shell.match(/<title>([^<]*)<\/title>/)[1];
+  const defaultTitle = DEFAULT_TITLE;
   assert.equal(count(h, /<title[\s>]/g), 1);
   assert.ok(h.includes(`<title data-page-head="${defaultTitle}">桐生競艇の結果・配当`), "title の値が既定の文でない");
   assert.equal(count(h, /<meta name="description"/g), 1);
@@ -92,7 +104,7 @@ check("4a. 差し込んだ head は title・description・canonical が1つず�
   const lds = [...h.matchAll(/<script type="application\/ld\+json" data-page-head="">([^<]*)<\/script>/g)];
   assert.equal(lds.length, 1);
   assert.equal(JSON.parse(lds[0][1])["@type"], "BreadcrumbList");
-  // 外枠の残り（body・index.html の JSON-LD 3つ）は変えない
+  // 外枠の残り（body・共通の JSON-LD 3つ）は変えない
   assert.equal(out.slice(out.indexOf("</head>")), shell.slice(shell.indexOf("</head>")));
   assert.equal(count(h, /application\/ld\+json/g), count(headOf(shell), /application\/ld\+json/g) + 1);
 });
