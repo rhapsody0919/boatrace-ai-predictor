@@ -2,6 +2,7 @@
  * SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・
  * 評価役の関門（reviewGate）・item の組み立てを移した（振る舞いは同じ。越えの関数を割った）。検査は snsAutoPlanRunnerEvaluate.js。
  */
+import { minutesBefore } from "./sns/researchSchedule.js";
 /** item を作るレースの種別（race_conditions.race_stage の完全一致。冠の付いた「ツッキー優勝戦」等は対象外） */
 export const AUTO_PLAN_STAGES = ["優勝戦", "準優勝戦"];
 export const NOTIFY_BEFORE_MIN = 180;
@@ -13,8 +14,8 @@ export const AUTO_PLAN_MAX_ATTEMPTS = 3;
 export const AUTO_PLAN_MAX_BUNDLES = 4;
 export const CHANNELS = ["x", "youtube"];
 
-export const minutesBefore = (iso, min) =>
-  new Date(Date.parse(iso) - min * 60000).toISOString();
+// minutesBefore は SNS の送り手の共通の時刻の関数（sns/researchSchedule.js、#3481 で4ファイルから寄せた）。呼び手のために同じ名で再 export する
+export { minutesBefore };
 
 /** スレッドの子は外さない（snsAutoPlanRunner.js の上の説明） */
 export const unblockable = (draft) =>
