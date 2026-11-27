@@ -3,7 +3,7 @@
  * PR の大きさの数え（prSize.js）が、台帳に行の無い新しい verify を ADR-0072 の既定 ci どおり頭の注釈があるときだけ試験として数えないことを守る。
  * 外部接続なし・git に触れない。注釈の無い道具・台帳に manual で足した物・本文が読めない物は数える。
  */
-import { measurePrSize } from "./prSize.js";
+import { REGISTRY_PATH as REG, measurePrSize } from "./prSize.js";
 
 let failures = 0;
 const check = (label, pass, detail = "") => {
@@ -13,7 +13,6 @@ const check = (label, pass, detail = "") => {
   }
 };
 
-const REG = "scripts/maintenance/verify-registry.json";
 const V = "scripts/maintenance/verify-new.js";
 const lines = (k) => Array.from({ length: k }, (_, i) => `const v${i} = ${i};`);
 const ANNOTATED = "/**\n * 新しい物を守る。\n */\nconst a = 1;\n";

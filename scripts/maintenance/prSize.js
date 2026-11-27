@@ -27,6 +27,8 @@ const NEW_TEST = [
   /^e2e\/.*\.spec\.js$/,
   /^scripts\/maintenance\/verify-[^/]+\.(js|mjs|cjs|sh)$/,
 ];
+/** 台帳のパス（試験が同じ値を使えるように出す） */
+export const REGISTRY_PATH = "scripts/maintenance/verify-registry.json";
 const REGISTRY = /^scripts\/maintenance\/verify-registry\.json$/;
 const LOCALE = /^src\/locales\/([^/]+)\/(.+\.json)$/;
 const CODE = /\.(js|jsx|mjs|cjs|ts|tsx|css)$/;
@@ -123,7 +125,7 @@ function registeredTests(readText) {
   const names = (side) => {
     try {
       const reg = JSON.parse(
-        readText(side, "scripts/maintenance/verify-registry.json") ?? "{}",
+        readText(side, REGISTRY_PATH) ?? "{}",
       );
       return new Set(
         (reg.entries ?? []).filter((v) => v.tier === "ci").map((v) => v.script),
@@ -139,7 +141,7 @@ function registeredTests(readText) {
 /** head の台帳に行のある script の名（tier を問わない）。読めない台帳は null（行の無い verify を試験と見なさない側に倒す） */
 function headListedScripts(readText) {
   try {
-    const reg = JSON.parse(readText("head", "scripts/maintenance/verify-registry.json") ?? "null");
+    const reg = JSON.parse(readText("head", REGISTRY_PATH) ?? "null");
     return reg ? new Set((reg.entries ?? []).map((v) => v.script)) : null;
   } catch {
     return null;
@@ -193,7 +195,7 @@ function registryOnlyAdded(readText) {
   try {
     const items = (side) =>
       JSON.parse(
-        readText(side, "scripts/maintenance/verify-registry.json") ?? "null",
+        readText(side, REGISTRY_PATH) ?? "null",
       ).entries;
     const before = items("base");
     const after = items("head");
