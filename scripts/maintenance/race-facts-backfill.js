@@ -57,21 +57,20 @@ async function main() {
   const inputs = await loadJudgeInputs({ client, era: "kb", ranges: kbYearRanges() });
   const seedMissing = inputs.overrides.report.filter((r) => r.seedMissing);
   if (seedMissing.length > 0) throw new Error(`特別な節の基準のレースが見つからない: ${JSON.stringify(seedMissing)}`);
-  const all = (table, select, range, order, column) =>
-    fetchAll(table, select, (q) => order(byRange(q, range, column)), { client });
 
   const totals = await runKbFacts({
     ranges: halfMonthRanges(opts.from, opts.to),
     overrides: inputs.overrides,
     allowMassDelete: opts.allowMassDelete,
     fetchWindow: async (range) => ({
-      races: await all("kb_archive_races", "*", range, (q) => q.order("race_id")),
-      boats: await all("kb_archive_boats", "*", range, (q) => q.order("race_id").order("boat_number")),
-      venueDays: await all("kb_archive_venue_days", "*", range, (q) => q.order("venue_day_id"), "venue_day_id"),
+      races: await fetchAll("kb_archive_races", "*", (q) => byRange(q, range).order("race_id"), { client }),
+      boats: await fetchAll("kb_archive_boats", "*", (q) => byRange(q, range).order("race_id").order("boat_number"), { client }),
+      venueDays: await fetchAll("kb_archive_venue_days", "*", (q) => byRange(q, range, "venue_day_id").order("venue_day_id"), { client }),
     }),
     fetchExistingKeys: async (range) => ({
-      race: (await all("race_facts", "race_id", range, (q) => q.eq("era", "kb").order("race_id"))).map((r) => r.race_id),
-      run: (await all("run_facts", "race_id,boat_number", range, (q) => q.eq("era", "kb").order("race_id").order("boat_number")))
+      race: (await fetchAll("race_facts", "race_id", (q) => byRange(q, range).eq("era", "kb").order("race_id"), { client }))
+        .map((r) => r.race_id),
+      run: (await fetchAll("run_facts", "race_id,boat_number", (q) => byRange(q, range).eq("era", "kb").order("race_id").order("boat_number"), { client }))
         .map((r) => `${r.race_id}|${r.boat_number}`),
     }),
     writeWindow: async ({ raceRows, runRows, staleRace, staleRun }) => {
