@@ -451,7 +451,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sns/youtubeQueue.js` | — | fillFullUrl, runYoutubeQueueJob, runYoutubePublishJob, resumeRetainedYoutubeJob, createMockYoutubeAdapter ほか4件 |
 | `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel |
 | `scripts/lib/snsAutoPlanRunnerEvaluate.js` | SNS の自動送信の計画の検査（api/ の checkPublicDisplay・sendHolds は runner から引数で渡す）。snsAutoPla… | sharedChecks, evaluateChannel |
-| `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか8件 |
+| `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか7件 |
 | `scripts/lib/snsAutoPlanRunnerStore.js` | SNS の自動送信の計画の DB 操作（PostgREST の読み書き）。snsAutoPlanRunner.js の createAutoPlanStore … | createAutoPlanStore |
 | `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | runSnsDaily, mergeSameKey |
 | `scripts/lib/snsDailyRunnerGa4.js` | SNS の暦日の取り込みの GA4 側。snsDailyRunner.js から、collectGa4（割った）・collectSetsuShort・setsu… | collectGa4, setsuShortLink, collectSetsuShort |
@@ -707,4 +707,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 665 ファイル / export 3555 件。
+対象 665 ファイル / export 3554 件。

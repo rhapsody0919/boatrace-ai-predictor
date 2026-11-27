@@ -262,7 +262,7 @@
 | result_catchup | api/cron/result-catchup.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 24 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 29 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 142 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 143 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 31 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 42 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
 | sns_send | api/cron/sns-send.js | 118 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
