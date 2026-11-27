@@ -37,7 +37,8 @@ test("英語の会場ページでは、リンク先も英語のレース詳細",
   const link = page.locator(".race-card .predict-btn").first();
   await expect(link).toBeVisible({ timeout: 30000 });
   expect(await link.getAttribute("href")).toMatch(
-    /^\/en\/race\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/,
+    // 注意度のあるレースは「イン崩れ」タブを開く（BOA-822 の公開、2026-11-27）
+    /^\/en\/race\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}(\?tab=aiPrediction)?$/,
   );
 });
 
@@ -137,6 +138,8 @@ test("会場のミニ出走表の6選手名は、日英とも選手ページへ�
     const detail = page.locator(".race-card .predict-btn").first();
     const detailHref = await detail.getAttribute("href");
     await detail.click();
-    await expect(page).toHaveURL(new RegExp(`${detailHref}$`));
+    // href に ?tab=aiPrediction が付くことがある（BOA-822）。正規表現の記号を逃がしてから比べる
+    const escaped = detailHref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await expect(page).toHaveURL(new RegExp(`${escaped}$`));
   }
 });
