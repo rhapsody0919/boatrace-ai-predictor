@@ -3,7 +3,7 @@
 // - era は 'kb'、race_date は race_id の日付。kb の期間（〜2025-12-02）の外・race_id と列のずれ・別のレースの艇・艇番の外は throw
 // - 優勝戦は isCareerFinalStage（190 と同じ。オオムラGP・関ヶ原決戦も優勝戦）、着は成績コード（01〜06 は着、F・L・欠は着なし、S0 等の失格は着欄も NULL）、条件の出所は K の値があるときだけ 'k_file'
 // - kb に無い列（気温・水温・潮位・複勝・チルト・オリジナル展示・風の扇形）は NULL
-// - 組み立てた行を db-draft.md §9 の SQL（verifyData/race-facts-draft-sql.js の写し）を流した PGlite に入れると CHECK を通り、get_racer_runs がその選手の行を返す
+// - 組み立てた行を マイグレーション 212・213（docs/db-migration のファイル、verifyData/race-facts-migration-files.js）を流した PGlite に入れると CHECK を通り、get_racer_runs がその選手の行を返す
 // 外部接続なし
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import {
   buildKbRaceFact,
   buildKbRunFacts,
 } from "../lib/raceFactsKb.js";
-import { RACE_FACTS_DRAFT_SQL } from "./verifyData/race-facts-draft-sql.js";
+import { RACE_FACTS_MIGRATION_SQL, RACE_FACTS_SAME_RACE_SQL } from "./verifyData/race-facts-migration-files.js";
 
 const RACE = {
   race_id: "2025-12-02-12-12",
@@ -54,6 +54,25 @@ const BOATS = CODES.map((code, i) => ({
 
 test("レースの行: 列・値・kb に無い列は NULL", () => {
   const row = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null });
+  assert.deepEqual(row.racer_ids, [null, null, null, null, null, null], "艇を渡さなければ全部 null");
+  const withBoats = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null, boats: BOATS });
+  assert.deepEqual(withBoats.racer_ids, [4000, 4001, 4002, 4003, 4004, 4005]);
+  assert.deepEqual(withBoats, {
+    race_id: "2025-12-02-12-12", era: "kb", race_date: "2025-12-02", venue_code: 12, race_number: 12,
+    race_title: "住之江の優勝戦", series_day: 6, is_final_day: true, race_grade: "SG", series_kind: null,
+    stage_raw: "優勝戦", is_final: true, deadline_time: "16:30:00", weather: "晴", wind_speed: 3, wave_height: 2,
+    wind_sector: null, condition_source: "k_file", temperature: null, water_temperature: null, tide_cm: null, tide_phase: null,
+    technique: "逃げ", dead_heat: false, payout_win: 180, payout_place_1: null, payout_place_2: null, payout_3tan: 1520,
+    combo_3tan: "1-2-3", payout_3fuku: 420, has_result: true, race_status: null,
+    racer_ids: [4000, 4001, 4002, 4003, 4004, 4005], finish_order: [1, 2, 6, null, null, null], rule_version: RACE_FACTS_RULE_VERSION,
+  }, "全列");
+  assert.equal(RACE_FACTS_RULE_VERSION, 2);
+  assert.deepEqual(buildKbRaceFact(RACE, DAY, { grade: null, seriesKind: null, boats: [{ ...BOATS[1], boat_number: 0 }, { ...BOATS[1], boat_number: 7 }] }).racer_ids,
+    [null, null, null, null, null, null], "艇番の外は入れない");
+  assert.deepEqual(withBoats.finish_order, [1, 2, 6, null, null, null], "着の順（F・欠・失格は着なし）");
+  const heat = buildKbRaceFact(RACE, DAY, { grade: null, seriesKind: null, boats: [{ ...BOATS[0], boat_number: 3, finish_raw: "01" }, BOATS[0], { ...BOATS[0], boat_number: 2, finish_raw: "02" }] });
+  assert.deepEqual(heat.finish_order, [1, 3, 2, null, null, null], "同着は艇番の順に詰める");
+  assert.equal(buildKbRaceFact(RACE, DAY, { grade: null, seriesKind: null, boats: [{ ...BOATS[2] }] }).finish_order, null, "着が無ければ null");
   assert.deepEqual(Object.keys(row), [...RACE_FACT_COLUMNS]);
   assert.equal(row.era, "kb");
   assert.equal(row.is_final, true);
@@ -110,7 +129,7 @@ test("艇の行: 列・着・進入・体重の出所", () => {
 
 const db = new PGlite();
 before(async () => {
-  const sql = RACE_FACTS_DRAFT_SQL;
+  const sql = `${RACE_FACTS_MIGRATION_SQL}${RACE_FACTS_SAME_RACE_SQL}`;
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;");
   await db.exec(`BEGIN;${sql}COMMIT;`);
 });
@@ -122,7 +141,7 @@ const insert = (table, columns, row) =>
   );
 
 test("組み立てた行は facts の表の CHECK を通り、RPC で読める", async () => {
-  const race = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null });
+  const race = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null, boats: BOATS });
   await insert("race_facts", RACE_FACT_COLUMNS, race);
   for (const r of buildKbRunFacts(RACE, BOATS)) await insert("run_facts", RUN_FACT_COLUMNS, r);
   await db.exec("SET ROLE anon");

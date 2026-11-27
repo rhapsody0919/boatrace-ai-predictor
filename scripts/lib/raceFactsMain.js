@@ -16,7 +16,7 @@
 import { isCareerFinalStage } from "../../src/pure/racerCareerStats.js";
 import { finishMarkFromCode } from "./kbGapFill.js";
 import { MAIN_TABLES_START } from "./kbArchiveBoundary.js";
-import { RACE_FACTS_RULE_VERSION } from "./raceFactsKb.js";
+import { RACE_FACTS_RULE_VERSION, racerIdsOf } from "./raceFactsKb.js";
 
 const CLASS_GRADE = Object.freeze({ Lady: "G3", Takumi: "G3", Rookie: "ippan", Venus: "ippan" });
 const RACE_ID = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
@@ -90,13 +90,15 @@ function resultColumns(result) {
     payout_3fuku: orNull(r.payout_trifecta),
     has_result: Number.isInteger(r.rank1),
     race_status: orNull(r.race_status),
+    // 1着から順の艇番（race_results.rank1〜6 のまま。選手ページの履歴の着の位置と同じ出所）
+    finish_order: Number.isInteger(r.rank1) ? [r.rank1, r.rank2, r.rank3, r.rank4, r.rank5, r.rank6].map(orNull) : null,
   };
 }
 
 /**
- * @param {{ race: object, result?: object|null, conditions?: object|null, series?: object|null, override?: string|null }} input
+ * @param {{ race: object, result?: object|null, conditions?: object|null, series?: object|null, override?: string|null, entries?: object[] }} input
  */
-export function buildMainRaceFact({ race, result = null, conditions = null, series = null, override = null }) {
+export function buildMainRaceFact({ race, result = null, conditions = null, series = null, override = null, entries = [] }) {
   const date = assertMainRace(race);
   const s = seriesColumns(conditions, series);
   const w = weatherColumns(conditions, conditionSourceOf(conditions, race, date));
@@ -134,6 +136,8 @@ export function buildMainRaceFact({ race, result = null, conditions = null, seri
     payout_3fuku: r.payout_3fuku,
     has_result: r.has_result,
     race_status: r.race_status,
+    racer_ids: racerIdsOf(entries),
+    finish_order: r.finish_order,
     rule_version: RACE_FACTS_RULE_VERSION,
   };
 }
