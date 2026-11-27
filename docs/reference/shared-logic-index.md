@@ -32,6 +32,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
+| `src/pure/grandPrixPhase.js` | グランプリの特集（/grandprix）の日数の帯と金額の書き方（BOA-1724）。日付は JST の暦の日（YYYY-MM-DD）で数える。 | grandPrixPhase, formatYenMan |
 | `src/pure/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
 | `src/pure/hitJudge.js` | 複勝的中判定（2着以内） | isPlaceHit, isShowHit |
 | `src/pure/indicatorBeforeRace.js` | 指標の定義: 大分類「直前（展示・気象・調整）」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は c… | BEFORE_RACE_INDICATORS |
@@ -701,4 +702,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 659 ファイル / export 3533 件。
+対象 660 ファイル / export 3535 件。
