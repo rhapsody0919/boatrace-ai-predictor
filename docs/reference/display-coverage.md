@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 119 |
+| テーブル・ビューの定義 | 124 |
 | 読んでいる（テーブルを直接） | 50 |
 | 読んでいる（RPC経由のみ） | 2 |
 | 画面から読んでいない（例外登録あり） | 28 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **39** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **44** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 2 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,20 +24,24 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_course_win_rate_baseline` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_racer_front_taking_counts` / `get_racer_scoped_race_rows` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（39件）
+## 要判断: 画面から読んでいない（例外登録なし）（44件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `analogy_v16_snapshots` | 表 | 133_analogy_v16_snapshots.sql | なし | GRANT（133_analogy_v16_snapshots.sql） |  |
+| `backfill_progress` | 表 | 212_race_facts.sql | なし | 記述なし |  |
 | `eve_race_deadlines` | 表 | 202_eve_race_deadlines.sql | なし | 記述なし |  |
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
+| `facts_coverage` | 表 | 212_race_facts.sql | なし | GRANT（212_race_facts.sql） |  |
 | `fetch_counts` | 表 | 185_fetch_counts.sql | なし | 記述なし |  |
 | `fetch_counts_minute` | 表 | 185_fetch_counts.sql | なし | 記述なし |  |
 | `growth_gsc_daily` | 表 | 204_growth_gsc_daily.sql | なし | 記述なし |  |
 | `growth_gsc_page_daily` | 表 | 205_growth_gsc_page_daily.sql | なし | 記述なし |  |
 | `growth_url_inspection` | 表 | 206_growth_url_inspection.sql | なし | 記述なし |  |
 | `in_caution_gap_band_daily` | 表 | 155_in_caution_gap_band_daily.sql | なし | 記述なし |  |
+| `kb_archive_extra` | 表 | 212_race_facts.sql | なし | 記述なし |  |
 | `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） |  |
+| `race_facts` | 表 | 212_race_facts.sql | なし | GRANT（212_race_facts.sql） |  |
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
 | `racer_boat_return_baseline` | 表 | 210_racer_boat_return_baseline.sql | なし | GRANT（210_racer_boat_return_baseline.sql） |  |
@@ -49,6 +53,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `racer_venue_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
 | `raw_snapshots` | 表 | 125_raw_snapshots.sql | なし | 記述なし |  |
 | `rule_applications` | 表 | 008_venue_rules.sql | なし | 記述なし |  |
+| `run_facts` | 表 | 212_race_facts.sql | なし | GRANT（212_race_facts.sql） |  |
 | `site_feedback_hourly` | 表 | 209_site_feedback_hourly.sql | なし | 記述なし |  |
 | `sns_auto_send_control` | 表 | 153_sns_auto_send.sql | なし | 記述なし |  |
 | `sns_auto_send_incidents` | 表 | 153_sns_auto_send.sql | なし | 記述なし |  |

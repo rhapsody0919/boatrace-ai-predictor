@@ -54,6 +54,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/nigashiStats.js` | 逃し率（オーナー 2026-11-25）: 2〜6コースに入った走のうち、1コースの艇に逃げで1着を取られた走の割合。 | buildNigashiBreakdown, nationalNigashiBaseline, nigashiByCourse |
 | `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
+| `src/pure/pageHead.js` | 生の HTML の head（JS の前の HTML にページごとの title・description・canonical・JSON-LD を全ての UA に… | pageHeadRoute, getPastVenuePageMeta, getPastVenueBreadcrumbItems, pastVenuePageHead, injectPageHead ほか1件 |
 | `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
 | `src/pure/predictionAssistBoardParts.js` | 思考アシスト（BOA-430）のボードの部品のうち、文言（src/data）を読まない計算。純粋関数だけ。 | firstPlaceComposite, missingFirstBoats, LENSES, stText, METRICS ほか1件 |
 | `src/pure/predictionAssistDeepDive.js` | predictionAssistDeepDive - 思考アシストの深掘りの部品（今節の各走・前の5走・コースの1着・着の色と点・会場の成績の無い艇・得意の決ま… | meetRuns, priorRuns, courseWins, finishOf, monthDay ほか2件 |
@@ -88,7 +89,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/seriesPointsParts.js` | — | prelimEndDayOf, noRaceDaysOf, semifinalRaceIdsOf, semifinalSlotsOf, isAbsentStartRow ほか10件 |
 | `src/pure/siteFeedback.js` | サイト全体のご意見ボックス（site_feedback）の決まり。画面（src/components/siteFeedback/）と | feedbackPageType, isFeedbackHiddenPath, canSendFeedback, buildSiteFeedbackRow, FEEDBACK_KINDS ほか4件 |
 | `src/pure/siteUpdates.js` | — | BANNER_DAYS, NEW_DAYS, MAKING_MAX, isWithinJstDays, visibleUpdates ほか3件 |
-| `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
+| `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | courseRowDir, periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
 | `src/pure/snsObservationChecks.js` | SNS観測の入力の検査（src/utils/snsObservations.js の validateObservationInput の中の検査を、順を変えず… | assertObservationEnvelope, assertMetricAndSource, assertObservedAt, assertPeriodBounds, assertDataThrough ほか7件 |
 | `src/pure/snsObservationWindows.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。窓・取得元・指標・時刻の判定（src/utils/snsObservations.js から移し… | windowsFor, displayWindowFor, observationPeriod, OBSERVATION_WINDOWS, FULL_PICTURE_FORMAT ほか10件 |
 | `src/pure/snsPostText.js` | — | buildPostText |
@@ -189,6 +190,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/eveDeadlinesRows.js` | 前夜の締切予定（eveDeadlinesJob.js）の純な部分: 書く行・優勝戦の判定・raceindex の振り分け・通知・戻り値。 | eveIsFinal, eveRow, isSameEveRow, parseVenueIndex, acceptVenueIndex ほか4件 |
 | `scripts/lib/exhibitionJobParts.js` | scrape-exhibition-data.js の部品。公式ページの解析結果から展示の行を組み立て、 | toLegacyExhibition, upsertExhibitionRows, groupTargetsByVenue, absorbVenueResults, markHaveData ほか4件 |
 | `scripts/lib/exhibitionRunForRaces.js` | — | fetchExhibitionDetailed, runForRaces, updateRaceConditionsWeather |
+| `scripts/lib/factsRacerGucRules.js` | facts の表の絞りの設定（boatai.facts_racer_id）を立てる道が get_racer_runs だけかを、SQL の文で照らす規則（ADR… | stripComments, splitTopLevel, statementErrors, racerRunsErrors, checkSql ほか2件 |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -291,6 +293,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceCancellation.js` | — | confirmCancellationsForRaceIds, clearCancellationsWithResults, clearCancellationsWithResultsInRange |
 | `scripts/lib/raceConditionsWriter.js` | race_conditions への書き込み（気象列を含む）の共通処理（BOA-358） | isObservedAtColumnMissing, upsertRaceConditions, OBSERVED_AT_COLUMN |
 | `scripts/lib/raceEntriesKbRestore.js` | 出走表（race_entries）の複製汚染を、公式Bファイル（番組表）から復元するための純粋関数（BOA-422） | indexBEntriesByRace, compareRace, buildRestoredRow, buildRestorePlan, COLUMNS_FROM_B ほか4件 |
+| `scripts/lib/raceFactsKb.js` | kb_archive_*（K/B ファイル、〜2025-12-02）の1レースから、race_facts・run_facts の行を組み立てる（ADR-0113… | buildKbRaceFact, buildKbRunFacts, RACE_FACTS_RULE_VERSION, RACE_FACT_COLUMNS, RUN_FACT_COLUMNS |
 | `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
 | `scripts/lib/raceInfoAccumulate.js` | レース情報の集計（update-race-info.js から分けた純粋関数）: 取得の結果を、書く行（中止・締切・条件・出走表）にためる・ | createAccumulator, accumulateRaceInfo, assertRaceInfoRunArgs, applyFetchedRaceInfo, parsedRaceOutcome |
@@ -572,7 +575,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
 | `src/utils/oddsMath.js` | 再 export だけのファイル。本体は `src/pure/oddsMath.js`。 | — |
 | `src/utils/originalExhibition.js` | オリジナル展示（BOATCAST、race_original_exhibition・_values）の行を画面の形にする（純関数）。 | shapeOriginalExhibition, ORIGINAL_EXHIBITION_KINDS |
-| `src/utils/pageMeta.js` | トップ（/）と会場ページ（本日分 /venue/:code・過去日付 /races/:date/:code）の title・meta description・c… | getTopPageMeta, getTodayVenuePageMeta, getPastVenuePageMeta, getTodayVenueBreadcrumbItems |
+| `src/utils/pageMeta.js` | トップ（/）と会場ページ（本日分 /venue/:code・過去日付 /races/:date/:code）の title・meta description・c… | getTopPageMeta, getTodayVenuePageMeta, getTodayVenueBreadcrumbItems |
 | `src/utils/pastRate/count.js` | BOA-635「過去に発生した割合を見る」の数え方（docs/design/past-rate-check/spec.md FR-1・共通の数え方）。純粋関数。 | orderCombos, countPastRate, incompatibleForms, TYPES, TENKAI_TECHNIQUES ほか3件 |
 | `src/utils/pastRate/label.js` | BOA-635 の定番／レアのラベル（docs/design/past-rate-check/spec.md FR-3）。純粋関数。 | subtypeOf, rateLabel, thresholdNote |
 | `src/utils/pastRate/layer.js` | BOA-635 で layer API の応答を使えるかの判定（docs/design/past-rate-check/spec.md「データ（土台）」・pla… | hasLayerDate, usableLayer, layerKey, LAYER_FIRST_DATE, isTruncated |
@@ -694,4 +697,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 652 ファイル / export 3510 件。
+対象 655 ファイル / export 3528 件。
