@@ -1,18 +1,24 @@
 {
   "schema": "content-pr-manifest/v1",
   "id": "hiyori-how-to-use-guide",
-  "kind": "new",
+  "kind": "revision",
   "ticket": "BOA-1725",
   "paths": [
     "public/blog/hiyori-how-to-use-guide.md",
-    "src/data/blog-posts/hiyori-how-to-use-guide.json"
+    "public/images/blog/hiyori-how-to-use-guide-meet-trend.jpg",
+    "public/images/blog/hiyori-how-to-use-guide-sonar-bars.jpg",
+    "public/images/blog/hiyori-how-to-use-guide-sonar-radar.jpg",
+    "public/images/blog/hiyori-how-to-use-guide-waku.jpg"
   ],
   "files": {
-    "public/blog/hiyori-how-to-use-guide.md": "059f77c47bcd7e2731d194eb25a5fa7c54d1845f0053f5bde2a8d8fc549252ab",
-    "src/data/blog-posts/hiyori-how-to-use-guide.json": "194ba7e8fbfe5ffe9fc8521e8b292d08e7acdbfe42ffdec0699a176775068a2d"
+    "public/blog/hiyori-how-to-use-guide.md": "5b111d44ea5d7755a671f8022e160ed3f464f679a4dce42db5e6ff5699b0248f",
+    "public/images/blog/hiyori-how-to-use-guide-meet-trend.jpg": "6c09e72bd7316c9e8124611587381c49433da12b4b99d7705c3091e3af1aeede",
+    "public/images/blog/hiyori-how-to-use-guide-sonar-bars.jpg": "f3996e99505eb8772f99ab3f11f643d62598a50347242dac0508f7ac26e22db7",
+    "public/images/blog/hiyori-how-to-use-guide-sonar-radar.jpg": "ab991d0141f51046e23e8b4a4ed0051b8ad0801d00eed3241c15ce2e298627e5",
+    "public/images/blog/hiyori-how-to-use-guide-waku.jpg": "2d2ff2bf653d79236459ac36ecddae4337525494c95855f5a37f4e1b96796ddd"
   },
-  "content_sha256": "f9b9851f90d5a46987e718254ab27080dd6fc0e298e9ef7e0a06e844da276fd2",
-  "content_at": "2026-11-26T22:06:00+09:00",
+  "content_sha256": "4a6f0497014f4b888ea29542b31ab34275536b0aa059ca1c0805517197d0b6f1",
+  "content_at": "2026-11-27T14:46:01+09:00",
   "judgement_words": [],
   "reviews": [
     {
@@ -21,9 +27,9 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "f9b9851f90d5a46987e718254ab27080dd6fc0e298e9ef7e0a06e844da276fd2",
+      "reviewed_sha256": "4a6f0497014f4b888ea29542b31ab34275536b0aa059ca1c0805517197d0b6f1",
       "model": "sonnet",
-      "at": "2026-11-26T22:08:30+09:00"
+      "at": "2026-11-27T14:46:50+09:00"
     },
     {
       "role": "wording-editor",
@@ -31,9 +37,9 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "f9b9851f90d5a46987e718254ab27080dd6fc0e298e9ef7e0a06e844da276fd2",
+      "reviewed_sha256": "4a6f0497014f4b888ea29542b31ab34275536b0aa059ca1c0805517197d0b6f1",
       "model": "sonnet",
-      "at": "2026-11-26T22:08:00+09:00"
+      "at": "2026-11-27T14:46:45+09:00"
     },
     {
       "role": "fan",
@@ -41,9 +47,9 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "f9b9851f90d5a46987e718254ab27080dd6fc0e298e9ef7e0a06e844da276fd2",
+      "reviewed_sha256": "4a6f0497014f4b888ea29542b31ab34275536b0aa059ca1c0805517197d0b6f1",
       "model": "opus",
-      "at": "2026-11-26T22:09:50+09:00"
+      "at": "2026-11-27T14:47:30+09:00"
     },
     {
       "role": "seo-marketer",
@@ -51,14 +57,14 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "f9b9851f90d5a46987e718254ab27080dd6fc0e298e9ef7e0a06e844da276fd2",
+      "reviewed_sha256": "4a6f0497014f4b888ea29542b31ab34275536b0aa059ca1c0805517197d0b6f1",
       "model": "sonnet",
-      "at": "2026-11-26T22:07:00+09:00"
+      "at": "2026-11-27T14:46:30+09:00"
     }
   ],
   "author": {
     "model": "claude-opus-5-5",
     "lane": "session:seo-hiyori-article"
   },
-  "created_at": "2026-11-26T22:10:15+09:00"
+  "created_at": "2026-11-27T14:48:10+09:00"
 }
