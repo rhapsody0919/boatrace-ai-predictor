@@ -3179,6 +3179,8 @@
         "toMeet": "節へ →",
         "tipDays": "{{n}}日間",
         "tipRacer": "乗った選手 {{name}}",
+        "finalIn": "優出",
+        "finalWin": "優勝",
         "tipFinishes": "この節の着順 {{order}}（{{n}}走）",
         "tipValue": "節の初日の公式{{metric}} {{value}}（それまで{{runs}}走の累計）",
         "tipFinishesSoFar": "この節のここまでの着順 {{order}}（{{n}}走、開催中）",
