@@ -16,6 +16,7 @@ import {
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import { pageViewPath } from "./utils/raceUrlState";
 import useSingleTitle from "./hooks/useSingleTitle";
+import usePageHeadHandoff from "./hooks/usePageHeadHandoff";
 import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
@@ -27,6 +28,7 @@ import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import HowToUse from "./pages/HowToUse";
 import SiteUpdates from "./pages/SiteUpdates";
+import GrandPrixPage from "./pages/GrandPrixPage";
 import RaceHistory from "./pages/RaceHistory";
 import RacerProfile from "./pages/RacerProfile";
 import RacersPage from "./pages/RacersPage";
@@ -141,6 +143,12 @@ function AdRefresh() {
 // 待つ間にURLが変われば cleanup で取り消され、最終的なURLだけが1回送られる
 const PAGE_VIEW_SETTLE_MS = 500;
 
+// 生の HTML に差し込んだ head を React の head へ受け渡す（ADR-0114 決定3）。パスは Router から渡す
+function PageHeadHandoff() {
+  usePageHeadHandoff(useLocation().pathname);
+  return null;
+}
+
 function PageViewTracker() {
   const { pathname, search } = useLocation();
   // レース詳細のタブ・艇の選択（?tab=・?boat=）は、選ぶたびに URL を書き換える（BOA-493）。
@@ -236,6 +244,8 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="how-to-use" element={<HowToUse />} />
       {/* 更新のお知らせ（ja 専用、docs/design/site-updates/） */}
       <Route path="updates" element={<SiteUpdates />} />
+      {/* グランプリの特集（ja 専用、年なしの永続の URL、BOA-1724） */}
+      <Route path="grandprix" element={<GrandPrixPage />} />
       <Route path="profile" element={<Profile />} />
       {/* 言語別: 初心者向け入門ガイド（対応言語は GUIDE_BY_LANG）、日本語はコンテンツハブ */}
       <Route path="guide" element={<Guide />} />
@@ -405,6 +415,7 @@ export default function AppRouter() {
       <HashRedirect />
       <AdRefresh />
       <PageViewTracker />
+      <PageHeadHandoff />
       <CookieConsent />
       <SiteFeedback />
       <HreflangTags />

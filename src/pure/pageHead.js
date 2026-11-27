@@ -54,8 +54,7 @@ export function getPastVenuePageMeta(venueName, date, venueCode) {
 }
 
 /**
- * 会場ページ（過去日付）のパンくず（ホーム › 過去の予想 › 日付 › 会場名）。JSON-LD がこれを使う。
- * 画面の Breadcrumb は今 src/pages/VenueRaceListPageModel.js の pastBreadcrumbItems（同じ並び）。次の PR でこちらへ寄せて1つにする
+ * 会場ページ（過去日付）のパンくず（ホーム › 過去の予想 › 日付 › 会場名）。画面の Breadcrumb と生の head の JSON-LD が同じ値を使う
  */
 export function getPastVenueBreadcrumbItems(homeName, date, venueCode, venueName) {
   return [
@@ -75,7 +74,7 @@ const DOT_SEGMENT = /\/\.\.?(?:\/|$)/; // /./・/../ は URL の解決で縮む�
  * 解決の要らないパスだけを受ける。一致は verify で見る）。受けられない項目があれば null
  * @param {{name: string, url: string}[]} items
  */
-function breadcrumbListLd(items) {
+export function breadcrumbListLd(items) {
   const ok = items.every((x) => isText(x?.name) && PLAIN_PATH.test(x?.url ?? "") && !DOT_SEGMENT.test(x.url));
   if (items.length === 0 || !ok) return null;
   return {
