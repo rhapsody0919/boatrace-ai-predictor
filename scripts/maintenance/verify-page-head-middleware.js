@@ -2,22 +2,36 @@
 /**
  * middleware の生の HTML の head の差し込み（api/_lib/pageHeadMiddleware.js）が、対象のパスだけで全ての UA に同じ HTML を返し、どんな失敗も素通りにすること。
  *
- * 外枠はリポジトリの根の index.html を、取得の関数を差し替えて渡す（ネットに出ない）。src/ の本文は読まず、import して呼ぶ。
+ * 外枠は index.html の head と同じ形の見本を、取得の関数を差し替えて渡す（ネットに出ない）。src/ の本文は読まず、import して呼ぶ。
  * 1. PAGE_HEAD_KINDS が未設定・空・ほかの種類なら差し込まず、外枠も取らない
  * 2. 有効なら、人・Googlebot・bingbot に同じ 200 の HTML（title・canonical・description が1つずつ）を返し、no-store 等の見出しを付ける。
  *    外枠は同じ origin の /index.html を取る（/ を取らない）。canonical はサイトの URL（Preview の host でも）
  * 3. 対象の外のパス（一覧・0埋め・実在しない日・範囲外）と GET 以外は素通りで、外枠を取らない。クエリは中身を変えない
  * 4. 外枠が 200 でない・取得が投げる・時間切れ・差し込めない外枠は素通り（undefined）で、理由を1行の JSON に出す
- * 5. 会場名（src/constants の STADIUM_NAMES）と「ホーム」は ja の訳と同じ字
+ * 5. 差し込む会場名（src/constants の STADIUM_NAMES）と「ホーム」は ja の訳と同じ字（全24会場の title で見る）
  * 6. middleware の入口からも同じに動き、ほかの振り分け（/venue/1 の bingbot は関数へ rewrite）は変わらない
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import ja from "../../src/locales/ja/common.json" with { type: "json" };
-import { STADIUM_NAMES } from "../../src/constants/index.js";
 import { respondWithPageHead } from "../../api/_lib/pageHeadMiddleware.js";
 
-const SHELL = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
+// 外枠（index.html）の head と同じ形の見本: title が1つ、description・canonical は無い、共通の JSON-LD が3つ。
+// 本物の index.html への差し込みは受け渡しの e2e が配備と同じ外枠（vite の index.html）で見る
+const DEFAULT_TITLE = "ボートレースのデータ分析とAI予想が無料｜競艇 龍神レーダー";
+const SHELL = [
+  "<!doctype html>",
+  '<html lang="ja">',
+  "<head>",
+  '<meta charset="UTF-8" />',
+  '<meta name="robots" content="index, follow" />',
+  `<title>${DEFAULT_TITLE}</title>`,
+  ...["WebSite", "SoftwareApplication", "Organization"].map(
+    (type) => `<script type="application/ld+json">{"@context":"https://schema.org","@type":"${type}"}</script>`,
+  ),
+  "</head>",
+  '<body><div id="root"></div><script type="module" src="/assets/index-abc.js"></script></body>',
+  "</html>",
+].join("\n");
 const PATH = "/races/2026-10-11/1";
 const UAS = {
   human: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
@@ -148,7 +162,9 @@ await check("4. 失敗は全て素通り（undefined）で理由を出す", asyn
 
 await check("5. 会場名と「ホーム」は ja の訳と同じ字", async () => {
   for (let code = 1; code <= 24; code += 1) {
-    assert.equal(STADIUM_NAMES[code], ja.venues[String(code)], `会場 ${code}`);
+    const html = await (await run(`/races/2026-10-11/${code}`)).res.text();
+    const title = html.match(/<title[^>]*>([^<]*)<\/title>/)[1];
+    assert.ok(title.startsWith(`${ja.venues[String(code)]}競艇の結果・配当`), `会場 ${code}: ${title}`);
   }
   const html = await (await run(PATH)).res.text();
   assert.ok(html.includes(`"name":"${ja.analysisPage.breadcrumbHome}"`), "パンくずのホームが訳と違う");
