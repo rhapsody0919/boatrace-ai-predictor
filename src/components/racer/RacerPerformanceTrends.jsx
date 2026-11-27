@@ -25,14 +25,26 @@ const sinceOf = (rows, isNarrow) => {
     : "";
 };
 
-// 平均の横線の札。カードと同じ桁（ST は3桁・展示は2桁）と母数（全N走）。絞り込みのときはその名前も
+// 期間の平均の横線（点線）の札。カードと同じ桁（ST は3桁・展示は2桁）と母数（全N走）。絞り込みのときはその名前も
 const avgOf = (value, digits, n, vcActive, vcLabel) =>
   value == null
     ? null
     : {
+        cls: "avg",
         value,
         text: `平均 ${value.toFixed(digits)}`,
         sub: `${vcActive ? `${vcLabel}・` : ""}全${n}走`,
+      };
+
+// 今の級×同じ進入コースの全国平均（破線）の札（オーナー 2026-11-27、ファン4人の議論の推奨）
+const baseOf = (base, grade) =>
+  base == null
+    ? null
+    : {
+        cls: "base",
+        value: base.value,
+        text: `${grade} ${base.value.toFixed(3)}`,
+        sub: "同コース平均",
       };
 
 function VcScope({ vcActive, vcLabel }) {
@@ -64,20 +76,15 @@ export function ExhibitionChart({ view, vcActive, vcLabel }) {
           rows={chartRuns(runs)}
           metric="exhibition"
           label="展示タイムの推移"
-          avg={avgOf(
-            vcData.avgExhibitionTime,
-            2,
-            vcData.exN,
-            vcActive,
-            vcLabel,
-          )}
+          refLine={{ text: "他5艇平均", sub: "同じレース" }}
         />
       ) : (
         <DailyExhibitionChart data={exhibitionChartData} view={view} />
       )}
       <p className="racer-stat-note">
-        点線は条件の全走の平均。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません。
-        {hasVcData && "点を押すとそのレースへ"}
+        {hasVcData
+          ? "破線は同じレースの他の5艇の平均で、それより速い走を薄く塗っています。内の艇番ほど速く出ます（1号艇で約0.02秒）。点を押すとそのレースへ"
+          : "会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません"}
       </p>
     </div>
   );
@@ -120,7 +127,7 @@ function DailyExhibitionChart({ data, view }) {
 }
 
 /** STの推移（本番ST、履歴が2走以上のときだけ。共通の推移の図） */
-export function StTrendChart({ view, vcActive, vcLabel }) {
+export function StTrendChart({ view, vcActive, vcLabel, stBase, grade }) {
   const { vcData, isNarrow, chartRuns } = view;
   if (!view.showStTrend) return null;
   const runs = vcData.series.filter(
@@ -140,11 +147,15 @@ export function StTrendChart({ view, vcActive, vcLabel }) {
         rows={chartRuns(runs)}
         metric="st"
         label="STの推移"
-        avg={avgOf(vcData.avgSt, 3, vcData.stN, vcActive, vcLabel)}
+        lines={[
+          avgOf(vcData.avgSt, 3, vcData.stN, vcActive, vcLabel),
+          baseOf(stBase, grade),
+        ].filter(Boolean)}
       />
       <p className="racer-stat-note">
-        点線は条件の全走の平均（フライングを除く）。フライングの走は線に含めず、図の上の帯に
-        F で出します。点を押すとそのレースへ
+        点線はこの条件の全走の平均、破線は今の級（{grade ?? "—"}
+        ）で同じ進入コースの全国平均（どちらもフライングを除く）。1走ずつでなく点の集まりの位置で比べます。フライングは図の上の帯に
+        F。点を押すとそのレースへ
       </p>
     </div>
   );

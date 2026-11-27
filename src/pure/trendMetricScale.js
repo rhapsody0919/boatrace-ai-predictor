@@ -146,6 +146,7 @@ export const TREND_SCALES = Object.freeze({
     bandIfAny: true,
     dropZero: true,
     labelEvery: 2,
+    tipStRank: true,
   }),
   meetSparkExhibition: Object.freeze({
     ...MEET_SPARK,

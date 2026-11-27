@@ -75,6 +75,10 @@ export default function TrendTooltip({
           })}{" "}
           {finishText(t, run)}
           {scale.tipSt === false ? "" : ` ST ${stText(run)}`}
+          {/* 6艇の中の ST の順位（選手ページの ST の推移だけ。tipStRank の尺度） */}
+          {scale.tipStRank && run.stRank != null
+            ? ` ${t("basicInfo.trend.tipStRank", { rank: run.stRank })}`
+            : ""}
         </p>
       )}
       {showValue && (

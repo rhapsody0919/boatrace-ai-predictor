@@ -144,6 +144,11 @@ function seriesPoint(row, hasEx, hasSt) {
     flying: row.isFlying ? 0 : null,
     // ツールチップで F の深さ（F.01 か F.04 か）を出す
     flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
+    // 展示の推移の比べる相手: 同じレースの他の5艇の展示の平均（オーナー 2026-11-27）
+    ref_exhibition:
+      hasEx && row.othersExhibitionAvg != null
+        ? Number(row.othersExhibitionAvg)
+        : null,
     // 共通の推移の図の吹き出し（日付・会場・R・グレード／艇番→進入・着順・ST、レースへの飛び先）の材料
     run: {
       raceId: row.raceId,
@@ -157,6 +162,7 @@ function seriesPoint(row, hasEx, hasSt) {
       finishMark: row.finishMark ?? null,
       startTiming: row.startTiming ?? null,
       isFlying: row.isFlying === true,
+      stRank: row.stRank ?? null,
     },
   };
 }

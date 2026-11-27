@@ -6,6 +6,7 @@
  */
 import { trendScaleOf } from "../../pure/trendMetricScale.js";
 import TrendChart from "../race/basic-info/TrendChart";
+import TrendGainFill from "../race/basic-info/TrendGainFill";
 import "../race/basic-info/TrendChart.css";
 
 // 線の鍵。選手ページは今の艇番が無いので札を出さず（尺度の noBadge）、線の色も CSS で文字の色にする
@@ -16,12 +17,15 @@ const METRIC = {
     scaleKey: "racerRunExhibition",
     valueOf: (d) => d.avg_exhibition_time,
     flagOf: () => null,
+    // 走ごとの比べる相手: 同じレースの他の5艇の展示の平均（racerRaceHistoryRows の othersExhibitionAvg）
+    refOf: (d) => d.ref_exhibition ?? null,
   },
   // フライングの走は値の線から外し、上の帯に F
   st: {
     scaleKey: "racerRunSt",
     valueOf: (d) => d.start_timing,
     flagOf: (d) => (d.flying != null ? "F" : null),
+    refOf: () => null,
   },
 };
 
@@ -30,13 +34,14 @@ const dateLabel = (d) =>
 
 // 推移の点の行（racerVenueBoatStats の series）を、走の順に横いっぱいに並べた図の点にする
 function runPointsOf(rows, metric) {
-  const { valueOf, flagOf } = METRIC[metric];
+  const { valueOf, flagOf, refOf } = METRIC[metric];
   const n = rows.length;
   return rows.map((d, i) => ({
     raceId: d.raceKey,
     date: d.run.date,
     value: valueOf(d) ?? null,
     flag: flagOf(d),
+    ref: refOf(d),
     xr: n > 1 ? i / (n - 1) : 1,
     run: d.run,
   }));
@@ -52,36 +57,115 @@ function xTicksOf(points) {
   }));
 }
 
-// 期間の平均の横線（オーナー 2026-11-27「期間の平均の横線も足す」）。値は同じ画面のカードの平均ST・平均展示タイム
-// （絞り込みの範囲の全走、F を除く）と同じにし、スマホ幅で直近50走だけ描くときも変えない（data-scientist 11/27）。
-// 札は右端の札の列に置き、最新の値の札と近いときは上下にずらす
-function AvgLine({ sel, x, y, W, pad, avg }) {
+// 右端の札の列に置く比べる線の札の縦の位置。最新の値の札（ey）と、札どうし（2行で約24）が重ならないよう下へずらす
+function labelYs(targets, ey) {
+  const order = targets.map((t, i) => ({ i, t })).sort((a, b) => a.t - b.t);
+  const out = [];
+  let prev = -Infinity;
+  order.forEach(({ i, t }) => {
+    let ly = Math.max(t + 3, prev + 24);
+    if (Math.abs(ly - ey) < 14) ly = ey + 18;
+    out[i] = ly;
+    prev = ly;
+  });
+  return out;
+}
+
+function LineLabel({ x, y, label, className }) {
+  return (
+    <text className={className}>
+      <tspan x={x} y={y}>
+        {label.text}
+      </tspan>
+      {label.sub && (
+        <tspan x={x} dy={12}>
+          {label.sub}
+        </tspan>
+      )}
+    </text>
+  );
+}
+
+// 比べる線。lines は横線（ST の期間の平均・今の級×同じコースの全国平均。オーナー 2026-11-27）、ref は走ごとに変わる
+// 基準（展示の同じレースの他の5艇の平均）で、それより速い側を薄く塗る（今節の詳細の小さな線 R-45 と同じ見方）。
+// 札は右端の札の列に置く（右端の列は狭い 66 なので2行: 名前と値／母数）
+function CompareLayer({ sel, x, y, W, pad, lines, refLine }) {
   const x1 = x(0, sel.length);
   const x2 = x(sel.length - 1, sel.length);
-  const ay = y(avg.value);
   const last = sel.findLast((p) => p.value != null);
   const ey = last ? y(last.value) : -Infinity;
-  const ly = Math.abs(ay - ey) < 14 ? ey + (ay >= ey ? 18 : -10) : ay + 3;
+  const refPts = refLine
+    ? sel
+        .map((p, i) => (p.ref == null ? null : [x(i, sel.length), y(p.ref)]))
+        .filter(Boolean)
+    : [];
+  const lastRef = refPts[refPts.length - 1];
+  const labels = [
+    ...lines.map((l) => ({ label: l, t: y(l.value), cls: l.cls })),
+    ...(lastRef ? [{ label: refLine, t: lastRef[1], cls: "ref" }] : []),
+  ];
+  const ys = labelYs(
+    labels.map((l) => l.t),
+    ey,
+  );
   return (
-    <g className="racer-run-avg">
-      <line x1={x1} x2={x2} y1={ay} y2={ay} className="racer-run-avg-line" />
-      {/* 右端の列は狭い（66）ので2行: 平均の値／母数 */}
-      <text className="racer-run-avg-label">
-        <tspan x={W - pad.r + 8} y={ly}>
-          {avg.text}
-        </tspan>
-        <tspan x={W - pad.r + 8} dy={12}>
-          {avg.sub}
-        </tspan>
-      </text>
+    <g className="racer-run-compare">
+      {refLine && (
+        <TrendGainFill
+          sel={sel}
+          x={x}
+          y={y}
+          refOf={(p) => p.ref}
+          className="racer-run-gain"
+        />
+      )}
+      {refPts.length > 1 && (
+        <polyline
+          className="racer-run-line-ref"
+          points={refPts.map((q) => q.join(",")).join(" ")}
+        />
+      )}
+      {lines.map((l) => (
+        <line
+          key={l.cls}
+          x1={x1}
+          x2={x2}
+          y1={y(l.value)}
+          y2={y(l.value)}
+          className={`racer-run-line-${l.cls}`}
+        />
+      ))}
+      {labels.map((l, k) => (
+        <LineLabel
+          key={l.cls}
+          x={W - pad.r + 8}
+          y={ys[k]}
+          label={l.label}
+          className={`racer-run-label racer-run-label-${l.cls}`}
+        />
+      ))}
     </g>
   );
 }
 
-export default function RacerRunTrend({ rows, metric, label, avg }) {
+/**
+ * @param {{ rows: Array<object>, metric: "exhibition"|"st", label: string,
+ *   lines?: Array<{value: number, text: string, sub?: string, cls: string}>,
+ *   refLine?: {text: string, sub?: string} }} props
+ *   lines は横線、refLine を渡すと点の ref（走ごとの基準）を破線で引いて速い側を塗る
+ */
+export default function RacerRunTrend({
+  rows,
+  metric,
+  label,
+  lines = [],
+  refLine,
+}) {
   const points = runPointsOf(rows, metric);
   if (points.length === 0) return null;
-  const hasAvg = avg?.value != null;
+  const shown = lines.filter((l) => l.value != null);
+  const refs = refLine ? points.map((p) => p.ref).filter((v) => v != null) : [];
+  const compare = shown.length > 0 || refs.length > 0;
   return (
     <div className="racer-run-trend">
       <TrendChart
@@ -92,11 +176,19 @@ export default function RacerRunTrend({ rows, metric, label, avg }) {
         label={label}
         lineClass="racer-run-series"
         xTicks={xTicksOf(points)}
-        extraValues={hasAvg ? [avg.value] : []}
+        extraValues={[...shown.map((l) => l.value), ...refs]}
         renderOver={
-          hasAvg
+          compare
             ? ({ x, y, W, pad, sel }) => (
-                <AvgLine sel={sel} x={x} y={y} W={W} pad={pad} avg={avg} />
+                <CompareLayer
+                  sel={sel}
+                  x={x}
+                  y={y}
+                  W={W}
+                  pad={pad}
+                  lines={shown}
+                  refLine={refs.length > 0 ? refLine : null}
+                />
               )
             : undefined
         }

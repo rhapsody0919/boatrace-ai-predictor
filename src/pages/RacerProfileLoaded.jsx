@@ -47,7 +47,9 @@ export default function RacerProfileLoaded({
       />
       {/* PC（1200px 以上）で今日の出走｜成績の要約の2列にする包み。1199px 以下は display: contents（RacerProfile.css） */}
       <div className="racer-profile-top">
-        {data.profile && <RacerTodayRuns racerId={racerId} periodRows={period.periodRows} />}
+        {data.profile && (
+          <RacerTodayRuns racerId={racerId} periodRows={period.periodRows} />
+        )}
         {data.profile && !period.periodFailed && (
           <RacerSummaryBlock
             racerId={racerId}
@@ -89,6 +91,7 @@ export default function RacerProfileLoaded({
         todayVenueCode={todayVenueCode}
         onHistoryStateChange={onHistoryStateChange}
         periodRows={period.periodRows}
+        grade={data.grade}
       />
       {/* ニュースが0件の選手（プロフィールがある）には節ごと出さない。プロフィールが無い選手のページは
           全体が空の状態なので、空の案内を残す（e2e/smoke/racers.spec.js が固定） */}

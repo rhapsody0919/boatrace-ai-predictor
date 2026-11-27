@@ -25,6 +25,8 @@ import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
 import { racerStatsClassName } from "./racerStatsLayout";
 import { winRateStepsData } from "./RacerOfficialStatsLogic";
 import RacerBoatReturns from "./RacerBoatReturns";
+import { useStCourseBaseline } from "../../hooks/useStCourseBaseline";
+import { stCourseGradeAvg } from "../../pure/racerStBaseline.js";
 import {
   BothFixedNoRuns,
   CourseBreakdown,
@@ -204,7 +206,11 @@ function overviewBlocks(t, vc, view, venueStats, technique) {
   if (vc.vcGrade !== "all" || vc.vcStage !== "all") {
     if (!view.hasVenueStats && !view.hasCourseStats) return [];
     return [
-      <p key="overviewHidden" className="racer-stat-note" data-testid="racer-overview-hidden">
+      <p
+        key="overviewHidden"
+        className="racer-stat-note"
+        data-testid="racer-overview-hidden"
+      >
         全会場の会場別・枠番別の表はグレード・レース種別では絞れないため、選んでいる間は出しません。会場か枠番を選ぶと、絞った表が出ます
       </p>,
     ];
@@ -233,9 +239,18 @@ function overviewBlocks(t, vc, view, venueStats, technique) {
 
 /** 決まり手と枠番別回収率の節。絞らずに会場別・枠番別がそろうときは overviewBlocks の包みへ入れ、下で二重に出さない */
 function techniqueBlocks(vc, view) {
-  const section = <TechniqueSection view={view} vcActive={vc.vcActive} vcLabel={view.vcLabel} />;
+  const section = (
+    <TechniqueSection
+      view={view}
+      vcActive={vc.vcActive}
+      vcLabel={view.vcLabel}
+    />
+  );
   const technique = (
-    <>{view.showTechniqueSection && section}<RacerBoatReturns vc={vc} vcLabel={view.vcLabel} /></>
+    <>
+      {view.showTechniqueSection && section}
+      <RacerBoatReturns vc={vc} vcLabel={view.vcLabel} />
+    </>
   );
   const paired =
     !vc.vcVenueFixed &&
@@ -252,7 +267,9 @@ function breakdownBlocks(t, vc, view, venueStats, technique) {
   const { vcVenueFixed, vcBoatFixed, vcHistoryLoading, vcHistoryError } = vc;
   const settled = !vcHistoryLoading && !vcHistoryError;
   return [
-    ...(!vcVenueFixed && !vcBoatFixed ? overviewBlocks(t, vc, view, venueStats, technique) : []),
+    ...(!vcVenueFixed && !vcBoatFixed
+      ? overviewBlocks(t, vc, view, venueStats, technique)
+      : []),
     vcVenueFixed && !vcBoatFixed && settled && (
       <CrossBoatBreakdown key="crossBoat" vc={vc} vcLabel={view.vcLabel} />
     ),
@@ -309,9 +326,12 @@ export default function RacerPerformanceStats({
   todayVenueCode,
   onHistoryStateChange,
   periodRows,
+  grade,
 }) {
   const { t } = useTranslation();
   const winSteps = winRateStepsData(periodRows);
+  // ST の推移の比べる線（今の級×同じ進入コースの全国平均）。このページの節の入口なのでここで取る（plan.md §13）
+  const stBaselineRows = useStCourseBaseline();
   const vc = useRacerVcState(racerId, onHistoryStateChange);
   // 進入コースのラベルは呼ぶ側で足す（useRacerPerformanceView は大きさの基準に凍結された単位なので触らない）
   const view = {
@@ -319,6 +339,11 @@ export default function RacerPerformanceStats({
     vcLabel: vcLabelWithCourse(t, vc),
   };
   const { vcData, vcLabel } = view;
+  const stBase = stCourseGradeAvg(
+    vcData?.matchedRaces ?? [],
+    stBaselineRows,
+    grade,
+  );
   const { snapshotHistoryState, vcActive } = vc;
   const { formSummary, aggregatedStats, venueStats } = stats ?? {};
 
@@ -388,7 +413,13 @@ export default function RacerPerformanceStats({
           </p>
         )}
         <ExhibitionChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
-        <StTrendChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
+        <StTrendChart
+          view={view}
+          vcActive={vcActive}
+          vcLabel={vcLabel}
+          stBase={stBase}
+          grade={grade}
+        />
         <div id="racer-race-list">
           <RaceList vc={vc} view={view} vcLabel={vcLabel} />
         </div>
