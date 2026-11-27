@@ -128,18 +128,24 @@ export const rankingTables = (day) => {
 export const racerStatusScene = (day, rid) => {
   const ids = [rid(-2, 2), rid(-2, 9), rid(-1, 4)];
   const times = [6.81, 6.9, 6.7];
+  const others = [6.85, 6.86, 6.74];
   const tables = {
     venue_motor_start_dates: startRows(V, day(-400)),
     races: ids.map(race),
     race_entries: ids.map((id, i) => ent(id, i + 1, 4500)),
     race_conditions: ids.map((race_id, i) => ({ race_id, series_day: i < 2 ? 1 : 2, is_final_day: false })),
-    exhibition_data: ids.map((race_id, i) => ({
-      race_id,
-      boat_number: i + 1,
-      exhibition_time: times[i],
-      propeller_change: false,
-      parts_changed: null,
-    })),
+    // 選手の艇の行と、同じレースのほかの艇（6号艇）の行。レースの平均との差は −0.02・+0.02・−0.02（P-16）。
+    // 2走目に部品交換、3走目にプロペラ交換（図の印、F-051）
+    exhibition_data: ids.flatMap((race_id, i) => [
+      {
+        race_id,
+        boat_number: i + 1,
+        exhibition_time: times[i],
+        propeller_change: i === 2,
+        parts_changed: i === 1 ? ["ピストン"] : null,
+      },
+      { race_id, boat_number: 6, exhibition_time: others[i], propeller_change: false, parts_changed: null },
+    ]),
   };
   return { racerId: 4500, tables };
 };

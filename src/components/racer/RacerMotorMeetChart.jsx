@@ -177,7 +177,7 @@ export default function RacerMotorMeetChart({ runs }) {
               x={x(i)}
               y={H - 16}
               textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}
-              className="trc-tick"
+              className="trc-tick rmmc-x"
             >
               {runLabel(runs[i])}
             </text>

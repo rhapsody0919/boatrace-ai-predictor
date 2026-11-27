@@ -3,7 +3,6 @@
  * 期待値は verify 側（sections1・sections2）に置く。訳は ja（tJa で引いて比べる）。
  */
 import {
-  chartFacts,
   chartsByHeading,
   drawMotor,
   drawPart,
@@ -62,10 +61,22 @@ export async function racerCardScene(status) {
     caption: c.querySelector(".racer-motor-status-chart-caption")?.textContent ?? null,
     index: c.querySelector(".racer-motor-status-index")?.textContent ?? null,
     indexClass: c.querySelector(".racer-motor-status-index")?.getAttribute("class") ?? null,
-    chart: c.querySelector(".recharts-responsive-container")
-      ? chartFacts(c.querySelector(".recharts-responsive-container"))
-      : null,
+    chart: c.querySelector(".rmmc-svg") ? racerMeetChartFacts(c.querySelector(".rmmc-svg")) : null,
   }));
+}
+
+/** 選手ページの走ごとの展示タイムの図（RacerMotorMeetChart、P-16）の読み: 横の札・揃え・回転・縦の目盛り・点・線・交換の印 */
+function racerMeetChartFacts(svg) {
+  const xs = [...svg.querySelectorAll("text.rmmc-x")];
+  return {
+    xTicks: xs.map((el) => el.textContent),
+    xTickAnchors: xs.map((el) => el.getAttribute("text-anchor")),
+    xTickTransforms: xs.map((el) => el.getAttribute("transform") ?? ""),
+    yTicks: [...svg.querySelectorAll("line.trc-grid")].map((el) => el.nextElementSibling?.textContent ?? ""),
+    dots: svg.querySelectorAll("circle.rmmc-dot").length,
+    linePoints: (svg.querySelector("polyline.rmmc-line")?.getAttribute("points") ?? "").trim().split(/\s+/).filter(Boolean).length,
+    marks: [...svg.querySelectorAll("text.rmmc-change-text")].map((el) => el.textContent),
+  };
 }
 
 // ---- モータ情報（一覧） ----

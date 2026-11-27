@@ -51,14 +51,15 @@ test("ニュースが0件の選手にはニュースの節が無く、ある選�
   });
 });
 
-test("今節のモーターの展示タイムのグラフに「下ほど速い」、機力指数の評価の主語はモーター", async ({
+test("今節のモーターの展示タイムのグラフに「上ほど速い」、機力指数の評価の主語はモーター", async ({
   page,
 }) => {
   await page.goto("/racer/4586");
   const card = page.locator(".racer-motor-status-card");
   await expect(card.locator("h2")).toBeVisible({ timeout: 30000 });
   // 4586 は録画で推移（2走以上）と機力指数の評価の両方が出る選手。出ない録画になったら落ちて気づく
-  await expect(card.locator(".racer-motor-status-note").filter({ hasText: "下ほど速い" })).toHaveCount(1);
+  // 値はレースの平均との差で上ほど速い（P-16、オーナー 2026-11-27 承認。旧: 秒で「下ほど速い」）
+  await expect(card.locator(".racer-motor-status-note").filter({ hasText: "上ほど速い" })).toHaveCount(1);
   const verdict = card.locator(".racer-motor-status-index");
   await expect(verdict).toHaveCount(1);
   await expect(verdict).not.toContainText(/ — 選手の実力/);
