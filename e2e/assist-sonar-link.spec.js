@@ -27,6 +27,6 @@ test("思考アシストの「龍神ソナー」のリンクを押すと、ソ�
     page.getByRole("tab", { name: "龍神ソナー", exact: true }),
   ).toHaveAttribute("aria-selected", "true", { timeout: 30000 });
   await expect(
-    page.getByRole("tab", { name: "AI予想", exact: true }),
+    page.getByRole("tab", { name: "イン崩れ", exact: true }),
   ).toHaveAttribute("aria-selected", "false");
 });
