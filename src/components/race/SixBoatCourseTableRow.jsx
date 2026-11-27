@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
 import BoatBadge from "./BoatBadge";
 import CompareBar from "../dataDisplay/CompareBar";
-import { judgeRateVsBaseline } from "../../pure/compareBaseline.js";
-import { SIX_BOAT_WARN_ENTRIES } from "../../pure/sixBoatCourseStats.js";
+import { courseRowDir } from "../../pure/sixBoatCourseStats.js";
 
 const rate = (value) => (value == null ? "—" : value.toFixed(1));
 // 10走未満（reliability "none"）は率を出さない（spec §1.2）。直近3期は純関数が null にしているが、
@@ -25,20 +24,10 @@ function PendingCell({ reliability, text }) {
   );
 }
 
-// 全国の同じコースとの差が偶然の幅を超えたかの向き（意味づけ 2026-11-26）。差を出す線未満は few。
-// 当地（isLocal）は棒と差だけで色を付けない（当地の得意が翌年も続くかは未検証）
-function barDir(row, isLocal) {
-  if (row.reliability !== "ok") return "few";
-  if (isLocal) return "unclear";
-  return judgeRateVsBaseline({
-    rate: row.winRate, baseline: row.avg, n: row.entries, minN: SIX_BOAT_WARN_ENTRIES[row.course],
-  })?.dir ?? "unclear";
-}
-
 function RateCells({ row, text, diffTitle, isLocal }) {
   const winRate = shown(row, "winRate");
   const barDiff = winRate == null || row.avg == null ? null : winRate - row.avg;
-  const dir = barDiff == null ? null : barDir(row, isLocal);
+  const dir = barDiff == null ? null : courseRowDir(row, isLocal);
   return (
     <>
       <td>

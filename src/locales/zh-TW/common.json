@@ -2794,6 +2794,7 @@
     "motorBadgeDown": "機力↓",
     "rowExpectedCourseWinRate": "預想道次第1名率",
     "expectedCourseWinRateNote": "預想道次第1名率依最近3期的實際進場道次統計",
+    "expectedCourseWinRateNoteDiff": "預想進場1着率以近3期・進場水道統計。下方數字為與全國同一水道1着率的差距，綠色▲・紅色▼僅在以出賽數來看難以用偶然波動解釋的差距時標示",
     "noteExpectedCourse": "勝率、當地勝率、2連率為官方出走表的數值。平均ST、馬達2連率採用列名所示期間，預想道次第1名率採用最近3期的進場道次，其餘分析資料為過去90天（回收率為180天）的實績統計。標示為同場比賽中最佳數值。僅供參考，不保證結果"
   },
   "venueTendency": {

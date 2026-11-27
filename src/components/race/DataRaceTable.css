@@ -288,6 +288,16 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   color: var(--text-secondary);
 }
 
+/* 想定コース1着率の下の、全国の同じコースとの差（意味づけ）。色は偶然のぶれを超えたときだけ */
+.drt-course-diff {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+.drt-course-diff--good { color: var(--color-success-text); font-weight: 700; }
+.drt-course-diff--bad { color: var(--color-error-text); font-weight: 700; }
+
 /* 「5コース」「今節初戦」を語の途中で折らない（375pxで「5コー／ス」になっていた） */
 .drt-nowrap {
   white-space: nowrap;
