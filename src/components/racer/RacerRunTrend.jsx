@@ -52,9 +52,36 @@ function xTicksOf(points) {
   }));
 }
 
-export default function RacerRunTrend({ rows, metric, label }) {
+// 期間の平均の横線（オーナー 2026-11-27「期間の平均の横線も足す」）。値は同じ画面のカードの平均ST・平均展示タイム
+// （絞り込みの範囲の全走、F を除く）と同じにし、スマホ幅で直近50走だけ描くときも変えない（data-scientist 11/27）。
+// 札は右端の札の列に置き、最新の値の札と近いときは上下にずらす
+function AvgLine({ sel, x, y, W, pad, avg }) {
+  const x1 = x(0, sel.length);
+  const x2 = x(sel.length - 1, sel.length);
+  const ay = y(avg.value);
+  const last = sel.findLast((p) => p.value != null);
+  const ey = last ? y(last.value) : -Infinity;
+  const ly = Math.abs(ay - ey) < 14 ? ey + (ay >= ey ? 18 : -10) : ay + 3;
+  return (
+    <g className="racer-run-avg">
+      <line x1={x1} x2={x2} y1={ay} y2={ay} className="racer-run-avg-line" />
+      {/* 右端の列は狭い（66）ので2行: 平均の値／母数 */}
+      <text className="racer-run-avg-label">
+        <tspan x={W - pad.r + 8} y={ly}>
+          {avg.text}
+        </tspan>
+        <tspan x={W - pad.r + 8} dy={12}>
+          {avg.sub}
+        </tspan>
+      </text>
+    </g>
+  );
+}
+
+export default function RacerRunTrend({ rows, metric, label, avg }) {
   const points = runPointsOf(rows, metric);
   if (points.length === 0) return null;
+  const hasAvg = avg?.value != null;
   return (
     <div className="racer-run-trend">
       <TrendChart
@@ -65,6 +92,14 @@ export default function RacerRunTrend({ rows, metric, label }) {
         label={label}
         lineClass="racer-run-series"
         xTicks={xTicksOf(points)}
+        extraValues={hasAvg ? [avg.value] : []}
+        renderOver={
+          hasAvg
+            ? ({ x, y, W, pad, sel }) => (
+                <AvgLine sel={sel} x={x} y={y} W={W} pad={pad} avg={avg} />
+              )
+            : undefined
+        }
       />
     </div>
   );

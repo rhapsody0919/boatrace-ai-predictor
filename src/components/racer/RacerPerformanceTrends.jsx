@@ -25,6 +25,16 @@ const sinceOf = (rows, isNarrow) => {
     : "";
 };
 
+// 平均の横線の札。カードと同じ桁（ST は3桁・展示は2桁）と母数（全N走）。絞り込みのときはその名前も
+const avgOf = (value, digits, n, vcActive, vcLabel) =>
+  value == null
+    ? null
+    : {
+        value,
+        text: `平均 ${value.toFixed(digits)}`,
+        sub: `${vcActive ? `${vcLabel}・` : ""}全${n}走`,
+      };
+
 function VcScope({ vcActive, vcLabel }) {
   return vcActive && <span className="racer-vc-scope">— {vcLabel}</span>;
 }
@@ -54,12 +64,19 @@ export function ExhibitionChart({ view, vcActive, vcLabel }) {
           rows={chartRuns(runs)}
           metric="exhibition"
           label="展示タイムの推移"
+          avg={avgOf(
+            vcData.avgExhibitionTime,
+            2,
+            vcData.exN,
+            vcActive,
+            vcLabel,
+          )}
         />
       ) : (
         <DailyExhibitionChart data={exhibitionChartData} view={view} />
       )}
       <p className="racer-stat-note">
-        会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません。
+        点線は条件の全走の平均。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません。
         {hasVcData && "点を押すとそのレースへ"}
       </p>
     </div>
@@ -119,10 +136,15 @@ export function StTrendChart({ view, vcActive, vcLabel }) {
       <p className="racer-stat-note">
         1走ごとの本番ST。上ほど速い（0がスタートライン）。
       </p>
-      <RacerRunTrend rows={chartRuns(runs)} metric="st" label="STの推移" />
+      <RacerRunTrend
+        rows={chartRuns(runs)}
+        metric="st"
+        label="STの推移"
+        avg={avgOf(vcData.avgSt, 3, vcData.stN, vcActive, vcLabel)}
+      />
       <p className="racer-stat-note">
-        フライングの走は線に含めず、図の上の帯に F
-        で出します。点を押すとそのレースへ
+        点線は条件の全走の平均（フライングを除く）。フライングの走は線に含めず、図の上の帯に
+        F で出します。点を押すとそのレースへ
       </p>
     </div>
   );

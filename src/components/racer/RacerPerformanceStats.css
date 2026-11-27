@@ -198,6 +198,17 @@ tr.racer-vc-row-highlight td:first-child {
   display: none;
 }
 
+/* 期間の平均の横線（点線）と札。本線と太さ・形で分ける */
+.racer-run-avg-line {
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 3;
+}
+.racer-run-avg-label {
+  font-size: var(--font-size-2xs);
+  fill: var(--text-secondary);
+}
+
 .racer-stat-chart {
   background: var(--surface-card);
   border: 1px solid var(--border-hairline);
