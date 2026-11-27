@@ -1,0 +1,111 @@
+/* グランプリの特集（/grandprix）。見せ方はオーナーが承認した見本2（visual-designer の案、2026-11-27）。
+   図の部品の見た目は components/meet/GrandPrixCharts.css。SG の紫はダークの紺の上で 3:1 に届かないので、ダークだけ白を混ぜる */
+.gp-page {
+  --gp-sg: var(--color-grade-sg);
+  --gp-sg-soft: color-mix(in srgb, var(--gp-sg) 35%, var(--surface-card));
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .gp-page {
+  --gp-sg: color-mix(in srgb, var(--color-grade-sg) 60%, var(--color-white));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .gp-page {
+    --gp-sg: color-mix(in srgb, var(--color-grade-sg) 60%, var(--color-white));
+  }
+}
+
+.gp-page p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.gp-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.gp-head h1 {
+  font-size: var(--font-size-2xl);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.gp-badge {
+  align-self: flex-start;
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-grade-sg);
+  color: #fff;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.gp-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.gp-section h2 {
+  font-size: var(--font-size-xl);
+  margin: 0;
+  padding-bottom: var(--spacing-1);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.gp-section h3 {
+  font-size: var(--font-size-base);
+  margin: var(--spacing-2) 0 var(--spacing-1);
+}
+
+.gp-page .gp-answer,
+.gp-page .gp-strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.gp-page .gp-answer {
+  font-size: var(--font-size-md);
+}
+
+.gp-page .gp-sub,
+.gp-page .gp-note {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.gp-days,
+.gp-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size-sm);
+}
+
+.gp-days li {
+  display: grid;
+  grid-template-columns: 6.5em 3.5em 1fr;
+  align-items: center;
+  padding: var(--spacing-1) 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.gp-days .gp-day-body {
+  grid-column: 1 / -1;
+}
+
+.gp-links li {
+  padding: 4px 0;
+}
