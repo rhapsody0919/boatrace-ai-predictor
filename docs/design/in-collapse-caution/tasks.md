@@ -66,7 +66,8 @@
   - AIコピーの分は #1595 で入れた（ファン評価1周目 P1）。「イン崩れ狙い」は段が崩れやすいときだけ、展開予測の節と言葉を外した（`promptInCautionTrifecta`）。確定後のシェア文は未着手
 - [x] **27. 計測** `caution_visible`・`caution_click`（measurement.md）。送るかは純関数、`verify-frontend-pure-functions.js` と e2e に再現テスト
   - 2026-10-18（#1611）: `src/utils/cautionEvents.js`・`src/hooks/useVisibleOnce.js`。レース詳細・ホーム・会場の一覧・/accuracy（/winning-technique 共通）・思考アシストの枠。/today（surface `today`）は PR-6 の task 35 で入れる。GA4 のカスタムディメンション4件の登録は公開の前日まで（オーナー）
-- [ ] **28. 確認**: Playwright で 375・768・1440px、ライト／ダーク（段の札の 3:1）、`?caution=1` の有無で旧・新が切り替わる。受け入れ E2E（`e2e/acceptance/in-collapse-caution.spec.js`）を通す。`wording-editor` で文言（禁止語・単位）
+- [x] **28. 確認**: Playwright で 375・768・1440px、ライト／ダーク（段の札の 3:1）、`?caution=1` の有無で旧・新が切り替わる。受け入れ E2E（`e2e/acceptance/in-collapse-caution.spec.js`）を通す。`wording-editor` で文言（禁止語・単位）
+  - 2026-11-27（公開の PR #3622）: フラグを true にして既存の e2e を新しい画面の期待に替え、CI の e2e（375〜1920px の layout・ライト／ダークの axe）が緑。axe で札（崩れやすい・堅め）の 4.5:1 の不足が出たので直した。wording-editor は禁止語・保証 0、P2・P3 を当てた。受け入れ E2E（e2e/acceptance/in-collapse-caution.spec.js）は CI で回らず、手元は重い処理の枠待ちで未実行（公開の後に流す）
 
 ## PR-5 /accuracy の実績（plan §6）
 
@@ -138,7 +139,8 @@
 
 ## PR-7 公開（plan §7 の 7・8）
 
-- [ ] **37. 待ち: 公開の日をユーザーが決める**（計測の基準 10/11〜 を7日以上、できれば14日。GA4 の4ディメンションの登録が済んでいること）
+- [x] **37. 待ち: 公開の日をユーザーが決める**（計測の基準 10/11〜 を7日以上、できれば14日。GA4 の4ディメンションの登録が済んでいること）
+  - 2026-11-27 オーナー（窓口で直接）: 今日公開して良い。GA4 の4ディメンションの登録はオーナーが別にする
 - [ ] **38. 説明の書き直し**: About・FAQ・HowToUse・HomeAiIntro（フラグの側）、ブログ上位2記事（rough-race-signals・first-mark-prediction-guide）と翻訳版、`morningDigestCopy.js`（用語集・説明）。`content-qa`・`wording-editor`・`seo-marketer`
   - レース詳細の title（「AI予想・展開予測」）・meta も、展開予測を外す公開の PR で書き直す（#1595 ファン評価2周目 P3）
   - 2026-11-24 に足す: サイトの meta（ja common.json の site description「1マークの展開予測とイン崩れ指数を公開」）・会場の meta（「1マークの展開予測」）・ホームの帯 `IntroBanner`（`home.introBannerText`「展開予測・イン崩れ指数」）。4言語
@@ -147,10 +149,11 @@
   - 名前が変わらないので先行もできるが、案内文の中身が公開で変わるため公開の PR で一緒に直す（2026-10-13 判断、二度書き直さないため）
   - volatility-index-fukuoka-0913（#1511、イン崩れ指数100%の実例、9/13 福岡3R。2026-10-13 Orchestrate）: rough-race-signals と同じく、公開の PR で名称（イン崩れ指数→イン崩れ注意度）と今の画面への案内文だけを直す。中身の不一致4件はブログのレーンが先に直す。当時の値（100%）や実例の記述は当時の指数として残し、今の画面の値と混ぜない。src/data/blog-posts/volatility-index-fukuoka-0913.json の title・description も確かめる
 - [ ] **38b. Orchestrate に Preview の URL（`?caution=1`）と見るところを渡す**（公開の1行 PR はユーザーの判断。2026-10-13 Orchestrate）
-- [ ] **39. 公開の PR**: `IN_CAUTION_PUBLIC = true`、`MORNING_DIGEST_IN_CAUTION = true`（`scripts/lib/morningDigestSummary.js`。同じ PR で切り替える、34 の決定 2026-11-24）、`inCautionConfig.json` の `launchDate`、`/hit-races` の 307（`vercel.json` の `permanent: false`・`AppRouter.jsx`）・ナビ・`App.jsx`・リンク・sitemap、`verify-hit-verification-guidance.js` ほか既存の verify と e2e の期待を新しい画面に（plan §9 の一覧）、ブログ・`morningDigestCopy.js`
+- [ ] **39. 公開の PR**（#3622。マージはオーナー。記事3本〔rough-race-signals の翻訳3言語・first-mark-prediction-guide・volatility-index-fukuoka-0913〕と race-mood-effect-guide の注記は、記事の関門〔1 PR = 1記事＋manifest＋4役の審査〕のため公開の PR から外し、別の記事の PR にする）: `IN_CAUTION_PUBLIC = true`、`MORNING_DIGEST_IN_CAUTION = true`（`scripts/lib/morningDigestSummary.js`。同じ PR で切り替える、34 の決定 2026-11-24）、`inCautionConfig.json` の `launchDate`、`/hit-races` の 307（`vercel.json` の `permanent: false`・`AppRouter.jsx`）・ナビ・`App.jsx`・リンク・sitemap、`verify-hit-verification-guidance.js` ほか既存の verify と e2e の期待を新しい画面に（plan §9 の一覧）、ブログ・`morningDigestCopy.js`
   - 前提（2026-10-17、#1595 のファン評価で2周続けて出た指摘の原因分析）: カードだけを先にフラグの裏に入れたので、カードの導線の先（/accuracy＝task 24、思考アシスト＝task 23）と、一覧・ホームの札（task 21・22）が旧指数のまま食い違う。公開の PR は tasks 21〜24 がすべてマージされてからにする。ファン評価・mock-diff-checker はそろった状態の Preview で回し直す
-- [ ] **40. ファン評価ループ**（`.claude/rules/review-fix-cycle.md`、Preview で `?caution=1`）と `mock-diff-checker`（承認したモックとの差）を公開の PR の前に通す
-- [ ] **41a. ロールバックの手順を PR に書く**: 公開の PR の revert（フラグの1行だけ戻さない）
+- [x] **40. ファン評価ループ**（`.claude/rules/review-fix-cycle.md`、Preview で `?caution=1`）と `mock-diff-checker`（承認したモックとの差）を公開の PR の前に通す
+  - 2026-11-27: boatrace-fan-reviewer・mock-diff-checker を本番の公開サイト ?caution=1 で（claude/* に Preview が無く、手元の dev サーバーは鍵が無くデータが出ないため）。P0 なし。P1 2件（/today の注目レースの理由の文が旧指数で書かれている、ホームの的中一覧のリンク）は #3622 で直した。P2 の会場 h1・ホーム CTA の「AI予想」は 46 に回す。モックとの差はブロッカーなし
+- [x] **41a. ロールバックの手順を PR に書く**（#3622 の本文）: 公開の PR の revert（フラグの1行だけ戻さない）
 - [ ] **41. 公開の後**: 翌々日に GA4 の4ディメンション、/accuracy の公開後の件数、`verify-in-caution-coverage.js --today`
 
 ## PR-8 掃除と旧キーの停止（plan §7 の 9・10）
