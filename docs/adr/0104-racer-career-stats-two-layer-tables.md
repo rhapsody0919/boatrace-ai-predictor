@@ -49,6 +49,7 @@
 ## 影響と限界
 
 - 匿名に読ませるのは件数の表だけで、`kb_archive_*` そのものは今までどおり service_role だけ
+  - 追記 2026-11-27: 走ごとの行（kb と本体から作った facts）は、[ADR-0113](./0113-race-facts-two-era-rows-behind-racer-rpc.md) の選手1人ごとの RPC で出す。`kb_archive_*` そのものは引き続き service_role だけ
 - 毎晩の対象は「直近3日」なので、それより前のレースの種別・グレードの訂正（race_conditions・race_series の書き換え）は拾わない。拾うには CLI の `--era=main --all` を流す。規則を変えたら `RULE_VERSION` を上げ、kb と main を計算し直す
 - kb_archive を誰かが load し直すと kb 層は古いまま残る。毎晩の Cron の指紋（開催日・レースの数・最大の日付）は、行数・日付が変わる再投入だけを検知して error にする。値だけを書き換える再投入は検知しないので、kb-backfill.js は kb_archive に書いたら終わりに「racer-career-backfill.js --era=kb を再実行する」と出す（自動では計算し直さない。412MB を読むのはオーナーの判断で）
 - CC の SG の組は「最終日の 12R の組」と置いた。照合の関門の勝率（SG と G2 は加点が1違う）で確かめる。外れたら規則を直す
