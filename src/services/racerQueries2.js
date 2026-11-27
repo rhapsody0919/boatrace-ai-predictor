@@ -295,7 +295,8 @@ export function getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
     // v5: 天候・風速・波高を足した（レース条件別の成績、BOA-336）
     // v6: race_entries を1000行で切らずに取り切るようにした（BOA-1051）
-    return withCache(`racer-race-history-v6-${racerId}`, async () => {
+    // v7: 同じレースの他の5艇の展示タイムの平均（othersExhibitionAvg）を足した（選手ページの展示の推移の破線）
+    return withCache(`racer-race-history-v7-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
