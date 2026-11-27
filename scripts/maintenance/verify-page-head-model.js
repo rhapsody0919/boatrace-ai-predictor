@@ -10,7 +10,6 @@
  *    値はエスケープされる。外枠の title が1つでない・description か canonical が既にある・値が欠ける・サイトの外の canonical・</head> が無い、は null
  */
 import assert from "node:assert/strict";
-import ja from "../../src/locales/ja/common.json" with { type: "json" };
 import * as head from "../../src/pure/pageHead.js";
 import { toBreadcrumbListLd } from "../../src/utils/breadcrumbLd.js";
 
@@ -31,7 +30,7 @@ const shell = [
   '<body><div id="root"></div><script type="module" src="/assets/index-abc.js"></script></body>',
   "</html>",
 ].join("\n");
-const HOME = ja.analysisPage.breadcrumbHome;
+const HOME = "ホーム"; // ja の analysisPage.breadcrumbHome（middleware の側の verify が訳と一致を見る）
 
 let failures = 0;
 const check = (name, fn) => {
@@ -45,7 +44,7 @@ const check = (name, fn) => {
 };
 
 const sample = () =>
-  head.pastVenuePageHead({ date: "2026-11-26", venueCode: 1, venueName: ja.venues["1"], homeName: HOME });
+  head.pastVenuePageHead({ date: "2026-11-26", venueCode: 1, venueName: "桐生", homeName: HOME });
 
 check("1. pageHeadRoute は過去日の会場ページの形だけを受ける", () => {
   assert.deepEqual(head.pageHeadRoute("/races/2026-11-26/1"), {
