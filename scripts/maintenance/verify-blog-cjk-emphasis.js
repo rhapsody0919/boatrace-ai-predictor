@@ -10,11 +10,11 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import { renderBlogPost } from "./verifyData/blog-post-page.js";
+import { readBlogMarkdownFiles } from "./verifyData/blog-markdown-files.js";
 import { blogRemarkPlugins } from "../../src/utils/blogMarkdownSanitize.js";
 
 const SAMPLE =
@@ -34,14 +34,12 @@ test("頁は約物の隣の ** を太字にし、記号を本文に残さない"
 });
 
 test("今ある全ての記事で、コードの外の文に ** が残らない", async () => {
-  const dir = new URL("../../public/blog/", import.meta.url);
-  const files = (await readdir(dir)).filter((f) => f.endsWith(".md"));
-  assert.ok(files.length > 100, `記事が少なすぎる（${files.length}）。置き場が変わったか`);
+  const articles = await readBlogMarkdownFiles();
+  assert.ok(articles.length > 100, `記事が少なすぎる（${articles.length}）。置き場が変わったか`);
   const parser = unified().use(remarkParse).use(blogRemarkPlugins);
   const leftovers = [];
-  for (const file of files) {
-    const tree = parser.parse(await readFile(new URL(file, dir), "utf8"));
-    visit(tree, "text", (node) => {
+  for (const { file, markdown } of articles) {
+    visit(parser.parse(markdown), "text", (node) => {
       if (node.value.includes("**")) leftovers.push(`${file}: ${node.value.slice(0, 60)}`);
     });
   }
