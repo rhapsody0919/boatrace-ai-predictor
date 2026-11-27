@@ -78,6 +78,15 @@ function PeriodTip({ d, leftPct }) {
   );
 }
 
+// 指のなぞりの位置（x）から期を引いて選ぶ。マウスは帯ごとの当たり（rps-hit）で選ぶ
+function touchPick(e, W, n, cw, setPick) {
+  if (e.pointerType !== "touch") return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const x = ((e.clientX - r.left) * W) / r.width;
+  const i = Math.min(n - 1, Math.max(0, Math.floor((x - PAD.l) / cw)));
+  setPick({ i, pinned: true });
+}
+
 export default function RacerOfficialStatsChart({ chartData, rateAxis }) {
   const [ref, W] = useChartWidth();
   const [pick, setPick] = useState(null);
@@ -93,13 +102,7 @@ export default function RacerOfficialStatsChart({ chartData, rateAxis }) {
         ref={ref}
         className="trc-svg rps-svg"
         // スマホは帯が約16px と狭いので、押したまま指でなぞって期を選べる（visual-designer 11/27）
-        onPointerMove={(e) => {
-          if (e.pointerType !== "touch") return;
-          const r = e.currentTarget.getBoundingClientRect();
-          const x = ((e.clientX - r.left) * W) / r.width;
-          const i = Math.min(n - 1, Math.max(0, Math.floor((x - PAD.l) / cw)));
-          setPick({ i, pinned: true });
-        }}
+        onPointerMove={(e) => touchPick(e, W, n, cw, setPick)}
         viewBox={`0 0 ${W} ${H}`}
         role="img"
         aria-label="期ごとの勝率（公式）"

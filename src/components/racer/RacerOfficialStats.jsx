@@ -240,7 +240,7 @@ export default function RacerOfficialStats({ rows, racerName }) {
         )}
         {/* 期ごとの勝率の段は、成績・調子の欄の「勝率の推移（公式の期ごと）」に1つにまとめた（オーナー 2026-11-27） */}
         <p className="racer-official-note">
-          期ごとの勝率の推移の図は、成績・調子の欄の「勝率の推移（公式の期ごと）」にあります。
+          期ごとの勝率の推移の図は、このページの「勝率の推移（公式の期ごと）」にあります。
         </p>
         <PeriodTable rows={visible} />
         {rest.length > 0 && (
