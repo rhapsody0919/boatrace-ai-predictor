@@ -2,7 +2,8 @@
  * prSize.js - PR の大きさ（AGENTS.md の安全の6点の5「300行・5ファイル」）を数える（BOA-1718）。
  *
  * 作り手が自分で数えるのをやめ、機械で数える。数えない物は少なく決め、ほかは全部数える（知らない置き場は数える側）:
- *   1. 新しく足した e2e の spec（e2e 以下の *.spec.js）と、同じ PR で台帳に足した verify（scripts/maintenance/verify-*.js）。
+ *   1. 新しく足した e2e の spec（e2e 以下の *.spec.js）と、同じ PR で台帳に tier=ci で足した verify（scripts/maintenance/verify-*.js）、
+ *      または台帳に行が無く頭の注釈（guards）がある verify（ADR-0072 の 2026-11-25 の追記の既定 ci。CI が回す条件と同じ headGuards で決める）。
  *      ただし試験でないほかの変更ファイル（文書・台帳を除く）の足した行に名が出るなら数える（試験のファイルに本体を置く抜け道）。
  *      数える側に移った試験の名を出す試験も数える。数えない試験の置き場から数える置き場への改名は、先の全部の行を数える
  *   2. verify-registry.json の項目の追加だけ（JSON で比べ、既存の項目を1字でも変えたら全部数える）
@@ -17,6 +18,8 @@
  * git に触れない純関数。git から読んで数える入口は prSizeGit.js の measureCommits（verify-pr-size.js と pr-lane.js が呼ぶ）。
  */
 
+import { headGuards } from "../lib/verifyRegistryDefaults.js";
+
 /** 線（数字の根拠は無いが動かさない。オーナー 2026-11-24、BOA-1718） */
 export const SIZE_LIMIT = Object.freeze({ lines: 300, files: 5 });
 
@@ -24,6 +27,8 @@ const NEW_TEST = [
   /^e2e\/.*\.spec\.js$/,
   /^scripts\/maintenance\/verify-[^/]+\.(js|mjs|cjs|sh)$/,
 ];
+/** 台帳のパス（試験が同じ値を使えるように出す） */
+export const REGISTRY_PATH = "scripts/maintenance/verify-registry.json";
 const REGISTRY = /^scripts\/maintenance\/verify-registry\.json$/;
 const LOCALE = /^src\/locales\/([^/]+)\/(.+\.json)$/;
 const CODE = /\.(js|jsx|mjs|cjs|ts|tsx|css)$/;
@@ -115,12 +120,12 @@ function namesFile(lines, testPath) {
   return lines.some((line) => re.test(line));
 }
 
-/** 同じ PR で台帳に tier=ci で足した verify の名（台帳に無い verify-*.js は試験と見なさない。verify の名の道具を除く） */
+/** 同じ PR で台帳に tier=ci で足した verify の名（台帳に行が無い verify-*.js は defaultCiTest で別に見る） */
 function registeredTests(readText) {
   const names = (side) => {
     try {
       const reg = JSON.parse(
-        readText(side, "scripts/maintenance/verify-registry.json") ?? "{}",
+        readText(side, REGISTRY_PATH) ?? "{}",
       );
       return new Set(
         (reg.entries ?? []).filter((v) => v.tier === "ci").map((v) => v.script),
@@ -133,12 +138,30 @@ function registeredTests(readText) {
   return new Set([...names("head")].filter((n) => !before.has(n)));
 }
 
+/** head の台帳に行のある script の名（tier を問わない）。読めない台帳は null（行の無い verify を試験と見なさない側に倒す） */
+function headListedScripts(readText) {
+  try {
+    const reg = JSON.parse(readText("head", REGISTRY_PATH) ?? "null");
+    return reg ? new Set((reg.entries ?? []).map((v) => v.script)) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 台帳に行が無く、頭の注釈（guards）がある新しい verify か（run-verify-registry が既定の ci で回す物と同じ判定）。本文が読めなければ数える側 */
+function defaultCiTest(p, listed, readText) {
+  if (!listed || listed.has(p.split("/").pop())) return false;
+  const text = readText("head", p);
+  return text != null && headGuards(text) !== null;
+}
+
 /**
  * 数えない新しい試験のファイル。試験でないほかの変更ファイル（文書・台帳を除く）の足した行に名が出る物は数え、
  * 数える側に移った試験の名を出す試験も数える（不動点まで。試験を経由して本体を読む形）
  */
 function exemptTests(changes, patches, readText) {
   const added = registeredTests(readText);
+  const listed = headListedScripts(readText);
   const candidates = new Set(
     changes
       .filter((c) => c.status === "A")
@@ -146,7 +169,8 @@ function exemptTests(changes, patches, readText) {
       .filter((p) =>
         /^e2e\//.test(p)
           ? NEW_TEST[0].test(p)
-          : NEW_TEST[1].test(p) && added.has(p.split("/").pop()),
+          : NEW_TEST[1].test(p) &&
+            (added.has(p.split("/").pop()) || defaultCiTest(p, listed, readText)),
       ),
   );
   const readers = changes
@@ -171,7 +195,7 @@ function registryOnlyAdded(readText) {
   try {
     const items = (side) =>
       JSON.parse(
-        readText(side, "scripts/maintenance/verify-registry.json") ?? "null",
+        readText(side, REGISTRY_PATH) ?? "null",
       ).entries;
     const before = items("base");
     const after = items("head");
