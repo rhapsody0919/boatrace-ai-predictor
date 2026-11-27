@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3061,
+    "sourceFiles": 3063,
     "filesWithAccess": 335,
     "tableReaders": 981,
     "tableWriters": 202,
@@ -7980,6 +7980,7 @@
           "via": "client",
           "columns": [
             "boat_number",
+            "grade",
             "motor_2rate",
             "motor_3rate",
             "motor_number",
@@ -8771,6 +8772,7 @@
             "scripts/lib/snsTodayDigestV3.js:89",
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "src/services/motorQueries2.js:262",
+            "src/services/motorQueries8.js:32",
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries5.js:45",
             "src/services/sherlockService.js:70"

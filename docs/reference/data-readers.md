@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3061 |
+| 読んだファイル | 3063 |
 | 読み書きのあるファイル | 335 |
 | 表の読み手（箇所） | 981 |
 | 表の書き手（箇所） | 202 |
@@ -945,7 +945,7 @@
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
   - `src/services/motorQueries7.js:83` select [motor_number, race_id, racer_id]
-  - `src/services/motorQueries8.js:32` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id]
+  - `src/services/motorQueries8.js:32` select [boat_number, grade, motor_2rate, motor_3rate, motor_number, player_name, race_id]
   - `src/services/mycroftService.js:83` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:144` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:169` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
