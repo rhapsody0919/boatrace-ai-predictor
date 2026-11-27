@@ -63,6 +63,16 @@ async function section1_3(ctx) {
   );
 }
 
+// 選手ページの走ごとの展示タイムの図（P-16・F-051、オーナー 2026-11-27 承認）
+function checkRacerMeetChart(check, status, card) {
+  const diffs = (status?.meetTrend ?? []).map((r) => r.exhibitionDiff?.toFixed(2)).join(",");
+  const chart = card.chart ?? { dots: 0, marks: [] };
+  check(
+    "選手ページ: 値はレースの平均との差で、全部の走に点を打ち、部品交換・プロペラ交換の走に印（描いたカード）",
+    diffs === "-0.02,0.02,-0.02" && chart.dots === 3 && chart.marks.join("/") === "部品/ペラ",
+  );
+}
+
 async function section1_4(ctx) {
   const { check } = ctx;
   {
@@ -77,12 +87,7 @@ async function section1_4(ctx) {
         card.chart?.xTicks.join("/") === `${md(d1)} 2R/${md(d1)} 9R/${md(d2)} 4R` &&
         single.chart?.xTicks.join("/") === `${md(d1)} 2R/${md(d2)} 4R`,
     );
-    check(
-      "選手ページ: 値はレースの平均との差で、全部の走に点を打ち、部品交換・プロペラ交換の走に印（描いたカード）",
-      status?.meetTrend.map((r) => r.exhibitionDiff.toFixed(2)).join(",") === "-0.02,0.02,-0.02" &&
-        card.chart?.dots === 3 &&
-        card.chart?.marks.join("/") === "部品/ペラ",
-    );
+    checkRacerMeetChart(check, status, card);
     check(
       "選手ページ: 説明文の「）」と「、」の間に空白を入れない（描いたカードの説明文）",
       card.caption ===

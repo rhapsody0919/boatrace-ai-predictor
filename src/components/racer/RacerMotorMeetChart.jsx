@@ -101,6 +101,38 @@ function Tip({ run, leftPct, pinned, onClose }) {
   );
 }
 
+// 横の札（最初・真ん中・最後の走。両端は図の中に収める）
+function XLabels({ runs, x }) {
+  const last = runs.length - 1;
+  return (
+    <>
+      {[0, Math.floor(last / 2), last]
+        .filter((i, k, a) => a.indexOf(i) === k)
+        .map((i) => (
+          <text
+            key={i}
+            x={x(i)}
+            y={H - 16}
+            textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}
+            className="trc-tick rmmc-x"
+          >
+            {runLabel(runs[i])}
+          </text>
+        ))}
+    </>
+  );
+}
+
+// 選んだ点の縦の点線と輪
+function PickMark({ x, y }) {
+  return (
+    <g className="trc-pick">
+      <line x1={x} x2={x} y1={PAD.t} y2={H - PAD.b} className="trc-pick-line" />
+      <circle cx={x} cy={y} r={6} className="trc-pick-ring" />
+    </g>
+  );
+}
+
 /**
  * @param {{runs: Array<{raceId:string,date:string,raceNo:number,exhibitionTime:number,exhibitionDiff:number|null,parts:string[]|null,propellerChanged:boolean}>}} props
  *   runs は古い順。差の無い走（6艇の展示がそろわない）は点を打たず、横の位置だけ取る
@@ -119,7 +151,6 @@ export default function RacerMotorMeetChart({ runs }) {
     boxRef,
   });
   const picked = pick ? valued[pick.i] : null;
-  const last = runs.length - 1;
   return (
     <div className="trc-chartbox" ref={boxRef}>
       <svg
@@ -169,36 +200,8 @@ export default function RacerMotorMeetChart({ runs }) {
             className="rmmc-dot"
           />
         ))}
-        {[0, Math.floor(last / 2), last]
-          .filter((i, k, a) => a.indexOf(i) === k)
-          .map((i) => (
-            <text
-              key={i}
-              x={x(i)}
-              y={H - 16}
-              textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}
-              className="trc-tick rmmc-x"
-            >
-              {runLabel(runs[i])}
-            </text>
-          ))}
-        {picked && (
-          <g className="trc-pick">
-            <line
-              x1={x(picked.i)}
-              x2={x(picked.i)}
-              y1={PAD.t}
-              y2={H - PAD.b}
-              className="trc-pick-line"
-            />
-            <circle
-              cx={x(picked.i)}
-              cy={y(picked.r.exhibitionDiff)}
-              r={6}
-              className="trc-pick-ring"
-            />
-          </g>
-        )}
+        <XLabels runs={runs} x={x} />
+        {picked && <PickMark x={x(picked.i)} y={y(picked.r.exhibitionDiff)} />}
         <rect
           className="trc-hit"
           x={PAD.l}
