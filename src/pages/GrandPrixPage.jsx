@@ -14,6 +14,15 @@ const { year, venueName, venueCode } = EDITION;
 const TITLE = `ボートレース グランプリ${year}特集｜${venueName}${EDITION.shortDates}の日程・トライアルの仕組み・過去の優勝戦｜龍神レーダー`;
 const DESCRIPTION = `ボートレースのグランプリ（SG）${year}の出場18人の獲得賞金、トライアル1st・2ndから優勝戦までの勝ち上がり、${venueName}のコース別の1着率、過去の優勝戦、6日間の日程をまとめた特集です。`;
 const SUMMARY_PERIOD = `${VENUE_SUMMARY_STATS.from.replaceAll("-", "/")}〜${VENUE_SUMMARY_STATS.to.replaceAll("-", "/")}`;
+const VENUE_STATS = VENUE_SUMMARY_STATS.venues[String(venueCode)];
+// 答えの1行は会場の要約の向き（月1回の更新で変わりうる）から組む。差がはっきりしない項目は言わない
+const VS = { higher: "全国より高い", lower: "全国より少ない" };
+const WATER_ANSWER = [
+  VENUE_STATS.vsNational.course1 && `1コースの1着率は${VS[VENUE_STATS.vsNational.course1]}`,
+  VENUE_STATS.vsNational.makuri && `まくりは${VS[VENUE_STATS.vsNational.makuri]}`,
+]
+  .filter(Boolean)
+  .join("、");
 const RELATED = [
   ["/blog/sg-race-guide-2026", "2026年SGレースの日程と会場"],
   ["/blog/omura-wind-direction-guide", "大村の水面と風（風の向き別の1着率）"],
@@ -77,9 +86,9 @@ export default function GrandPrixPage() {
             出典は大村の特設サイトの<External href={EDITION.roadToFinalUrl}>グランプリの勝ち上がりチャート</External>です。
           </p>
         </Section>
-        <Section id="gp-water-h" title={`${venueName}の水面`} answer="1コースの1着率は全国より高く、まくりは全国より少ない">
+        <Section id="gp-water-h" title={`${venueName}の水面`} answer={WATER_ANSWER || null}>
           <VenueVsNational
-            venue={VENUE_SUMMARY_STATS.venues[String(venueCode)]}
+            venue={VENUE_STATS}
             national={VENUE_SUMMARY_STATS.national}
             period={SUMMARY_PERIOD}
             venueName={venueName}
