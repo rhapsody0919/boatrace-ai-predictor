@@ -139,6 +139,7 @@ export default function BasicInfoTrend({
   selectedBoat,
   onSelectBoat,
   winRate,
+  renderBelow,
 }) {
   const { t } = useTranslation();
   if (metric === "winRate")
@@ -192,6 +193,15 @@ export default function BasicInfoTrend({
               seriesByBoat={series}
               metric={metric}
               selected={selected}
+              // 線の下の段（選んだ艇の節ごとのモーター。取得は使う側が持つ）
+              renderBelow={
+                renderBelow &&
+                ((g) =>
+                  renderBelow(
+                    sortedPlayers.find((p) => p.number === selected)?.racerId,
+                    g,
+                  ))
+              }
             />
           </div>
           <div className="race-split__side">

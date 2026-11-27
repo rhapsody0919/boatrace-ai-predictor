@@ -1,0 +1,69 @@
+/* 選手の推移の線の下の段（RacerMotorBand.jsx）。上＝金の塗り・中＝枠だけ・下＝薄い地（モック afterB） */
+.rmb-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.rmb-head,
+.rmb-no {
+  font-size: 10px;
+  fill: var(--text-secondary);
+}
+
+.rmb-tier {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--text-secondary);
+}
+
+.rmb-box {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 0.8;
+}
+
+.rmb-seg--high .rmb-box {
+  fill: var(--brand-accent-primary);
+  stroke: none;
+}
+
+.rmb-seg--high .rmb-tier {
+  fill: var(--surface-card);
+}
+
+.rmb-seg--low .rmb-box {
+  fill: var(--border-hairline);
+  stroke-width: 0.5;
+}
+
+.rmb-seg--none .rmb-box {
+  stroke-dasharray: 2 2;
+}
+
+.rmb-note {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rmb-hit {
+  cursor: pointer;
+}
+
+.rmb-seg.is-picked .rmb-box {
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+}
+
+.rmb-seg.is-picked .rmb-no {
+  fill: var(--text-primary);
+  font-weight: 700;
+}
+
+.rmb-pick {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-primary);
+}

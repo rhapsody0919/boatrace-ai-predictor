@@ -2555,6 +2555,20 @@
   },
   "basicInfo": {
     "trend": {
+      "motorBand": {
+        "label": "Motor number the selected racer drew in each meet, and its position (top, middle, bottom) in that meet's program",
+        "rank": "Rank",
+        "motor": "Motor",
+        "tier": {
+          "high": "Top",
+          "mid": "Mid",
+          "low": "Low"
+        },
+        "failed": "Couldn't load the motors for each meet",
+        "tip": "{{range}} {{venue}} motor {{no}} — {{tier}} in the program",
+        "tipNoRank": "{{range}} {{venue}} motor {{no}} — no rate yet",
+        "note": "The row under the lines shows the motor number the selected racer drew in each meet and its position (top, middle or bottom third by the program's motor top-2 rate at that venue in that meet; counted differently from the venue rank in Motor condition). Dashed boxes are motors with no rate yet. Top vs bottom differs by about 4 points in expected top-2 finishes (our own check). Tap a meet to see its venue and dates"
+      },
       "view": {
         "now": "Current",
         "trend": "Trend"
