@@ -28,6 +28,8 @@ import { appRoutePaths } from "./verifyData/app-routes.js";
 // 新しいルートを除外する場合はここに理由付きで追記すること（暗黙の見落としを防ぐため）
 const EXPECTED_EXCLUSIONS = {
   picks: "旧モデルページの廃止に伴うリダイレクト専用ルート（実体ページなし）",
+  "hit-races":
+    "展開予測の的中一覧の廃止（BOA-822、2026-11-27）に伴う /accuracy へのリダイレクト専用ルート（実体ページなし）",
   "outcome-distribution":
     "分析ツールへ統合済みのリダイレクト専用ルート（実体ページなし）",
   venues:
