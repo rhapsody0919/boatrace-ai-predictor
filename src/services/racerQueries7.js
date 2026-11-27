@@ -7,6 +7,13 @@ import { meetMotorBand, racerMeetsOf } from "../pure/racerMeetMotors.js";
 // PostgREST が1回に返す行の上限
 const PAGE = 1000;
 
+// 読みの失敗は意味の分かる文で投げる（supabaseClient の throwOnError に頼り切らず、ここでも error を見る。
+// 黙って空にすると、号機が消えたり少ない母数で上・中・下を出したりする。AGENTS「失敗を『データなし』にしない」）
+function rowsOrThrow({ data, error }, what) {
+  if (error) throw new Error(`racer_meet_motors: race_entries の読みの失敗（${what}）: ${error.message}`);
+  return data ?? [];
+}
+
 // その選手の走の出走表の行。推移の点は60走までで、1000行に届かない
 async function fetchOwnEntries(racerId, raceIds) {
   const pages = await Promise.all(
@@ -20,7 +27,7 @@ async function fetchOwnEntries(racerId, raceIds) {
   );
   return new Map(
     pages
-      .flatMap(({ data }) => data ?? [])
+      .flatMap((res) => rowsOrThrow(res, `選手 ${racerId} の走`))
       .map((e) => [e.race_id, { motorNumber: e.motor_number, motor2Rate: e.motor_2rate == null ? null : Number(e.motor_2rate) }]),
   );
 }
@@ -30,7 +37,7 @@ async function fetchMeetPool({ venue, start, end }) {
   const venuePart = String(venue).padStart(2, "0");
   const out = [];
   for (let from = 0; ; from += PAGE) {
-    const { data } = await supabase
+    const res = await supabase
       .from("race_entries")
       .select("race_id, boat_number, motor_2rate")
       .like("race_id", `____-__-__-${venuePart}-%`)
@@ -39,7 +46,7 @@ async function fetchMeetPool({ venue, start, end }) {
       .order("race_id")
       .order("boat_number")
       .range(from, from + PAGE - 1);
-    const rows = data ?? [];
+    const rows = rowsOrThrow(res, `節 ${venue} ${start}〜${end}`);
     out.push(...rows.map((r) => (r.motor_2rate == null ? null : Number(r.motor_2rate))));
     if (rows.length < PAGE) return out;
   }

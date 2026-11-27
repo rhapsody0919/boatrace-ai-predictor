@@ -9,7 +9,7 @@
  *   - 3区分は 1/3 以下が下・2/3 以下が中・それより上が上
  *   - 号機と2連率は節の最初の、行のある走から。2連率が 0・無いときは順位を出さない
  *   - 取得はその節の会場の初日から最終日までの行だけ（ほかの会場・節の外を混ぜない）。1000行で切れても取りこぼさない
- *   - 走が無ければ取得しない。取得の失敗は例外のまま
+ *   - 走が無ければ取得しない。取得の失敗は例外のまま（応答の error も、どの読みかの分かる文で投げる）
  */
 import {
   createFakeSupabase,
@@ -89,6 +89,28 @@ check("長い節は1つ", long.length === 1 && long[0].end === day(13), JSON.str
 check("1000行を超えても取り切る", longPool.length > 1000 && long[0].pct === motorRankPct(longPool.map((e) => e.motor_2rate), long[0].motor2Rate), `${long[0].pct}`);
 
 check("走が無ければ取得しない", (await getRacerMeetMotors("X", [])).length === 0);
+// error を返す応答（throwOnError の無いクライアントでも黙って空にしない）。走の読み・節の行の読みのどちらで落ちても投げる
+const erroring = (failOn) => {
+  const chain = (sel) => {
+    const q = new Proxy({}, {
+      get: (_, k) =>
+        k === "then"
+          ? (ok) => ok(failOn(sel) ? { data: null, error: { message: "e2e の失敗" } } : { data: [], error: null })
+          : () => q,
+    });
+    return q;
+  };
+  return { from: () => ({ select: (sel) => chain(sel) }) };
+};
+for (const [name, failOn] of [
+  ["走の読み", (sel) => sel.includes("motor_number")],
+  ["節の行の読み", (sel) => sel.includes("boat_number")],
+]) {
+  setFakeSupabase(erroring(failOn));
+  let msg = "";
+  try { await getRacerMeetMotors(`E-${name}`, [rid(1, 1)]); } catch (e) { msg = e.message; }
+  check(`${name}の error は意味の分かる文で投げる`, msg.includes("race_entries の読みの失敗") && msg.includes("e2e の失敗"), msg);
+}
 setFakeSupabase({ from: () => { throw new Error("読み取りの失敗"); } });
 let threw = false;
 try { await getRacerMeetMotors("Z", [rid(1, 1)]); } catch { threw = true; }
