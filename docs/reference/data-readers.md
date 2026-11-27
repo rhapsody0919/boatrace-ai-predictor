@@ -10,16 +10,16 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3049 |
-| 読み書きのあるファイル | 333 |
-| 表の読み手（箇所） | 980 |
-| 表の書き手（箇所） | 200 |
+| 読んだファイル | 3052 |
+| 読み書きのあるファイル | 334 |
+| 表の読み手（箇所） | 981 |
+| 表の書き手（箇所） | 202 |
 | RPC の呼び手（箇所） | 58 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
-| コードが使うのに写しに無い名前 | 15 |
+| コードが使うのに写しに無い名前 | 17 |
 | 名前が式で拾えなかった箇所 | 38 |
 | 構文木にできなかったファイル | 0 |
 | 対象外の言語のファイル（Python 等） | 57 |
@@ -75,7 +75,7 @@
 | [race_pit_comments](#t-race_pit_comments) | table | anon 可 | 2 | 2 |  |  | pit_reports |  |
 | [race_pit_reports](#t-race_pit_reports) | table | anon 可 | 4 | 1 | data_health_pit_reports, data_health_table_rows |  | pit_reports |  |
 | [race_results](#t-race_results) | table | anon 可 | 114 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, result, result_catchup |  |
-| [race_series](#t-race_series) | table | anon 可 | 17 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
+| [race_series](#t-race_series) | table | anon 可 | 18 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
 | [race_special_notes](#t-race_special_notes) | table | service だけ | 1 | 1 | data_health_table_rows |  | race_notices |  |
 | [race_start_timings](#t-race_start_timings) | table | anon 可 | 29 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, result, result_catchup |  |
 | [racer_aggregated_stats](#t-racer_aggregated_stats) | table | anon 可 | 12 | 1 | data_health_nightly_freshness |  |  |  |
@@ -89,8 +89,8 @@
 | [races](#t-races) | table | anon 可 | 158 | 18 | claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course ほか24 |  | exhibition, kfile_sync, race_info ほか4 |  |
 | [raw_snapshots](#t-raw_snapshots) | table | service だけ | 0 | 1 |  |  | fan_period |  |
 | [rule_applications](#t-rule_applications) | table | service だけ | 1 | 2 |  |  |  |  |
-| [scrape_job_state](#t-scrape_job_state) | table | service だけ | 14 | 14 |  | scrape_breaker_open | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか46 |  |
-| [scrape_slots](#t-scrape_slots) | table | service だけ | 11 | 9 | claim_scrape_slots, claim_scrape_slots_by_offset | claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか46 |  |
+| [scrape_job_state](#t-scrape_job_state) | table | service だけ | 14 | 14 |  | scrape_breaker_open | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか47 |  |
+| [scrape_slots](#t-scrape_slots) | table | service だけ | 11 | 9 | claim_scrape_slots, claim_scrape_slots_by_offset | claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか47 |  |
 | [sns_approvers](#t-sns_approvers) | table | service だけ | 2 | 0 | approve_sns_x_send |  |  |  |
 | [sns_auto_send_control](#t-sns_auto_send_control) | table | service だけ | 18 | 0 | approve_sns_x_send, transition_sns_send_139, transition_sns_x_send |  |  |  |
 | [sns_auto_send_incidents](#t-sns_auto_send_incidents) | table | service だけ | 0 | 0 |  |  |  |  |
@@ -246,6 +246,7 @@
 | pit_reports | api/cron/pit-reports.js | 30 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
 | point_rank | api/cron/point-rank.js | 31 | racer_series_points, scrape_job_state, scrape_slots |
 | pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
+| race_facts_main | api/cron/race-facts-main.js | 34 | race_facts, racer_career_meta, run_facts, scrape_job_state, scrape_slots |
 | race_info | api/cron/race-info.js | 63 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | race_notices | api/cron/race-notices.js | 32 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 28 | scrape_job_state, scrape_slots |
@@ -1281,11 +1282,12 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_race_series, data_health_table_rows
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:282`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:73`
-- 読み手（17）: 
+- 読み手（18）: 
   - `api/_lib/botPage.js:253` rest(rest) [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
   - `api/_lib/botRace.js:212` rest(rest)
   - `scripts/lib/eveDeadlinesJob.js:66` select [end_date, start_date, venue_code]
   - `scripts/lib/motorPretestJob.js:197` select [end_date, start_date, venue_code]
+  - `scripts/lib/raceFactsMainJob.js:127` select(helper:all)
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
   - `scripts/lib/snsTodayDigestV3.js:96` rest(rest) [end_date, grade, kind, start_date, title, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
@@ -1697,7 +1699,7 @@
 
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で書く RPC: scrape_breaker_open
-- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, outcome_distribution_update, pcexpect, pit_reports, point_rank, pseudo, race_info, race_notices, race_series, race_status, racer_boat_return_baseline, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, release_dispatch, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
+- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, outcome_distribution_update, pcexpect, pit_reports, point_rank, pseudo, race_facts_main, race_info, race_notices, race_series, race_status, racer_boat_return_baseline, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, release_dispatch, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
 - 読み手（14）: 
   - `scripts/lib/dataHealth/job.js:98` select [job, last_report]
   - `scripts/lib/eveDeadlinesJob.js:362` select [job, last_target_date]
@@ -1735,7 +1737,7 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: claim_scrape_slots, claim_scrape_slots_by_offset
 - 本体で書く RPC: claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots
-- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, outcome_distribution_update, pcexpect, pit_reports, point_rank, pseudo, race_info, race_notices, race_series, race_status, racer_boat_return_baseline, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, release_dispatch, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
+- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, outcome_distribution_update, pcexpect, pit_reports, point_rank, pseudo, race_facts_main, race_info, race_notices, race_series, race_status, racer_boat_return_baseline, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, release_dispatch, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
 - 読み手（11）: 
   - `scripts/lib/boatcast/oritenJob.js:253` select [job, outcome, race_date, race_id, status]
   - `scripts/lib/boatcast/oritenJobParts.js:172` select [job, race_date, race_id]
@@ -2342,7 +2344,9 @@
 - table `growth_gsc_daily`: `scripts/lib/growth/gscDaily.js:168`, `scripts/lib/growth/gscDaily.js:181`, `scripts/lib/growth/gscDaily.js:187`
 - table `growth_gsc_page_daily`: `scripts/lib/growth/gscPageDaily.js:73`, `scripts/lib/growth/gscPageDaily.js:85`, `scripts/lib/growth/gscPageDaily.js:92`
 - table `growth_url_inspection`: `scripts/lib/growth/urlInspection.js:98`, `scripts/lib/growth/urlInspection.js:109`, `scripts/lib/growth/urlInspection.js:119`
+- table `race_facts`: `scripts/lib/raceFactsMainJob.js:150`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
+- table `run_facts`: `scripts/lib/raceFactsMainJob.js:146`
 - table `site_feedback`: `src/services/analogyFeedback.js:35`
 - table `site_feedback_hourly`: `scripts/maintenance/content-ops-checks/check-site-feedback-received.js:56`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`, `scripts/maintenance/verifyData/sns-send-runner-scenes-4.js:174`

@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3049,
-    "filesWithAccess": 333,
-    "tableReaders": 980,
-    "tableWriters": 200,
+    "sourceFiles": 3052,
+    "filesWithAccess": 334,
+    "tableReaders": 981,
+    "tableWriters": 202,
     "rpcCallers": 58,
     "nameMentions": 286,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 15,
+    "notInSnapshot": 17,
     "unresolved": 38,
     "parseErrors": 0,
     "uncoveredFiles": 57
@@ -12730,6 +12730,12 @@
           ]
         },
         {
+          "ref": "scripts/lib/raceFactsMainJob.js:127",
+          "op": "select",
+          "via": "helper:all",
+          "columns": []
+        },
+        {
           "ref": "scripts/lib/raceSeriesLookup.js:161",
           "op": "select",
           "via": "client",
@@ -19011,6 +19017,7 @@
         "pit_reports",
         "point_rank",
         "pseudo",
+        "race_facts_main",
         "race_info",
         "race_notices",
         "race_series",
@@ -19577,6 +19584,7 @@
         "pit_reports",
         "point_rank",
         "pseudo",
+        "race_facts_main",
         "race_info",
         "race_notices",
         "race_series",
@@ -29726,6 +29734,37 @@
       }
     },
     {
+      "job": "race_facts_main",
+      "entry": "api/cron/race-facts-main.js",
+      "reachableFiles": 34,
+      "writes": {
+        "race_facts": [
+          "scripts/lib/raceFactsMainJob.js:150"
+        ],
+        "racer_career_meta": [
+          "scripts/lib/racerCareerDb.js:108"
+        ],
+        "run_facts": [
+          "scripts/lib/raceFactsMainJob.js:146"
+        ],
+        "scrape_job_state": [
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
+        ]
+      }
+    },
+    {
       "job": "race_info",
       "entry": "api/cron/race-info.js",
       "reachableFiles": 63,
@@ -30442,11 +30481,25 @@
     },
     {
       "kind": "table",
+      "name": "race_facts",
+      "refs": [
+        "scripts/lib/raceFactsMainJob.js:150"
+      ]
+    },
+    {
+      "kind": "table",
       "name": "racer_career_meta",
       "refs": [
         "scripts/lib/racerCareerDb.js:108",
         "scripts/lib/racerCareerJob.js:174",
         "scripts/lib/racerCareerJob.js:223"
+      ]
+    },
+    {
+      "kind": "table",
+      "name": "run_facts",
+      "refs": [
+        "scripts/lib/raceFactsMainJob.js:146"
       ]
     },
     {
