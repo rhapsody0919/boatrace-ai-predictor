@@ -19,8 +19,12 @@ import {
 } from "../../src/pure/pageHead.js";
 import { internalApiHeaders } from "./internalApiHeaders.js";
 
-/** 外枠の取得の上限（目安 300ms、根拠なし。本番の分布で決め直す） */
-export const PAGE_HEAD_TIMEOUT_MS = 300;
+/**
+ * 外枠と head の材料の取得の上限（目安 1000ms）。本番（2026-11-27 19:06 の配備の後）で、日本（kix1）からの CDN の MISS は
+ * 146〜286ms で差し込めたが、アメリカ（cle1・iad1、過去のレースを取るクローラーと見られる）からは MISS が全て 300ms で
+ * 時間切れの素通りになった（地域ごとの CDN は id ごとに空で温まらない）。最初の 300ms はそれを見るための仮の値だった
+ */
+export const PAGE_HEAD_TIMEOUT_MS = 1000;
 
 // 画面のパンくずの「ホーム」（ja の analysisPage.breadcrumbHome と同じ字。訳を変えたらここも変える）。
 // middleware に ja の common.json（約280KB）を束ねないため字で持つ
