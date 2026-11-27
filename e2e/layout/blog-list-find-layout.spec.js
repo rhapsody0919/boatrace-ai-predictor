@@ -5,7 +5,8 @@ import { OVERFLOW_TOLERANCE_PX } from "./helpers.js";
 // 2026-11-27 の本番は 163 本を1ページに全て並べ（375px で約3.9万px）、注目記事 32 本が先に続き、検索が無かった
 test("/blog は20本ずつ出し、探す欄で絞れる @blog", async ({ page }) => {
   await page.goto("/blog", { waitUntil: "domcontentloaded" });
-  const cards = page.locator(".blog-grid .blog-card");
+  // 21本目より後ろは DOM に置いて hidden で隠すので、見えるカードだけを数える
+  const cards = page.locator(".blog-grid .blog-card:visible");
   await expect(cards.first()).toBeVisible();
   await expect(cards).toHaveCount(20);
 

@@ -290,10 +290,15 @@
   margin-top: 1.5rem;
 }
 
+/* 件数は小さくするだけで薄くしない（opacity で薄くすると light で 3.77:1 になり AA を割った） */
 .blog-category-count {
   margin-left: 0.35rem;
   font-size: 0.8em;
-  opacity: 0.75;
+}
+
+/* 20本より後ろのカードは hidden で隠す（.blog-card の display:flex が hidden 属性に勝つため明示する） */
+.blog-card[hidden] {
+  display: none;
 }
 
 .blog-result-count {

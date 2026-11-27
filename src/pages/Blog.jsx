@@ -213,14 +213,16 @@ function BlogSortFilter({ t, sortOrder, setSortOrder }) {
   );
 }
 
-function BlogPostGrid({ sortedPosts, langKey }) {
+// 全ての記事のカードを置き、visibleCount 本より後ろは hidden で隠す（リンクは DOM に残し、クローラーが全ての記事へたどれる）
+function BlogPostGrid({ sortedPosts, visibleCount, langKey }) {
   return (
     <div className="blog-grid">
-      {sortedPosts.map((post) => (
+      {sortedPosts.map((post, i) => (
         <Link
           key={post.id}
           to={localizePath(`/blog/${post.id}`, langKey)}
           className="blog-card"
+          hidden={i >= visibleCount}
         >
           {isWithinDays(post.date, 7) && <span className="new-badge">NEW</span>}
           <div className="blog-card-content">
@@ -290,7 +292,8 @@ function BlogListResults({ t, view, langKey }) {
     <>
       <p className="blog-result-count">{t.resultCount(sortedPosts.length)}</p>
       <BlogPostGrid
-        sortedPosts={sortedPosts.slice(0, visibleCount)}
+        sortedPosts={sortedPosts}
+        visibleCount={visibleCount}
         langKey={langKey}
       />
       {sortedPosts.length > visibleCount && (
