@@ -85,3 +85,27 @@
 .racer-motor-status-index.is-small-sample {
   color: var(--color-warning-text);
 }
+
+/* 走ごとの展示タイムの図（RacerMotorMeetChart、P-16・F-051）。目盛り・吹き出しは TrendChart.css の trc- */
+.rmmc-line {
+  stroke: var(--brand-accent-primary);
+  stroke-width: 2;
+}
+
+.rmmc-dot {
+  fill: var(--brand-accent-primary);
+  stroke: var(--surface-card);
+  stroke-width: 1;
+}
+
+.rmmc-change-line {
+  stroke: var(--text-secondary);
+  stroke-width: 0.8;
+  stroke-dasharray: 2 2;
+}
+
+.rmmc-change-text {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--text-secondary);
+}
