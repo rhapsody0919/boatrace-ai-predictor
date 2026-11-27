@@ -143,7 +143,7 @@ await check("4. 材料の失敗・形の違いは 503・no-store", async () => {
 await check("5. 節の行の取得は anon キーだけを送る", async () => {
   const sent = [];
   const source = createSeriesSource({
-    env: { SUPABASE_URL: "https://x.supabase.co", SUPABASE_ANON_KEY: "anon-key-value", SUPABASE_SERVICE_ROLE_KEY: "service-role-sentinel" },
+    env: { SUPABASE_URL: "https://x.supabase.co", SUPABASE_ANON_KEY: "anon-key-value", SUPABASE_SERVICE_KEY: "service-role-sentinel" },
     fetchImpl: async (url, init) => {
       sent.push(JSON.stringify({ url: String(url), headers: init.headers }));
       return new Response("[]", { status: 200 });
