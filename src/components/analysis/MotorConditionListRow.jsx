@@ -107,7 +107,8 @@ function MotorNumCell({ row, currentParts, partsBoat, setPartsBoat }) {
 
 function RateBarCell({ row, i, view, explainBoat, setExplainBoat }) {
   const { t } = useTranslation();
-  const { officialRates, officialRateMax, officialRateBestBoats, rateViews, rateLabel } = view;
+  const { officialRates, officialRateMax, officialRateBestBoats, officialRateTiers, rateViews, rateLabel } = view;
+  const tier = officialRateTiers?.get(row.boat_number);
   return (
     <>
       {/* 連対率は**小数1桁**で出す（BOA-474、2026-09-28）。
@@ -162,6 +163,12 @@ function RateBarCell({ row, i, view, explainBoat, setExplainBoat }) {
             )
           }
         />
+        {/* 6艇の上位2・下位2の印（意味づけ、型2）。色だけに頼らず ▲▼ と言葉を添える */}
+        {tier && (
+          <span className={`motor-tier-mark motor-tier-mark--${tier}`} data-tier={tier}>
+            {t(tier === "top" ? "analysis.motor.tierTop" : "analysis.motor.tierBottom")}
+          </span>
+        )}
         {/* 入れ替えから90日以内の公式の値は、何走で出た数字かを添える（BOA-830） */}
         {rateViews[i].kind === "official" &&
           rateViews[i].priorRuns !== null && (

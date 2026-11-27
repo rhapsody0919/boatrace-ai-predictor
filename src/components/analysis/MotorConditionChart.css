@@ -766,3 +766,13 @@ td.rate.is-small-sample {
   font-weight: var(--font-weight-normal);
   cursor: pointer;
 }
+
+/* モーター2連率の6艇の上位2・下位2の印（意味づけ 2026-11-26、型2） */
+.motor-tier-mark {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+.motor-tier-mark--top { color: var(--color-success-text); }
+.motor-tier-mark--bottom { color: var(--color-error-text); }
