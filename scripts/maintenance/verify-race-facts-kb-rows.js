@@ -15,7 +15,7 @@ import {
   buildKbRaceFact,
   buildKbRunFacts,
 } from "../lib/raceFactsKb.js";
-import { RACE_FACTS_DRAFT_SQL } from "./verifyData/race-facts-draft-sql.js";
+import { RACE_FACTS_MIGRATION_SQL, RACE_FACTS_SAME_RACE_SQL } from "./verifyData/race-facts-migration-files.js";
 
 const RACE = {
   race_id: "2025-12-02-12-12",
@@ -54,6 +54,13 @@ const BOATS = CODES.map((code, i) => ({
 
 test("レースの行: 列・値・kb に無い列は NULL", () => {
   const row = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null });
+  assert.deepEqual(row.racer_ids, [null, null, null, null, null, null], "艇を渡さなければ全部 null");
+  const withBoats = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null, boats: BOATS });
+  assert.deepEqual(withBoats.racer_ids, [4000, 4001, 4002, 4003, 4004, 4005]);
+  assert.deepEqual(withBoats.finish_order, [1, 2, 6, null, null, null], "着の順（F・欠・失格は着なし）");
+  const heat = buildKbRaceFact(RACE, DAY, { grade: null, seriesKind: null, boats: [{ ...BOATS[0], boat_number: 3, finish_raw: "01" }, BOATS[0], { ...BOATS[0], boat_number: 2, finish_raw: "02" }] });
+  assert.deepEqual(heat.finish_order, [1, 3, 2, null, null, null], "同着は艇番の順に詰める");
+  assert.equal(buildKbRaceFact(RACE, DAY, { grade: null, seriesKind: null, boats: [{ ...BOATS[2] }] }).finish_order, null, "着が無ければ null");
   assert.deepEqual(Object.keys(row), [...RACE_FACT_COLUMNS]);
   assert.equal(row.era, "kb");
   assert.equal(row.is_final, true);
@@ -110,7 +117,7 @@ test("艇の行: 列・着・進入・体重の出所", () => {
 
 const db = new PGlite();
 before(async () => {
-  const sql = RACE_FACTS_DRAFT_SQL;
+  const sql = `${RACE_FACTS_MIGRATION_SQL}${RACE_FACTS_SAME_RACE_SQL}`;
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;");
   await db.exec(`BEGIN;${sql}COMMIT;`);
 });
@@ -122,7 +129,7 @@ const insert = (table, columns, row) =>
   );
 
 test("組み立てた行は facts の表の CHECK を通り、RPC で読める", async () => {
-  const race = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null });
+  const race = buildKbRaceFact(RACE, DAY, { grade: "SG", seriesKind: null, boats: BOATS });
   await insert("race_facts", RACE_FACT_COLUMNS, race);
   for (const r of buildKbRunFacts(RACE, BOATS)) await insert("run_facts", RUN_FACT_COLUMNS, r);
   await db.exec("SET ROLE anon");
