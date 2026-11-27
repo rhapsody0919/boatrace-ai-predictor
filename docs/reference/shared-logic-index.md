@@ -25,6 +25,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/blogChartAnswers.js` | ブログの図の契約の検査のうち、答えの文（description）の数字の照合。 | checkAnswers |
 | `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
 | `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
+| `src/pure/blogListFilter.js` | ブログ一覧の絞り込み（分類と、記事を探す欄の語）。画面に依らない純関数。 | filterBlogPosts, countCategories |
 | `src/pure/clientKey.js` | ブラウザごとの匿名の識別番号（乱数の uuid v4）。個人と結びつけず、匿名の声の重複除外と連投の制限だけに使う | newUuidV4, readOrCreateClientKey |
 | `src/pure/compareBaseline.js` | 数字に「基準との比べ」「6艇の中の比べ」を付けるための判定（意味づけ、2026-11-26 オーナー承認）。 | judgeRateVsBaseline, judgeMeanVsBaseline, toneOf, rankTiers, Z_LINE ほか1件 |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
@@ -706,4 +707,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 664 ファイル / export 3552 件。
+対象 665 ファイル / export 3554 件。
