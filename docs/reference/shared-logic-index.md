@@ -40,7 +40,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/indicatorRegistry.js` | 指標の登録簿（ADR-0108）。指標の定義の正はここに並ぶ定義だけ。 | bestOfIndicator, formatIndicatorParts, INDICATORS, ALIASES, getIndicator |
 | `src/pure/indicatorStart.js` | 指標の定義: 大分類「スタート」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | START_INDICATORS |
 | `src/pure/jointMeetSeries.js` | 同じ節に格の違う2つの開催が同居する「併催」を、選手の組に分ける（純関数、G3 の点検 V-61、2026-11-26）。 | jointMeetSeriesOf, JOINT_FINAL_SLOTS |
-| `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST |
+| `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST, splitJstDate, formatDate |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetCompareSideRows.js` | RaceMeetTab 比較表の注記（RaceMeetTabCompareSide.jsx）の人数の行の文言を作る純関数（副作用なし）。 | countLineText |
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
@@ -555,7 +555,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getNowHHMMJST, getTodayJST, formatTodayHeadingJST, getYesterdayJST, isRaceBeforeTodayJST ほか5件 |
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか12件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
-| `src/utils/formatters.js` | フォーマット関数 | slashDate, formatCapturedAtJst, formatUpdatedAtJstParts, formatExhibitionSt, formatPercent ほか6件 |
+| `src/utils/formatters.js` | フォーマット関数 | slashDate, formatCapturedAtJst, formatUpdatedAtJstParts, formatExhibitionSt, formatPercent ほか5件 |
 | `src/utils/frontTaking.js` | 「イン屋」の判定（前付けの割合、BOA-1422・BOA-1250。#2169 の作り直し）。純関数で、DB・追加のクエリは持たない。 | frontTakingOfCounts, summarizeFrontTaking, FRONT_TAKING_MIN_RUNS, FRONT_TAKING_MIN_RATE |
 | `src/utils/homeAiIntroFaq.js` | トップの「よくある質問」（HomeAiIntro）の問い・答えと FAQPage の JSON-LD を組む純粋な関数。 | buildFaqItems, toFaqPageLd, isAssistShown |
 | `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれを超えたら「溢れている」とみなす（px）。「›」を出す、右に余白を足す、 | hscrollFadeWidth, horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor ほか3件 |
@@ -694,4 +694,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 652 ファイル / export 3509 件。
+対象 652 ファイル / export 3510 件。
