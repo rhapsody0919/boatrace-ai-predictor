@@ -13,7 +13,7 @@ import { halfMonthRanges, addDays } from "./racerCareerSeries.js";
 import { MAX_STALE_RATIO } from "./racerCareerCore.js";
 import { buildMainRaceFact, buildMainRunFacts } from "./raceFactsMain.js";
 import { fetchAll } from "./supabaseClient.js";
-import { upsertChangedRows } from "./unchangedRows.js";
+import { writeFactsWindow } from "./raceFactsWrite.js";
 import { loadJudgeInputs } from "./racerCareerDb.js";
 
 /** 窓の既存の行のキーのうち、組み立てた行に無い物 */
@@ -133,24 +133,6 @@ export function mainJobDeps(client, { dryRun }) {
       run: (await all("run_facts", "race_id,boat_number", ["race_id", "boat_number"], (q) => byRange(q, range).eq("era", "main")))
         .map((r) => `${r.race_id}|${r.boat_number}`),
     }),
-    writeWindow: async ({ raceRows, runRows, staleRace, staleRun }) => {
-      let written = 0;
-      for (const [table, rows, keyColumns] of [["race_facts", raceRows, ["race_id"]], ["run_facts", runRows, ["race_id", "boat_number"]]]) {
-        const res = await upsertChangedRows(client, table, rows, { keyColumns, onConflict: keyColumns.join(","), dryRun, failOnFetchError: true, ignoreColumns: ["built_at"] });
-        if (res.error) throw res.error;
-        written += dryRun ? res.toWrite.length : res.written;
-      }
-      if (dryRun) return { written };
-      for (const key of staleRun) {
-        const [raceId, boat] = key.split("|");
-        const { error } = await client.from("run_facts").delete().eq("race_id", raceId).eq("boat_number", Number(boat));
-        if (error) throw new Error(`run_facts の消去エラー（${key}）: ${error.message}`);
-      }
-      if (staleRace.length > 0) {
-        const { error } = await client.from("race_facts").delete().in("race_id", staleRace);
-        if (error) throw new Error(`race_facts の消去エラー: ${error.message}`);
-      }
-      return { written };
-    },
+    writeWindow: (plan) => writeFactsWindow(client, plan, { dryRun }),
   };
 }
