@@ -590,10 +590,6 @@
     font-weight: 700;
     color: var(--text-primary);
   }
-
-  .related-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 /* 1600px 以上はさらに器と文字を一段大きくし、広い画面でも左右が空きすぎないようにする（1行約50字） */
