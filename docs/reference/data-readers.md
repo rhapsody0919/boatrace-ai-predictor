@@ -10,9 +10,9 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3035 |
-| 読み書きのあるファイル | 332 |
-| 表の読み手（箇所） | 977 |
+| 読んだファイル | 3038 |
+| 読み書きのあるファイル | 333 |
+| 表の読み手（箇所） | 980 |
 | 表の書き手（箇所） | 200 |
 | RPC の呼び手（箇所） | 58 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
@@ -63,7 +63,7 @@
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
 | [predictions](#t-predictions) | table | anon 可 | 45 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか3 | hq:platform/finals_sheet.py |
 | [race_conditions](#t-race_conditions) | table | anon 可 | 45 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか3 |  |
-| [race_entries](#t-race_entries) | table | anon 可 | 151 | 17 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
+| [race_entries](#t-race_entries) | table | anon 可 | 152 | 17 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
 | [race_history_cache](#t-race_history_cache) | table | anon 可 | 3 | 1 | data_health_nightly_freshness |  |  |  |
 | [race_notices_health](#t-race_notices_health) | table | service だけ | 2 | 1 |  |  | race_notices |  |
 | [race_odds](#t-race_odds) | table | anon 可 | 15 | 3 | data_health_coverage, data_health_table_rows |  | odds |  |
@@ -83,8 +83,8 @@
 | [racer_grade_cache](#t-racer_grade_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
 | [racer_news](#t-racer_news) | table | anon 可 | 3 | 2 |  |  | racer_news |  |
 | [racer_news_pending](#t-racer_news_pending) | table | service だけ | 2 | 2 |  |  | racer_news |  |
-| [racer_period_stats](#t-racer_period_stats) | table | anon 可 | 8 | 0 | data_health_racer_period_stats, data_health_table_rows |  |  |  |
-| [racer_profiles](#t-racer_profiles) | table | anon 可 | 15 | 3 | data_health_table_rows |  | racer_profiles |  |
+| [racer_period_stats](#t-racer_period_stats) | table | anon 可 | 9 | 0 | data_health_racer_period_stats, data_health_table_rows |  |  |  |
+| [racer_profiles](#t-racer_profiles) | table | anon 可 | 16 | 3 | data_health_table_rows |  | racer_profiles |  |
 | [racer_series_points](#t-racer_series_points) | table | anon 可 | 5 | 1 | data_health_nightly_freshness, data_health_table_rows |  | point_rank |  |
 | [races](#t-races) | table | anon 可 | 158 | 18 | claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course ほか24 |  | exhibition, kfile_sync, race_info ほか4 |  |
 | [raw_snapshots](#t-raw_snapshots) | table | service だけ | 0 | 1 |  |  | fan_period |  |
@@ -823,8 +823,9 @@
 - 取得のジョブ: exhibition, race_info, races_init
 - 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: name
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:77`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:7`, `scripts/maintenance/backfill-kb-gaps.js:81`, `scripts/maintenance/delete-phantom-races.js:88`, `scripts/maintenance/fix-opening-day-race-id-date.js:66`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:39`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（151）: 
+- 読み手（152）: 
   - `api/_lib/analogyV16.js:30` rest(rest) [boat_number, is_absent, race_id]
+  - `api/_lib/pageHeadRacer.js:67` rest(rest) [grade, race_id, racer_id]
   - `api/_lib/racerEntryExhibition.js:171` rest(rest) [boat_number, race_id, racer_id]
   - `api/_lib/snsClaimCheckReaders.js:40` rest(rest) [is_absent, race_id]
   - `api/_lib/snsClaimCheckReaders.js:230` rest(rest) [is_absent, race_id]
@@ -1430,7 +1431,8 @@
 
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_racer_period_stats, data_health_table_rows
-- 読み手（8）: 
+- 読み手（9）: 
+  - `api/_lib/pageHeadRacer.js:68` rest(rest) [calc_to, finals, period_no, period_year, racer_id, starts, top2_rate, win_rate, wins]
   - `scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9` select [*, period_no, period_year, racer_id]
   - `scripts/maintenance/verifyData/full-picture-scene2-b-10.js:128` rest(rest)
   - `scripts/maintenance/verifyData/full-picture-scene2-b-5.js:178` rest(rest)
@@ -1447,7 +1449,8 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_table_rows
 - 取得のジョブ: racer_profiles
-- 読み手（15）: 
+- 読み手（16）: 
+  - `api/_lib/pageHeadRacer.js:66` rest(rest) [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:95` select [racer_id]
   - `scripts/lib/raceNoticesRun.js:33` select(helper:fetchAll)
   - `scripts/lib/racerNews/officialGradeAnnouncements.js:164` select [branch, name, racer_id]

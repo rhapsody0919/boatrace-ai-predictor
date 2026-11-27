@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3035,
-    "filesWithAccess": 332,
-    "tableReaders": 977,
+    "sourceFiles": 3038,
+    "filesWithAccess": 333,
+    "tableReaders": 980,
     "tableWriters": 200,
     "rpcCallers": 58,
     "nameMentions": 286,
@@ -6917,6 +6917,16 @@
           ]
         },
         {
+          "ref": "api/_lib/pageHeadRacer.js:67",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "grade",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
           "ref": "api/_lib/racerEntryExhibition.js:171",
           "op": "rest",
           "via": "rest",
@@ -8480,6 +8490,7 @@
         "race_id": {
           "readers": [
             "api/_lib/analogyV16.js:30",
+            "api/_lib/pageHeadRacer.js:67",
             "api/_lib/racerEntryExhibition.js:171",
             "api/_lib/snsClaimCheckReaders.js:230",
             "api/_lib/snsClaimCheckReaders.js:40",
@@ -8748,6 +8759,7 @@
         },
         "grade": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:67",
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
@@ -9002,6 +9014,7 @@
         },
         "racer_id": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:67",
             "api/_lib/racerEntryExhibition.js:171",
             "scripts/analysis/aggregate-racer-stats.js:428",
             "scripts/analysis/analyze-indicator-predictive-power.js:131",
@@ -14530,6 +14543,22 @@
       },
       "readers": [
         {
+          "ref": "api/_lib/pageHeadRacer.js:68",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "calc_to",
+            "finals",
+            "period_no",
+            "period_year",
+            "racer_id",
+            "starts",
+            "top2_rate",
+            "win_rate",
+            "wins"
+          ]
+        },
+        {
           "ref": "scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9",
           "op": "select",
           "via": "client",
@@ -14624,6 +14653,7 @@
       "columns": {
         "racer_id": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9",
             "src/services/raceQueries2.js:270",
             "src/services/racerQueries.js:227",
@@ -14638,6 +14668,7 @@
         },
         "period_year": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9",
             "src/services/raceQueries2.js:270",
             "src/services/racerQueries.js:227",
@@ -14650,6 +14681,7 @@
         },
         "period_no": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9",
             "src/services/raceQueries2.js:270",
             "src/services/racerQueries.js:227",
@@ -14669,6 +14701,7 @@
         },
         "calc_to": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "src/services/racerQueries4.js:71"
           ],
           "writers": [],
@@ -14711,6 +14744,7 @@
         },
         "win_rate": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "src/services/racerQueries4.js:71"
           ],
           "writers": [],
@@ -14718,6 +14752,7 @@
         },
         "top2_rate": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "src/services/racerQueries4.js:71"
           ],
           "writers": [],
@@ -14735,6 +14770,7 @@
         },
         "starts": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "src/services/racerQueries4.js:71"
           ],
           "writers": [],
@@ -14742,6 +14778,7 @@
         },
         "finals": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "src/services/racerQueries4.js:71"
           ],
           "writers": [],
@@ -14749,6 +14786,7 @@
         },
         "wins": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:68",
             "src/services/racerQueries4.js:71"
           ],
           "writers": [],
@@ -15368,6 +15406,23 @@
       },
       "readers": [
         {
+          "ref": "api/_lib/pageHeadRacer.js:66",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "birth_date",
+            "blood_type",
+            "branch",
+            "height_cm",
+            "hometown",
+            "name",
+            "name_kana",
+            "racer_id",
+            "registration_period",
+            "weight_kg"
+          ]
+        },
+        {
           "ref": "scripts/analysis/verify-racer-season-stats-accuracy.js:95",
           "op": "select",
           "via": "client",
@@ -15545,6 +15600,7 @@
       "columns": {
         "racer_id": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "scripts/analysis/verify-racer-season-stats-accuracy.js:95",
             "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
             "scripts/lib/racerProfileSync.js:273",
@@ -15563,6 +15619,7 @@
         },
         "name": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:129",
@@ -15577,6 +15634,7 @@
         },
         "name_kana": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
           ],
@@ -15587,6 +15645,7 @@
         },
         "birth_date": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
           ],
@@ -15597,6 +15656,7 @@
         },
         "height_cm": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
           ],
@@ -15607,6 +15667,7 @@
         },
         "weight_kg": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
           ],
@@ -15617,6 +15678,7 @@
         },
         "blood_type": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
@@ -15626,6 +15688,7 @@
         },
         "branch": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
@@ -15637,6 +15700,7 @@
         },
         "hometown": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
@@ -15648,6 +15712,7 @@
         },
         "registration_period": {
           "readers": [
+            "api/_lib/pageHeadRacer.js:66",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
           ],
