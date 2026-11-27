@@ -105,6 +105,7 @@
 - `pgrst.db_pre_request`: 無い。rolconfig の行は authenticator だけで、中身は `session_preload_libraries=supautils, safeupdate`・`statement_timeout=8s`・`lock_timeout=8s`（anon・authenticated は行なし）
 - `pg_graphql` の拡張: 無い（0行）
 - anon が EXECUTE できる public・graphql_public の関数で、本文に set_config・SET LOCAL・動的な EXECUTE を含む物、設定に boatai. を含む物: 無い（0行）
+- 窓口も別の問いで同じ3点を読み取りで確かめた（2026-11-27 10:50 ごろ）: pg_db_role_setting に pgrst.* の行が無い（役ごとの設定は anon の statement_timeout 3s・authenticated 8s・authenticator の上の3つ、全体に app.settings.jwt_exp だけ）。pg_extension に pg_graphql・pg_net が無い。利用者のスキーマ（pg_catalog・information_schema・extensions・graphql*・auth・storage・realtime・supabase_functions・vault・pgbouncer・net・cron を除く）に、本文に set_config を含む関数は0本
 
 手元の試験（PGlite 18.3、2026-11-27、全部通った）:
 - 1つのトランザクションで2回流せる。戻しの SQL（頭の注釈）が通り、戻した後に当て直せる
