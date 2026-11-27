@@ -54,6 +54,20 @@ const MEET_SPARK = Object.freeze({
   bandIfAny: true,
 });
 
+// 選手ページの走ごとの推移（P-31 展示・P-32 ST、選手1人の線）。横軸は走の順で目盛りは日付（点の xr）。
+// 艇番の札は出さない（選手ページに今の艇番は無い）。走が多い（最大約200走）ので点は打たず線を細く
+const RACER_RUN = Object.freeze({
+  invert: true,
+  digits: 2,
+  tickDigits: 2,
+  unit: "",
+  unitKey: "basicInfo.trend.unitSec",
+  tipValueKey: "basicInfo.trend.tipValueRun",
+  height: 200,
+  strokeW: 1.5,
+  noBadge: true,
+});
+
 export const TREND_SCALES = Object.freeze({
   top2Rate: Object.freeze({
     step: 5,
@@ -114,6 +128,24 @@ export const TREND_SCALES = Object.freeze({
     step: 0.02,
     tickStep: 0.05,
     min: 0,
+  }),
+  racerRunExhibition: Object.freeze({
+    ...RACER_RUN,
+    step: 0.02,
+    tickStep: 0.1,
+    tipValue: true,
+  }),
+  // フライングの走は値の線から外し、上の帯に F（R-36 と同じ書き方。ST は .12）
+  racerRunSt: Object.freeze({
+    ...RACER_RUN,
+    step: 0.02,
+    tickStep: 0.05,
+    min: 0,
+    tipValue: false,
+    flags: true,
+    bandIfAny: true,
+    dropZero: true,
+    labelEvery: 2,
   }),
   meetSparkExhibition: Object.freeze({
     ...MEET_SPARK,

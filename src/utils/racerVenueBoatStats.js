@@ -144,6 +144,20 @@ function seriesPoint(row, hasEx, hasSt) {
     flying: row.isFlying ? 0 : null,
     // ツールチップで F の深さ（F.01 か F.04 か）を出す
     flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
+    // 共通の推移の図の吹き出し（日付・会場・R・グレード／艇番→進入・着順・ST、レースへの飛び先）の材料
+    run: {
+      raceId: row.raceId,
+      date: row.raceId.slice(0, 10),
+      venueCode: row.venueCode,
+      raceNo: Number(row.raceId.slice(-2)),
+      raceGrade: row.raceGrade ?? null,
+      boatNumber: row.boatNumber,
+      entryCourse: row.entryCourse ?? null,
+      finishRank: row.unranked ? null : finishPositionOf(row),
+      finishMark: row.finishMark ?? null,
+      startTiming: row.startTiming ?? null,
+      isFlying: row.isFlying === true,
+    },
   };
 }
 

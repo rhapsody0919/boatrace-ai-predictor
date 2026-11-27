@@ -90,40 +90,35 @@ test("選手ページ: STの推移・展示タイムの推移の見出しと横�
   const st = chartOf("STの推移");
   await expect(st).toBeVisible({ timeout: 30000 });
   await expect(st.locator("h3")).toContainText("2025年12月以降");
-  // 横軸の日付ラベル（"26-01-03" 形式）のうち最初のもの。recharts の版で
-  // 目盛りラベルの入れ物のクラスが変わるので、svg 内の日付形式の文字で取る。
-  // 目盛りは間引かれるので、これは「データの最初の日付」ではない（最初に見える目盛り）
+  // 横軸の日付の目盛り（共通の推移の図、P-31・P-32。"25/12/27" 形式）のうち最初のもの。目盛りは
+  // 最初・1/3・2/3・最後の走に付く
   const firstTick = (chart) =>
     chart
-      .locator("svg text")
+      .locator(".trc-day")
       .evaluateAll(
         (els) =>
           els
             .map((el) => el.textContent.trim())
-            .find((t) => /^\d{2}-\d{2}-\d{2}$/.test(t)) ?? null,
+            .find((t) => /^\d{2}\/\d{1,2}\/\d{1,2}$/.test(t)) ?? null,
       );
-  // データの最初の日付: 描いた点の左端に hover して出る Tooltip の見出し
-  // （"2025-12-27 桐生 10R"、会場が無い点は race_id）から取る。間引かれる目盛りの字に依らない
+  // データの最初の日付: 図の左端の点を押して出る吹き出しの1行目（"12/27 桐生 10R"）の月と、
+  // 最初の目盛りの年から取る。目盛りの字だけに依らず、描いた点から読む
   const firstPointYm = async (chart) => {
-    // 画面の外にあると page.mouse.move の座標が図に当たらず、Tooltip の見出しが空のまま
-    // 隠れる（CI で起きた）。先に図を表示の範囲へ入れ、座標は入れた後に取る
-    const grid = chart.locator(".recharts-cartesian-grid");
+    // 画面の外にあると page.mouse の座標が図に当たらない。先に図を表示の範囲へ入れ、座標は入れた後に取る
+    const grid = chart.locator(".trc-hit");
     await grid.scrollIntoViewIfNeeded();
-    const label = chart.locator(".recharts-tooltip-label");
-    // 見出しの年は2桁（"25-12-25 福岡 2R"）。4桁の形も受ける
-    const dateRe = /(?<![\d-])(\d{4}|\d{2})-(\d{2})-\d{2}/;
-    // 描画・アニメーションの直後は反応しないことがあるので、見出しに日付が出るまで動かし直す
+    const label = chart.locator(".trc-tip-line").first();
+    const dateRe = /^(\d{1,2})\/(\d{2}) /;
     await expect(async () => {
       const box = await grid.boundingBox();
       expect(box).not.toBeNull();
-      await page.mouse.move(box.x + 40, box.y + box.height / 2);
-      await page.mouse.move(box.x + 1, box.y + box.height / 2, { steps: 5 });
+      await page.mouse.click(box.x + 1, box.y + box.height / 2);
       await expect(label).toHaveText(dateRe, { timeout: 1000 });
     }).toPass({ timeout: 15000 });
     const m = (await label.textContent()).match(dateRe);
     expect(m).not.toBeNull();
-    const year = m[1].length === 2 ? `20${m[1]}` : m[1];
-    return `${year}-${m[2]}`;
+    const year = `20${(await firstTick(chart)).slice(0, 2)}`;
+    return `${year}-${m[1].padStart(2, "0")}`;
   };
   // 見出しの「2025年12月以降」から年月を読む
   const headingYm = async (chart) => {
@@ -139,7 +134,8 @@ test("選手ページ: STの推移・展示タイムの推移の見出しと横�
     expect(await firstPointYm(chart)).toBe(ym);
     const tick = await firstTick(chart);
     expect(tick).not.toBeNull();
-    expect(`20${tick.slice(0, 5)}` >= ym).toBe(true);
+    const [yy, mm] = tick.split("/");
+    expect(`20${yy}-${mm.padStart(2, "0")}` >= ym).toBe(true);
   };
   await expectAxisMatchesHeading(st);
   const ex = chartOf("展示タイムの推移");

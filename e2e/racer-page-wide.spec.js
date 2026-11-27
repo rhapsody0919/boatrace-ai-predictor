@@ -41,16 +41,16 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       has: page.locator("h3", { hasText: "STの推移" }),
     });
     await expect(chart).toBeVisible({ timeout: 30000 });
-    // フライングの印（赤い点）が2つ
-    await expect(
-      chart.locator('circle[fill="var(--color-error)"]'),
-    ).toHaveCount(2);
-    // ツールチップ: 日付だけでなく会場とR番号
+    // フライングの印が2つ。共通の推移の図（P-32）では線から外し、図の上の帯に F の札
+    await expect(chart.locator(".trc-flag text", { hasText: "F" })).toHaveCount(
+      2,
+    );
+    // 吹き出し: 日付だけでなく会場とR番号（1行目は「月/日 会場 R グレード」）
     await chart.scrollIntoViewIfNeeded();
-    const box = await chart.locator(".recharts-surface").boundingBox();
-    await page.mouse.move(box.x + box.width * 0.6, box.y + box.height / 2);
-    await expect(chart.locator(".recharts-tooltip-label")).toHaveText(
-      /^\d{2}-\d{2}-\d{2} .+ \d{1,2}R$/,
+    const box = await chart.locator(".trc-hit").boundingBox();
+    await page.mouse.click(box.x + box.width * 0.6, box.y + box.height / 2);
+    await expect(chart.locator(".trc-tip-line").first()).toHaveText(
+      /^\d{1,2}\/\d{2} .+ \d{1,2}R/,
     );
   });
 
@@ -104,21 +104,24 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     });
     await expect(chart).toBeVisible({ timeout: 30000 });
     await chart.scrollIntoViewIfNeeded();
-    const dots = chart.locator('circle[fill="var(--color-error)"]');
+    // F の走は図の上の帯の札（共通の推移の図、P-32）。札の横の位置を押すとその走の吹き出し
+    const dots = chart.locator(".trc-flag", { hasText: "F" });
     // 点は取得と描画の後に出る。boundingBox は待たずに null を返す（BOA-623 で履歴の取得列が
     // 増え、録画に無い取得が本番へ素通しになって遅くなったときに落ちた）。hover() は点が
     // 見える・止まるまで待ち、描き直しで外れた要素も探し直す。点は古い順なので本番に F が
     // 増えると .last() は別の走になる。F の点を順に hover し、9/19 戸田9R の点を探す
     await expect(dots.first()).toBeVisible({ timeout: 30000 });
-    const label = chart.locator(".recharts-tooltip-label");
+    const label = chart.locator(".trc-tip-line").first();
     const count = await dots.count();
     let found = false;
     for (let i = 0; i < count && !found; i += 1) {
-      await dots.nth(i).hover({ timeout: 30000 });
+      const fb = await dots.nth(i).boundingBox();
+      const hit = await chart.locator(".trc-hit").boundingBox();
+      await page.mouse.click(fb.x + fb.width / 2, hit.y + 2);
       // hover の直後は tooltip の旧ラベルを読むことがあるので、落ち着くまで待つ
       found = await expect
         .poll(() => label.textContent().catch(() => ""), { timeout: 3000 })
-        .toBe("26-09-19 戸田 9R")
+        .toMatch(/^9\/19 戸田 9R/)
         .then(
           () => true,
           () => false,
@@ -129,10 +132,8 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
         "選手3928 の 2026-09-19 戸田9R の F の点がグラフに無い（本番データが変わった）",
       );
     }
-    await expect(label).toHaveText("26-09-19 戸田 9R");
-    await expect(chart.locator(".recharts-tooltip-wrapper")).toContainText(
-      "F.04",
-    );
+    await expect(label).toHaveText(/^9\/19 戸田 9R/);
+    await expect(chart.locator(".trc-tip")).toContainText("F.04");
   });
 
   test("375px: 推移グラフは直近50走に絞り、そのことを書く（ファン評価2周目）", async ({
@@ -145,11 +146,14 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     });
     await expect(chart).toBeVisible({ timeout: 30000 });
     await expect(chart).toContainText("直近50走");
-    const dots = await chart
-      .locator(".recharts-line-dots")
-      .first()
-      .locator("circle")
-      .count();
+    // 線の頂点と F の札（値の無い走）を合わせた走の数（共通の推移の図、P-32）
+    const dots = await chart.evaluate(
+      (root) =>
+        [...root.querySelectorAll(".racer-run-series .trc-stroke")]
+          .map((pl) => pl.getAttribute("points").trim().split(/\s+/).length)
+          .reduce((a, b) => a + b, 0) +
+        root.querySelectorAll(".racer-run-series .trc-flag").length,
+    );
     expect(dots).toBeLessThanOrEqual(50);
   });
 
@@ -173,9 +177,10 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       });
       await expect(chart).toBeVisible({ timeout: 30000 });
       await chart.scrollIntoViewIfNeeded();
-      const box = await chart.locator(".recharts-surface").boundingBox();
-      await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2);
-      const tip = chart.locator(".recharts-default-tooltip");
+      // 共通の推移の図（P-32）の吹き出しは点を押して出す
+      const box = await chart.locator(".trc-hit").boundingBox();
+      await page.mouse.click(box.x + box.width * 0.5, box.y + box.height / 2);
+      const tip = chart.locator(".trc-tip");
       await expect(tip).toBeVisible();
       const ratios = await chart.evaluate((root) => {
         const rgb = (c) => {
@@ -203,15 +208,13 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
           }
           return "rgb(255, 255, 255)";
         };
-        const tipEl = root.querySelector(".recharts-default-tooltip");
-        const tipBg = getComputedStyle(tipEl).backgroundColor;
-        const label = getComputedStyle(
-          tipEl.querySelector(".recharts-tooltip-label"),
-        ).color;
-        const item = getComputedStyle(
-          tipEl.querySelector(".recharts-tooltip-item"),
-        ).color;
-        const tick = root.querySelector(".recharts-cartesian-axis-tick-value");
+        // 吹き出しの1行目（日付・会場・R）と2行目（艇番→進入・着順・ST）、目盛りの数字
+        const tipEl = root.querySelector(".trc-tip");
+        const tipBg = bgOf(tipEl);
+        const lines = tipEl.querySelectorAll(".trc-tip-line");
+        const label = getComputedStyle(lines[0]).color;
+        const item = getComputedStyle(lines[1]).color;
+        const tick = root.querySelector(".trc-tick");
         return {
           label: ratio(tipBg, label),
           item: ratio(tipBg, item),
