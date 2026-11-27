@@ -3,8 +3,8 @@
  * アニメーションコンポーネントで使用
  */
 
-// 英語キー→日本語マッピング。展開予測をやめた後も決まり手の表示で使うので src/constants/techniqueNames.js に移した（BOA-822）
-import { TECHNIQUE_NAMES } from "../constants/techniqueNames.js";
+// 英語キー→日本語マッピング。展開予測をやめた後も決まり手の表示で使うので src/pure/techniqueNames.js にある（BOA-822・RA41d、src/constants の再 export は 2026-11-27 に消した）
+import { TECHNIQUE_NAMES } from "../pure/techniqueNames.js";
 export { TECHNIQUE_NAMES };
 
 /**
