@@ -1,5 +1,5 @@
 /**
- * マイグレーション 212（過去データの facts の表、race_facts・run_facts・get_racer_runs ほか）の verify
+ * マイグレーション 212・213（過去データの facts の表、race_facts・run_facts・get_racer_runs ほか）の verify
  * （verify-race-facts-migration.js・verify-facts-racer-guc.js）の部品。verify ではない。ファイルの本文を読むだけ
  * （racer-boat-return-baseline-sql.js と同じ形）。
  */
@@ -10,6 +10,12 @@ const MIGRATION_DIR = new URL("../../../docs/db-migration/", import.meta.url);
 /** マイグレーション 212 の本文 */
 export const RACE_FACTS_MIGRATION_SQL = readFileSync(
   new URL("../../../docs/db-migration/212_race_facts.sql", import.meta.url),
+  "utf8",
+);
+
+/** マイグレーション 213（同じレースの6艇の選手と着の並び）の本文。212 の後に流す */
+export const RACE_FACTS_SAME_RACE_SQL = readFileSync(
+  new URL("../../../docs/db-migration/213_race_facts_same_race_boats.sql", import.meta.url),
   "utf8",
 );
 
