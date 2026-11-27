@@ -16,6 +16,9 @@
  *   - 2連対率は「66.6%」のように小数第1位までの表示（race_entries.motor_2rate・boat_2rate は小数第2位で、同じ値の
  *     高精度版）。モーター番号・ボート番号も race_entries と同じ値。**このページにしか無い新しい情報は、前検タイムのみ**
  *   - データが無いとき（開催が無い日・会場）: 表が無く、`.heading1_mainLabel` に「データがありません。」
+ *   - 併催の節（SG チャレンジカップと G2 レディースCC）は、`.table1 table` が開催ごとに2つ（`.title9_mainLabel` が表の名。
+ *     常滑 2026-11-24 は 34人と21人）。全ての表を読む（最初の表だけ読むと、女子の級別・前検タイムが入らなかった。G3 の点検 V-62）。
+ *     前検順位は公式の表と同じく表ごとに付ける（開催が違う選手と比べない）
  *
  * 項目の解釈は位置ではなく、見出しのラベルで行う。未知のラベル・必須のラベルの欠落・想定外のセルは、`anomalies` に残し、
  * status = "unrecognized" とする（黙って一部だけを返さない。呼び出し側が parse_anomaly として扱う）。
@@ -139,6 +142,18 @@ export function competitionRanks(values) {
   );
 }
 
+/** 前検順位を表ごとに付ける（併催の節は開催ごとの表。開催の違う選手と比べない）。tableOf[j] は rows[j] の表の番号 */
+function ranksByTable(rows, tableOf) {
+  const ranks = new Array(rows.length).fill(null);
+  for (const k of new Set(tableOf)) {
+    const idx = rows.map((_, j) => j).filter((j) => tableOf[j] === k);
+    competitionRanks(idx.map((j) => rows[j].pretest_time)).forEach((r, n) => {
+      ranks[idx[n]] = r;
+    });
+  }
+  return ranks;
+}
+
 /** 場・日・節の題（見出しと日のタブから）。parseMotorPretestHtml の一部 */
 function readPretestMeta($) {
   const venueImage = $(".heading2_area img").first().attr("src") ?? "";
@@ -243,8 +258,8 @@ export function parseMotorPretestHtml(html) {
     anomalies: [],
   };
 
-  const table = $(".table1 table").first();
-  if (table.length === 0) {
+  const tables = $(".table1 table").toArray();
+  if (tables.length === 0) {
     if (
       squash($(".heading1_mainLabel").text()).includes("データがありません")
     ) {
@@ -258,8 +273,13 @@ export function parseMotorPretestHtml(html) {
   }
 
   const meta = readPretestMeta($);
-  const labels = readHeaderLabels($, table.find("thead").first());
+  const labels = readHeaderLabels($, $(tables[0]).find("thead").first());
   const { fieldByColumn, anomalies } = mapHeaderFields(labels);
+  tables.slice(1).forEach((t, k) => {
+    const other = readHeaderLabels($, $(t).find("thead").first());
+    if (other.join("|") !== labels.join("|"))
+      anomalies.push(`table_header:${k + 2}`);
+  });
   if (anomalies.length > 0) {
     return {
       ...base,
@@ -270,28 +290,36 @@ export function parseMotorPretestHtml(html) {
   }
 
   const rows = [];
+  const tableOf = [];
   const seen = new Set();
-  table.find("tbody tr").each((i, tr) => {
-    const cells = $(tr)
-      .children("td")
-      .map((_, td) => squash($(td).text()))
-      .get();
-    if (cells.length !== labels.length) {
-      anomalies.push(`row_shape:${i + 1}:${cells.length}列`);
-      return;
-    }
-    const { row, problem } = parsePretestRow(cells, fieldByColumn, i);
-    if (problem) {
-      anomalies.push(problem);
-      return;
-    }
-    if (seen.has(row.racer_id)) {
-      anomalies.push(`duplicate_racer:${row.racer_id}`);
-      return;
-    }
-    seen.add(row.racer_id);
-    rows.push(row);
-  });
+  let i = -1;
+  tables.forEach((t, k) =>
+    $(t)
+      .find("tbody tr")
+      .each((_, tr) => {
+        i += 1;
+        const cells = $(tr)
+          .children("td")
+          .map((_, td) => squash($(td).text()))
+          .get();
+        if (cells.length !== labels.length) {
+          anomalies.push(`row_shape:${i + 1}:${cells.length}列`);
+          return;
+        }
+        const { row, problem } = parsePretestRow(cells, fieldByColumn, i);
+        if (problem) {
+          anomalies.push(problem);
+          return;
+        }
+        if (seen.has(row.racer_id)) {
+          anomalies.push(`duplicate_racer:${row.racer_id}`);
+          return;
+        }
+        seen.add(row.racer_id);
+        rows.push(row);
+        tableOf.push(k);
+      }),
+  );
 
   if (anomalies.length === 0 && rows.length === 0) {
     anomalies.push("no_rows");
@@ -305,11 +333,11 @@ export function parseMotorPretestHtml(html) {
     };
   }
 
-  const ranks = competitionRanks(rows.map((r) => r.pretest_time));
+  const ranks = ranksByTable(rows, tableOf);
   return {
     ...base,
     ...meta,
     status: MOTOR_PRETEST_STATUSES.ok,
-    rows: rows.map((row, i) => ({ ...row, pretest_rank: ranks[i] })),
+    rows: rows.map((row, j) => ({ ...row, pretest_rank: ranks[j] })),
   };
 }
