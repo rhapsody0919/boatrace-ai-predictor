@@ -100,3 +100,6 @@ data/analysis/sns-pdca-baseline/power-*.json
 data/analysis/organic-decline-*/gsc-*
 data/analysis/organic-decline-*/ga4-organic-*.json
 docs/design/scraping-load-budget/analysis/ga4-*.json
+
+# compare-shots.js の比較画像（作業ツリーの中に置いて SendUserFile で送る。git には入れない）
+/out/compare-shots/
