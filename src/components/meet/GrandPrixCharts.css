@@ -148,7 +148,7 @@
 }
 
 /* 開幕までの日数の帯。高さを固定して、日が変わってもレイアウトがずれないようにする */
-.gp-page .gp-countdown {
+.gp-head .gp-countdown {
   display: flex;
   align-items: baseline;
   gap: var(--spacing-2);
@@ -179,7 +179,7 @@
   gap: 4px;
 }
 
-.gp-page .gp-group {
+.gp-prize .gp-group {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -187,7 +187,7 @@
   font-weight: 700;
 }
 
-.gp-page .gp-group--cut {
+.gp-prize .gp-group--cut {
   margin-top: 4px;
   padding-top: 6px;
   border-top: 2px dashed var(--gp-sg);
