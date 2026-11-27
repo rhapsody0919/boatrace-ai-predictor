@@ -5,6 +5,7 @@
  *    （CommonMark の規則だけでは「%**ま」の ** は閉じと見なされず生で残る。2026-11-27 に 41 ファイル・91 か所で出ていた）
  * 2. 今ある全ての記事（public/blog/*.md）を頁と同じ remark の組（src/utils/blogMarkdownSanitize.js の blogRemarkPlugins）で読むと、
  *    コードの外の文に ** が残らない（新しい記事が別の形で壊れたら落ちる）
+ * 3. remark の組を変えても、同じ記事の描き方（blogRemarkPlugins＋blogRehypePlugins）でブログの図のタグと属性（src・rows）が残る
  *
  * 使い方: node scripts/maintenance/verify-blog-cjk-emphasis.js
  */
@@ -15,7 +16,13 @@ import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import { renderBlogPost } from "./verifyData/blog-post-page.js";
 import { readBlogMarkdownFiles } from "./verifyData/blog-markdown-files.js";
-import { blogRemarkPlugins } from "../../src/utils/blogMarkdownSanitize.js";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import ReactMarkdown from "react-markdown";
+import {
+  blogRehypePlugins,
+  blogRemarkPlugins,
+} from "../../src/utils/blogMarkdownSanitize.js";
 
 const SAMPLE =
   "全24会場を並べると、**1コース逃げ率は最小40.3%〜最大59.0%**まで開きます。\n\n" +
@@ -44,4 +51,16 @@ test("今ある全ての記事で、コードの外の文に ** が残らない"
     });
   }
   assert.deepEqual(leftovers, [], `太字にならない ** が残る:\n${leftovers.join("\n")}`);
+});
+
+test("remark の組を変えても、図のタグと属性（src・rows）は残る", () => {
+  const html = renderToStaticMarkup(
+    createElement(
+      ReactMarkdown,
+      { remarkPlugins: blogRemarkPlugins, rehypePlugins: blogRehypePlugins },
+      "前の段落の**強調**。\n\n<ryujin-chart src=\"/blog-charts/verify.json\" rows=\"3\"></ryujin-chart>\n",
+    ),
+  );
+  assert.match(html, /<strong>強調<\/strong>/);
+  assert.match(html, /<ryujin-chart src="\/blog-charts\/verify\.json" rows="3">/);
 });
