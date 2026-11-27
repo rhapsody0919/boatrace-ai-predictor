@@ -74,7 +74,7 @@ const DOT_SEGMENT = /\/\.\.?(?:\/|$)/; // /./・/../ は URL の解決で縮む�
  * 解決の要らないパスだけを受ける。一致は verify で見る）。受けられない項目があれば null
  * @param {{name: string, url: string}[]} items
  */
-function breadcrumbListLd(items) {
+export function breadcrumbListLd(items) {
   const ok = items.every((x) => isText(x?.name) && PLAIN_PATH.test(x?.url ?? "") && !DOT_SEGMENT.test(x.url));
   if (items.length === 0 || !ok) return null;
   return {
