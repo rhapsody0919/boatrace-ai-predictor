@@ -8,11 +8,10 @@
  *    外枠は同じ origin の /index.html を取る（/ を取らない）。canonical はサイトの URL（Preview の host でも）
  * 3. 対象の外のパス（一覧・0埋め・実在しない日・範囲外）と GET 以外は素通りで、外枠を取らない。クエリは中身を変えない
  * 4. 外枠が 200 でない・取得が投げる・時間切れ・差し込めない外枠は素通り（undefined）で、理由を1行の JSON に出す
- * 5. 差し込む会場名（src/constants の STADIUM_NAMES）と「ホーム」は ja の訳と同じ字（全24会場の title で見る）
- * 6. middleware の入口からも同じに動き、ほかの振り分け（/venue/1 の bingbot は関数へ rewrite）は変わらない
+ * （会場名の STADIUM_NAMES が正準と同じことは verify-venue-names.js が見る）
+ * 5. middleware の入口からも同じに動き、ほかの振り分け（/venue/1 の bingbot は関数へ rewrite）は変わらない
  */
 import assert from "node:assert/strict";
-import ja from "../../src/locales/ja/common.json" with { type: "json" };
 import { respondWithPageHead } from "../../api/_lib/pageHeadMiddleware.js";
 
 // 外枠（index.html）の head と同じ形の見本: title が1つ、description・canonical は無い、共通の JSON-LD が3つ。
@@ -160,17 +159,7 @@ await check("4. 失敗は全て素通り（undefined）で理由を出す", asyn
   assert.ok(Date.now() - t0 < 2000, "上限で止まらない");
 });
 
-await check("5. 会場名と「ホーム」は ja の訳と同じ字", async () => {
-  for (let code = 1; code <= 24; code += 1) {
-    const html = await (await run(`/races/2026-10-11/${code}`)).res.text();
-    const title = html.match(/<title[^>]*>([^<]*)<\/title>/)[1];
-    assert.ok(title.startsWith(`${ja.venues[String(code)]}競艇の結果・配当`), `会場 ${code}: ${title}`);
-  }
-  const html = await (await run(PATH)).res.text();
-  assert.ok(html.includes(`"name":"${ja.analysisPage.breadcrumbHome}"`), "パンくずのホームが訳と違う");
-});
-
-await check("6. middleware の入口から同じに動き、ほかの振り分けは変わらない", async () => {
+await check("5. middleware の入口から同じに動き、ほかの振り分けは変わらない", async () => {
   const { default: middleware } = await import("../../middleware.js");
   const realFetch = globalThis.fetch;
   const before = process.env.PAGE_HEAD_KINDS;
