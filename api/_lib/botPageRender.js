@@ -124,6 +124,20 @@ export function renderTopHtml(model, { siteJsonLd = [] } = {}) {
 }
 
 /**
+ * 会場ページ（本日分）の head の値（title・description・canonical と BreadcrumbList の JSON-LD）。
+ * この HTML と、生の HTML の head（api/_lib/pageHeadApi.js）が同じ値を使う。項目が欠けたパンくずは JSON-LD を出さない
+ * @param {ReturnType<typeof buildVenueModel>} model
+ */
+export function venuePageHeadOf(model) {
+  return {
+    ...model.meta,
+    jsonLd: isValidCrumbs(model.breadcrumbItems)
+      ? [toBreadcrumbListLd(model.breadcrumbItems)]
+      : [],
+  };
+}
+
+/**
  * @param {ReturnType<typeof buildVenueModel>} model
  * @param {string} viewLabel - レースカードのリンクの文言
  * @param {{siteJsonLd?: object[]}} [options] - index.html の共通の JSON-LD（getSiteJsonLd）
@@ -160,11 +174,6 @@ export function renderVenueHtml(model, viewLabel, { siteJsonLd = [] } = {}) {
   return documentHtml(model.meta, body, {
     path: model.path,
     lang: model.lang ?? DEFAULT_LANGUAGE,
-    jsonLd: [
-      ...siteJsonLd,
-      ...(isValidCrumbs(model.breadcrumbItems)
-        ? [toBreadcrumbListLd(model.breadcrumbItems)]
-        : []),
-    ],
+    jsonLd: [...siteJsonLd, ...venuePageHeadOf(model).jsonLd],
   });
 }
