@@ -18,10 +18,7 @@ import { extractFaqItems } from "../utils/blogFaqSchema";
 import BLOG_IMAGE_DIMENSIONS from "virtual:blog-image-dimensions";
 import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
-import {
-  blogRehypePlugins,
-  blogRemarkPlugins,
-} from "../utils/blogMarkdownSanitize.js";
+import { blogRehypePlugins, blogRemarkPlugins } from "../utils/blogMarkdownSanitize.js";
 import BlogChart from "../components/blog/BlogChart";
 import { stripBlogLeadingH1 } from "../utils/blogLeadingH1.js";
 import { loadBlogCharts } from "../utils/blogChartLoader.js";
