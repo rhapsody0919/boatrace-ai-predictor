@@ -49,46 +49,91 @@ export function conditionSourceOf(conditions, race, date) {
   return Number.isFinite(observed) && Number.isFinite(start) && observed >= start ? "race_result" : "before_race";
 }
 
+/** 題・日目・種別・優勝戦（race_conditions と race_series から） */
+function seriesColumns(conditions, series) {
+  const c = conditions ?? {};
+  return {
+    race_title: c.race_title ?? series?.title ?? null,
+    series_day: orNull(c.series_day),
+    is_final_day: orNull(c.is_final_day),
+    series_kind: orNull(series?.kind),
+    stage_raw: orNull(c.race_stage),
+    is_final: c.race_stage == null ? null : isCareerFinalStage(c.race_stage),
+  };
+}
+
+/** 気象の列。出所が無ければ（値が無ければ）風・波・天候は NULL */
+function weatherColumns(conditions, source) {
+  const c = conditions ?? {};
+  const keep = (v) => (source ? orNull(v) : null);
+  return {
+    weather: keep(c.weather),
+    wind_speed: keep(c.wind_speed),
+    wave_height: keep(c.wave_height),
+    condition_source: source,
+    temperature: orNull(c.temperature),
+    water_temperature: orNull(c.water_temperature),
+  };
+}
+
+/** 結果と払戻の列（3連単は payout_trio、3連複は payout_trifecta） */
+function resultColumns(result) {
+  const r = result ?? {};
+  const ranks = [r.rank1, r.rank2, r.rank3];
+  return {
+    technique: orNull(r.winning_technique),
+    payout_win: orNull(r.payout_win),
+    payout_place_1: orNull(r.payout_place_1),
+    payout_place_2: orNull(r.payout_place_2),
+    payout_3tan: orNull(r.payout_trio),
+    combo_3tan: ranks.every(Number.isInteger) ? ranks.join("-") : null,
+    payout_3fuku: orNull(r.payout_trifecta),
+    has_result: Number.isInteger(r.rank1),
+    race_status: orNull(r.race_status),
+  };
+}
+
 /**
  * @param {{ race: object, result?: object|null, conditions?: object|null, series?: object|null, override?: string|null }} input
  */
 export function buildMainRaceFact({ race, result = null, conditions = null, series = null, override = null }) {
   const date = assertMainRace(race);
-  const ranks = result ? [result.rank1, result.rank2, result.rank3] : [];
-  const source = conditionSourceOf(conditions, race, date);
+  const s = seriesColumns(conditions, series);
+  const w = weatherColumns(conditions, conditionSourceOf(conditions, race, date));
+  const r = resultColumns(result);
   return {
     race_id: race.race_id,
     era: "main",
     race_date: date,
     venue_code: race.venue_code,
     race_number: race.race_number,
-    race_title: conditions?.race_title ?? series?.title ?? null,
-    series_day: orNull(conditions?.series_day),
-    is_final_day: orNull(conditions?.is_final_day),
+    race_title: s.race_title,
+    series_day: s.series_day,
+    is_final_day: s.is_final_day,
     race_grade: mainGradeOf(race, series, override),
-    series_kind: orNull(series?.kind),
-    stage_raw: orNull(conditions?.race_stage),
-    is_final: conditions?.race_stage == null ? null : isCareerFinalStage(conditions.race_stage),
+    series_kind: s.series_kind,
+    stage_raw: s.stage_raw,
+    is_final: s.is_final,
     deadline_time: orNull(race.start_time),
-    weather: source ? orNull(conditions.weather) : null,
-    wind_speed: source ? orNull(conditions.wind_speed) : null,
-    wave_height: source ? orNull(conditions.wave_height) : null,
+    weather: w.weather,
+    wind_speed: w.wind_speed,
+    wave_height: w.wave_height,
     wind_sector: null,
-    condition_source: source,
-    temperature: orNull(conditions?.temperature),
-    water_temperature: orNull(conditions?.water_temperature),
+    condition_source: w.condition_source,
+    temperature: w.temperature,
+    water_temperature: w.water_temperature,
     tide_cm: null,
     tide_phase: null,
-    technique: orNull(result?.winning_technique),
+    technique: r.technique,
     dead_heat: false,
-    payout_win: orNull(result?.payout_win),
-    payout_place_1: orNull(result?.payout_place_1),
-    payout_place_2: orNull(result?.payout_place_2),
-    payout_3tan: orNull(result?.payout_trio),
-    combo_3tan: ranks.length === 3 && ranks.every(Number.isInteger) ? ranks.join("-") : null,
-    payout_3fuku: orNull(result?.payout_trifecta),
-    has_result: Number.isInteger(result?.rank1),
-    race_status: orNull(result?.race_status),
+    payout_win: r.payout_win,
+    payout_place_1: r.payout_place_1,
+    payout_place_2: r.payout_place_2,
+    payout_3tan: r.payout_3tan,
+    combo_3tan: r.combo_3tan,
+    payout_3fuku: r.payout_3fuku,
+    has_result: r.has_result,
+    race_status: r.race_status,
     rule_version: RACE_FACTS_RULE_VERSION,
   };
 }
@@ -107,35 +152,48 @@ export function buildMainRunFacts(race, entries, { result = null, timings = [], 
     if (!Number.isInteger(e.boat_number) || e.boat_number < 1 || e.boat_number > 6) {
       throw new Error(`艇番が 1〜6 でない: ${race.race_id} ${e.boat_number}`);
     }
-    const t = timingOf.get(e.boat_number) ?? {};
-    const x = exhibitionOf.get(e.boat_number) ?? {};
-    const fromCode = t.official_finish_code == null ? null : finishMarkFromCode(t.official_finish_code);
-    const mark = t.finish_mark ?? fromCode?.finish_mark ?? null;
-    return {
-      race_id: race.race_id,
-      boat_number: e.boat_number,
-      era: "main",
-      race_date: date,
-      racer_id: orNull(e.racer_id),
-      racer_class: orNull(e.grade),
-      f_count: orNull(e.f_count),
-      motor_number: orNull(e.motor_number),
-      course: inCourse(t.entry_course ?? result?.[`actual_course_${e.boat_number}`]),
-      start_timing: orNull(t.start_timing),
-      is_flying: orNull(t.is_flying),
-      is_late_start: orNull(t.is_late_start),
-      finish_code: orNull(t.official_finish_code),
-      finish_mark: mark,
-      finish_rank: t.finish_rank ?? (/^[1-6]$/.test(mark ?? "") ? Number(mark) : null),
-      exhibition_time: orNull(x.exhibition_time),
-      weight: orNull(x.today_weight),
-      weight_source: x.today_weight == null ? null : "beforeinfo",
-      tilt: orNull(x.tilt),
-      parts_changed: orNull(x.parts_changed),
-      oriten_lap: null,
-      oriten_turn: null,
-      oriten_straight: null,
-      rule_version: RACE_FACTS_RULE_VERSION,
-    };
+    return runRowOf(race, date, e, {
+      t: timingOf.get(e.boat_number) ?? {},
+      x: exhibitionOf.get(e.boat_number) ?? {},
+      course: result?.[`actual_course_${e.boat_number}`],
+    });
   });
+}
+
+/** 着欄と着（finish_mark → 成績コードの順。着は finish_rank → 着欄が 1〜6 のとき） */
+function finishOf(t) {
+  const fromCode = t.official_finish_code == null ? null : finishMarkFromCode(t.official_finish_code);
+  const mark = t.finish_mark ?? fromCode?.finish_mark ?? null;
+  return { mark, rank: t.finish_rank ?? (/^[1-6]$/.test(mark ?? "") ? Number(mark) : null) };
+}
+
+/** 1艇の行（t: race_start_timings、x: exhibition_data、course: actual_course_N） */
+function runRowOf(race, date, e, { t, x, course }) {
+  const finish = finishOf(t);
+  return {
+    race_id: race.race_id,
+    boat_number: e.boat_number,
+    era: "main",
+    race_date: date,
+    racer_id: orNull(e.racer_id),
+    racer_class: orNull(e.grade),
+    f_count: orNull(e.f_count),
+    motor_number: orNull(e.motor_number),
+    course: inCourse(t.entry_course ?? course),
+    start_timing: orNull(t.start_timing),
+    is_flying: orNull(t.is_flying),
+    is_late_start: orNull(t.is_late_start),
+    finish_code: orNull(t.official_finish_code),
+    finish_mark: finish.mark,
+    finish_rank: finish.rank,
+    exhibition_time: orNull(x.exhibition_time),
+    weight: orNull(x.today_weight),
+    weight_source: x.today_weight == null ? null : "beforeinfo",
+    tilt: orNull(x.tilt),
+    parts_changed: orNull(x.parts_changed),
+    oriten_lap: null,
+    oriten_turn: null,
+    oriten_straight: null,
+    rule_version: RACE_FACTS_RULE_VERSION,
+  };
 }
