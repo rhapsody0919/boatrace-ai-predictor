@@ -62,28 +62,24 @@ const tip = motorMeetTip([run(day(0), null, "B2"), run(day(0), "山田 太郎", 
 check("級は名前を取った走と同じ走から", tip?.racerName === "山田 太郎" && tip?.racerGrade === "A1", JSON.stringify(tip));
 check("級の無い走は null", motorMeetTip([run(day(0), "山田 太郎", undefined)], day(0), [])?.racerGrade === null);
 
-// --- 吹き出しの字
-const {
-  outputFiles: [bundled],
-} = await bundle({
-  entryPoints: [path.join(path.dirname(fileURLToPath(import.meta.url)), "../../src/components/analysis/MotorMeetTooltip.jsx")],
-  write: false,
-  bundle: true,
-  format: "cjs",
-  platform: "node",
-  packages: "external",
-  jsx: "automatic",
-  plugins: [{
-    name: "i18n-stub",
-    setup(b) {
-      b.onResolve({ filter: /^react-i18next$/ }, () => ({ path: "x", namespace: "i18n" }));
-      b.onLoad({ filter: /.*/, namespace: "i18n" }, () => ({ loader: "js", contents: "export const useTranslation = () => ({ t: (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k), i18n: { resolvedLanguage: 'ja' } });" }));
-    },
-  }],
+// --- 吹き出しの字（訳は鍵と値をそのまま返す偽物。部品と描く関数を1つの束にして読む）
+const I18N = "export const useTranslation = () => ({ t: (k, v) => (v ? k + ':' + JSON.stringify(v) : k), i18n: { resolvedLanguage: 'ja' } });";
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const out = await bundle({
+  stdin: {
+    contents: 'export { default } from "./src/components/analysis/MotorMeetTooltip.jsx";',
+    resolveDir: ROOT,
+    loader: "js",
+  },
+  write: false, bundle: true, format: "cjs", platform: "node", packages: "external", jsx: "automatic",
+  plugins: [{ name: "i18n", setup: (b) => {
+    b.onResolve({ filter: /^react-i18next$/ }, () => ({ path: "i18n", namespace: "fake" }));
+    b.onLoad({ filter: /^i18n$/, namespace: "fake" }, () => ({ contents: I18N, loader: "js" }));
+  } }],
 });
 const requireHere = createRequire(import.meta.url);
 const mod = { exports: {} };
-new Function("require", "module", "exports", bundled.text)(requireHere, mod, mod.exports);
+new Function("require", "module", "exports", out.outputFiles[0].text)(requireHere, mod, mod.exports);
 const { MemoryRouter } = requireHere("react-router-dom");
 const html = (over) =>
   renderToStaticMarkup(createElement(MemoryRouter, null, createElement(mod.exports.default, {
