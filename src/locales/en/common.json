@@ -99,7 +99,7 @@
   "venueRaceList": {
     "title": "Race list",
     "metaTitle": "{{venue}} Boat Race Predictions & Race Card Today - AI Data | Ryujin Radar",
-    "metaDescription": "Today's race card and AI predictions for every race at {{venue}} boat race stadium. Check deadlines, the turn prediction, and the last 12 months' 1st-place rate by starting course and winning techniques.",
+    "metaDescription": "Today's race card and AI predictions for every race at {{venue}} boat race stadium. Check deadlines, the lane-1 upset caution level, and the last 12 months' 1st-place rate by starting course and winning techniques.",
     "backToVenues": "← Back to venues",
     "jumpToNextRace": "Go to R{{race}}",
     "nextDeadlineMarker": "{{venue}}: next deadline R{{race}} {{time}}",
@@ -162,7 +162,7 @@
       "lead": "To check the factors in order"
     },
     "metaTitle": "{{venue}} Race {{race}} Pre-race Info, Exhibition, AI data analysis ({{date}}) - Ryujin Radar",
-    "metaDescription": "Free, no sign-up: race data table, exhibition times, pre-race info, AI data analysis, first-turn prediction and inside-collapse index for {{venue}} Race {{race}} on {{date}}.",
+    "metaDescription": "Free, no sign-up: race data table, exhibition times, pre-race info, AI data analysis and the lane-1 upset caution level for {{venue}} Race {{race}} on {{date}}.",
     "metaTitleResult": "{{venue}} Race {{race}} Results & Payouts ({{date}}) - Ryujin Radar",
     "metaDescriptionResult": "Free race results, payouts, race data table and AI predictions for {{venue}} Race {{race}} on {{date}}.",
     "metaTitleCancelled": "{{venue}} Race {{race}} Cancelled ({{date}}) - Ryujin Radar",
@@ -443,7 +443,7 @@
     "shareInCaution": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nLane-1 upset caution level {{pct}}% ({{level}})\nShare of {{n}} past races nationwide with about the same win-rate gap in which Boat 1 failed to win\n{{disclaimer}}"
   },
   "home": {
-    "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | Data analyzed, including turn predictions and the Upset Index. Learn more →",
+    "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | Data analyzed, including the lane-1 upset caution level. Learn more →",
     "introBannerClose": "Close",
     "sgNow": {
       "region": "SG race in progress",
@@ -459,9 +459,9 @@
       "profileLink": "Operator profile (in Japanese) →",
       "data": "Data: compiled by this site from the race cards and results published on the official BOAT RACE website",
       "updated": "Data updated {{year}}-{{month}}-{{day}} {{hour}}:{{minute}} JST",
-      "results": "Results: a record of our predictions checked against actual race results",
-      "hitRacesNote": "(correct races only; all races, including misses, are on the results page)",
-      "accuracyLink": "See the results page (by venue, in Japanese) →",
+      "results": "Track record: how often boat 1 actually failed to win, counted by Lane-1 upset caution level",
+      "hitRacesNote": "(counted over all races, not only the ones that matched)",
+      "accuracyLink": "See the results by tier (in Japanese) →",
       "hitRacesLink": "See races where the forecast was correct (in Japanese) →",
       "checkTitle": "Once you open a race, check it with these",
       "sonarWhere": "The \"Ryujin Sonar\" tab on the race page",

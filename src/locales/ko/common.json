@@ -98,7 +98,7 @@
   "venueRaceList": {
     "title": "경주 일람",
     "metaTitle": "{{venue}} 경정 예측·출주표 | 오늘의 전 경주 AI 예측 - 용신 레이더",
-    "metaDescription": "{{venue}} 경정장의 오늘 출주표와 전 경주 AI 예측. 마감 시각, 전개 예측, 최근 1년 진입 코스별 1착률과 결정수를 확인할 수 있습니다.",
+    "metaDescription": "{{venue}} 경정장의 오늘 출주표와 전 경주 AI 예측. 마감 시각, 1코스 이변 주의도, 최근 1년 진입 코스별 1착률과 결정수를 확인할 수 있습니다.",
     "backToVenues": "← 경정장 목록으로",
     "jumpToNextRace": "{{race}}R로",
     "nextDeadlineMarker": "{{venue}} 다음 마감 {{race}}R {{time}}",
@@ -160,7 +160,7 @@
       "lead": "자료를 순서대로 보려면"
     },
     "metaTitle": "{{venue}} {{race}}R 직전 정보, 전시, AI 데이터 분석 ({{date}}) - 용신 레이더",
-    "metaDescription": "{{date}} {{venue}} {{race}}R의 출주표, 전시 타임, 직전 정보, AI 데이터 분석, 1마크 전개 예측, 인코스 붕괴 지수를 무료·가입 없이 확인할 수 있습니다.",
+    "metaDescription": "{{date}} {{venue}} {{race}}R의 출주표, 전시 타임, 직전 정보, AI 데이터 분석, 1코스 이변 주의도를 무료·가입 없이 확인할 수 있습니다.",
     "metaTitleResult": "{{venue}} {{race}}R 결과 및 배당금 ({{date}}) - 용신 레이더",
     "metaDescriptionResult": "{{date}} {{venue}} {{race}}R의 레이스 결과와 배당금, 출주표 데이터와 AI 예측을 무료로 확인할 수 있습니다.",
     "metaTitleCancelled": "{{venue}} {{race}}R 중지 ({{date}}) - 용신 레이더",
@@ -438,7 +438,7 @@
     "shareInCaution": "🏁 용신 레이더【{{date}}{{venue}} {{raceNo}}R】\n\n1코스 이변 주의도 {{pct}}%({{level}})\n승률차가 같은 정도인 전국의 과거 레이스 {{n}}건에서 1번 보트가 1착을 놓친 비율\n{{disclaimer}}"
   },
   "home": {
-    "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 전개 예측, 인코스 붕괴 지수 등 데이터를 분석. 자세히 보기 →",
+    "introBannerText": "용신 레이더 - 경정을 시각화합니다. 망설여질 땐 데이터를 믿으세요. | 1코스 이변 주의도 등 데이터를 분석. 자세히 보기 →",
     "introBannerClose": "닫기",
     "sgNow": {
       "region": "SG 개최 중",
@@ -454,9 +454,9 @@
       "profileLink": "운영자 프로필(일본어 페이지) →",
       "data": "데이터: BOAT RACE 공식 사이트에 공개된 출주표·결과를 바탕으로 이 사이트가 집계",
       "updated": "{{year}}년 {{month}}월 {{day}}일 {{hour}}:{{minute}}(일본 시간) 데이터 업데이트",
-      "results": "성적: 예측을 실제 경주 결과와 대조한 기록",
-      "hitRacesNote": "(적중한 경주만의 목록. 빗나간 경주를 포함한 전체는 성적 페이지)",
-      "accuracyLink": "성적(경정장별 내역, 일본어 페이지) 보기 →",
+      "results": "실적: 1코스 이변 주의도 단계별로, 1호정이 1착을 놓친 비율을 실제 경주 결과로 센 기록",
+      "hitRacesNote": "(맞은 경주만이 아니라 전체 경주로 셉니다)",
+      "accuracyLink": "단계별 실적 보기(일본어 페이지) →",
       "hitRacesLink": "전개 예측이 적중한 경주 목록 보기(일본어 페이지) →",
       "checkTitle": "경주를 열었다면, 이 두 가지로 확인하세요",
       "sonarWhere": "경주 상세의 '용신 소나' 탭",

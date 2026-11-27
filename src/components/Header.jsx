@@ -13,7 +13,6 @@ import "./Header.css";
 
 // パス（言語プレフィックス除去後）が完全一致でタブ名になるもの（タブ名はパスの先頭の / を除いた形）
 const EXACT_TABS = new Set([
-  "hit-races",
   "accuracy",
   "winning-technique",
   "today",
@@ -160,14 +159,6 @@ function Submenu({ activeTab, currentLng, showVenues, onTab, onClose }) {
         </SubmenuLink>
       )}
       {/* i18n-allow-end */}
-      <SubmenuButton
-        tab="hit-races"
-        activeTab={activeTab}
-        onTab={onTab}
-        onClose={onClose}
-      >
-        {t("nav.hits")}
-      </SubmenuButton>
       <SubmenuLink to={localize("/accuracy")} tab="accuracy" {...link}>
         {t("nav.accuracy")}
       </SubmenuLink>
@@ -245,12 +236,6 @@ function HeaderNav({
         onClick={() => onTab("races")}
       >
         {t("nav.predictions")}
-      </button>
-      <button
-        className={`nav-btn ${activeTab === "hit-races" ? "active" : ""}`}
-        onClick={() => onTab("hit-races")}
-      >
-        {t("nav.hits")}
       </button>
       {currentLng === "ja" && <RacerSearchBox />}
       <button
