@@ -42,6 +42,12 @@ export const staticPages = [
     priority: "0.6",
   },
   {
+    // グランプリの特集（BOA-1724）。年なしの永続の URL に毎年積む
+    loc: "/grandprix",
+    changefreq: "weekly",
+    priority: "0.7",
+  },
+  {
     loc: "/privacy",
     changefreq: "yearly",
     priority: "0.3",

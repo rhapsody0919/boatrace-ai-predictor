@@ -27,6 +27,7 @@ import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import HowToUse from "./pages/HowToUse";
 import SiteUpdates from "./pages/SiteUpdates";
+import GrandPrixPage from "./pages/GrandPrixPage";
 import RaceHistory from "./pages/RaceHistory";
 import RacerProfile from "./pages/RacerProfile";
 import RacersPage from "./pages/RacersPage";
@@ -236,6 +237,8 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="how-to-use" element={<HowToUse />} />
       {/* 更新のお知らせ（ja 専用、docs/design/site-updates/） */}
       <Route path="updates" element={<SiteUpdates />} />
+      {/* グランプリの特集（ja 専用、年なしの永続の URL、BOA-1724） */}
+      <Route path="grandprix" element={<GrandPrixPage />} />
       <Route path="profile" element={<Profile />} />
       {/* 言語別: 初心者向け入門ガイド（対応言語は GUIDE_BY_LANG）、日本語はコンテンツハブ */}
       <Route path="guide" element={<Guide />} />
