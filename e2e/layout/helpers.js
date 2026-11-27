@@ -20,7 +20,8 @@ export const OVERFLOW_TOLERANCE_PX = 2;
 export const READY_SELECTORS = {
   // スケルトン（VenueGridSkeleton）も .venue-grid-card を持つため、実物だけに付く修飾子で待つ（BOA-593）
   "/": ".venue-grid-card--open, .venue-grid-card--closed",
-  "/accuracy": ".turn-accuracy-venue-table",
+  // BOA-822 の公開（2026-11-27）で /accuracy は注意度の段ごとの実績に替わった（旧の会場別の表は無い）
+  "/accuracy": ".ica-row",
   "/winning-technique": ".winning-technique-table",
   "/winning-technique?tab=motorranking&venue_code=16": ".vmr-table",
   "/races": ".dates-list .date-card",
