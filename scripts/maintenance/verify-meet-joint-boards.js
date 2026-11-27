@@ -123,6 +123,20 @@ async function open(page) {
   check("ja: G2 の札・線に準優を出さない", /準優/.test(ja.borderFinalGoal + ja.borderLineFinalGoal + ja.borderLineFinalGoalTie), false);
   check("ja: G2 の注記は推定と断る", ja.jointFinalNote.includes("当社の推定で、公式の決まりではありません"), true);
   check("ja: 分けた理由", ja.jointNote.includes("公式の得点率一覧と同じく、開催ごとに順位を出しています"), true);
+  // 「優勝戦の目安」は当社の推定。推定の断り（jointFinalNote）と同じ節のページの鍵の外で使わない
+  const pathsWith = (obj, word, at = "") =>
+    Object.entries(obj).flatMap(([k, v]) => {
+      const p = at ? `${at}.${k}` : k;
+      if (typeof v === "string") return v.includes(word) ? [p] : [];
+      return v && typeof v === "object" ? pathsWith(v, word, p) : [];
+    });
+  check("ja: 優勝戦の目安を使う鍵", pathsWith(jaCommon, "優勝戦の目安").sort(), [
+    "meetPage.borderFinalGoal",
+    "meetPage.borderLineFinalGoal",
+    "meetPage.borderLineFinalGoalTie",
+    "meetPage.jointFinalNote",
+    "meetPage.shobugakeNoteFinalGoal",
+  ]);
 }
 
 if (failures.length) {
