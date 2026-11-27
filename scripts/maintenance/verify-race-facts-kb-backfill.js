@@ -29,6 +29,8 @@ const built = buildWindowRows(WINDOWS["2025-11-01"], new Map([["2025-11-03-01-12
 assert.deepEqual(built.raceRows.map((r) => r.race_grade), ["G1", "SG"], "補正 → 開催日の格");
 assert.deepEqual(built.raceRows.map((r) => r.is_final), [false, true]);
 assert.equal(built.runRows.length, 2);
+assert.deepEqual(built.raceRows[0].racer_ids, [4001, null, null, null, null, null], "そのレースの艇から racer_ids");
+assert.deepEqual(built.raceRows[1].racer_ids, [4002, null, null, null, null, null]);
 assert.equal(buildWindowRows({ ...WINDOWS["2025-11-01"], venueDays: [] }, new Map()).raceRows[0].race_grade, null);
 assert.throws(
   () => buildWindowRows({ ...WINDOWS["2025-11-01"], boats: [boat("2025-11-03-01-05", 1, 1)] }, new Map()),
