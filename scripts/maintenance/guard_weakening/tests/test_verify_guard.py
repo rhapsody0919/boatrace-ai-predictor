@@ -548,6 +548,24 @@ if HAVE_NM:
     v = vg.evaluate(d, {N: "A"}, master, CFG)
     check("正時をまたぐと落ちる新 verify: 人へ（時刻の区切り。UTC 15:00 は正時でもあるので両方で落ちる）", N not in v.excused and any("時刻の区切りで落ちる" in h and "正時（HH:59:58" in h for h in v.human), (v.excused, v.human))
     shutil.rmtree(d)
+    # 実時刻に依らない再現（2026-11-27）: 実の時計を JST 23:30（UTC 14:30）に固め、正時の確かめの時計が日付の変わり目（UTC 15:00）を飛ばすか
+    def shifted(clock, fixed_ms):
+        tmp = Path(tempfile.mkdtemp(prefix="vg-clock-"))
+        (tmp / "fix.cjs").write_text(f"const R = Date; R.now = () => {fixed_ms};\n", encoding="utf-8")
+        (tmp / "shift.cjs").write_text(vg.CLOCK_SHIFT_JS, encoding="utf-8")
+        env = {**os.environ, "GUARD_CLOCK_PERIOD_MS": str(vg.CLOCK_BOUNDARIES[clock][0]), "GUARD_CLOCK_PHASE_MS": str(vg.CLOCK_BOUNDARIES[clock][1]),
+               "GUARD_CLOCK_LEAD_MS": str(vg.CLOCK_LEAD_MS)}
+        if clock in vg.CLOCK_AVOID:
+            env["GUARD_CLOCK_AVOID_PERIOD_MS"] = str(vg.CLOCK_BOUNDARIES[vg.CLOCK_AVOID[clock]][0])
+            env["GUARD_CLOCK_AVOID_PHASE_MS"] = str(vg.CLOCK_BOUNDARIES[vg.CLOCK_AVOID[clock]][1])
+        out = subprocess.run(["node", "--require", str(tmp / "fix.cjs"), "--require", str(tmp / "shift.cjs"), "-e", "process.stdout.write(new Date().toISOString())"],
+                             env=env, capture_output=True, text=True, timeout=30).stdout
+        shutil.rmtree(tmp)
+        return out
+    at_2330_jst = 1795876200000  # 2026-11-28T14:30:00Z（JST 23:30）
+    check("正時の確かめは JST 23 時台に回しても日付の変わり目を飛ばす（UTC 15:59:58 から）", shifted("hour", at_2330_jst) == "2026-11-28T15:59:58.000Z", shifted("hour", at_2330_jst))
+    check("日付の確かめは JST 23 時台なら UTC 14:59:58 から", shifted("jst_day", at_2330_jst) == "2026-11-28T14:59:58.000Z", shifted("jst_day", at_2330_jst))
+    check("正時の確かめはほかの時間帯なら次の正時（UTC 05:59:58）", shifted("hour", 1795843800000) == "2026-11-28T05:59:58.000Z", shifted("hour", 1795843800000))
     d = mk({"src/calc.js": CALC, N: DAY_FAIL})
     v = vg.evaluate(d, {N: "A"}, master, CFG)
     check("JST の日付の変わり目をまたぐと落ちる新 verify: 人へ（日付）", N not in v.excused and any("時刻の区切りで落ちる" in h and "日付" in h and "正時" not in h for h in v.human), (v.excused, v.human))
