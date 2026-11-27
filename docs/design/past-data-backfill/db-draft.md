@@ -2,7 +2,7 @@
 
 > **未審査の案。適用の根拠にしない。** マイグレーションは作り手が作らない（AGENTS.md 安全の3）。人がマイグレーションの PR を作り、オーナーが db-apply で当てる。設計は [plan.md](./plan.md)。system-architect の1回目の審査（2026-11-27、plan.md §12）の指摘は反映したが、表の形の再審査はまだ。
 
-ここでは表の形と、出所の列との対応だけを書く。SQL の完全な形と PGlite の verify は、オーナーの答え（plan.md §10）と本番の読み取りの実測（plan.md §9）の後に足す。
+ここでは表の形と、出所の列との対応を書く。SQL の完全な形は system-architect の審査（2026-11-27、直して進める → 反映済み）を通した下書きがあり、この文書の後の PR で足す（PGlite の手元の試験つき）。
 
 ## 0. 共通の決まり
 
@@ -23,7 +23,7 @@
 | series_kind | text | race_series.kind を節で照合 | race_series.kind |
 | stage_raw・is_final | text・boolean | kb_archive_races.stage と `isFinalStage`（v2） | race_conditions.race_stage と同じ関数 |
 | deadline_time | time | kb_archive_races.deadline_time | races.start_time |
-| weather・wind_speed・wave_height | text・smallint・smallint | kb_archive_races（レースの時点） | race_conditions |
+| weather・wind_speed・wave_height | text・numeric(4,1)・smallint（本体の wind_speed は numeric(4,1)、kb は smallint。広い方に合わせる） | kb_archive_races（レースの時点） | race_conditions |
 | wind_sector | text | K の8方位から検証済みの扇形 | 16方位から同じ扇形 |
 | condition_source | text | 'k_file' | **行ごと**: 結果ページで上書きした行（2026-09-19〜、raceResultPersist.js:230）は 'race_result'、K で埋めた行は 'k_file'、発走前の値の行は 'before_race'。条件の軸は 'before_race' の行を数えない |
 | temperature・water_temperature | numeric | kb_archive_extra（raceresult、段2の後。それまで NULL） | race_conditions |
@@ -62,8 +62,10 @@
 
 ## 3. `kb_archive_extra`（K/B に無い過去分の生の値）
 
-- 主キー (race_id, boat_number, source)。boat_number 0 はレースの行（気温・水温・16方位の風向）。source は 'boatcast_oriten'・'raceresult'・'beforeinfo'
-- 値は列で持つ。fetched_at を持つ（後日の取得であることを残す）
+- 主キー (race_id, boat_number, source)。boat_number 0 はレースの行。source は 'boatcast_oriten'・'raceresult'・'beforeinfo'
+- レースの行だけに置く列: item_labels（項目は会場で違う。桐生は一周の代わりに半周ラップ）・measure_status（1=計測あり・2=計測不可、091 と同じ）・気温・水温・16方位の風向。CHECK で艇の行には入れさせない
+- 値は列で持つ。fetched_at を持つ（後日の取得であることを残す）。race_date は 2025-12-02 以前だけ
+- 書き手は出所ごと・行の種類（レース・艇）ごとに分けて upsert する（キーの集合の違う行を1回に混ぜない）
 - RLS 有効、anon・authenticated の権限なし（kb_archive と同じ）
 
 ## 4. `venue_tide_hourly`（潮位、plan.md §5 の検証の後）
@@ -73,7 +75,9 @@
 
 ## 5. `backfill_progress`（取り込みの進み）
 
-- 主キー (source, target_date)。status（'pending'・'done'・'no_race'・'failed'）・attempts・last_error・updated_at
+- 主キー (source, unit_id)。unit_id は取得の単位（BOATCAST は race_id＝1ファイル、日の単位の出所は YYYY-MM-DD）。target_date・status（'pending'・'done'・'no_race'・'no_file'・'retry'・'failed'）・attempts・http_status・last_error・last_attempt_at・updated_at
+- no_file は遡れる最古の日より前のファイル無し、retry は本来あるはずの範囲の 403（確定にしない。3回で failed）
+- その晩の試行の数は last_attempt_at で数える（1つの単位はその晩に1回だけ試す）。済み以外の単位を引く部分索引
 - 書き手は service_role だけ。匿名の権限なし
 
 ## 6. `facts_coverage`（画面の注記の「いつから」）
