@@ -7,10 +7,10 @@
     "public/blog/hiyori-how-to-use-guide.md"
   ],
   "files": {
-    "public/blog/hiyori-how-to-use-guide.md": "61d3996bd4d9a6f41b860130eb751f5ca134380133f1bee69fc4c58b01349f96"
+    "public/blog/hiyori-how-to-use-guide.md": "9da602f87613d03608c33a79942c970557cc415f3169d2732fb842f818324e09"
   },
-  "content_sha256": "77f66c0c8511b4b13229a0a821173b6ba3047351c92ae061b04e8dce1ad7533d",
-  "content_at": "2026-11-27T15:47:18+09:00",
+  "content_sha256": "e6dbb23e1df43191ce9c5506f1a4464da1340070fc2cc1c3879475bd49aa9cc4",
+  "content_at": "2026-11-27T16:04:35+09:00",
   "judgement_words": [],
   "reviews": [
     {
@@ -19,9 +19,9 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "77f66c0c8511b4b13229a0a821173b6ba3047351c92ae061b04e8dce1ad7533d",
+      "reviewed_sha256": "e6dbb23e1df43191ce9c5506f1a4464da1340070fc2cc1c3879475bd49aa9cc4",
       "model": "sonnet",
-      "at": "2026-11-27T15:48:30+09:00"
+      "at": "2026-11-27T16:05:40+09:00"
     },
     {
       "role": "wording-editor",
@@ -29,9 +29,9 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "77f66c0c8511b4b13229a0a821173b6ba3047351c92ae061b04e8dce1ad7533d",
+      "reviewed_sha256": "e6dbb23e1df43191ce9c5506f1a4464da1340070fc2cc1c3879475bd49aa9cc4",
       "model": "sonnet",
-      "at": "2026-11-27T15:48:40+09:00"
+      "at": "2026-11-27T16:05:00+09:00"
     },
     {
       "role": "fan",
@@ -39,9 +39,9 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "77f66c0c8511b4b13229a0a821173b6ba3047351c92ae061b04e8dce1ad7533d",
+      "reviewed_sha256": "e6dbb23e1df43191ce9c5506f1a4464da1340070fc2cc1c3879475bd49aa9cc4",
       "model": "opus",
-      "at": "2026-11-27T15:49:45+09:00"
+      "at": "2026-11-27T16:07:30+09:00"
     },
     {
       "role": "seo-marketer",
@@ -49,14 +49,14 @@
       "result": "pass",
       "p0": 0,
       "p1": 0,
-      "reviewed_sha256": "77f66c0c8511b4b13229a0a821173b6ba3047351c92ae061b04e8dce1ad7533d",
+      "reviewed_sha256": "e6dbb23e1df43191ce9c5506f1a4464da1340070fc2cc1c3879475bd49aa9cc4",
       "model": "sonnet",
-      "at": "2026-11-27T15:48:00+09:00"
+      "at": "2026-11-27T16:05:20+09:00"
     }
   ],
   "author": {
     "model": "claude-opus-5-5",
     "lane": "session:seo-hiyori-article"
   },
-  "created_at": "2026-11-27T15:50:10+09:00"
+  "created_at": "2026-11-27T16:08:40+09:00"
 }
