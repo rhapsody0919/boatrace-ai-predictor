@@ -52,40 +52,31 @@ test("勝率の折れ線は開いた時点で全期の点が出て、最後の�
   await page.setViewportSize({ width: 800, height: 900 });
   await page.goto("/racer/3941");
   const chart = page.locator(".racer-official-chart");
-  // 目盛りの文字が出た直後に1回だけ測る（描く動きが終わるのを待たない）
-  await chart
-    .locator(".recharts-cartesian-axis-tick-value", { hasText: "期" })
-    .last()
-    .waitFor({ state: "attached" });
-  // 描く動きがあると、開いた直後は点が出ていない・線が途中で止まって見える
+  // 期ごとの段（P-12、オーナー 2026-11-27「期ごとの段に1つ」）。期の札が出た直後に1回だけ測る
+  await chart.locator(".rps-period").last().waitFor({ state: "attached" });
+  // 描く動きは無い。段（横）の数は出走のある期の数、最新の期の段は図の右端の帯まで届く
   const measure = () =>
     chart.evaluate((el) => {
       const center = (n) => {
         const r = n.getBoundingClientRect();
         return r.x + r.width / 2;
       };
-      const dots = [...el.querySelectorAll(".recharts-line-dot")].map(center);
-      const lastTickLine = [
-        ...el.querySelectorAll(
-          ".recharts-xAxis .recharts-cartesian-axis-tick-line",
-        ),
-      ].at(-1);
-      // 目盛りの文字は軸の線と別の層に描かれる。横軸の文字は「期」で終わるものだけ
-      const lastTickValue = [
-        ...el.querySelectorAll(".recharts-cartesian-axis-tick-value"),
-      ]
-        .filter((t) => t.textContent.endsWith("期"))
-        .at(-1);
-      // 線の見えている長さ。描く動きの途中は stroke-dasharray の1つ目が線の全長より短く、
-      // 線が途中（例: 2023年後期の辺り）で止まって見える
-      const path = el.querySelector(".recharts-line-curve");
-      const dash = path?.getAttribute("stroke-dasharray");
-      const visible = dash ? parseFloat(dash) : path.getTotalLength();
+      const step = el.querySelector(".rps-step");
+      // 段は出走のある期だけ（出走0の期は段を描かない）。位置はその期の帯の中心
+      const dots = [...el.querySelectorAll(".rps-hit[data-starts]")].map(
+        center,
+      );
+      const bands = [...el.querySelectorAll(".rps-hit")];
+      const lastBand = bands.at(-1).getBoundingClientRect();
+      const stepBox = step.getBoundingClientRect();
+      const lastTickValue = [...el.querySelectorAll(".rps-period")].at(-1);
       return {
         dots,
-        lastTickX: lastTickLine ? center(lastTickLine) : null,
-        lastTickText: lastTickValue?.textContent ?? "",
-        lineShownRatio: visible / path.getTotalLength(),
+        lastTickX: lastTickValue ? center(lastTickValue) : null,
+        // 札は短い形（「27前」）。元の期の名前は data-label
+        lastTickText: lastTickValue?.dataset.label ?? "",
+        lineShownRatio:
+          (stepBox.right - lastBand.left) / (lastBand.right - lastBand.left),
       };
     });
   const first = await measure();
@@ -137,7 +128,9 @@ test("公式の期別成績の取得に失敗したらエラー表示を出す�
   await expect(page.locator(".racer-official-stats")).toHaveCount(0);
 });
 
-test("公式の期別成績のHTTP 500をデータなしにせず、失敗として表示する", async ({ page }) => {
+test("公式の期別成績のHTTP 500をデータなしにせず、失敗として表示する", async ({
+  page,
+}) => {
   let failedRequests = 0;
   await page.route("**/rest/v1/racer_period_stats*", (route) => {
     if (!route.request().url().includes("c1_entries")) return route.fallback();
@@ -193,13 +186,16 @@ test("折れ線のツールチップに集計期間を出す（今の半期と�
     .locator(".racer-official-stats .racer-official-note")
     .first()
     .innerText();
-  const latestRange = note.match(/集計\s*(\d{4}\/\d{2}\/\d{2}〜\d{4}\/\d{2}\/\d{2})/)?.[1];
+  const latestRange = note.match(
+    /集計\s*(\d{4}\/\d{2}\/\d{2}〜\d{4}\/\d{2}\/\d{2})/,
+  )?.[1];
   expect(latestRange).toBeTruthy();
-  const dot = page.locator(".racer-official-chart .recharts-line-dot").last();
+  // 最新の期の帯（期ごとの段、P-12）に触れると、その期の集計期間
+  const dot = page.locator(".racer-official-chart .rps-hit").last();
   await dot.hover();
-  await expect(
-    page.locator(".racer-official-chart .recharts-tooltip-wrapper"),
-  ).toContainText(`集計 ${latestRange}`);
+  await expect(page.locator(".racer-official-chart .rps-tip")).toContainText(
+    `集計 ${latestRange}`,
+  );
 });
 
 test("375px: 折れ線の中央の点のツールチップが画面の右端で切れない", async ({
@@ -207,9 +203,10 @@ test("375px: 折れ線の中央の点のツールチップが画面の右端で�
 }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto("/racer/3941");
-  const dots = page.locator(".racer-official-chart .recharts-line-dot");
+  // 期ごとの段（P-12）の期の帯に触れる。スマホは吹き出しを図の下に幅いっぱいで出す
+  const dots = page.locator(".racer-official-chart .rps-hit");
   await dots.nth(7).hover();
-  const tip = page.locator(".racer-official-chart .recharts-tooltip-wrapper");
+  const tip = page.locator(".racer-official-chart .rps-tip");
   await expect(tip).toContainText("勝率");
   const right = await tip.evaluate((el) => el.getBoundingClientRect().right);
   expect(right).toBeLessThanOrEqual(375);

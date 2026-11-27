@@ -83,6 +83,7 @@ export default function RacerProfileLoaded({
         loading={statsLoading}
         todayVenueCode={todayVenueCode}
         onHistoryStateChange={onHistoryStateChange}
+        periodRows={period.periodRows}
       />
       {/* ニュースが0件の選手（プロフィールがある）には節ごと出さない。プロフィールが無い選手のページは
           全体が空の状態なので、空の案内を残す（e2e/smoke/racers.spec.js が固定） */}

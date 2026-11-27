@@ -10,11 +10,10 @@ for (const racerId of [4998, 5298, 3941]) {
     page,
   }) => {
     await page.goto(`/racer/${racerId}`);
-    const ticks = page.locator(
-      ".racer-official-chart .recharts-cartesian-axis-tick-value",
-      // 横軸の目盛りは「2019年後期」のような期の名前。縦軸は数字だけ
-      { hasText: /^[\d.]+$/ },
-    );
+    // 期ごとの段（P-12）の縦軸の目盛り（横の線の左の数字）。横軸の期の札は「25後」のような形
+    const ticks = page.locator(".racer-official-chart .trc-grid + .trc-tick", {
+      hasText: /^[\d.]+$/,
+    });
     await expect(ticks.first()).toBeAttached({ timeout: 30000 });
     const values = (await ticks.allTextContents()).map(Number);
     expect(values.length).toBeGreaterThanOrEqual(3);

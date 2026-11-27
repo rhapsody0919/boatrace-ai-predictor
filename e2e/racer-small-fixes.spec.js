@@ -15,10 +15,11 @@ test("勝率の推移は全国勝率だけの1本の線で、当地勝率は出�
   const chart = page.locator(".racer-stat-chart", {
     has: page.locator("h3", { hasText: "勝率の推移" }),
   });
-  await expect(chart.locator("h3")).toHaveText("全国勝率の推移", {
+  // 勝率の推移は公式の期ごとの段1つ（オーナー 2026-11-27「期ごとの段に1つ」。前は出走表の全国勝率の折れ線）
+  await expect(chart.locator("h3")).toHaveText("勝率の推移（公式の期ごと）", {
     timeout: 30000,
   });
-  await expect(chart.locator(".recharts-line")).toHaveCount(1);
+  await expect(chart.locator(".rps-step")).toHaveCount(1);
   await expect(chart).not.toContainText("当地勝率");
 });
 
@@ -26,9 +27,10 @@ test("勝率の推移は全国勝率だけの1本の線で、当地勝率は出�
 test("全国勝率の推移の縦軸は0から始めず、値の幅に合わせる", async ({ page }) => {
   await page.goto("/racer/4320");
   const chart = page.locator(".racer-stat-chart", {
-    has: page.locator("h3", { hasText: "全国勝率の推移" }),
+    has: page.locator("h3", { hasText: "勝率の推移（公式の期ごと）" }),
   });
-  const ticks = chart.locator(".recharts-yAxis-tick-labels text");
+  // 期ごとの段の縦軸の目盛り（横の線の左の数字）
+  const ticks = chart.locator(".trc-grid + .trc-tick");
   await expect(ticks.first()).toBeVisible({ timeout: 30000 });
   const values = (await ticks.allTextContents()).map(Number);
   expect(values).not.toContain(0);

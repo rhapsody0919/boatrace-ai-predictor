@@ -23,6 +23,7 @@ import RacerNigashiCourses from "./RacerNigashiCourses";
 import { VcFilterBar, VcHistoryError } from "./RacerPerformanceFilters";
 import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
 import { racerStatsClassName } from "./racerStatsLayout";
+import { winRateStepsData } from "./RacerOfficialStatsLogic";
 import RacerBoatReturns from "./RacerBoatReturns";
 import {
   BothFixedNoRuns,
@@ -307,8 +308,10 @@ export default function RacerPerformanceStats({
   loading,
   todayVenueCode,
   onHistoryStateChange,
+  periodRows,
 }) {
   const { t } = useTranslation();
+  const winSteps = winRateStepsData(periodRows);
   const vc = useRacerVcState(racerId, onHistoryStateChange);
   // 進入コースのラベルは呼ぶ側で足す（useRacerPerformanceView は大きさの基準に凍結された単位なので触らない）
   const view = {
@@ -349,7 +352,7 @@ export default function RacerPerformanceStats({
   return (
     <div
       id="racer-stats"
-      className={racerStatsClassName(view.chartData, vc.vcHistoryAll)}
+      className={racerStatsClassName(winSteps.chartData, vc.vcHistoryAll)}
       data-snapshot-history={snapshotHistoryState}
     >
       <h2>{heading}</h2>
@@ -359,7 +362,7 @@ export default function RacerPerformanceStats({
         officialAvgSt={stats?.officialAvgSt}
         aggregatedStats={aggregatedStats}
       />
-      <WinRateChart chartData={view.chartData} />
+      <WinRateChart steps={winSteps} />
       {/* レース条件別の成績（BOA-336）。フィルタには連動しない（全会場・全条件の履歴から集計） */}
       <RacerConditionStats history={vc.vcHistoryAll} />
       {/* 絞り込みの欄と、それが効く節（会場別・枠番別の表、決まり手、推移、レース一覧）を1つの枠にまとめる */}
