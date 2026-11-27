@@ -11,7 +11,7 @@ test.use({ viewport: { width: 375, height: 812 } });
 const PATH = "/races/2026-10-01/1";
 const CANONICAL = "https://www.boat-ai.jp/races/2026-10-01/1";
 
-async function serveInjectedShell(page) {
+async function serveInjectedShell(page, baseURL) {
   let defaultTitle = null;
   await page.route("**/api/**", (route) => route.abort());
   await page.route("**/rest/v1/**", (route) => route.abort());
@@ -19,15 +19,15 @@ async function serveInjectedShell(page) {
     (url) => new URL(url).pathname === PATH,
     async (route) => {
       if (route.request().resourceType() !== "document") return route.fallback();
-      const response = await route.fetch();
-      const shell = await response.text();
+      // 外枠は手元の vite が返す index.html（配備と同じ形）。録画の外の手元の画面なので、試験の側から取る
+      const shell = await (await fetch(new URL(PATH, baseURL))).text();
       defaultTitle = shell.match(/<title>([^<]*)<\/title>/)?.[1] ?? null;
       const body = injectPageHead(
         shell,
         pastVenuePageHead({ date: "2026-10-01", venueCode: 1, venueName: "桐生", homeName: "ホーム" }),
       );
       expect(body, "外枠に差し込めない").not.toBeNull();
-      return route.fulfill({ response, body });
+      return route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body });
     },
   );
   return () => defaultTitle;
@@ -50,7 +50,7 @@ test.describe("生の head の受け渡し", () => {
     const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
     try {
       const page = await context.newPage();
-      await serveInjectedShell(page);
+      await serveInjectedShell(page, baseURL);
       await page.goto(PATH);
       expect(await headCounts(page)).toEqual({ canonical: 1, description: 1, breadcrumb: 1, injected: 4, titles: 1 });
       expect(await page.locator('link[rel="canonical"]').getAttribute("href")).toBe(CANONICAL);
@@ -60,8 +60,8 @@ test.describe("生の head の受け渡し", () => {
     }
   });
 
-  test("描画の後は React の head が1本ずつで、canonical が0本の瞬間が無い", async ({ page }) => {
-    await serveInjectedShell(page);
+  test("描画の後は React の head が1本ずつで、canonical が0本の瞬間が無い", async ({ page, baseURL }) => {
+    await serveInjectedShell(page, baseURL);
     // 最初に canonical が現れた後の数の推移を記録する（HTML を読む途中の0は数えない）
     await page.addInitScript(() => {
       window.__canonicalCounts = [];
@@ -82,8 +82,8 @@ test.describe("生の head の受け渡し", () => {
     expect(Math.min(...counts), `canonical の数の推移 ${counts.join(",")}`).toBeGreaterThanOrEqual(1);
   });
 
-  test("別のパスへ移ると差し込みが残らず、title の文は既定に戻る", async ({ page }) => {
-    const defaultTitleOf = await serveInjectedShell(page);
+  test("別のパスへ移ると差し込みが残らず、title の文は既定に戻る", async ({ page, baseURL }) => {
+    const defaultTitleOf = await serveInjectedShell(page, baseURL);
     await page.addInitScript(() => {
       new MutationObserver((_records, observer) => {
         const title = document.querySelector("title");

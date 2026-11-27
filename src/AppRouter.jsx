@@ -142,6 +142,12 @@ function AdRefresh() {
 // 待つ間にURLが変われば cleanup で取り消され、最終的なURLだけが1回送られる
 const PAGE_VIEW_SETTLE_MS = 500;
 
+// 生の HTML に差し込んだ head を React の head へ受け渡す（ADR-0114 決定3）。パスは Router から渡す
+function PageHeadHandoff() {
+  usePageHeadHandoff(useLocation().pathname);
+  return null;
+}
+
 function PageViewTracker() {
   const { pathname, search } = useLocation();
   // レース詳細のタブ・艇の選択（?tab=・?boat=）は、選ぶたびに URL を書き換える（BOA-493）。
@@ -401,12 +407,12 @@ function LocalizedLayout({ lng }) {
 
 export default function AppRouter() {
   useSingleTitle();
-  usePageHeadHandoff();
   return (
     <>
       <HashRedirect />
       <AdRefresh />
       <PageViewTracker />
+      <PageHeadHandoff />
       <CookieConsent />
       <SiteFeedback />
       <HreflangTags />

@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { PAGE_HEAD_ATTR } from "../pure/pageHead.js";
 
 // 生の HTML に差し込んだ head（middleware、src/pure/pageHead.js の injectPageHead）を、React の head へ受け渡す。
@@ -66,12 +65,14 @@ export function releasePageHead(doc, title) {
   doc.querySelectorAll(`[${PAGE_HEAD_ATTR}]:not(title)`).forEach((el) => el.remove());
 }
 
-export default function usePageHeadHandoff() {
-  const { pathname } = useLocation();
+/**
+ * @param {string} pathname - 今のパス（呼び手が Router の useLocation から渡す）。最初のパスから変わったら差し込みを全て外す
+ */
+export default function usePageHeadHandoff(pathname) {
   const [firstPathname] = useState(pathname);
 
-  // 描画の前（layout effect）に1回合わせる。AppRouter は木の根なので、最初の描画で React が head へ足した要素は
-  // ここより前に DOM に入っている。後の lazy のチャンクの描画は MutationObserver が拾う
+  // 描画の前（layout effect）に1回合わせる。layout effect は同じ描画の DOM の書き換えが全て済んだ後に走るので、
+  // 最初の描画で React が head へ足した要素はここより前に DOM に入っている。後の lazy のチャンクの描画は MutationObserver が拾う
   useLayoutEffect(() => {
     if (!document.querySelector(`[${PAGE_HEAD_ATTR}]`)) return undefined;
     if (!syncPageHead(document)) return undefined;
