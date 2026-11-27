@@ -164,6 +164,14 @@
     {
       "file": "src/shared/venueSeriesTitle.js",
       "line": "* 「{会場}競艇予想 ai」は SG 開催週に跳ねる（桐生SGの週に「桐生競艇予想 ai」が1週1,489表示）ため、"
+    },
+    {
+      "file": "src/pages/GrandPrixPage.jsx",
+      "line": "const TITLE = `競艇グランプリ${year}特集｜${venueName}${EDITION.shortDates}の日程・トライアルの仕組み・過去の優勝戦｜龍神レーダー`;"
+    },
+    {
+      "file": "src/pages/GrandPrixPage.jsx",
+      "line": "const DESCRIPTION = `競艇（ボートレース）のグランプリ（SG）${year}の出場18人の獲得賞金、トライアル1st・2ndから優勝戦までの勝ち上がり、${venueName}のコース別の1着率、過去の優勝戦、6日間の日程をまとめた特集です。`;"
     }
   ]
 }
