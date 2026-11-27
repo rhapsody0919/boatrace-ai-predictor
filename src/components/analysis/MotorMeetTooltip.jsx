@@ -22,29 +22,50 @@ function resultText(t, r) {
 }
 
 // 日ごとに空白で区切り、同じ日の走は続けて書く（ハイフンでつなぐと3連単の目に見える。ファン評価 11/25）
-const orderText = (t, byDay) => byDay.map((d) => d.results.map((r) => resultText(t, r)).join("")).join(" ");
+const orderText = (t, byDay) =>
+  byDay.map((d) => d.results.map((r) => resultText(t, r)).join("")).join(" ");
 
 /**
  * @param {{tip: ReturnType<import("../../pure/motorGenerationTrend.js").motorMeetTip>, point: {value:number, runs:number},
  *   venueCode: number, metric: "top2Rate"|"top3Rate", leftPct: number, pinned: boolean, onClose: () => void}} props
  */
-export default function MotorMeetTooltip({ tip, point, venueCode, metric, leftPct, pinned, onClose }) {
+export default function MotorMeetTooltip({
+  tip,
+  point,
+  venueCode,
+  metric,
+  leftPct,
+  pinned,
+  onClose,
+}) {
   const { t, i18n } = useTranslation();
   const lp = (path) => localizePath(path, i18n.resolvedLanguage);
   return (
-    <div className={`trc-tip${pinned ? " is-pinned" : ""}${leftPct > 55 ? " is-flip" : ""}`} style={{ left: `${leftPct}%` }}>
+    <div
+      className={`trc-tip${pinned ? " is-pinned" : ""}${leftPct > 55 ? " is-flip" : ""}`}
+      style={{ left: `${leftPct}%` }}
+    >
       {pinned && (
-        <button type="button" className="trc-tip-close" onClick={onClose} aria-label={t("basicInfo.trend.tipClose")}>
+        <button
+          type="button"
+          className="trc-tip-close"
+          onClick={onClose}
+          aria-label={t("basicInfo.trend.tipClose")}
+        >
           ×
         </button>
       )}
-      <Link className="trc-tip-link" to={lp(`/venue/${Number(venueCode)}/meet/${tip.start}`)}>
+      <Link
+        className="trc-tip-link"
+        to={lp(`/venue/${Number(venueCode)}/meet/${tip.start}`)}
+      >
         {t("analysis.motor.genTrend.toMeet")}
       </Link>
       <p className="trc-tip-line">
         {`${md(tip.start)}〜${md(tip.end)} ${venueNameOf(t, Number(venueCode))}`}
         {tip.grade && ` ${GRADE_LABELS[tip.grade] ?? tip.grade}`}
-        {tip.days && ` ${t("analysis.motor.genTrend.tipDays", { n: tip.days })}`}
+        {tip.days &&
+          ` ${t("analysis.motor.genTrend.tipDays", { n: tip.days })}`}
       </p>
       {/* 選手名と着順の並びは長くなりうるので、この行だけ折り返す（3行の決まりは見出しの数で守る） */}
       <p className="trc-tip-line mtc-tip-wrap">
@@ -52,14 +73,21 @@ export default function MotorMeetTooltip({ tip, point, venueCode, metric, leftPc
           <span translate="no">
             {t("analysis.motor.genTrend.tipRacer", {
               // 級はそのレース時点の値（A1〜B2）。モーターの率を読む前提の腕の目安（時系列の振り分け F-049）
-              name: [tip.racerName.replace(/\s+/g, ""), tip.racerGrade].filter(Boolean).join(" "),
+              name: [tip.racerName.replace(/\s+/g, ""), tip.racerGrade]
+                .filter(Boolean)
+                .join(" "),
             })}{" "}
           </span>
         )}
-        {t(tip.ongoing ? "analysis.motor.genTrend.tipFinishesSoFar" : "analysis.motor.genTrend.tipFinishes", {
-          order: orderText(t, tip.byDay),
-          n: tip.byDay.reduce((a, d) => a + d.results.length, 0),
-        })}
+        {t(
+          tip.ongoing
+            ? "analysis.motor.genTrend.tipFinishesSoFar"
+            : "analysis.motor.genTrend.tipFinishes",
+          {
+            order: orderText(t, tip.byDay),
+            n: tip.byDay.reduce((a, d) => a + d.results.length, 0),
+          },
+        )}
       </p>
       {/* 走数が3桁になると狭い幅ではみ出すので、この行も折り返す（ファン評価 11/25） */}
       <p className="trc-tip-line trc-tip-value mtc-tip-wrap">
