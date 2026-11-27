@@ -6,7 +6,7 @@ import { test, expect } from "./fixtures.js";
  *   - 注意度の定義の問いと、成績ページへの案内を出す
  *   - タブの説明は「イン崩れ」、サービスの呼び名は「AI予想」を使わない
  *   - 構造化データ（FAQPage）も画面と同じ問い
- *   - フラグの外は今のまま
+ *   - 2026-11-27 に公開（IN_CAUTION_PUBLIC = true）、クエリ無しでも新しい文
  */
 
 const faqText = (page) => page.locator("main, .faq-page, body").first();
@@ -38,11 +38,11 @@ test("フラグの側: 展開予測の的中率と「AI予想」を出さず、�
   expect(names).toContain("どうやってレースの分析を見れば良いですか？");
 });
 
-test("フラグの外: 今のまま", async ({ page }) => {
+test("公開の後: クエリ無しでも新しい文", async ({ page }) => {
   await page.goto("/faq");
-  await expect(page.getByText("AI予測の精度はどのくらいですか？")).toBeVisible({
+  await expect(page.getByText("イン崩れ注意度とは何ですか？")).toBeVisible({
     timeout: 20000,
   });
-  await expect(page.getByText("イン崩れ注意度とは何ですか？")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "AI予想を試す" })).toBeVisible();
+  await expect(page.getByText("AI予測の精度はどのくらいですか？")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "AI予想を試す" })).toHaveCount(0);
 });

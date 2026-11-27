@@ -2,7 +2,7 @@ import { test, expect } from "./fixtures.js";
 
 /**
  * レース詳細のタブの名前（BOA-822 task 45、2026-11-24 オーナー決定）。機能フラグの側（?caution=1）では「AI予想」を
- * 「イン崩れ」にする。タブの id と ?tab=aiPrediction は変えない（共有リンク・計測が使う）。フラグの外は今のまま。
+ * 「イン崩れ」にする。タブの id と ?tab=aiPrediction は変えない（共有リンク・計測が使う）。2026-11-27 に公開（IN_CAUTION_PUBLIC = true）、クエリ無しでも「イン崩れ」。
  *   - レース詳細のタブの名前・中止のレースの空状態の文
  * DB に依存しないよう Edge API と Supabase REST を差し替える（in-caution-card.spec.js と同じ形）。
  */
@@ -76,13 +76,13 @@ test.describe("タブの名前「イン崩れ」（BOA-822 task 45）", () => {
     );
   });
 
-  test("フラグの外: 今のまま「AI予想」", async ({ page }) => {
+  test("公開の後: クエリ無しでも「イン崩れ」で、「AI予想」のタブは無い", async ({ page }) => {
     await open(page, 4, "tab=aiPrediction");
-    await expect(tab(page, "AI予想")).toBeVisible({ timeout: 20000 });
-    await expect(tab(page, "イン崩れ")).toHaveCount(0);
+    await expect(tab(page, "イン崩れ")).toBeVisible({ timeout: 20000 });
+    await expect(tab(page, "AI予想")).toHaveCount(0);
     await open(page, 5, "tab=aiPrediction");
     await expect(page.getByTestId("ai-prediction-cancelled")).toHaveText(
-      "このレースは中止のため、AI予想はありません",
+      "このレースは中止のため、イン崩れ注意度はありません",
     );
   });
 });

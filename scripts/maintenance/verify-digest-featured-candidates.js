@@ -87,11 +87,11 @@ const conflictError = (column) => ({
   message: `Could not find the '${column}' column of 'morning_digest_rows' in the schema cache`,
 });
 cases.push(
-  ["公開までは定数が false（注目レースは旧の指数のまま）", () => {
-    assert.equal(MORNING_DIGEST_IN_CAUTION, false);
+  ["公開（BOA-822、2026-11-27）の後は定数が true（注目レースは注意度で選ぶ）", () => {
+    assert.equal(MORNING_DIGEST_IN_CAUTION, true);
     assert.deepEqual(
       pickFeatured(cautionSections),
-      pickFeatured(cautionSections, { useInCaution: false }),
+      pickFeatured(cautionSections, { useInCaution: true }),
     );
   }],
   ["注意度で選ぶと、注意度の値で方向一致度を出し、理由文も注意度で書く", () => {

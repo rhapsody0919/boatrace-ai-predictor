@@ -9,7 +9,7 @@ import { test, expect } from "./fixtures.js";
  *     旧の「/ 100」の物差しは出さない
  *   - 会場のレース一覧: 札は「崩れやすい 65%」「中くらい 43%」「堅め 26%」。展開予測の的中/外れの札は出さない
  *   - 中止確定のレースは札・左の色線を出さない（ホームの上位からも外す）
- *   - フラグの外は今のまま（旧指数の「/ 100」）
+ *   - 公開（2026-11-27）の後は ?caution=0 でも注意度（旧指数の「/ 100」は出ない）
  */
 
 test.describe.configure({ timeout: 180_000 });
@@ -254,16 +254,13 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
     ).not.toBe("4px");
   });
 
-  test("フラグの外は今のまま（旧指数の「/ 100」）", async ({ page }) => {
+  test("公開の後は ?caution=0 でも注意度（旧指数の「/ 100」は出ない）", async ({ page }) => {
     await setup(page);
     await page.goto("/?caution=0");
     const section = page.locator(".volatility-highlights");
     await expect(section).toBeVisible({ timeout: 30000 });
-    await expect(section).toContainText("/ 100");
-    await expect(section).not.toContainText("今日のイン崩れ注意度");
-    await expect(page.locator(".venue-race-list__in-caution-note")).toHaveCount(
-      0,
-    );
+    await expect(section).toContainText("今日のイン崩れ注意度");
+    await expect(section).not.toContainText("/ 100");
   });
 });
 

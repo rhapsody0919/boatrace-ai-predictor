@@ -158,9 +158,9 @@ export async function botPageTopFacts({ lang, tl, body, has, e }) {
   ].join("\n");
   check(`${lang} トップ: 説明文の直後に運営・データ・成績の3行`, has(factsHtml), true);
   check(
-    `${lang} トップ: /profile・/accuracy・/hit-races へのリンクは1本ずつ（接頭辞なし）`,
+    `${lang} トップ: /profile・/accuracy へのリンクは1本ずつ、/hit-races（BOA-822 で転送）は無い（接頭辞なし）`,
     ["/profile", "/accuracy", "/hit-races"].map((href) => body.split(`<a href="${href}">`).length - 1),
-    [1, 1, 1],
+    [1, 1, 0],
   );
   check(`${lang} トップ: 3行に的中率・回収率・% が無い`, /的中率|回収率|%/.test(factsHtml), false);
   {

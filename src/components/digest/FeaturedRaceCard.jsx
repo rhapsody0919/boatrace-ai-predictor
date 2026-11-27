@@ -57,6 +57,16 @@ function FeaturedCautionStat({ row }) {
 }
 
 /** 当日の値の欄。フラグの側は注意度（無い行は出さない）、外は旧のイン崩れ指数 */
+/**
+ * 理由の文は朝の生成で保存した文。注意度の画面で、旧のイン崩れ指数で書いた文（公開の日の朝の行、
+ * 注意度が全部欠けて旧の指数で選んだ日）を出すと、隣の注意度の値と食い違うので出さない（BOA-822 公開のファン評価 P1）
+ */
+function showFeaturedReason(row, caution) {
+  const reason = row.detail?.reason;
+  if (!reason) return false;
+  return !(caution.enabled && reason.includes("イン崩れ指数"));
+}
+
 function FeaturedSignalStat({ row, caution }) {
   if (caution.enabled) return <FeaturedCautionStat row={row} />;
   if (!caution.showLegacy || row.volatility_percentile === null) return null;
@@ -144,7 +154,7 @@ function FeaturedRaceCard({ row }) {
           <FeaturedSignalStat row={row} caution={caution} />
         </div>
 
-        {row.detail?.reason && (
+        {showFeaturedReason(row, caution) && (
           <p className="featured-race__reason">{row.detail.reason}</p>
         )}
 
