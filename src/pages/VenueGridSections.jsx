@@ -1,3 +1,4 @@
+import GrandPrixTopBanner from "../components/meet/GrandPrixTopBanner";
 import { Link } from "react-router-dom";
 import Footer from "../components/Footer";
 import UpdateStatus from "../components/UpdateStatus";
@@ -97,6 +98,8 @@ function TodayVenuesSection({
                       venuesData={venuesData}
                       nowHHMM={nowHHMM}
                     />
+                    {/* グランプリ特集への導線（BOA-1724。開催の終わりまで、ja のときだけ） */}
+                    {i18n.language === "ja" && <GrandPrixTopBanner />}
                     {/* SG開催中の会場への導線（集客レーン。SG の日だけ出る） */}
                     <SgNowBanner venuesData={venuesData} />
                     <TodaysVolatilityHighlights
