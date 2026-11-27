@@ -1,4 +1,4 @@
-/* グランプリの特集の図（GrandPrixCharts.jsx）。--gp-sg・--gp-sg-soft は pages/GrandPrixPage.css の .gp-page が決める */
+/* グランプリの特集の図（GrandPrixCharts.jsx）。--gp-sg・--gp-sg-soft はページの CSS（pages/GrandPrixPage.css）が決める */
 .gp-card {
   padding: var(--spacing-3);
   border: 1px solid var(--border-hairline);
@@ -7,7 +7,9 @@
 }
 
 /* 艇番の丸を主役に並べるので、白い1号艇・黒い2号艇が地に溶けないよう縁を濃くする */
-.gp-page .rol-boat-badge {
+.gp-flow .rol-boat-badge,
+.gp-lanes .rol-boat-badge,
+.gp-final .rol-boat-badge {
   border-color: var(--text-secondary);
 }
 
@@ -25,7 +27,7 @@
   border-left: 4px solid var(--gp-sg);
 }
 
-.gp-page .gp-flow-line {
+.gp-flow .gp-flow-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -60,7 +62,7 @@
 }
 
 /* 会場と全国の比べ */
-.gp-page .gp-badges {
+.gp-water .gp-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -115,12 +117,16 @@
 }
 
 .gp-finals {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-2);
 }
 
-.gp-page .gp-final-year {
+.gp-final {
+  flex: 1 1 220px;
+}
+
+.gp-final .gp-final-year {
   font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--text-primary);
@@ -130,7 +136,7 @@
   display: block;
 }
 
-.gp-page .gp-final-row {
+.gp-final .gp-final-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
