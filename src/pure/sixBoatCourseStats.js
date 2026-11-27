@@ -5,8 +5,23 @@ import {
 } from "./racerOfficialPeriodStats.js";
 
 import { buildTodayCourseRows } from "./courseGridStats.js";
+import { judgeRateVsBaseline } from "./compareBaseline.js";
 
 export const SIX_BOAT_WARN_ENTRIES = { 1: 10, 2: 30, 3: 30, 4: 30, 5: 42, 6: 67 };
+
+/**
+ * 6艇の行の1着率が、全国の同じコースの率（row.avg）から偶然の幅を超えて離れたかの向き（意味づけ 2026-11-26）。
+ * 差を出す線未満（reliability が ok でない）は "few"。当地（isLocal）は色を付けないので "unclear"
+ * （当地の得意が翌年も続くかは未検証）。枠別情報の6艇の表と出走表の想定コース1着率で共有する。
+ * @returns {"high"|"low"|"unclear"|"few"}
+ */
+export function courseRowDir(row, isLocal = false) {
+  if (row.reliability !== "ok") return "few";
+  if (isLocal) return "unclear";
+  return judgeRateVsBaseline({
+    rate: row.winRate, baseline: row.avg, n: row.entries, minN: SIX_BOAT_WARN_ENTRIES[row.course],
+  })?.dir ?? "unclear";
+}
 
 function assertDate(value) {
   const time = typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)

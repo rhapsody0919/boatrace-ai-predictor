@@ -2796,6 +2796,7 @@
     "motorBadgeDown": "기력↓",
     "rowExpectedCourseWinRate": "예상 코스 1착률",
     "expectedCourseWinRateNote": "예상 코스 1착률은 최근 3기의 실제 진입 코스로 집계합니다",
+    "expectedCourseWinRateNoteDiff": "아래는 전체 선수의 같은 코스와의 차이(▲▼는 우연한 흔들림만으로는 설명하기 어려운 차이)",
     "noteExpectedCourse": "승률, 당지 승률, 2연대율은 공식 출주표의 값입니다. 평균 ST, 모터 2연대율은 행 이름의 기간, 예상 코스 1착률은 최근 3기의 진입 코스, 그 밖의 분석 데이터는 최근 90일(회수율은 180일)의 실적 집계입니다. 하이라이트는 이 레이스에서 가장 좋은 값입니다. 참고용이며 결과를 보장하지 않습니다"
   },
   "venueTendency": {

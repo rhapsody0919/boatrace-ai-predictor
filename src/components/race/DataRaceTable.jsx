@@ -126,6 +126,13 @@ function RowLabel({ row, deepLink }) {
           className={`drt-label-note${row.wrapNote ? " drt-label-note--wrap" : ""}`}
         >
           {row.note}
+          {/* 値の下の差の読み方（意味づけ。想定コース1着率の全国との差）。同じ注記の中で改行して出す */}
+          {row.noteDiff && (
+            <>
+              <br />
+              {row.noteDiff}
+            </>
+          )}
         </span>
       )}
     </>

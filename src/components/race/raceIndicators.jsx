@@ -33,7 +33,8 @@ import {
   isExhibitionCourseOutOfRange,
   originalExhibitionKindLabels,
 } from "../../pure/raceIndicatorText.js";
-import { rankTiers } from "../../pure/compareBaseline.js";
+import { rankTiers, toneOf } from "../../pure/compareBaseline.js";
+import { courseRowDir } from "../../pure/sixBoatCourseStats.js";
 import {
   buildPartsChangedRow,
   buildPrevResultRow,
@@ -254,6 +255,23 @@ export function buildBasicIndicatorRows(args) {
   );
 }
 
+// 全国の同じコースの1着率との差（意味づけ 2026-11-26、型1を狭いセル向けに文字で）。
+// 枠別情報の6艇の表（#3534）と同じ行・同じ判定。▲緑・▼赤は偶然のぶれを超えたときだけ、ほかは灰。
+// 率を出さない艇（10走未満）と全国の値が無い艇は出さない
+function courseDiffOf(row) {
+  if (!row || row.reliability === "none" || row.winRate == null || row.avg == null) return null;
+  const diff = Math.round(row.winRate) - Math.round(row.avg);
+  const dir = courseRowDir(row);
+  // 色は共通の ind-good・ind-bad（src/styles/indicators.css。▲▼ を必ず添える決まり）、ほかは drt-sub の灰
+  const tone = { good: " ind-good", bad: " ind-bad" }[toneOf(dir, "high")] ?? "";
+  const mark = dir === "high" ? "▲" : dir === "low" ? "▼" : "";
+  return (
+    <span className={`drt-sub drt-course-diff${tone}`} data-tone={toneOf(dir, "high") ?? "plain"}>
+      {`${mark}${diff > 0 ? "+" : ""}${diff}pt`}
+    </span>
+  );
+}
+
 /**
  * 想定コース1着率の行（BOA-1296、spec §1.5）。率は整数%、下に 1着数/進入数。
  * reliability: "warn" は灰の字と ⚠、"none"（10走未満）は「—」と N走。金枠は "ok" の艇だけを候補にする。
@@ -268,6 +286,7 @@ function buildExpectedCourseWinRateRow(t, { status, rows }) {
     label: t("dataTable.rowExpectedCourseWinRate"),
     shortLabel: t("review.cols.expectedCourseWinRate"),
     note: t("dataTable.expectedCourseWinRateNote"),
+    noteDiff: t("dataTable.expectedCourseWinRateNoteDiff"),
     wrapNote: true,
     // 旧い行の「超展開データ」（枠番で数える会場の集計）へは送らない。値の元は枠別情報タブの6艇の表
     tab: null,
@@ -290,6 +309,7 @@ function buildExpectedCourseWinRateRow(t, { status, rows }) {
             <span title={t("wakuInfo.sixBoat.smallSampleTitle")}> ⚠</span>
           )}
           <span className="drt-sub">{cell.sub}</span>
+          {courseDiffOf(byBoat.get(p.number))}
         </span>
       );
     },
