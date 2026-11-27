@@ -40,6 +40,22 @@
 - 本番の anon が本文の set_config で未知の設定を立てられるかは、適用後に anon のキーで `rpc/get_racer_runs` がエラーでなく `[]` を返すことで確かめる（適用前はオーナーの SQL Editor の `BEGIN READ ONLY; SET LOCAL ROLE anon; SELECT set_config(…, true); ROLLBACK;` で見られる）
 - 新しい表に anon の SELECT だけを付ける前に `REVOKE ALL … FROM anon, authenticated` を置く（Supabase の既定の権限で ALL が付いていると、RLS の外の権限が残る。205・208 の形）
 
+### 追記 2026-11-27（2）: 匿名に出す範囲を「その選手の出たレースの6艇の走」に広げる（決定4 の直し、マイグレーション 213）
+
+- 理由: 選手ページの履歴の整形（src/services/racerRaceHistoryRows.js）は、同じレースの他の艇の値を使う。レース内の ST 順位（6艇の ST と F）・他の5艇の展示タイムの平均・着の並び（race_results.rank1〜6）。決定4 の RLS は本人の行しか通さず、facts へ移すと今と同じ行が作れない（system-architect 2026-11-27）
+- オーナーの答え（2026-11-27、G2 のセッションで直接、原文「出してよい」）。問い:「選手ページで同じレースの他の艇の ST・展示を使うために、選手が出たレースの6艇の走を匿名に出してよいか（今の本体の表と同じ程度）」
+- 出す範囲: その選手の出たレースの、6艇の走の8列（boat_number・racer_id・course・start_timing・is_flying・finish_mark・finish_rank・exhibition_time）と、レースの racer_ids・finish_order。「1トランザクションに1選手」は変わらない。1回の呼び出しで出るのは、その選手の出たレースの範囲だけ。何度も呼べば集められる上限（影響と限界の2点目）は変わらない
+- 表の形: race_facts に racer_ids integer[6]（艇番の順、NOT NULL、添字は1から）と finish_order smallint[6]（1着から順の艇番。main は race_results.rank1〜6、kb は run_facts.finish_rank の順で同着は艇番の順、dead_heat で知らせる）を足す
+  - racer_ids を NOT NULL にするのは、NULL の行が RLS で誰にも見えず、RPC から黙って消えるため。空の表に足すので「表が空」の前提も機械で守れる
+  - racer_ids と run_facts.racer_id の一致は DB が守らない。書き手が守り、事後に読み取りで確かめる
+- RLS の式を替える
+  - race_facts: `設定 = ANY (racer_ids)`。自分の列だけで判定する
+  - run_facts: `racer_id = 設定 OR EXISTS (race_facts で同じ race_id かつ 設定 = ANY (racer_ids))`
+  - race_facts が run_facts を参照しないので、ポリシーは再帰しない。戻すときは run_facts を先に単純な式へ戻す（逆だと互いを参照する）
+- get_racer_runs は、本人の走に boats（同じレースの6艇の走、艇番の順）を添えて返す
+- 限界: run_facts の式が OR になり、匿名が表を直に読むと索引が効かず Seq Scan になる（PGlite で13.8万行 40ms、212 は0.3ms）。kb を入れた後に、匿名で `EXPLAIN ANALYZE SELECT race_id FROM run_facts LIMIT 1` を測る。1秒を超えたら式を見直す（見直しの契機に足す）
+- 顧みた案: race_facts に6艇の値の配列を足す（次に移す 203 で配列が増え続ける）、run_facts に派生値を入れる（決定1 に反する）、RPC で他艇を読む（INVOKER のままではできず、DEFINER は決定4 で禁止）
+
 ## 却下した選択肢
 
 - **本体の表へ kb を入れる**: B の当地勝率など定義が違い、範囲を指定しない集計（aggregate-racer-stats.js）が黙って変わる（kb-longterm-backfill §4.1）
@@ -61,5 +77,5 @@
 ## 見直しの契機
 
 - ADR-0067 の見直しの契機（公式・会場からの通知、事業形態の変化、表示の量や範囲の大きな変化、規約・法令の変化）
-- RPC の読みが3秒を超え始めたとき、容量が契約の上限の8割に届いたとき
+- RPC の読みが3秒を超え始めたとき、容量が契約の上限の8割に届いたとき、匿名の run_facts の直の読みが1秒を超えたとき（追記 2026-11-27（2））
 - 2005-01〜2019-03 を取ると決めたとき（決定7）
