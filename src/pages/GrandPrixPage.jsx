@@ -36,6 +36,7 @@ const RELATED = [
   ["/blog/sg-race-guide-2026", "2026年SGレースの日程と会場"],
   ["/blog/omura-wind-direction-guide", "大村の水面と風（風の向き別の1着率）"],
   ["/blog/sg-g1-race-strategy", "G1レースの予想のコツ（得点率と勝負駆け）"],
+  ["/blog/meet-score-rate-guide", "今節の得点率の読み方（優勝戦の枠番も得点率の順）"],
 ];
 
 const faqLd = {
