@@ -8,12 +8,15 @@ import "../race/SgNowBanner.css";
  * トップの「グランプリ特集」の帯（BOA-1724）。開幕前は開幕までの日数、開催中は日目を出し、終わったら出さない。
  * 見た目は「SG開催中」の帯（SgNowBanner）と同じ。遷移先の /grandprix は ja 専用なので、呼び手が ja のときだけ置く
  */
+const WRAP = { display: "flex", flexDirection: "column", margin: "0 0 1rem" };
+
 export default function GrandPrixTopBanner() {
   const p = grandPrixPhase(getTodayJST(), EDITION);
   if (p.phase === "after") return null;
   // i18n-allow-start: ja のときだけ出す導線（遷移先が ja専用ページ）
   return (
-    <div className="sg-now-banner" role="region" aria-label="グランプリ特集">
+    // 外枠は「SG開催中」の帯（.sg-now-banner）と別のクラスにする。既存の試験と SG の帯の数え方を変えないため
+    <div className="gp-top-banner" role="region" aria-label="グランプリ特集" style={WRAP}>
       <Link to="/grandprix" className="sg-now-banner__link">
         <span className="sg-now-banner__grade" style={{ backgroundColor: "var(--color-grade-sg)" }}>
           SG
