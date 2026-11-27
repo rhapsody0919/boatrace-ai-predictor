@@ -116,7 +116,7 @@ Featuring the year's top 18 prize-money earners, this is **the pinnacle showdown
 **Strategy:**
 - Racers ranked 7th–18th in prize money start in Trial 1st; the top 6 by score rate move on to Trial 2nd
 - Racers ranked 1st–6th start in Trial 2nd; the top 6 by score rate in Trial 2nd reach the final
-- Lanes in the final follow the Trial 2nd score-rate order (1st place gets Boat 1)
+- Boat numbers in the final follow the Trial 2nd score-rate order (1st place gets Boat 1)
 - The Grand Prix Series runs at the same venue in the same period
 
 ---
