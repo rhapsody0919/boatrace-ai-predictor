@@ -10,7 +10,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     for (const lang of ["en", "zh-TW"]) {
       await page.goto(`/${lang}/race/2026-09-26-13-04`);
-      await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・AI予想・今節）
+      await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・イン崩れ・今節）
       const table = page.locator(".rmt-compare");
       await table.waitFor({ timeout: 30000 });
       const over = await table.evaluate((t) => {

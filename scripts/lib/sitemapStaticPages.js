@@ -16,12 +16,6 @@ export const staticPages = [
     priority: "0.9",
   },
   {
-    loc: "/hit-races",
-    lastmodFrom: "raceData",
-    changefreq: "daily",
-    priority: "0.9",
-  },
-  {
     loc: "/about",
     changefreq: "monthly",
     priority: "0.8",

@@ -6,7 +6,6 @@ import {
   inspectGrids,
   expectNoWastedGrids,
   serveFixedDigest,
-  serveFixedHitRaces,
 } from "./helpers.js";
 
 /**
@@ -44,7 +43,6 @@ const PAGES = [
   // 会場モーターランキング（BOA-428）: 約60行×7列の表。表の中だけ横スクロールさせる
   "/winning-technique?tab=motorranking&venue_code=16",
   "/races",
-  "/hit-races",
   "/blog",
   "/faq",
   "/how-to-use",
@@ -67,10 +65,9 @@ const PAGES = [
 
 /**
  * 当日の的中・朝のダイジェストは 0:00〜7:00 JST に未生成で、主データが出ない。
- * その2つの path だけ、生成済みの過去日の応答に差し替えてから開く（BOA-1447）
+ * /today だけ、生成済みの過去日の応答に差し替えてから開く（BOA-1447）。/hit-races は BOA-822 の公開（2026-11-27）で /accuracy への転送になったので外した
  */
 async function gotoPage(page, path) {
-  if (path === "/hit-races") await serveFixedHitRaces(page, "all");
   if (path === "/today") await serveFixedDigest(page);
   await gotoAndSettle(page, path);
 }

@@ -8,7 +8,7 @@
 // （本機能はレース詳細ページの拡張のみを記述する）、辿れる導線が無いため、本番
 // Supabase に実在するレースIDを直接指定する（2026-10-18、初版の固定値
 // 2099-12-31-01-01 等は実在しないためレース詳細ページ自体が描画されず、
-// 「AI予想」タブ待ちが60秒タイムアウトしていた）。
+// 「イン崩れ」（旧「AI予想」）タブ待ちが60秒タイムアウトしていた）。
 //
 // PENDING_RACE_ID・FINISHED_RACE_ID は同じ実在レース（確定済み・v16公開後）を指す。
 // spec FR-4「発走後（確定後）もAI予想タブで使える」ため、確定済みレースでも
@@ -186,7 +186,7 @@ const nagashiNonMatchRow = (i) =>
 
 async function openAiPredictionTab(page, raceId) {
   await page.goto(`/race/${raceId}`);
-  await page.getByRole("tab", { name: "AI予想" }).click();
+  await page.getByRole("tab", { name: /^イン崩れ$/ }).click();
 }
 
 async function openResultTab(page, raceId) {

@@ -207,7 +207,7 @@ export function logDryRun(rows, byGradeReport) {
  * 機能フラグを読めないので別の定数にし、公開の PR で IN_CAUTION_PUBLIC と一緒に true にする。
  * false の間も in_caution_* の3列は書く（列が増えるだけで、注目レース・画面は旧の値のまま）。
  */
-export const MORNING_DIGEST_IN_CAUTION = false;
+export const MORNING_DIGEST_IN_CAUTION = true;
 
 /** イン崩れ指数・注意度が1件も無い（predictions が未生成）ときの警告 */
 export function warnNoVolatility(volatilityMap, inCautionMap = new Map()) {

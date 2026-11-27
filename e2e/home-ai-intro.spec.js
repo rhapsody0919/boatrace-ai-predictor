@@ -3,7 +3,7 @@ import { test, expect } from "./fixtures.js";
 /**
  * トップの「龍神レーダーのボートレースAI予想」セクション（集客レーン Phase3）の固定。
  *
- * - 本文（見出し・説明）と /accuracy・/hit-races へのリンクは常に出る
+ * - 本文（見出し・説明）と /accuracy へのリンクは常に出る（/hit-races は BOA-822 の公開で /accuracy へ転送）
  * - 的中率・回収率の数値は出さない（2026-10-01 ユーザー判断。展開予測の実測的中率は、決まり手を見ずに
  *   判定しており、予想なしの基準を下回ることが分かった。BOA-617）
  * - 言語プレフィックス付きのトップでも、日本語のみのページへは言語プレフィックス無しでリンクする
@@ -34,7 +34,7 @@ test.describe("トップのAI予想説明セクション", () => {
     const hrefs = await section
       .locator(".home-ai-intro__facts a")
       .evaluateAll((as) => as.map((a) => a.getAttribute("href")));
-    expect(hrefs).toEqual(["/profile", "/accuracy", "/hit-races"]);
+    expect(hrefs).toEqual(["/profile", "/accuracy"]);
 
     // トップは実績の数値を取りに行かない（このセクションのために accuracy_cache を読まない）
     expect(accuracyRequested).toBe(false);
@@ -53,7 +53,7 @@ test.describe("トップのAI予想説明セクション", () => {
     const hrefs = await section
       .locator(".home-ai-intro__facts a")
       .evaluateAll((as) => as.map((a) => a.getAttribute("href")));
-    expect(hrefs).toEqual(["/profile", "/accuracy", "/hit-races"]);
+    expect(hrefs).toEqual(["/profile", "/accuracy"]);
   });
 });
 
@@ -247,7 +247,7 @@ test.describe("よくある質問と FAQPage（A2）", () => {
 
 // PV09 T2（BOA-1689）。説明文（home.aiIntro.lead）の直後に運営・データ・成績の3行。
 // 「公式」はデータの出どころだけ、集計は当サイト。更新の時刻は年つきの JST の time 要素。
-// /profile・/accuracy・/hit-races は ja だけのページなので、どの言語でも接頭辞なしで1本ずつ
+// /profile・/accuracy は ja だけのページなので、どの言語でも接頭辞なしで1本ずつ
 test.describe("運営・データ・成績の3行（PV09 T2）", () => {
   test.describe.configure({ timeout: 120000 });
 
@@ -275,7 +275,7 @@ test.describe("運営・データ・成績の3行（PV09 T2）", () => {
         });
         expect(order).toBe("home-ai-intro__facts");
 
-        for (const href of ["/profile", "/accuracy", "/hit-races"]) {
+        for (const href of ["/profile", "/accuracy"]) {
           await expect(section.locator(`a[href="${href}"]`)).toHaveCount(1);
         }
         const hrefs = await section
@@ -303,7 +303,7 @@ test.describe("運営・データ・成績の3行（PV09 T2）", () => {
     }
   }
 
-  test("ja: 3行の文言（公式はデータの出どころだけ、的中一覧に外れを含む全件の添え書き）", async ({
+  test("ja: 3行の文言（公式はデータの出どころだけ、実績は注意度の段ごと・全レースで数えた添え書き）", async ({
     page,
   }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -318,9 +318,9 @@ test.describe("運営・データ・成績の3行（PV09 T2）", () => {
       /^\d{4}年\d{1,2}月\d{1,2}日 \d{2}:\d{2} データ更新$/,
     );
     await expect(items.nth(2)).toContainText(
-      "成績: 予想を実際のレースの結果と照らし合わせた記録",
+      "実績: イン崩れ注意度の段ごとに、1号艇が1着を逃した割合を実際のレースの結果で数えた記録",
     );
-    await expect(items.nth(2)).toContainText("外れを含む全件は成績ページ");
+    await expect(items.nth(2)).toContainText("全レースで数えています");
   });
 
   test("scrapedAt が読めない応答では time 要素だけ無く、3行は残る", async ({
@@ -340,6 +340,7 @@ test.describe("運営・データ・成績の3行（PV09 T2）", () => {
     await expect(facts.locator("time")).toHaveCount(0);
     await expect(facts.locator('a[href="/profile"]')).toHaveCount(1);
     await expect(facts.locator('a[href="/accuracy"]')).toHaveCount(1);
-    await expect(facts.locator('a[href="/hit-races"]')).toHaveCount(1);
+    // /hit-races は BOA-822 で /accuracy へ転送したので、節のリンクに残さない
+    await expect(facts.locator('a[href="/hit-races"]')).toHaveCount(0);
   });
 });

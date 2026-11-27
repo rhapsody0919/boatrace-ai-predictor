@@ -10,6 +10,10 @@ import {
  * 展開予測の的中は艇番で判定する（BOA-708）。予測が「枠なりを前提に N号艇が勝つ」という
  * 艇の予測のため。一方で、艇番を「Nコース」と書いていた表記が、前付けのあったレースで
  * 誤表示になっていた。表記は艇番にし、前付けで艇番とコースが違うときだけ進入コースを添える。
+ *
+ * BOA-822 の公開（2026-11-27）で表示が無くなったので外した: 「艇番どおりのコースから勝ったレースでは、進入コースの注記を出さない」
+ * （展開予測のカードが無い）。「前付けのあったレース」「イン崩れの表は…1号艇で書く」「的中率ページの展開予測の説明」は
+ * 「出ない」ことの確かめに書き換えた。
  */
 
 const tab = (page, label) =>
@@ -19,34 +23,20 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
   // 関数の検査は src/ をテストの側（Node）で読む（e2e/src-modules.js。build した束の preview でも通るように）
   test.afterAll(closeSrcLoader);
 
-  test("前付けのあったレースでは、AI予想タブに1着の艇の進入コースを添える", async ({
+  test("前付けのあったレースでも、イン崩れのタブに展開予測の答え合わせ（進入コースの注記）は出ない", async ({
     page,
   }) => {
     test.slow();
-    // 2026-08-13 桐生2R: 6号艇が1コースに入って1着（予想は1号艇の逃げ → 艇番で判定して外れ）
+    // 2026-08-13 桐生2R: 6号艇が1コースに入って1着。公開の後は展開予測・答え合わせを描かない
     await page.goto("/race/2026-08-13-01-02", {
       waitUntil: "domcontentloaded",
     });
-    await tab(page, "AI予想").click();
-    const note = page.locator(".result-verify-entry-note");
-    await expect(note).toContainText("1着の6号艇は1コースから進入しました", {
-      timeout: 60000,
-    });
-  });
-
-  test("艇番どおりのコースから勝ったレースでは、進入コースの注記を出さない", async ({
-    page,
-  }) => {
-    test.slow();
-    // 2026-09-27 戸田11R: 1号艇が1コースから1着
-    await page.goto("/race/2026-09-27-02-11", {
-      waitUntil: "domcontentloaded",
-    });
-    await tab(page, "AI予想").click();
-    await expect(page.locator(".turn-pattern-summary").first()).toBeVisible({
+    await tab(page, "イン崩れ").click();
+    await expect(page.locator(".in-caution-tab")).toBeVisible({
       timeout: 60000,
     });
     await expect(page.locator(".result-verify-entry-note")).toHaveCount(0);
+    await expect(page.locator(".turn-pattern-summary")).toHaveCount(0);
   });
 
   test("的中のシェア文は艇番で書き、進入が違うときだけコースを添える", async () => {
@@ -176,31 +166,19 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     }
   });
 
-  test("イン崩れの表は、比べる列と基準の列をどちらも1号艇で書く", async ({
+  test("成績ページには、展開予測の的中率と会場別の表は出ない（注意度の実績だけ）", async ({
     page,
   }) => {
     test.slow();
     await page.goto("/accuracy", { waitUntil: "domcontentloaded" });
-    const details = page.locator(".vas-venue-details");
-    await details.locator("summary").click({ timeout: 60000 });
-    const headers = details.locator("thead th");
-    await expect(headers.nth(1)).toHaveText(
-      "イン崩れ注意（高）ラベル時に1号艇が負けた割合",
-    );
-    await expect(headers.nth(2)).toHaveText(
-      "会場全体で1号艇が負けた割合の平均",
-    );
-  });
-
-  test("的中率ページの展開予測の説明は、1着の艇で判定すると書く", async ({
-    page,
-  }) => {
-    test.slow();
-    await page.goto("/accuracy", { waitUntil: "domcontentloaded" });
-    const note = page.locator(".turn-accuracy-hero-note");
-    await expect(note).toContainText("いずれかの艇が実際に1着になった割合", {
+    await expect(page.locator(".accuracy-dashboard")).toBeVisible({
       timeout: 60000,
     });
+    await expect(page.locator(".ica-card, .ica-note").first()).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(page.locator(".turn-accuracy-hero-note")).toHaveCount(0);
+    await expect(page.locator(".vas-venue-details")).toHaveCount(0);
     await expect(page.locator("body")).not.toContainText("1着コースと一致");
   });
 });

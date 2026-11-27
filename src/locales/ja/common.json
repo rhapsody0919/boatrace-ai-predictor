@@ -98,7 +98,7 @@
   "venueRaceList": {
     "title": "レース一覧",
     "metaTitle": "{{venue}}競艇の予想・出走表・結果｜本日の全レースAI予想 - 龍神レーダー",
-    "metaDescription": "{{venue}}競艇（ボートレース{{venue}}）の今日の出走表・レース結果と全レースのAI予想。終わったレースは着順・決まり手・3連単の配当、ほかに締切時刻、1マークの展開予測、直近1年の1コースの1着率を無料・登録不要で確認できます。",
+    "metaDescription": "{{venue}}競艇（ボートレース{{venue}}）の今日の出走表・レース結果と全レースのAI予想。終わったレースは着順・決まり手・3連単の配当、ほかに締切時刻、イン崩れ注意度、直近1年の1コースの1着率を無料・登録不要で確認できます。",
     "backToVenues": "← 会場一覧に戻る",
     "jumpToNextRace": "{{race}}Rへ",
     "nextDeadlineMarker": "{{venue}}　次の締切 {{race}}R {{time}}",
@@ -160,7 +160,7 @@
       "lead": "材料を順に見るなら"
     },
     "metaTitle": "{{venue}}競艇 {{race}}R 直前情報・展示・AI予想（{{date}}）- 龍神レーダー",
-    "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表・展示タイム・直前情報・AI予想・1マークの展開予測・イン崩れ指数を無料・登録不要で確認できます。",
+    "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表・展示タイム・直前情報・AI予想・イン崩れ注意度を無料・登録不要で確認できます。",
     "metaTitleResult": "{{venue}}競艇 {{race}}R 結果・払戻（{{date}}）- 龍神レーダー",
     "metaDescriptionResult": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rのレース結果と払戻金、出走表データ・AI予想を無料で確認できます。",
     "metaTitleCancelled": "{{venue}}競艇 {{race}}R 中止（{{date}}）- 龍神レーダー",
@@ -2394,7 +2394,7 @@
     "shareInCaution": "🏁 龍神レーダー【{{date}}{{venue}}{{raceNo}}R】\n\nイン崩れ注意度 {{pct}}%（{{level}}）\n勝率差が同じくらいの全国の過去レース{{n}}件で、1号艇が1着を逃した割合\n{{disclaimer}}"
   },
   "home": {
-    "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| 展開予測・イン崩れ指数などのデータを分析。詳しくはこちら →",
+    "introBannerText": "龍神レーダー - ボートレースを見える化。迷ったら、データを信じる。| イン崩れ注意度などのデータを分析。詳しくはこちら →",
     "introBannerClose": "閉じる",
     "sgNow": {
       "region": "SG開催中",
@@ -2410,9 +2410,9 @@
       "profileLink": "運営者のプロフィール →",
       "data": "データ: ボートレース公式サイトで公表の出走表・結果をもとに当サイトが集計",
       "updated": "{{year}}年{{month}}月{{day}}日 {{hour}}:{{minute}} データ更新",
-      "results": "成績: 予想を実際のレースの結果と照らし合わせた記録",
-      "hitRacesNote": "（当たったレースだけの一覧。外れを含む全件は成績ページ）",
-      "accuracyLink": "成績ページを見る（会場別の内訳）→",
+      "results": "実績: イン崩れ注意度の段ごとに、1号艇が1着を逃した割合を実際のレースの結果で数えた記録",
+      "hitRacesNote": "（全レースで数えています）",
+      "accuracyLink": "段ごとの実績を見る →",
       "hitRacesLink": "展開予測が的中したレース一覧を見る →",
       "checkTitle": "レースを開いたら、この2つで確かめる",
       "sonarWhere": "レース詳細の「龍神ソナー」タブ",

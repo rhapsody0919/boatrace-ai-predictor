@@ -46,8 +46,8 @@ test.describe("GA4 page_view の送信経路", () => {
     expect(await configCalls(page)).toHaveLength(0);
   });
 
-  test("タブページ（/hit-races）でも page_view は1回だけ", async ({ page }) => {
-    await page.goto("/hit-races");
+  test("タブページ（/accuracy。/hit-races は BOA-822 の公開で /accuracy へ転送）でも page_view は1回だけ", async ({ page }) => {
+    await page.goto("/accuracy");
     await expect.poll(() => pageViews(page).then((v) => v.length)).toBe(1);
     await page.waitForTimeout(1500);
     expect(await pageViews(page)).toHaveLength(1);

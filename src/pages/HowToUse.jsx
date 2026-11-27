@@ -11,7 +11,7 @@ import {
 
 const TITLE = "使い方ガイド | 龍神レーダー - 初心者でもわかる利用方法";
 const DESCRIPTION =
-  "龍神レーダーの使い方を6つのステップで解説。レース場の選び方、データ出走表の見方、レース詳細のタブ（基本情報・AI予想・今節・直前情報ほか）の使い分けまで、初心者にもわかりやすく説明します。";
+  "龍神レーダーの使い方を6つのステップで解説。レース場の選び方、データ出走表の見方、レース詳細のタブ（基本情報・イン崩れ・今節・直前情報ほか）の使い分けまで、初心者にもわかりやすく説明します。";
 
 function HowToStepVenueSelectContent() {
   return (
@@ -60,19 +60,20 @@ function HowToStepRacePickContent() {
             <strong>締切予定時刻</strong>が表示されます
           </li>
           <li>
-            <strong>イン崩れ指数</strong>
-            バッジで、1号艇（インコース）が崩れやすいレースかどうかがわかります
+            <strong>イン崩れ注意度</strong>
+            の札で、1号艇（インコース）が1着を逃しやすいレースかどうかがわかります
             <ul>
               <li>
-                🎯 <strong>本命有利</strong>:
-                1号艇が有利で堅く決まりやすいレース
+                <strong>崩れやすい</strong>（55%以上）:
+                勝率差が同じくらいの過去のレースで、1号艇が1着を逃した割合が高い
               </li>
               <li>
-                （バッジなし）<strong>標準</strong>: 平均的な傾向のレース
+                <strong>中くらい</strong>（35〜54%）:
+                崩れやすいと堅めの間
               </li>
               <li>
-                🌪️ <strong>イン崩れ注意（高）</strong>:
-                1号艇が崩れて波乱が起きやすいレース
+                <strong>堅め</strong>（35%未満）:
+                1号艇が1着を逃した割合が低い
               </li>
             </ul>
           </li>
@@ -88,7 +89,7 @@ function HowToStepRacePickContent() {
       </div>
       <div className="example-box">
         <p className="example-title">📌 例</p>
-        <p>「平和島 10R（14:30締切）🎯本命有利」→「詳細を見る」をタップ</p>
+        <p>「平和島 10R（14:30締切）堅め 28%」→「詳細を見る」をタップ</p>
       </div>
     </>
   );
@@ -271,7 +272,7 @@ export default function HowToUse() {
     description: DESCRIPTION,
     url: "https://www.boat-ai.jp/how-to-use",
     keywords:
-      "龍神レーダー使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数,レース詳細タブ,今節,ST考察",
+      "龍神レーダー使い方,ボートレース分析方法,初心者ガイド,データ出走表,イン崩れ注意度,レース詳細タブ,今節,ST考察",
   });
 
   const steps = [
@@ -296,12 +297,12 @@ export default function HowToUse() {
       content: <HowToStepTabDeepDiveContent />,
     },
     {
-      title: "ステップ5: 展開予測とイン崩れ指数を見る",
+      title: "ステップ5: イン崩れ注意度を見る",
       icon: "🌊",
       content: <HowToStepTenkaiInKuzureContent />,
     },
     {
-      title: "ステップ6: 予測実績を確認する",
+      title: "ステップ6: 注意度の実績を確認する",
       icon: "📈",
       content: <HowToStepResultsCheckContent />,
     },

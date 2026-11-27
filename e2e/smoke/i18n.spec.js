@@ -96,17 +96,14 @@ test("英語のトップに ja 専用の導線・ja 記事・日本語の日付�
 test("英語の分析ツールで会場名・注記・選手ページのリンクを日本語で出さない（BOA-655）", async ({
   page,
 }) => {
+  // volatility のタブは BOA-822 の公開（2026-11-27）で旧指数の会場別の表から、注意度の段ごとの実績に替わった。
+  // 会場別の表は無くなったので、段の名前に日本語が出ないことを見る
   await page.goto("/en/winning-technique?tab=volatility");
-  // 会場別の表は折りたたみの中。会場コードは "04" のようにゼロ埋めで来る
-  await page.locator(".vas-venue-details summary").click();
-  const names = page.locator(".volatility-venue-table__name");
-  await names.first().waitFor({ timeout: 30000 });
-  for (const text of await names.allTextContents()) {
+  const labels = page.locator(".ica .ica-row-label");
+  await expect(labels).toHaveCount(3, { timeout: 30000 });
+  for (const text of await labels.allTextContents()) {
     expect(text).not.toMatch(/[\u3040-\u30FF\u4E00-\u9FFF]/);
   }
-  const note = page.locator(".volatility-accuracy-chart-note");
-  await expect(note).toBeVisible();
-  await expect(note).not.toContainText("件を集計中");
 
   await serveFixedTodaysRaces(page);
   await page.goto("/en/winning-technique?tab=formranking");

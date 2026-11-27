@@ -1564,9 +1564,9 @@ async function openSection(page) {
   }
   await page.goto(`/race/${RACE_ID}`);
   await page
-    .getByRole("tab", { name: /AI予想/ })
-    .or(page.getByRole("button", { name: /AI予想/ }))
-    .or(page.getByRole("link", { name: /AI予想/ }))
+    .getByRole("tab", { name: /^イン崩れ$/ })
+    .or(page.getByRole("button", { name: /^イン崩れ$/ }))
+    .or(page.getByRole("link", { name: /^イン崩れ$/ }))
     .first()
     .click();
   const section = page.getByRole("region", {

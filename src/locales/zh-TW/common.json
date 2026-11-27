@@ -98,7 +98,7 @@
   "venueRaceList": {
     "title": "比賽一覽",
     "metaTitle": "{{venue}}賽艇預測、出走表｜今日全部比賽AI預測 - 龍神雷達",
-    "metaDescription": "{{venue}}賽艇場今日的出走表與全部比賽的AI預測。可查看截止時間、轉彎預測，以及近1年各進場道次第1名率與決勝方式。",
+    "metaDescription": "{{venue}}賽艇場今日的出走表與全部比賽的AI預測。可查看截止時間、1號位失守注意度，以及近1年各進場道次第1名率與決勝方式。",
     "backToVenues": "← 返回賽場一覽",
     "jumpToNextRace": "前往{{race}}R",
     "nextDeadlineMarker": "{{venue}}　下一場截止 {{race}}R {{time}}",
@@ -160,7 +160,7 @@
       "lead": "想依序查看資料的話"
     },
     "metaTitle": "{{venue}} 第{{race}}場 賽前資訊、展示、AI數據分析（{{date}}）- 龍神雷達",
-    "metaDescription": "免費、免註冊查看{{date}}{{venue}}第{{race}}場的出賽表、展示時間、賽前資訊、AI數據分析、第1彎展開預測與內道崩潰指數。",
+    "metaDescription": "免費、免註冊查看{{date}}{{venue}}第{{race}}場的出賽表、展示時間、賽前資訊、AI數據分析與1號位失守注意度。",
     "metaTitleResult": "{{venue}} 第{{race}}場 比賽結果與派彩（{{date}}）- 龍神雷達",
     "metaDescriptionResult": "免費查看{{date}}{{venue}}第{{race}}場的比賽結果、派彩、出賽表資料與AI預測。",
     "metaTitleCancelled": "{{venue}} 第{{race}}場 中止（{{date}}）- 龍神雷達",
@@ -438,7 +438,7 @@
     "shareInCaution": "🏁 龍神雷達【{{date}}{{venue}}{{raceNo}}R】\n\n1號位失守注意度 {{pct}}%（{{level}}）\n勝率差與今天差不多的全國過去比賽{{n}}場中，1號艇未拿下第1名的比例\n{{disclaimer}}"
   },
   "home": {
-    "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析轉彎預測、內道崩盤指數等數據。了解更多 →",
+    "introBannerText": "龍神雷達 - 讓賽艇數據視覺化。猶豫時，相信數據。| 分析1號位失守注意度等數據。了解更多 →",
     "introBannerClose": "關閉",
     "sgNow": {
       "region": "SG賽事進行中",
@@ -454,9 +454,9 @@
       "profileLink": "營運者簡介（日文頁面）→",
       "data": "資料：根據BOAT RACE官方網站公布的出賽表與結果，由本站彙整",
       "updated": "{{year}}年{{month}}月{{day}}日 {{hour}}:{{minute}}（日本時間）資料更新",
-      "results": "成績：將預測與實際比賽結果對照的紀錄",
-      "hitRacesNote": "（僅列出命中的比賽。包含未命中在內的全部比賽請見成績頁面）",
-      "accuracyLink": "查看成績（各賽場明細，日文頁面）→",
+      "results": "實績：依1號位失守注意度的各段，以實際比賽結果統計1號艇未拿下第1名的比例",
+      "hitRacesNote": "（以全部比賽統計）",
+      "accuracyLink": "查看各段實績（日文頁面）→",
       "hitRacesLink": "查看展開預測命中的比賽一覽（日文頁面）→",
       "checkTitle": "打開比賽後，用這兩項來確認",
       "sonarWhere": "比賽頁面的「龍神聲納」分頁",

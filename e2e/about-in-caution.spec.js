@@ -5,7 +5,7 @@ import { test, expect } from "./fixtures.js";
  *   - 展開予測の的中率（79%）・「AI予想」・機械学習・「企業秘密」を出さない
  *   - 注意度の出し方の4つの段と、精度分析ページへの導線を出す
  *   - title・meta の keywords も「AI分析・機械学習」を外す
- *   - フラグの外は今のまま
+ *   - 2026-11-27 に公開（IN_CAUTION_PUBLIC = true）、クエリ無しでも新しい文
  */
 
 const container = (page) => page.locator(".about-container");
@@ -44,13 +44,11 @@ test("フラグの側: 「AI予想」と展開予測の的中率を出さず、�
   expect(keywords).not.toContain("機械学習");
 });
 
-test("フラグの外: 今のまま", async ({ page }) => {
+test("公開の後: クエリ無しでも新しい文（展開予測の的中率・紹介動画は出ない）", async ({ page }) => {
   await page.goto("/about");
-  await expect(page.getByText("展開予測的中率", { exact: true })).toBeVisible({
-    timeout: 20000,
-  });
   await expect(
     page.getByRole("heading", { name: "🎓 イン崩れ注意度の出し方" }),
-  ).toHaveCount(0);
-  await expect(page.locator(".about-hero-video")).toHaveCount(1);
+  ).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText("展開予測的中率", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".about-hero-video")).toHaveCount(0);
 });

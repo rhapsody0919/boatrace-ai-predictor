@@ -122,7 +122,7 @@ function updatedText(t, scrapedAt) {
 }
 
 // 説明文の直後の運営・データ・成績の3行（PV09 T2）。人の HomeAiIntro と同じキー・同じ並び・同じ年つき JST の時刻。
-// /profile・/accuracy・/hit-races は ja だけのページなので、人の画面と同じく言語の接頭辞を付けない。
+// /profile・/accuracy は ja だけのページなので（/hit-races は BOA-822 で /accuracy へ転送）、人の画面と同じく言語の接頭辞を付けない。
 // 運営者の名は OPERATOR_NAME（/profile と同じ字、全言語で訳さない）。時刻が読めなければ updated は null（行は残す）
 function buildAiIntroFacts(t, scrapedAt) {
   const updated = formatUpdatedAtJstParts(scrapedAt);
@@ -144,7 +144,6 @@ function buildAiIntroFacts(t, scrapedAt) {
       text: t("home.aiIntro.results"),
       links: [
         { text: t("home.aiIntro.accuracyLink"), href: "/accuracy" },
-        { text: t("home.aiIntro.hitRacesLink"), href: "/hit-races" },
       ],
       note: t("home.aiIntro.hitRacesNote"),
     },

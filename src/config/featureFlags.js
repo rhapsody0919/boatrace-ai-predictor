@@ -19,7 +19,7 @@ export const THINKING_ASSIST_PUBLIC = true;
 export const THINKING_ASSIST_PREVIEW_KEY =
   "boatai-user:thinking-assist-preview";
 
-export const IN_CAUTION_PUBLIC = false;
+export const IN_CAUTION_PUBLIC = true;
 export const IN_CAUTION_PREVIEW_KEY = "boatai-user:in-caution-preview";
 
 /** URL のクエリ queryName（"1" で覚える・"0" で忘れる）と localStorage の storageKey で、内部確認の印を読む */
