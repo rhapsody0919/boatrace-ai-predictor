@@ -123,7 +123,7 @@ const MARK_TEXT = { good: "▲全選手より高い", bad: "▼全選手より�
 // 1着率の棒（0〜100%）に全選手の位置の縦線（型1・値の尺度。オーナー 2026-11-27 が「+28.6pt」の文字より選んだ）。値と全選手の値を並べる
 function CourseWinBars({ summary, national }) {
   return (
-    <ul className="racer-official-bars racer-official-winbars" aria-label="進入コース別の1着率と全選手">
+    <ul className="racer-official-winbars" aria-label="進入コース別の1着率と全選手">
       {summary.courses.map((c) => {
         const cmp = compareOf(c, national);
         return (
@@ -220,8 +220,6 @@ function CourseSection({ summary, courseBaseline }) {
       <p className="racer-official-note">
         公式サイトの選手のコース別成績のページとは集計の期間が違うため、値が合わないことがあります（このページは上の期間の期別成績を足したものです）。
       </p>
-      {/* 下の1着率の段と区別する見出し（visual-designer 2026-11-27） */}
-      <h4 className="racer-official-winbars-title">2連対率</h4>
       <ul className="racer-official-bars" aria-label="進入コース別の2連対率">
         {summary.courses.map((c) => (
           <li key={c.course} className="racer-official-bar-row">
@@ -244,6 +242,8 @@ function CourseSection({ summary, courseBaseline }) {
           </li>
         ))}
       </ul>
+      <CourseTable summary={summary} />
+      {/* 1着率の段は表の後ろ。PC は「2連対率の棒｜表」を左右に並べ行をそろえるので、その間に入れない */}
       {national && (
         <>
           <h4 className="racer-official-winbars-title">
@@ -254,7 +254,6 @@ function CourseSection({ summary, courseBaseline }) {
           <CourseWinBars summary={summary} national={national} />
         </>
       )}
-      <CourseTable summary={summary} />
       {courseBaseline?.status === "error" ? (
         <InlineFetchError onRetry={courseBaseline.reload} />
       ) : (

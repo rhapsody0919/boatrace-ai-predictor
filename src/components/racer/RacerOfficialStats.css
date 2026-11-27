@@ -244,6 +244,13 @@
   font-size: var(--font-size-sm);
   color: var(--text-primary);
 }
+.racer-official-winbars {
+  list-style: none;
+  margin: var(--spacing-2) 0 var(--spacing-3);
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-2);
+}
 /* 縦線は塗りの上でも見えるよう帯の外へはみ出させ、面の色の縁を付ける（visual-designer 2026-11-27） */
 .racer-official-winbar-track {
   position: relative;
