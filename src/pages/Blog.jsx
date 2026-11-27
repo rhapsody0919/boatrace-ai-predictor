@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { filterBlogPosts } from "../pure/blogListFilter.js";
+import { countCategories, filterBlogPosts } from "../pure/blogListFilter.js";
 import { Link, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import { getFeaturedPosts, getPostsForLang } from "../data/blogPosts";
@@ -248,12 +248,67 @@ function BlogPostGrid({ sortedPosts, langKey }) {
 // 一覧は20本ずつ出し、「さらに表示」で足す（163本を1ページに並べてスマホで約3.9万pxあった）
 const PAGE_SIZE = 20;
 
-export default function Blog() {
-  const { pathname } = useLocation();
+// 分類・探す語・並び・出す本数の状態と、それで絞って並べた記事。絞り方を変えたら出す本数を20に戻す
+function useBlogListView(basePosts) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
   const [query, setQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { categoryCounts, categories } = countCategories(basePosts);
+  const sortedPosts = filterBlogPosts(basePosts, {
+    category: selectedCategory,
+    query,
+  }).sort((a, b) =>
+    sortOrder === "oldest"
+      ? new Date(a.date) - new Date(b.date)
+      : new Date(b.date) - new Date(a.date),
+  );
+  return {
+    selectedCategory,
+    selectCategory: (c) => {
+      setSelectedCategory(c);
+      setVisibleCount(PAGE_SIZE);
+    },
+    sortOrder,
+    setSortOrder,
+    query,
+    changeQuery: (q) => {
+      setQuery(q);
+      setVisibleCount(PAGE_SIZE);
+    },
+    visibleCount,
+    showMore: () => setVisibleCount((n) => n + PAGE_SIZE),
+    categoryCounts,
+    categories,
+    sortedPosts,
+  };
+}
+
+function BlogListResults({ t, view, langKey }) {
+  const { sortedPosts, visibleCount, showMore } = view;
+  return (
+    <>
+      <p className="blog-result-count">{t.resultCount(sortedPosts.length)}</p>
+      <BlogPostGrid
+        sortedPosts={sortedPosts.slice(0, visibleCount)}
+        langKey={langKey}
+      />
+      {sortedPosts.length > visibleCount && (
+        <button type="button" className="blog-show-more" onClick={showMore}>
+          {t.showMore(sortedPosts.length - visibleCount)}
+        </button>
+      )}
+      {sortedPosts.length === 0 && (
+        <div className="no-posts">
+          <p>{t.noPosts}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function Blog() {
+  const { pathname } = useLocation();
 
   const { lng } = parseLangFromPath(pathname);
   const isTranslated = lng !== "ja" && Boolean(UI_TEXT[lng]);
@@ -262,27 +317,8 @@ export default function Blog() {
   // 翻訳版はその言語のデータが存在する記事のみを対象にする（未翻訳記事は一覧に出さない）
   const langKey = isTranslated ? lng : "ja";
   const basePosts = getPostsForLang(langKey);
-
   const featuredPosts = getFeaturedPosts(langKey);
-  const categoryCounts = basePosts.reduce(
-    (acc, post) => ({ ...acc, [post.category]: (acc[post.category] ?? 0) + 1 }),
-    {},
-  );
-  // 件数の多い順に並べ、よく使う分類を先に見せる
-  const availableCategories = Object.keys(categoryCounts).sort(
-    (a, b) => categoryCounts[b] - categoryCounts[a],
-  );
-
-  const filteredPosts = filterBlogPosts(basePosts, {
-    category: selectedCategory,
-    query,
-  });
-
-  const sortedPosts = [...filteredPosts].sort((a, b) =>
-    sortOrder === "oldest"
-      ? new Date(a.date) - new Date(b.date)
-      : new Date(b.date) - new Date(a.date),
-  );
+  const view = useBlogListView(basePosts);
 
   const blogHref = localizePath("/blog", langKey);
   const canonicalUrl = `https://www.boat-ai.jp${blogHref}`;
@@ -313,64 +349,42 @@ export default function Blog() {
           <p>{t.subheading}</p>
         </div>
 
-        {/* Featured Posts */}
         <input
           type="search"
           className="blog-search-input"
           placeholder={t.searchPlaceholder}
           aria-label={t.searchLabel}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setVisibleCount(PAGE_SIZE);
-          }}
+          value={view.query}
+          onChange={(e) => view.changeQuery(e.target.value)}
         />
 
-        {selectedCategory === "all" && query === "" && featuredPosts.length > 0 && (
-          <BlogFeaturedSection
-            t={t}
-            featuredPosts={featuredPosts}
-            langKey={langKey}
-          />
-        )}
+        {/* Featured Posts（分類で絞った時・探している時は出さない） */}
+        {view.selectedCategory === "all" &&
+          view.query === "" &&
+          featuredPosts.length > 0 && (
+            <BlogFeaturedSection
+              t={t}
+              featuredPosts={featuredPosts}
+              langKey={langKey}
+            />
+          )}
 
-        {/* Category Filter */}
         <BlogCategoryFilter
           t={t}
-          availableCategories={availableCategories}
-          categoryCounts={categoryCounts}
+          availableCategories={view.categories}
+          categoryCounts={view.categoryCounts}
           totalCount={basePosts.length}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={(c) => {
-            setSelectedCategory(c);
-            setVisibleCount(PAGE_SIZE);
-          }}
+          selectedCategory={view.selectedCategory}
+          setSelectedCategory={view.selectCategory}
         />
 
-        {/* Sort Order */}
-        <BlogSortFilter t={t} sortOrder={sortOrder} setSortOrder={setSortOrder} />
-
-        {/* Blog Posts Grid */}
-        <p className="blog-result-count">{t.resultCount(sortedPosts.length)}</p>
-        <BlogPostGrid
-          sortedPosts={sortedPosts.slice(0, visibleCount)}
-          langKey={langKey}
+        <BlogSortFilter
+          t={t}
+          sortOrder={view.sortOrder}
+          setSortOrder={view.setSortOrder}
         />
-        {sortedPosts.length > visibleCount && (
-          <button
-            type="button"
-            className="blog-show-more"
-            onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
-          >
-            {t.showMore(sortedPosts.length - visibleCount)}
-          </button>
-        )}
 
-        {filteredPosts.length === 0 && (
-          <div className="no-posts">
-            <p>{t.noPosts}</p>
-          </div>
-        )}
+        <BlogListResults t={t} view={view} langKey={langKey} />
       </div>
     </>
   );

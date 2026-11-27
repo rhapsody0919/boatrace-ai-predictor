@@ -5,13 +5,14 @@
  * 2. 分類で絞る
  * 3. 語は題・説明・分類・タグのどれかに入れば残り、空白（全角も）で区切った全ての語を満たす記事だけ残す
  * 4. 英字は大文字と小文字を区別しない
- * 5. 今の ja の記事で「多摩川」を探すと、題に多摩川を含む記事が全て残る（一覧の欄の実用の確かめ）
+ * 5. 分類の件数を数え、件数の多い順に並べる
+ * 6. 今の ja の記事で「多摩川」を探すと、題に多摩川を含む記事が全て残る（一覧の欄の実用の確かめ）
  *
  * 使い方: node scripts/maintenance/verify-blog-list-filter.js
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { filterBlogPosts } from "../../src/pure/blogListFilter.js";
+import { countCategories, filterBlogPosts } from "../../src/pure/blogListFilter.js";
 import { getPostsForLang } from "../../src/data/blogPosts.js";
 
 const POSTS = [
@@ -67,4 +68,10 @@ test("今の ja の記事で「多摩川」を探すと、題に多摩川を含�
   assert.ok(expected.length > 0, "題に多摩川を含む記事が無い。記事の置き場が変わったか");
   const found = ids(filterBlogPosts(posts, { query: "多摩川" }));
   for (const id of expected) assert.ok(found.includes(id), `${id} が残らない`);
+});
+
+test("分類の件数を数え、件数の多い順に並べる", () => {
+  const { categoryCounts, categories } = countCategories(POSTS);
+  assert.deepEqual(categoryCounts, { 場別攻略: 1, データ分析: 2 });
+  assert.deepEqual(categories, ["データ分析", "場別攻略"]);
 });

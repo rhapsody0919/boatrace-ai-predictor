@@ -18,3 +18,15 @@ export function filterBlogPosts(posts, { category = "all", query = "" } = {}) {
     return words.every((w) => haystack.includes(w));
   });
 }
+
+/** 分類ごとの記事の数と、件数の多い順に並べた分類（よく使う分類を先に見せる） */
+export function countCategories(posts) {
+  const categoryCounts = {};
+  for (const post of posts) {
+    categoryCounts[post.category] = (categoryCounts[post.category] ?? 0) + 1;
+  }
+  const categories = Object.keys(categoryCounts).sort(
+    (a, b) => categoryCounts[b] - categoryCounts[a],
+  );
+  return { categoryCounts, categories };
+}
