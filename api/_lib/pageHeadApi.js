@@ -10,6 +10,7 @@
  */
 import { readFileSync } from "node:fs";
 import { getJSTNow } from "../../src/pure/jstDate.js";
+import { PAGE_HEAD_VERSION } from "../../src/pure/pageHead.js";
 import {
   createSeriesSource,
   createTodayRacesSource,
@@ -19,8 +20,8 @@ import {
 } from "./botPage.js";
 import { venuePageHeadOf } from "./botPageRender.js";
 
-/** JSON の形の版。middleware は版が違えば素通りにする（配備・Instant Rollback をまたいで CDN に残るため） */
-export const PAGE_HEAD_VERSION = 1;
+// JSON の形の版は middleware と同じ定数（src/pure/pageHead.js）
+export { PAGE_HEAD_VERSION };
 
 export const VENUE_HEAD_HEADERS = Object.freeze({
   "Content-Type": "application/json; charset=utf-8",

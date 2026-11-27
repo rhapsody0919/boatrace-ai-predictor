@@ -22,7 +22,7 @@
  *    「//」・「\」を含むパスだけは段階に依らず 400。enforce（段階4）は環境変数と Redeploy だけで入る。
  *    除外（/api/cron・/api/admin・/api/bot-page）はログも出さず、既存の守り（下の Basic 認証等）へ進む
  *
- * 5. 生の HTML の head の差し込み（api/_lib/pageHeadMiddleware.js）。対象のパス（今は /races/{日}/{会場}）では、全ての UA に
+ * 5. 生の HTML の head の差し込み（api/_lib/pageHeadMiddleware.js）。対象のパス（/races/{日}/{会場}・/venue/{1〜24}・/race/{id}）では、全ての UA に
  *    同じ host の /index.html へページごとの title・description・canonical・JSON-LD を入れて返す。失敗は素通り。
  *    入切は環境変数 PAGE_HEAD_KINDS（未設定は差し込まない）。上のスナップショット・関数への rewrite が先に勝つ
  *
