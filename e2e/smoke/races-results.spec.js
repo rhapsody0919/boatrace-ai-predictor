@@ -1,3 +1,4 @@
+// BOA-822 の公開（2026-11-27）で表示が無くなったので外した: /accuracy で展開予測の会場別的中率が表示される
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
 import { test, expect } from "../fixtures.js";
 
@@ -66,7 +67,7 @@ test.describe("結果のあるレースを中止扱いしない（BOA-525）", (
     );
   });
 
-  test("レース一覧: 結果のあるレースは的中/外れだけを出し、中止バッジを出さない", async ({
+  test("レース一覧: 結果のあるレースは中止バッジを出さず、展開予測の的中/外れも出さない（BOA-822）", async ({
     page,
   }) => {
     await page.goto(`/races/${DATE}/5`);
@@ -74,7 +75,9 @@ test.describe("結果のあるレースを中止扱いしない（BOA-525）", (
     await expect(cards).toHaveCount(2, { timeout: 20000 });
 
     const ran = cards.nth(0);
-    await expect(ran).toContainText("展開的中");
+    // 展開予測の的中/外れのバッジは BOA-822 の公開（2026-11-27）で出なくなった
+    await expect(ran).not.toContainText("展開的中");
+    await expect(ran).not.toContainText("展開外れ");
     await expect(ran.locator(".race-card-header")).not.toContainText("中止");
 
     const cancelled = cards.nth(1);
@@ -100,63 +103,43 @@ test.describe("結果のあるレースを中止扱いしない（BOA-525）", (
   });
 });
 
-test.describe("的中レース一覧のunified一本化（BOA-174）", () => {
-  test("/hit-races で展開予測の的中バッジが表示され、旧モデル切替UIが表示されない", async ({
+test.describe("的中レース一覧は /accuracy へ転送される（BOA-822）", () => {
+  test("/hit-races は /accuracy へ転送され、展開予測の的中バッジも旧モデル切替UIも出ない", async ({
     page,
   }) => {
     await page.goto("/hit-races");
-    // 朝の時間帯は「今日の的中」が0件（レース未消化）でも「昨日」に的中があると
-    // no-data-containerが出ない正当な状態がある（デフォルトは今日タブのため
-    // .race-cardも0枚）。ロード完了はタブ or no-data の表示で判定し、
-    // 今日タブが空なら昨日タブに切り替えて検証する
-    await expect(
-      page
-        .locator('button:has-text("昨日"), .no-data-container, .race-card')
-        .first(),
-    ).toBeVisible({ timeout: 20000 });
+    await expect(page).toHaveURL(/\/accuracy$/);
+    await expect(page.locator(".accuracy-dashboard")).toBeVisible({
+      timeout: 20000,
+    });
+    await expect(page.locator(".hit-badge")).toHaveCount(0);
+    await expect(page.locator(".turn-hit-detail")).toHaveCount(0);
     await expect(page.locator(".model-selector")).toHaveCount(0);
-
-    if ((await page.locator(".no-data-container").count()) > 0) {
-      return; // 的中レースが1件も無い日は以降の検証対象なし
-    }
-    if ((await page.locator(".race-card").count()) === 0) {
-      await page.locator('button:has-text("昨日")').click();
-      await page.waitForTimeout(300);
-    }
-
-    const raceCardCount = await page.locator(".race-card").count();
-    if (raceCardCount > 0) {
-      // 本命が予想どおりに勝ったときだけ「展開予測的中」、それ以外は「1着の艇が的中」（BOA-724）
-      await expect(page.locator(".hit-badge").first()).toHaveText(
-        /展開予測的中|1着の艇が的中/,
-      );
-      await expect(page.locator(".turn-hit-detail").first()).toBeVisible();
-    }
   });
 });
 
 test.describe("過去の予想データ一覧のunified一本化（BOA-178）", () => {
-  test("/races で日付カードに展開予測的中率が表示され、旧モデル比較表が表示されない", async ({
+  test("/races で日付カードが並び、展開予測的中率は出ず、旧モデル比較表も出ない（BOA-822）", async ({
     page,
   }) => {
     await page.goto("/races");
     await expect(page.locator(".date-card").first()).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.locator(".date-card-turn-stat").first()).toBeVisible();
+    await expect(page.locator(".date-card-turn-stat")).toHaveCount(0);
     await expect(page.locator(".mct-wrapper")).toHaveCount(0);
   });
 });
 
 test.describe("成績ページのunified一本化（BOA-175）", () => {
-  test("/accuracy で展開予測の実測的中率が表示され、旧モデル切替UIが表示されない", async ({
+  test("/accuracy は注意度の段ごとの実績を出し、展開予測の的中率と旧モデル切替UIは出ない（BOA-822）", async ({
     page,
   }) => {
     await page.goto("/accuracy");
-    await expect(page.locator(".turn-accuracy-hero-rate")).toBeVisible({
-      timeout: 10000,
+    await expect(page.locator(".ica-row").first()).toBeVisible({
+      timeout: 20000,
     });
-    await expect(page.locator(".turn-accuracy-hero-rate")).toHaveText(/%$/);
+    await expect(page.locator(".turn-accuracy-hero-rate")).toHaveCount(0);
     await expect(page.locator(".model-selector")).toHaveCount(0);
   });
 
@@ -168,16 +151,6 @@ test.describe("成績ページのunified一本化（BOA-175）", () => {
     await expect(historyLink).toBeVisible({ timeout: 10000 });
     await historyLink.click();
     await expect(page).toHaveURL(/\/accuracy\/history$/);
-  });
-
-  test("/accuracy で展開予測の会場別的中率が表示される", async ({ page }) => {
-    await page.goto("/accuracy");
-    const details = page.locator(".turn-accuracy-venue-details");
-    await expect(details).toBeVisible({ timeout: 10000 });
-    await details.locator("summary").click();
-    await expect(
-      page.locator(".turn-accuracy-venue-table tbody tr").first(),
-    ).toBeVisible();
   });
 });
 

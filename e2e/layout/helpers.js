@@ -37,7 +37,7 @@ export const READY_SELECTORS = {
 /**
  * 当日の的中・朝のダイジェストは 0:00〜7:00 JST の live 実行だと未生成で、
  * 主データを待ち切れず落ちる。生成済みの過去日に差し替えるための固定日。
- * 件数を絞る試験（hit-races-layout・today-layout）と、PAGES の /hit-races・/today が共有する（BOA-1447）
+ * 件数を絞る試験（today-layout）と、PAGES の /today が共有する（BOA-1447）。/hit-races の layout の試験は BOA-822 の公開（2026-11-27）で /accuracy への転送になり外した
  */
 export const HIT_RACES_FIXED_DATE = "2026-09-22";
 export const DIGEST_FIXED_DATE = "2026-09-22";

@@ -1,10 +1,6 @@
+// BOA-822 の公開（2026-11-27）で表示が無くなったので外した: レース荒れ度ムード演出（旧イン崩れ指数 VolatilityDisplay の波紋。2本）
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
-import {
-  test,
-  expect,
-  applyCookieConsent,
-  applyRecording,
-} from "../fixtures.js";
+import { test, expect } from "../fixtures.js";
 import { openFixedRaceBeforeStart } from "./helpers.js";
 
 test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
@@ -191,48 +187,5 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     await expect(page.locator(".ai-copy-inline")).toContainText(
       "質問「データだけ」付きでコピーします",
     );
-  });
-});
-
-test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation）", () => {
-  // 固定のレース（イン崩れ指数 0.97）は high。発走前の状態で開き、AI予想タブの
-  // VolatilityDisplay を見る（当日の未確定レースを会場横断で探していた頃は、
-  // 見つからない時間帯に skip していた。BOA-445）
-  const LEVEL = "high";
-
-  async function openVolatility(page) {
-    await openFixedRaceBeforeStart(page);
-    await page
-      .locator(".race-tabs-btn", { hasText: "AI予想" })
-      .click({ timeout: 20000 });
-    await expect(page.locator(`.volatility-display-${LEVEL}`)).toBeVisible({
-      timeout: 15000,
-    });
-  }
-
-  test("イン崩れバッジが表示されるレースで波紋アニメーションが表示される", async ({
-    page,
-  }) => {
-    await openVolatility(page);
-    await expect(page.locator(".race-mood-effect")).toBeVisible();
-    await expect(
-      page.locator(".race-mood-effect .race-mood-effect-ring").first(),
-    ).toBeAttached();
-  });
-
-  test("prefers-reduced-motion環境では波紋アニメーションが表示されない", async ({
-    browser,
-  }, testInfo) => {
-    const context = await browser.newContext({ reducedMotion: "reduce" });
-    try {
-      // fixture を通らない context なので、Cookie 同意・録画の再生・時計の固定を明示的に掛ける
-      await applyCookieConsent(context, "rejected");
-      await applyRecording(context, testInfo);
-      const page = await context.newPage();
-      await openVolatility(page);
-      await expect(page.locator(".race-mood-effect")).toHaveCount(0);
-    } finally {
-      await context.close();
-    }
   });
 });

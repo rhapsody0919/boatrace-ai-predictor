@@ -34,7 +34,7 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
     rows: Array.from({ length: 40 }, (_, i) => row(i)),
   };
 
-  test("AI予想タブのスリットの入力と結果が横にはみ出さない", async ({
+  test("イン崩れタブ（?tab=aiPrediction）のスリットの入力と結果が横にはみ出さない", async ({
     page,
   }) => {
     await page.route("**/api/analogy/layer/**", (route) =>

@@ -140,7 +140,7 @@ test.describe("レイアウト: 直前情報タブ（この枠からの進入コ
 });
 
 // PC幅で、1行に名前と数値を並べるリストが 1200px の箱の両端に離れない（BOA-619 項目3）。
-// 1440px で、展開予測の決まり手と確率が約1000px、払戻金の券種と金額も約1000px離れていた
+// 1440px で、払戻金の券種と金額も約1000px離れていた
 test.describe("レイアウト: PC幅で名前と数値を離しすぎない（BOA-619）", () => {
   const RACE = "/race/2026-09-29-16-12"; // 児島12R（確定済み）
 
@@ -152,7 +152,9 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
     return [];
   };
 
-  test("AI予想の振り返り: 決まり手と確率が近く、左端はタブの列にそろえる（BOA-820）", async ({
+  // BOA-822 の公開（2026-11-27）で展開予測の振り返り（.turn-pattern-row）は無くなったので、
+  // 同じ「タブの列にそろえる」の確かめを、代わりの「イン崩れ」タブの本体（.in-caution-tab）に向けた
+  test("イン崩れタブ: 本体の左右の端がタブの列に収まる（BOA-820 / BOA-822）", async ({
     page,
   }, testInfo) => {
     const widths = widthsFor(testInfo);
@@ -165,30 +167,20 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
       await page.goto(`${RACE}?tab=aiPrediction`, {
         waitUntil: "domcontentloaded",
       });
-      const row = page.locator(".turn-pattern-row").first();
-      await expect(row).toBeVisible({ timeout: 30000 });
-      const m = await row.evaluate((el) => {
-        const r = (q) => el.querySelector(q).getBoundingClientRect();
-        const tab = el
-          .closest(".race-ai-prediction-tab")
-          .getBoundingClientRect();
+      const body = page.locator(".in-caution-tab");
+      await expect(body).toBeVisible({ timeout: 30000 });
+      await expect(page.locator(".turn-pattern-row")).toHaveCount(0);
+      const m = await body.evaluate((el) => {
+        const tab = el.getBoundingClientRect();
         const box = el.closest(".race-tabs-panel").getBoundingClientRect();
-        return {
-          gap: r(".turn-pattern-prob").left - r(".turn-pattern-technique").left,
-          tabLeft: tab.left,
-          boxLeft: box.left,
-        };
+        return { tabLeft: tab.left, tabRight: tab.right, boxLeft: box.left, boxRight: box.right };
       });
-      expect(
-        m.gap,
-        `${width}px: 決まり手の左端から確率の左端まで`,
-      ).toBeLessThanOrEqual(700);
-      // 以前はページの中央に置いていたが、タブを切り替えるたびに左端が飛ぶので、タブの列にそろえる
-      // （BOA-820、2026-10-10 ユーザー決定。BOA-881 で列そのものを画面の中央に置いた後も同じ）
-      expect(
-        Math.abs(m.tabLeft - m.boxLeft),
-        `${width}px: 振り返りの左端`,
-      ).toBeLessThanOrEqual(1);
+      expect(m.tabLeft, `${width}px: 本体の左端`).toBeGreaterThanOrEqual(
+        m.boxLeft - 1,
+      );
+      expect(m.tabRight, `${width}px: 本体の右端`).toBeLessThanOrEqual(
+        m.boxRight + 1,
+      );
     }
   });
 
