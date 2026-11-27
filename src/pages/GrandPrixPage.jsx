@@ -16,10 +16,11 @@ const DESCRIPTION = `ボートレースのグランプリ（SG）${year}の出�
 const SUMMARY_PERIOD = `${VENUE_SUMMARY_STATS.from.replaceAll("-", "/")}〜${VENUE_SUMMARY_STATS.to.replaceAll("-", "/")}`;
 const VENUE_STATS = VENUE_SUMMARY_STATS.venues[String(venueCode)];
 // 答えの1行は会場の要約の向き（月1回の更新で変わりうる）から組む。差がはっきりしない項目は言わない
-const VS = { higher: "全国より高い", lower: "全国より少ない" };
+const RATE = { higher: "高い", lower: "低い" };
+const SHARE = { higher: "多い", lower: "少ない" };
 const WATER_ANSWER = [
-  VENUE_STATS.vsNational.course1 && `1コースの1着率は${VS[VENUE_STATS.vsNational.course1]}`,
-  VENUE_STATS.vsNational.makuri && `まくりは${VS[VENUE_STATS.vsNational.makuri]}`,
+  VENUE_STATS.vsNational.course1 && `1コースの1着率は全国より${RATE[VENUE_STATS.vsNational.course1]}`,
+  VENUE_STATS.vsNational.makuri && `まくりは全国より${SHARE[VENUE_STATS.vsNational.makuri]}`,
 ]
   .filter(Boolean)
   .join("、");
