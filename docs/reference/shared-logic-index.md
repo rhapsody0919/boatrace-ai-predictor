@@ -204,6 +204,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
 | `scripts/lib/growth/gscDaily.js` | Search Console の日別の明細（query × page × date）を growth_gsc_daily の行にする（BOA-1706、hq 閉… | ptToday, windowDates, toRows, chunk, canPrune ほか13件 |
 | `scripts/lib/growth/gscPageDaily.js` | Search Console の date × page だけの取得（匿名化された語も入るページの合計）と、補充（バックフィル）の道具 | fetchPageDay, toPageRows, isMissingTable, missingTableMessage, assertPageTableExists ほか6件 |
+| `scripts/lib/growth/localInspection.js` | URL 検査（索引の状態・Google が選んだ正規ページ）を手元の JSON に取る部品（google-detail-collect.js が使う。Supab… | planLocalInspections, mergeSnapshot, previousDates, canonicalMismatches, readPreviousSnapshot ほか2件 |
 | `scripts/lib/growth/localSheetSource.js` | seo-morning-sheet の「手元の JSON」の読み口（--local-dir）。Supabase の鍵を置かずに回すための入口。 | parseRows, readRowsFile, localSource, sourceFromRows |
 | `scripts/lib/growth/morningSheet.js` | SEO の朝の1枚の組み立て（SEO データの輪 PR6。設計 seo-data-loop-design §2・§4・§5）。 | freshnessReport, positionBand, buildSignals, ticketTemplate, articleLines ほか4件 |
 | `scripts/lib/growth/seoDetect.js` | 察知の純関数（SEO データの輪 PR3。設計 seo-data-loop-design §4）。 | normalizePage, weightedPosition, classifyIntent, isSeasonalTerm, isEventDriven ほか7件 |
@@ -692,4 +693,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 650 ファイル / export 3495 件。
+対象 651 ファイル / export 3502 件。

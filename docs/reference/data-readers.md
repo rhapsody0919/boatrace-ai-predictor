@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2996 |
+| 読んだファイル | 2998 |
 | 読み書きのあるファイル | 332 |
 | 表の読み手（箇所） | 977 |
 | 表の書き手（箇所） | 200 |
@@ -1290,7 +1290,7 @@
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
-  - `scripts/maintenance/seo-morning-sheet.js:87` select(helper:readAll)
+  - `scripts/maintenance/seo-morning-sheet.js:88` select(helper:readAll)
   - `scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207` rest(rest) [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
   - `src/services/meetQueries3.js:35` select [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
   - `src/services/motorQueries7.js:21` select [end_date, start_date, venue_code]
@@ -2380,8 +2380,8 @@
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:180` 表の名前が変数（.from(式)）
   - `scripts/maintenance/kb-backfill-load.js:313` 表の名前が変数（.from(式)）
   - `scripts/maintenance/motor-pretest-backfill.js:251` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/seo-morning-sheet.js:68` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/seo-morning-sheet.js:74` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/seo-morning-sheet.js:69` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/seo-morning-sheet.js:75` 表の名前が変数（.from(式)）
   - `scripts/maintenance/verifyData/fakeServiceSupabase.js:51` RPC の名前が変数（.rpc(式)）
   - `scripts/maintenance/verifyData/live-odds-wiring-supabase.js:13` RPC の名前が変数（.rpc(式)）
   - `scripts/sns/pushSetsuKiryokuShortStore.js:37` REST の表の名前が式（/rest/v1/${…}）
