@@ -165,10 +165,14 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* 表は block にして自分で横に送る（articles-layout.spec.js が overflow-x: auto を見る）。
+   列は下の min-width で幅を持つので、はみ出す分は潰れずに横へ送られる */
 .blog-post-content table {
+  display: block;
   width: 100%;
   border-collapse: collapse;
   margin: 0;
+  overflow-x: auto;
 }
 
 .blog-post-content th,
@@ -184,24 +188,17 @@
   color: var(--text-primary);
 }
 
-/* 列は8字ぶんより細くしない（はみ出す分は箱の中で横に流す） */
+/* 列は10字ぶんより細くしない（はみ出す分は箱の中で横に流す） */
 .blog-post-content th,
 .blog-post-content td {
-  min-width: 8em;
+  min-width: 10em;
 }
 
-/* 1列目は折り返してよいが、横に流しても見失わないよう左に留める（ui-layout の横スクロールの表と同じ） */
+/* 1列目（会場名・項目名）は折り返さない（BOA-870）。はみ出す分は箱の中で横に送る。
+   1列目が長い表もあるので左に留めない（留めると残りの列が狭くなる） */
 .blog-post-content th:first-child,
 .blog-post-content td:first-child {
-  min-width: 6em;
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--surface-card);
-}
-
-.blog-post-content th:first-child {
-  background: var(--surface-page);
+  white-space: nowrap;
 }
 
 .blog-post-content tr:hover {
@@ -409,13 +406,8 @@
     font-size: 1rem;
   }
 
-  /* 枠を外すと地はページの色になる。留めた1列目は地と同じ色で塗り、見出しの行はカードの色で分ける */
-  .blog-post-content td:first-child {
-    background: var(--surface-page);
-  }
-
-  .blog-post-content th,
-  .blog-post-content th:first-child {
+  /* 枠を外すと地はページの色になるので、見出しの行はカードの色で分ける */
+  .blog-post-content th {
     background: var(--surface-card);
   }
 
