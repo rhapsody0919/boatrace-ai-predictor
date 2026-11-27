@@ -44,7 +44,7 @@ const baseOf = (base, grade) =>
         cls: "base",
         value: base.value,
         text: `${grade} ${base.value.toFixed(3)}`,
-        sub: "同コース平均",
+        sub: "同コース",
       };
 
 function VcScope({ vcActive, vcLabel }) {
