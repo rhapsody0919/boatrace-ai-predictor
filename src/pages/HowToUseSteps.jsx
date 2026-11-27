@@ -96,7 +96,7 @@ function HowToStepTenkaiInKuzureContent() {
       <div className="example-box">
         <p className="example-title">📌 例</p>
         <p>
-          「崩れやすい 65%」と出ていれば、勝率差が同じくらいの過去のレースでは、1号艇が1着を逃したのが約3回に2回だった、という意味です
+          「崩れやすい 65%」と出ていれば、勝率差が同じくらいの過去のレースでは、1号艇が1着を逃したのは100件のうち約65件だった、という意味です
         </p>
       </div>
     </>

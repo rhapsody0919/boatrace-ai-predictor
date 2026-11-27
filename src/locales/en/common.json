@@ -460,7 +460,7 @@
       "data": "Data: compiled by this site from the race cards and results published on the official BOAT RACE website",
       "updated": "Data updated {{year}}-{{month}}-{{day}} {{hour}}:{{minute}} JST",
       "results": "Track record: how often boat 1 actually failed to win, counted by Lane-1 upset caution level",
-      "hitRacesNote": "(counted over all races, not only the ones that matched)",
+      "hitRacesNote": "(counted over all races)",
       "accuracyLink": "See the results by tier (in Japanese) →",
       "hitRacesLink": "See races where the forecast was correct (in Japanese) →",
       "checkTitle": "Once you open a race, check it with these",

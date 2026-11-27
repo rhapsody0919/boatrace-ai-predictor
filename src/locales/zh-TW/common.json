@@ -455,7 +455,7 @@
       "data": "資料：根據BOAT RACE官方網站公布的出賽表與結果，由本站彙整",
       "updated": "{{year}}年{{month}}月{{day}}日 {{hour}}:{{minute}}（日本時間）資料更新",
       "results": "實績：依1號位失守注意度的各段，以實際比賽結果統計1號艇未拿下第1名的比例",
-      "hitRacesNote": "（不只命中的比賽，以全部比賽統計）",
+      "hitRacesNote": "（以全部比賽統計）",
       "accuracyLink": "查看各段實績（日文頁面）→",
       "hitRacesLink": "查看展開預測命中的比賽一覽（日文頁面）→",
       "checkTitle": "打開比賽後，用這兩項來確認",

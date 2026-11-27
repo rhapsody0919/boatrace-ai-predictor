@@ -64,14 +64,15 @@ function HowToStepRacePickContent() {
             の札で、1号艇（インコース）が1着を逃しやすいレースかどうかがわかります
             <ul>
               <li>
-                <strong>崩れやすい</strong>（注意度55%以上）:
+                <strong>崩れやすい</strong>（55%以上）:
                 勝率差が同じくらいの過去のレースで、1号艇が1着を逃した割合が高い
               </li>
               <li>
-                <strong>中くらい</strong>（注意度35〜54%）: 全レースの平均に近い
+                <strong>中くらい</strong>（35〜54%）:
+                崩れやすいと堅めの間
               </li>
               <li>
-                <strong>堅め</strong>（注意度35%未満）:
+                <strong>堅め</strong>（35%未満）:
                 1号艇が1着を逃した割合が低い
               </li>
             </ul>
