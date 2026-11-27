@@ -146,7 +146,10 @@ function CourseWinBars({ summary, national }) {
                 : `1着率 ${pct(c.winRate)}${c.reliability === "reference" ? "（参考）" : ""}`}
               {cmp && `・全選手 ${cmp.avg.toFixed(1)}%`}
               {cmp?.tone && (
-                <span className={`racer-official-winbar-mark ind-${cmp.tone}`}> {MARK_TEXT[cmp.tone]}</span>
+                <>
+                  {" "}
+                  <span className={`racer-official-winbar-mark ind-${cmp.tone}`}>{MARK_TEXT[cmp.tone]}</span>
+                </>
               )}
             </span>
           </li>
@@ -179,6 +182,8 @@ function CourseSection({ summary, courseBaseline }) {
       <p className="racer-official-note">
         公式サイトの選手のコース別成績のページとは集計の期間が違うため、値が合わないことがあります（このページは上の期間の期別成績を足したものです）。
       </p>
+      {/* 下の1着率の段と区別する見出し（visual-designer 2026-11-27） */}
+      <h4 className="racer-official-winbars-title">2連対率</h4>
       <ul className="racer-official-bars" aria-label="進入コース別の2連対率">
         {summary.courses.map((c) => (
           <li key={c.course} className="racer-official-bar-row">
@@ -203,7 +208,11 @@ function CourseSection({ summary, courseBaseline }) {
       </ul>
       {national && (
         <>
-          <h4 className="racer-official-winbars-title">1着率（｜は全選手の同じコース・直近3期）</h4>
+          <h4 className="racer-official-winbars-title">
+            1着率（
+            <span className="racer-official-winbar-sample" aria-hidden="true" />
+            は全選手の同じコース・直近3期）
+          </h4>
           <CourseWinBars summary={summary} national={national} />
         </>
       )}
