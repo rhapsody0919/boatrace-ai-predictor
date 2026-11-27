@@ -30,7 +30,7 @@ async function fetchEntries(raceIds, motorNumbers) {
     chunkArray(raceIds, RACE_CHUNK).map((chunk) =>
       supabase
         .from("race_entries")
-        .select("race_id, boat_number, motor_number, motor_2rate, motor_3rate, player_name")
+        .select("race_id, boat_number, motor_number, motor_2rate, motor_3rate, player_name, grade")
         .in("race_id", chunk)
         .in("motor_number", motorNumbers)
         .order("race_id")
@@ -78,13 +78,13 @@ async function fetchMeets(venueCode, from, to) {
  * @param {number} venueCode
  * @param {number[]} motorNumbers
  * @param {string} raceId YYYY-MM-DD-VV-RR（このレースより前の走だけを数える）
- * 走には乗った選手（racerName）と着順（finish。結果が無い・着が付かなければ null）も付ける。meets は会場の節（吹き出し用）
- * @returns {Promise<{generationStart: string|null, meets: Array<{start:string,end:string,days:number|null,grade:string|null,title:string|null}>, runsByMotor: Object<string, Array<{raceId:string,date:string,motor2Rate:number|null,motor3Rate:number|null,exhibitionTime:number|null,exhibitionDiff:number|null,racerName:string|null,finish:number|null,finishMark:string|null}>>}>}
+ * 走には乗った選手（racerName）とそのレース時点の級（racerGrade）と着順（finish。結果が無い・着が付かなければ null）も付ける。meets は会場の節（吹き出し用）
+ * @returns {Promise<{generationStart: string|null, meets: Array<{start:string,end:string,days:number|null,grade:string|null,title:string|null}>, runsByMotor: Object<string, Array<{raceId:string,date:string,motor2Rate:number|null,motor3Rate:number|null,exhibitionTime:number|null,exhibitionDiff:number|null,racerName:string|null,racerGrade:string|null,finish:number|null,finishMark:string|null}>>}>}
  *   generationStart が null なら世代が分からない（推移を描かない）
  */
 export function getMotorGenerationRuns(venueCode, motorNumbers, raceId) {
   const motors = [...new Set(motorNumbers.filter((n) => Number.isInteger(n)))].sort((a, b) => a - b);
-  return withCache(`motor-generation-runs-v4-${venueCode}-${motors.join("_")}-${raceId}`, async () => {
+  return withCache(`motor-generation-runs-v5-${venueCode}-${motors.join("_")}-${raceId}`, async () => {
     const generationStart = await generationStartAsOf(venueCode, raceId);
     const runsByMotor = Object.fromEntries(motors.map((n) => [n, []]));
     if (generationStart === null || motors.length === 0) return { generationStart, meets: [], runsByMotor };
@@ -118,6 +118,8 @@ export function getMotorGenerationRuns(venueCode, motorNumbers, raceId) {
           exhibitionTime: exByKey.get(`${e.race_id}-${e.boat_number}`) ?? null,
           exhibitionDiff: exDiffByKey.get(`${e.race_id}-${e.boat_number}`) ?? null,
           racerName: e.player_name ?? null,
+          // そのレース時点の級（A1〜B2）。吹き出しで使用者の腕の目安に添える（時系列の振り分け F-049）
+          racerGrade: e.grade ?? null,
           finish: findBoatColumnIndex(resultById.get(e.race_id), "rank", e.boat_number),
           finishMark: markByKey.get(`${e.race_id}-${e.boat_number}`) ?? null,
         }),

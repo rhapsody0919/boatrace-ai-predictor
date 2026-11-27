@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   getPostById,
   getRelatedPosts,
@@ -19,7 +18,7 @@ import { extractFaqItems } from "../utils/blogFaqSchema";
 import BLOG_IMAGE_DIMENSIONS from "virtual:blog-image-dimensions";
 import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
-import { blogRehypePlugins } from "../utils/blogMarkdownSanitize.js";
+import { blogRehypePlugins, blogRemarkPlugins } from "../utils/blogMarkdownSanitize.js";
 import BlogChart from "../components/blog/BlogChart";
 import { stripBlogLeadingH1 } from "../utils/blogLeadingH1.js";
 import { loadBlogCharts } from "../utils/blogChartLoader.js";
@@ -30,6 +29,7 @@ import {
   BackToTopButton,
   PostHeader,
   TocSection,
+  SideToc,
   RelatedPostsSection,
   PostCta,
 } from "./BlogPostParts.jsx";
@@ -259,7 +259,8 @@ function useArticleContent(content, charts, chartLang) {
   return useMemo(
     () => (
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        // gfm と、日本語の約物の隣の ** を太字にする cjk-friendly（blogMarkdownSanitize.js）
+        remarkPlugins={blogRemarkPlugins}
         // 生の HTML を許可リストで削ってから描く（script・iframe・on*・javascript: を通さない）
         rehypePlugins={blogRehypePlugins}
         components={{
@@ -270,6 +271,10 @@ function useArticleContent(content, charts, chartLang) {
           ),
           p: ({ node, ...props }) =>
             isChartOnlyParagraph(node) ? props.children : <p {...props} />,
+          // 表は横に流せる箱に入れ、375px で列を1〜2文字幅に潰さない
+          table: ({ node, ...props }) => (
+            <div className="blog-post-table-scroll"><table {...props} /></div>
+          ),
           // Custom link renderer to open external links in new tab
           a: ({ node, ...props }) => {
             const isExternal = props.href?.startsWith("http");
@@ -334,11 +339,17 @@ function PostBody({
     <div className="blog-post-container">
       <PostHeader post={post} t={t} />
 
-      {headings.length > 0 && <TocSection headings={headings} t={t} />}
+      {/* PC（1100px 以上）は本文の右に目次を常に出し、広い画面の空きを使う。狭い幅は本文の上の畳む目次 */}
+      <div className="blog-post-layout">
+        <div className="blog-post-main">
+          {headings.length > 0 && <TocSection headings={headings} t={t} />}
 
-      <article className="blog-post-content" ref={articleRef}>
-        {articleContent}
-      </article>
+          <article className="blog-post-content" ref={articleRef}>
+            {articleContent}
+          </article>
+        </div>
+        {headings.length > 0 && <SideToc headings={headings} t={t} />}
+      </div>
 
       {/* Related Posts */}
       {relatedPosts.length > 0 && (

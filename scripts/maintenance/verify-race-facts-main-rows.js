@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
 import { RACE_FACT_COLUMNS, RUN_FACT_COLUMNS } from "../lib/raceFactsKb.js";
 import { buildMainRaceFact, buildMainRunFacts, conditionSourceOf, mainGradeOf } from "../lib/raceFactsMain.js";
-import { RACE_FACTS_MIGRATION_SQL } from "./verifyData/race-facts-migration-files.js";
+import { RACE_FACTS_MIGRATION_SQL, RACE_FACTS_SAME_RACE_SQL } from "./verifyData/race-facts-migration-files.js";
 
 const RACE = { race_id: "2026-11-20-12-12", race_date: "2026-11-20", venue_code: 12, race_number: 12, start_time: "16:30:00", race_grade: null };
 const SERIES = { grade: null, class_code: "Lady", kind: "lady", title: "節の題" };
@@ -18,6 +18,13 @@ const RESULT = { rank1: 1, rank2: 3, rank3: 2, payout_win: 150, payout_place_1: 
 
 test("レースの行: 列・グレード・出所・払戻", () => {
   const row = buildMainRaceFact({ race: RACE, result: RESULT, conditions: COND, series: SERIES });
+  assert.deepEqual(row.finish_order, [1, 3, 2, null, null, null], "race_results.rank1〜6 のまま");
+  assert.deepEqual(row.racer_ids, [null, null, null, null, null, null]);
+  assert.deepEqual(
+    buildMainRaceFact({ race: RACE, entries: [{ boat_number: 2, racer_id: 9 }, { boat_number: 7, racer_id: 8 }] }).racer_ids,
+    [null, 9, null, null, null, null],
+    "艇番の順、1〜6 の外は入れない",
+  );
   assert.deepEqual(Object.keys(row), [...RACE_FACT_COLUMNS]);
   assert.equal(row.era, "main");
   assert.equal(row.race_grade, "G3", "class_code Lady → G3");
@@ -89,13 +96,14 @@ test("艇の行: 列・進入・着・展示", () => {
   assert.equal(buildMainRunFacts(RACE, [ENTRIES[0]], { timings: [{ boat_number: 1, entry_course: 9 }] })[0].course, null);
 });
 
-test("組み立てた行は 212 の CHECK を通り、RPC で読める", async () => {
+test("組み立てた行は 212・213 の CHECK を通り、RPC で読める", async () => {
   const db = new PGlite();
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;");
   await db.exec(`BEGIN;${RACE_FACTS_MIGRATION_SQL}COMMIT;`);
+  await db.exec(`BEGIN;${RACE_FACTS_SAME_RACE_SQL}COMMIT;`);
   const insert = (table, columns, row) =>
     db.query(`INSERT INTO ${table}(${columns.join(", ")}) VALUES (${columns.map((_, i) => `$${i + 1}`).join(", ")})`, columns.map((c) => row[c]));
-  await insert("race_facts", RACE_FACT_COLUMNS, buildMainRaceFact({ race: RACE, result: RESULT, conditions: COND, series: SERIES }));
+  await insert("race_facts", RACE_FACT_COLUMNS, buildMainRaceFact({ race: RACE, result: RESULT, conditions: COND, series: SERIES, entries: ENTRIES }));
   for (const r of buildMainRunFacts(RACE, ENTRIES, { result: RESULT, timings: TIMINGS, exhibitions: EXHIBITIONS })) {
     await insert("run_facts", RUN_FACT_COLUMNS, r);
   }

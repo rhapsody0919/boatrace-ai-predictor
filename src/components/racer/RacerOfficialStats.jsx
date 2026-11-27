@@ -5,6 +5,9 @@ import {
   COURSE_SUM_PERIODS,
 } from "../../pure/racerOfficialPeriodStats.js";
 import { buildChartData, chartRates } from "./RacerOfficialStatsLogic";
+import { courseRowDir } from "../../pure/sixBoatCourseStats.js";
+import { toneOf } from "../../pure/compareBaseline.js";
+import InlineFetchError from "../InlineFetchError";
 import "./RacerOfficialStats.css";
 
 /**
@@ -103,7 +106,99 @@ function CourseRateCell({ value, reliability }) {
   );
 }
 
-function CourseSection({ summary }) {
+// 全選手の同じコース（直近3期）と比べる（意味づけ 2026-11-26）。判定は出走表・枠別情報の6艇の表と同じ（courseRowDir）。
+// ▲緑・▼赤は偶然のぶれを超えたときだけ。「参考」（10〜29走）と基準の無いコースは色なし
+function compareOf(c, national) {
+  const avg = national?.[c.course]?.winRate ?? null;
+  if (c.reliability === "none" || c.winRate === null || avg === null) return null;
+  const dir = courseRowDir({
+    reliability: c.reliability === "firm" ? "ok" : "warn",
+    winRate: c.winRate, avg, entries: c.entries, course: c.course,
+  });
+  return { avg, dir, tone: toneOf(dir, "high"), diff: c.winRate - avg };
+}
+
+const MARK_TEXT = { good: "▲全選手より高い", bad: "▼全選手より低い" };
+
+// 1着率の棒（0〜100%）に全選手の位置の縦線（型1・値の尺度。オーナー 2026-11-27 が「+28.6pt」の文字より選んだ）。値と全選手の値を並べる
+function CourseWinBars({ summary, national }) {
+  return (
+    <ul className="racer-official-winbars" aria-label="進入コース別の1着率と全選手">
+      {summary.courses.map((c) => {
+        const cmp = compareOf(c, national);
+        return (
+          <li key={c.course} className="racer-official-bar-row" data-tone={cmp?.tone ?? "plain"}>
+            <span className="racer-official-bar-label">{c.course}コース</span>
+            <span className="racer-official-bar-track racer-official-winbar-track">
+              {c.winRate !== null && (
+                <span
+                  className={`racer-official-bar-fill racer-official-winbar-fill${cmp?.tone ? ` racer-official-winbar-fill--${cmp.tone}` : ""}`}
+                  style={{ width: `${c.winRate}%` }}
+                />
+              )}
+              {cmp && (
+                <span className="racer-official-winbar-base" style={{ left: `${cmp.avg}%` }} />
+              )}
+            </span>
+            <span className="racer-official-bar-value">
+              {c.winRate === null
+                ? c.entries === 0 ? "進入なし" : `進入${c.entries}走`
+                : `1着率 ${pct(c.winRate)}${c.reliability === "reference" ? "（参考）" : ""}`}
+              {cmp && `・全選手 ${cmp.avg.toFixed(1)}%`}
+              {cmp?.tone && (
+                <>
+                  {" "}
+                  <span className={`racer-official-winbar-mark ind-${cmp.tone}`}>{MARK_TEXT[cmp.tone]}</span>
+                </>
+              )}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// 進入コース別の表（コース・進入・1着率・2連対率・3連対率・平均ST）
+function CourseTable({ summary }) {
+  return (
+    <div className="racer-official-table-wrap">
+      <table className="racer-official-table">
+        <thead>
+          <tr>
+            <th scope="col">コース</th>
+            <th scope="col">進入</th>
+            <th scope="col">1着率</th>
+            <th scope="col">2連対率</th>
+            <th scope="col">3連対率</th>
+            <th scope="col">平均ST</th>
+          </tr>
+        </thead>
+        <tbody>
+          {summary.courses.map((c) => (
+            <tr key={c.course}>
+              <th scope="row">{c.course}</th>
+              <td>{c.entries === 0 ? "進入なし" : c.entries}</td>
+              <CourseRateCell value={c.winRate} reliability={c.reliability} />
+              <CourseRateCell
+                value={c.top2Rate}
+                reliability={c.reliability}
+              />
+              <CourseRateCell
+                value={c.top3Rate}
+                reliability={c.reliability}
+              />
+              <td>{c.reliability === "none" ? "-" : st(c.avgSt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CourseSection({ summary, courseBaseline }) {
+  const national = courseBaseline?.status === "ready" ? courseBaseline.national : null;
   const first = summary.periods.at(-1);
   const last = summary.periods[0];
   const rangeText = `${first.range.split("〜")[0]}〜${last.range.split("〜")[1]}`;
@@ -147,38 +242,25 @@ function CourseSection({ summary }) {
           </li>
         ))}
       </ul>
-      <div className="racer-official-table-wrap">
-        <table className="racer-official-table">
-          <thead>
-            <tr>
-              <th scope="col">コース</th>
-              <th scope="col">進入</th>
-              <th scope="col">1着率</th>
-              <th scope="col">2連対率</th>
-              <th scope="col">3連対率</th>
-              <th scope="col">平均ST</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.courses.map((c) => (
-              <tr key={c.course}>
-                <th scope="row">{c.course}</th>
-                <td>{c.entries === 0 ? "進入なし" : c.entries}</td>
-                <CourseRateCell value={c.winRate} reliability={c.reliability} />
-                <CourseRateCell
-                  value={c.top2Rate}
-                  reliability={c.reliability}
-                />
-                <CourseRateCell
-                  value={c.top3Rate}
-                  reliability={c.reliability}
-                />
-                <td>{c.reliability === "none" ? "-" : st(c.avgSt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <CourseTable summary={summary} />
+      {/* 1着率の段は表の後ろ。PC は「2連対率の棒｜表」を左右に並べ行をそろえるので、その間に入れない */}
+      {national && (
+        <>
+          <h4 className="racer-official-winbars-title">
+            1着率（
+            <span className="racer-official-winbar-sample" aria-hidden="true" />
+            は全選手の同じコース・直近3期）
+          </h4>
+          <CourseWinBars summary={summary} national={national} />
+        </>
+      )}
+      {courseBaseline?.status === "error" ? (
+        <InlineFetchError onRetry={courseBaseline.reload} />
+      ) : (
+        <p className="racer-official-note">
+          全選手の同じコースの1着率（直近3期）と比べています。▲緑・▼赤は、走数から見て偶然のぶれでは説明しにくい差のときだけ付けます。
+        </p>
+      )}
       <p className="racer-official-note">
         元の期:{" "}
         {summary.periods.map((p) => `${p.label}（${p.range}）`).join("・")}。
@@ -190,7 +272,7 @@ function CourseSection({ summary }) {
   );
 }
 
-export default function RacerOfficialStats({ rows, racerName }) {
+export default function RacerOfficialStats({ rows, racerName, courseBaseline }) {
   const periodRows = useMemo(() => buildPeriodRows(rows), [rows]);
   const courseSummary = useMemo(
     () => buildCourseRows(rows, COURSE_SUM_PERIODS),
@@ -254,7 +336,9 @@ export default function RacerOfficialStats({ rows, racerName }) {
         </p>
       </div>
 
-      {courseSummary && <CourseSection summary={courseSummary} />}
+      {courseSummary && (
+        <CourseSection summary={courseSummary} courseBaseline={courseBaseline} />
+      )}
     </section>
   );
 }

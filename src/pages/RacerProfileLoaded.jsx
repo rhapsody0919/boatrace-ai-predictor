@@ -14,9 +14,13 @@ import { Link } from "react-router-dom";
 import DataFetchError from "../components/DataFetchError";
 import InlineFetchError from "../components/InlineFetchError";
 
-function PeriodSection({ periodFailed, periodRows, onRetry, racerName }) {
+function PeriodSection({ periodFailed, periodRows, onRetry, racerName, courseBaseline }) {
   if (periodFailed) return <InlineFetchError onRetry={onRetry} />;
-  return periodRows && <RacerOfficialStats rows={periodRows} racerName={racerName} />;
+  return (
+    periodRows && (
+      <RacerOfficialStats rows={periodRows} racerName={racerName} courseBaseline={courseBaseline} />
+    )
+  );
 }
 
 // 取得が終わって失敗しなかったときの本体（元の RacerProfile の `!loading && !error` の中身）
@@ -71,6 +75,7 @@ export default function RacerProfileLoaded({
           periodRows={period.periodRows}
           onRetry={period.retryPeriod}
           racerName={data.profile ? displayName : null}
+          courseBaseline={period.courseBaseline}
         />
       </div>
       <div id="racer-motor">

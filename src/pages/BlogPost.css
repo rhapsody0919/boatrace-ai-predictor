@@ -157,12 +157,22 @@
   font-size: 0.95em;
 }
 
+/* 表は横に流せる箱の中に置く。以前は table 自体を display:block にし、1列目を nowrap に
+   していたため、375px で2列目以降が1〜2文字幅に潰れて縦に長く伸びていた */
+.blog-post-table-scroll {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 表は block にして自分で横に送る（articles-layout.spec.js が overflow-x: auto を見る）。
+   列は下の min-width で幅を持つので、はみ出す分は潰れずに横へ送られる */
 .blog-post-content table {
+  display: block;
   width: 100%;
   border-collapse: collapse;
-  margin: 1.5rem 0;
+  margin: 0;
   overflow-x: auto;
-  display: block;
 }
 
 .blog-post-content th,
@@ -178,6 +188,14 @@
   color: var(--text-primary);
 }
 
+/* 列は10字ぶんより細くしない（はみ出す分は箱の中で横に流す） */
+.blog-post-content th,
+.blog-post-content td {
+  min-width: 10em;
+}
+
+/* 1列目（会場名・項目名）は折り返さない（BOA-870）。はみ出す分は箱の中で横に送る。
+   1列目が長い表もあるので左に留めない（留めると残りの列が狭くなる） */
 .blog-post-content th:first-child,
 .blog-post-content td:first-child {
   white-space: nowrap;
@@ -243,6 +261,11 @@
   transform: translateY(-5px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   border-color: #0ea5e9;
+}
+
+/* 札が縦の flex で横いっぱいに伸びて帯に見えるのを防ぐ */
+.related-card .category-badge {
+  align-self: flex-start;
 }
 
 .related-card h3 {
@@ -374,11 +397,23 @@
     font-size: 1.75rem;
   }
 
+  /* スマホは本文の枠を外し、左右の余白を外の1remに1本化する（枠の内と外で二重になり1行約19字だった） */
   .blog-post-content {
-    /* 従来2rem固定だったため.blog-post-containerの1remと二重に効き、
-       375px幅で本文実効幅が279pxまで圧迫されていた問題を解消 */
-    padding: 1rem;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
     font-size: 1rem;
+  }
+
+  /* 枠を外すと地はページの色になるので、見出しの行はカードの色で分ける */
+  .blog-post-content th {
+    background: var(--surface-card);
+  }
+
+  .blog-post-content th,
+  .blog-post-content td {
+    padding: 0.5rem 0.6rem;
   }
 
   .blog-post-content h1 {
@@ -494,4 +529,72 @@
   padding-left: 1.25rem;
   font-size: 0.88rem;
   opacity: 0.9;
+}
+
+/* PC の幅に合わせる（2026-11-27）。1100px 以上は本文＋右の目次の2列にし、器を 1180px まで広げる。
+   本文の列は1行約45字に収まる幅に留め、余った幅は目次に使う */
+.blog-post-side-toc {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .blog-post-container {
+    max-width: 1180px;
+    padding: 2rem 2rem;
+  }
+
+  .blog-post-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .blog-post-main .toc-section {
+    display: none;
+  }
+
+  .blog-post-content {
+    font-size: 1.0625rem;
+  }
+
+  .blog-post-side-toc {
+    display: block;
+    position: sticky;
+    /* PC のヘッダー（約86px）の下に留める */
+    top: 104px;
+  }
+
+  .blog-post-side-toc-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: calc(100vh - 128px);
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    background: var(--surface-card);
+    border: 1px solid var(--border-hairline);
+    border-radius: var(--radius-lg);
+  }
+
+  .blog-post-side-toc-title {
+    margin: 0 0 0.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+}
+
+/* 1600px 以上はさらに器と文字を一段大きくし、広い画面でも左右が空きすぎないようにする（1行約50字） */
+@media (min-width: 1600px) {
+  .blog-post-container {
+    max-width: 1360px;
+  }
+
+  .blog-post-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .blog-post-content {
+    font-size: 1.125rem;
+  }
 }

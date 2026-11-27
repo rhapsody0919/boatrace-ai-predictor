@@ -10,10 +10,10 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3055 |
+| 読んだファイル | 3063 |
 | 読み書きのあるファイル | 335 |
 | 表の読み手（箇所） | 981 |
-| 表の書き手（箇所） | 204 |
+| 表の書き手（箇所） | 202 |
 | RPC の呼び手（箇所） | 58 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
@@ -246,7 +246,7 @@
 | pit_reports | api/cron/pit-reports.js | 30 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
 | point_rank | api/cron/point-rank.js | 31 | racer_series_points, scrape_job_state, scrape_slots |
 | pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
-| race_facts_main | api/cron/race-facts-main.js | 34 | race_facts, racer_career_meta, run_facts, scrape_job_state, scrape_slots |
+| race_facts_main | api/cron/race-facts-main.js | 35 | race_facts, racer_career_meta, run_facts, scrape_job_state, scrape_slots |
 | race_info | api/cron/race-info.js | 63 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | race_notices | api/cron/race-notices.js | 32 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 28 | scrape_job_state, scrape_slots |
@@ -262,7 +262,7 @@
 | result_catchup | api/cron/result-catchup.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 24 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 29 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 142 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 143 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 31 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 42 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
 | sns_send | api/cron/sns-send.js | 118 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
@@ -945,7 +945,7 @@
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
   - `src/services/motorQueries7.js:83` select [motor_number, race_id, racer_id]
-  - `src/services/motorQueries8.js:32` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id]
+  - `src/services/motorQueries8.js:32` select [boat_number, grade, motor_2rate, motor_3rate, motor_number, player_name, race_id]
   - `src/services/mycroftService.js:83` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:144` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:169` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
@@ -2344,9 +2344,9 @@
 - table `growth_gsc_daily`: `scripts/lib/growth/gscDaily.js:168`, `scripts/lib/growth/gscDaily.js:181`, `scripts/lib/growth/gscDaily.js:187`
 - table `growth_gsc_page_daily`: `scripts/lib/growth/gscPageDaily.js:73`, `scripts/lib/growth/gscPageDaily.js:85`, `scripts/lib/growth/gscPageDaily.js:92`
 - table `growth_url_inspection`: `scripts/lib/growth/urlInspection.js:98`, `scripts/lib/growth/urlInspection.js:109`, `scripts/lib/growth/urlInspection.js:119`
-- table `race_facts`: `scripts/lib/raceFactsMainJob.js:150`, `scripts/maintenance/race-facts-backfill.js:95`
+- table `race_facts`: `scripts/lib/raceFactsWrite.js:33`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
-- table `run_facts`: `scripts/lib/raceFactsMainJob.js:146`, `scripts/maintenance/race-facts-backfill.js:91`
+- table `run_facts`: `scripts/lib/raceFactsWrite.js:29`
 - table `site_feedback`: `src/services/analogyFeedback.js:35`
 - table `site_feedback_hourly`: `scripts/maintenance/content-ops-checks/check-site-feedback-received.js:56`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`, `scripts/maintenance/verifyData/sns-send-runner-scenes-4.js:174`

@@ -114,9 +114,10 @@ Featuring top prize-money earners, this race functions as **a warm-up with Grand
 Featuring the year's top 18 prize-money earners, this is **the pinnacle showdown of the boat racing world**. The winner's prize exceeds ¥100 million, and it's the year's grand finale.
 
 **Strategy:**
-- The trial (qualifying) round splits racers into 2 groups, with the top 3 from each advancing to the final
-- The final is a single winner-take-all race among 6 racers, where the lane draw can decide everything
-- The Grand Prix Series (for racers ranked 19th and below) runs alongside it and is comparatively easier to predict
+- Racers ranked 7th–18th in prize money start in Trial 1st; the top 6 by score rate move on to Trial 2nd
+- Racers ranked 1st–6th start in Trial 2nd; the top 6 by score rate in Trial 2nd reach the final
+- Boat numbers in the final follow the Trial 2nd score-rate order (1st place gets Boat 1)
+- The Grand Prix Series runs at the same venue in the same period
 
 ---
 

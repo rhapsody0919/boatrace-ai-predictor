@@ -143,6 +143,9 @@
     "courseColumn": "進入コース",
     "winRateColumn": "1着率",
     "winsColumn": "1着の回数",
+    "courseHigher": "▲全国より出やすい",
+    "courseLower": "▼全国より出にくい",
+    "courseBarNote": "灰の棒はこの会場の1着率、｜は全国の同じコース。▲▼は1コースだけに、24会場を同時に比べる厳しい線を超えたときに付けます。2〜6コースは会場の順位が年によって変わるので値だけを出します。",
     "waterTitle": "水面",
     "waterText": "水質は{{water}}。干満差は{{tidal}}（BOAT RACE 公式の場データ）。",
     "tidalYes": "あり",
@@ -2082,6 +2085,7 @@
       "startsLabel": "走数",
       "winRateNote": "💡 各期の値は公式の期別成績の勝率（半年ごとの算出期間・全レース）。線が切れている期は走の記録がありません（出走なし等）。出走表の全国勝率（今の値の全国・全レース）は直近の成績から算出した値で、右端の期とは一致しません。",
       "winRateNotYet": "右端の次の期（{{from}}〜{{to}}）はまだ取り込んでいません。",
+      "officialStLine": "公式の平均ST {{value}}（{{from}}〜{{to}}）",
       "tipValueRun": "{{metric}} {{value}}"
     },
     "title": "選手の成績比較",

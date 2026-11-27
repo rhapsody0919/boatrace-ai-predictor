@@ -126,6 +126,8 @@ export function motorMeetTip(runs, date, meets, { today = null } = {}) {
   return {
     ...head,
     racerName: inMeet.find((r) => r.racerName)?.racerName ?? null,
+    // 名前と同じ走の級（そのレース時点）。無ければ null
+    racerGrade: inMeet.find((r) => r.racerName)?.racerGrade ?? null,
     finishes: inMeet.map((r) => r.finish ?? null),
     byDay: resultsByDay(inMeet),
     ongoing: isOngoing(series, head, today),

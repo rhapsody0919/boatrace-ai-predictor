@@ -8,20 +8,21 @@
  *   （kb_archive_races.stage_kind・is_final_day は使わない。ADR-0104 決定3）
  * - 着は成績コード（finish_raw）から finishMarkFromCode で出す（本体の結果ページの着欄と 8,805艇で一致）
  * - kb に無い列（気温・水温・潮位・複勝の払戻・チルト・オリジナル展示・風の扇形）は NULL。後の段で書き手が同じ関数を通して埋める
+ * - racer_ids・finish_order（マイグレーション 213）は渡された艇の行から作る。finish_order は着の順で、同着は艇番の順に詰める（dead_heat で知らせる）
  */
 import { isCareerFinalStage } from "../../src/pure/racerCareerStats.js";
 import { finishMarkFromCode } from "./kbGapFill.js";
 import { KB_FIRST_DATE, KB_LAST_DATE } from "./kbArchiveBoundary.js";
 
 /** 組み立ての規則を変えたら上げる（facts の行の rule_version） */
-export const RACE_FACTS_RULE_VERSION = 1;
+export const RACE_FACTS_RULE_VERSION = 2;
 
 export const RACE_FACT_COLUMNS = Object.freeze([
   "race_id", "era", "race_date", "venue_code", "race_number", "race_title", "series_day", "is_final_day",
   "race_grade", "series_kind", "stage_raw", "is_final", "deadline_time", "weather", "wind_speed", "wave_height",
   "wind_sector", "condition_source", "temperature", "water_temperature", "tide_cm", "tide_phase", "technique",
   "dead_heat", "payout_win", "payout_place_1", "payout_place_2", "payout_3tan", "combo_3tan", "payout_3fuku",
-  "has_result", "race_status", "rule_version",
+  "has_result", "race_status", "racer_ids", "finish_order", "rule_version",
 ]);
 
 export const RUN_FACT_COLUMNS = Object.freeze([
@@ -49,12 +50,28 @@ function assertKbRace(race) {
   return date;
 }
 
+/** 艇番の順（1〜6）の選手の登録番号（マイグレーション 213 の race_facts.racer_ids）。欠けた艇は null */
+export function racerIdsOf(rows) {
+  const ids = [null, null, null, null, null, null];
+  for (const r of rows) {
+    if (Number.isInteger(r.boat_number) && r.boat_number >= 1 && r.boat_number <= 6) ids[r.boat_number - 1] = orNull(r.racer_id);
+  }
+  return ids;
+}
+
+/** 着の付いた艇を (着, 艇番) の順に並べた6本（race_facts.finish_order）。同着は艇番の順に詰める。着が1つも無ければ null */
+export function finishOrderOf(runs) {
+  const ranked = runs.filter((r) => Number.isInteger(r.rank)).sort((a, b) => a.rank - b.rank || a.boat_number - b.boat_number);
+  if (ranked.length === 0) return null;
+  return [0, 1, 2, 3, 4, 5].map((i) => ranked[i]?.boat_number ?? null);
+}
+
 /**
  * @param {object} race kb_archive_races の行
  * @param {object|null} venueDay kb_archive_venue_days の行（無ければ題・日目は NULL）
- * @param {{ grade: string|null, seriesKind: string|null }} meta 書き手が決めたグレードと種別
+ * @param {{ grade: string|null, seriesKind: string|null, boats?: object[] }} meta 書き手が決めたグレードと種別、そのレースの kb_archive_boats の行
  */
-export function buildKbRaceFact(race, venueDay, { grade, seriesKind }) {
+export function buildKbRaceFact(race, venueDay, { grade, seriesKind, boats = [] }) {
   const date = assertKbRace(race);
   const hasCondition = [race.weather, race.wind_speed, race.wave_height].some((v) => v != null);
   return {
@@ -90,6 +107,10 @@ export function buildKbRaceFact(race, venueDay, { grade, seriesKind }) {
     payout_3fuku: orNull(race.payout_3fuku),
     has_result: race.has_result === true,
     race_status: null,
+    racer_ids: racerIdsOf(boats),
+    finish_order: finishOrderOf(
+      boats.map((b) => ({ boat_number: b.boat_number, rank: b.finish_raw == null ? null : finishMarkFromCode(b.finish_raw)?.finish_rank ?? null })),
+    ),
     rule_version: RACE_FACTS_RULE_VERSION,
   };
 }

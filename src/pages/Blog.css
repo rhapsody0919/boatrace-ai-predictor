@@ -255,6 +255,86 @@
   color: var(--text-secondary);
 }
 
+/* 記事を探す欄・件数・さらに表示（一覧の探しやすさ、2026-11-27） */
+.blog-search-input {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto 2rem;
+  padding: 0.75rem 1rem;
+  min-height: 44px;
+  font-size: 1rem;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.blog-featured-toggle,
+.blog-show-more {
+  display: block;
+  margin: 0.5rem auto 0;
+  min-height: 44px;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 22px;
+  cursor: pointer;
+}
+
+.blog-show-more {
+  margin-top: 1.5rem;
+}
+
+/* 件数は小さくするだけで薄くしない（opacity で薄くすると light で 3.77:1 になり AA を割った） */
+.blog-category-count {
+  margin-left: 0.35rem;
+  font-size: 0.8em;
+}
+
+/* 20本より後ろのカードは hidden で隠す（.blog-card の display:flex が hidden 属性に勝つため明示する） */
+.blog-card[hidden] {
+  display: none;
+}
+
+.blog-result-count {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .blog-search-input {
+    margin-bottom: 1rem;
+  }
+
+  /* 分類は件数つきで横に送る1行にする（11個が4〜5段に折れていた） */
+  .category-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 1rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .category-filter::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-filter button {
+    flex: 0 0 auto;
+  }
+
+  .sort-filter {
+    margin-top: 0;
+    margin-bottom: 1rem;
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .blog-header h1 {
@@ -379,4 +459,111 @@
   letter-spacing: 0.5px;
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
   z-index: 1;
+}
+
+/* 注目カードの日付・読了時間は青の地の上でも読める白にする（灰色で薄かった） */
+.featured-card .meta {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 題は3行まで出す（場別攻略の題は2行だと要の数字の手前で切れていた） */
+.blog-card-content h3 {
+  -webkit-line-clamp: 3;
+}
+
+/* スマホの一覧を詰める（2026-11-27）。1枚約260pxの縦長のカードを、札と日付を1行目に並べた
+   約130pxの行にし、1画面に4〜5本入るようにする。説明は1行に縮めるが消さない */
+@media (max-width: 768px) {
+  .blog-container {
+    padding: 1rem 1rem 2rem;
+  }
+
+  .blog-header {
+    margin-bottom: 1rem;
+  }
+
+  .blog-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .blog-header p {
+    font-size: 0.9rem;
+  }
+
+  .featured-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .featured-card {
+    padding: 1rem;
+  }
+
+  .featured-content h3 {
+    font-size: 1.1rem;
+    margin: 0.4rem 0 0.5rem;
+  }
+
+  .blog-grid {
+    gap: 0;
+    margin-top: 0.5rem;
+  }
+
+  .blog-card {
+    padding: 0.75rem 0.25rem;
+    border: none;
+    border-bottom: 1px solid var(--border-hairline);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .blog-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .blog-card-content {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "badge meta"
+      "title title"
+      "desc desc";
+    align-items: center;
+    column-gap: 0.5rem;
+  }
+
+  .blog-card-content .category-badge {
+    grid-area: badge;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.5rem;
+  }
+
+  .blog-card-content .meta {
+    grid-area: meta;
+    margin: 0;
+    font-size: 0.8rem;
+    gap: 0.75rem;
+  }
+
+  .blog-card-content h3 {
+    grid-area: title;
+    font-size: 1rem;
+    margin: 0.35rem 0 0.2rem;
+  }
+
+  .blog-card-content .description {
+    grid-area: desc;
+    font-size: 0.85rem;
+    margin: 0;
+    -webkit-line-clamp: 1;
+  }
+
+  /* NEW の札は行の右上に小さく置く（題と重ならないよう札の行の高さに収める） */
+  .blog-card .new-badge {
+    top: 0.75rem;
+    right: 0;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+  }
 }

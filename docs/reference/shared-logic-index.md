@@ -25,6 +25,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/blogChartAnswers.js` | ブログの図の契約の検査のうち、答えの文（description）の数字の照合。 | checkAnswers |
 | `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
 | `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
+| `src/pure/blogListFilter.js` | ブログ一覧の絞り込み（分類と、記事を探す欄の語）。画面に依らない純関数。 | filterBlogPosts, countCategories |
 | `src/pure/clientKey.js` | ブラウザごとの匿名の識別番号（乱数の uuid v4）。個人と結びつけず、匿名の声の重複除外と連投の制限だけに使う | newUuidV4, readOrCreateClientKey |
 | `src/pure/compareBaseline.js` | 数字に「基準との比べ」「6艇の中の比べ」を付けるための判定（意味づけ、2026-11-26 オーナー承認）。 | judgeRateVsBaseline, judgeMeanVsBaseline, toneOf, rankTiers, Z_LINE ほか1件 |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
@@ -302,6 +303,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceFactsKbJob.js` | kb 層の facts の行（race_facts・run_facts の era='kb'）を、kb_archive_* から半月ずつ組み立てて書く流れ（AD… | staleKeysOf, buildWindowRows, runKbFacts |
 | `scripts/lib/raceFactsMain.js` | 本体の表（races・race_entries・race_results・race_start_timings・exhibition_data・race_con… | mainGradeOf, conditionSourceOf, buildMainRaceFact, buildMainRunFacts |
 | `scripts/lib/raceFactsMainJob.js` | facts の main 層（race_facts・run_facts の era='main'、2025-12-03〜）を本体の表から組み立て直す Cron … | windowsFor, buildMainWindowRows, runRaceFactsMainJob, seriesFinder, mainJobDeps ほか2件 |
+| `scripts/lib/raceFactsWrite.js` | facts の表（race_facts・run_facts、ADR-0113）の1つの窓を書く（kb 層の CLI scripts/maintenance/ra… | writeFactsWindow |
 | `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
 | `scripts/lib/raceInfoAccumulate.js` | レース情報の集計（update-race-info.js から分けた純粋関数）: 取得の結果を、書く行（中止・締切・条件・出走表）にためる・ | createAccumulator, accumulateRaceInfo, assertRaceInfoRunArgs, applyFetchedRaceInfo, parsedRaceOutcome |
@@ -449,7 +451,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sns/youtubeQueue.js` | — | fillFullUrl, runYoutubeQueueJob, runYoutubePublishJob, resumeRetainedYoutubeJob, createMockYoutubeAdapter ほか4件 |
 | `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel |
 | `scripts/lib/snsAutoPlanRunnerEvaluate.js` | SNS の自動送信の計画の検査（api/ の checkPublicDisplay・sendHolds は runner から引数で渡す）。snsAutoPla… | sharedChecks, evaluateChannel |
-| `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか8件 |
+| `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか7件 |
 | `scripts/lib/snsAutoPlanRunnerStore.js` | SNS の自動送信の計画の DB 操作（PostgREST の読み書き）。snsAutoPlanRunner.js の createAutoPlanStore … | createAutoPlanStore |
 | `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | runSnsDaily, mergeSameKey |
 | `scripts/lib/snsDailyRunnerGa4.js` | SNS の暦日の取り込みの GA4 側。snsDailyRunner.js から、collectGa4（割った）・collectSetsuShort・setsu… | collectGa4, setsuShortLink, collectSetsuShort |
@@ -555,7 +557,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/blogChartTag.js` | ブログの図のタグ <ryujin-chart src="/blog-charts/<name>.json" rows="N"></ryujin-chart> の… | parseBlogChartLine, BLOG_CHART_TAG, BLOG_CHART_SRC_RE, BLOG_CHART_ROWS_RE, BLOG_CHART_ROWS_MAX |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
 | `src/utils/blogLeadingH1.js` | 記事ファイル用の先頭 h1 だけを除き、画面の題は JSON の title にまとめる。 | stripBlogLeadingH1 |
-| `src/utils/blogMarkdownSanitize.js` | ブログ記事（public/blog/*.md）を描く rehype のプラグインと、HTML の許可リスト。 | blogSanitizeSchema, blogRehypePlugins |
+| `src/utils/blogMarkdownSanitize.js` | ブログ記事（public/blog/*.md）を描く remark・rehype のプラグインと、HTML の許可リスト。 | blogRemarkPlugins, blogSanitizeSchema, blogRehypePlugins |
 | `src/utils/botPageModel.js` | ボット向け HTML（ADR 0089）の中身を、/api/races/today の JSON から組む。 | assertTodayRacesJson, buildTopModel, buildVenueModel, TodayRacesShapeError |
 | `src/utils/breadcrumbLd.js` | パンくずの BreadcrumbList（構造化データ）を組む。画面の Breadcrumb と、ボット向け HTML（ADR 0089）が同じ値を出す。 | isValidCrumbs, toBreadcrumbListLd |
 | `src/utils/cautionEvents.js` | イン崩れ注意度（BOA-822 task 27）の GA4 のイベント。送る中身を決める純関数（assistEvents.js と同じ形）。 | cautionBandOf, cautionVisibleEvent, cautionClickEvent, CAUTION_SURFACES, CAUTION_TARGETS |
@@ -705,4 +707,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 663 ファイル / export 3551 件。
+対象 665 ファイル / export 3554 件。

@@ -1,7 +1,7 @@
 /**
  * モーターの推移の節の点の吹き出し（オーナー 2026-11-25 承認のモック、mock-motor-trend/tip/tip-mock.png）。
  * 選手の推移の吹き出し（TrendTooltip）と同じ形・同じ見た目（trc-tip）で、頭に「節へ →」でその節のページへ飛べる。
- * 3行: 節の期間・会場・グレード・日数／乗った選手とこの節の着順／点の値（節の初日の公式の率と、それまでの走数）。
+ * 3行: 節の期間・会場・グレード・日数／乗った選手（そのレース時点の級）とこの節の着順／点の値（節の初日の公式の率と、それまでの走数）。
  * 点の値はその節に入る前までの累計で、選手と着順はその節の中の物（3行目の「節の初日」「それまで」で示す）
  */
 import { Link } from "react-router-dom";
@@ -48,7 +48,14 @@ export default function MotorMeetTooltip({ tip, point, venueCode, metric, leftPc
       </p>
       {/* 選手名と着順の並びは長くなりうるので、この行だけ折り返す（3行の決まりは見出しの数で守る） */}
       <p className="trc-tip-line mtc-tip-wrap">
-        {tip.racerName && <span translate="no">{t("analysis.motor.genTrend.tipRacer", { name: tip.racerName.replace(/\s+/g, "") })} </span>}
+        {tip.racerName && (
+          <span translate="no">
+            {t("analysis.motor.genTrend.tipRacer", {
+              // 級はそのレース時点の値（A1〜B2）。モーターの率を読む前提の腕の目安（時系列の振り分け F-049）
+              name: [tip.racerName.replace(/\s+/g, ""), tip.racerGrade].filter(Boolean).join(" "),
+            })}{" "}
+          </span>
+        )}
         {t(tip.ongoing ? "analysis.motor.genTrend.tipFinishesSoFar" : "analysis.motor.genTrend.tipFinishes", {
           order: orderText(t, tip.byDay),
           n: tip.byDay.reduce((a, d) => a + d.results.length, 0),
