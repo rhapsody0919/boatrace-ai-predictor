@@ -292,6 +292,7 @@ function useSelectedPick(sel, xSel, selected, W) {
  *   renderBelow?: (g: {x: Function, W: number, pad: object, sel: Array<object>}) => any }} props
  *   scale を渡さなければ metric の既定の尺度。label は図の読み上げの名前（無ければ基本情報の題）。
  *   renderOver は線の下に重ねる SVG、renderBelow は図の下に描く物（どちらも図と同じ横の座標 x(i, len)）。
+ *   renderOver の x は選んだ艇の点の横位置（日付の横軸では点の xr、無ければ走の順）
  *   extraValues は縦軸の範囲に含める重ね書きの値、lineClass は線の g に足すクラス（使う側の試験の当て先）。
  *   extraHeight は図の下に足す高さで、renderOver が y >= h に同じ svg の中で描く（今節の足の走の行）。
  *   xTicks（[{xr, label}]）は日付の横軸の目盛り。点の xr（0〜1）と breakBefore（走らない日をまたぐ）と組で使う
@@ -346,7 +347,7 @@ export default function TrendChart({
           runAxisKey={scale.runAxisKey}
         />
         {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
-        {renderOver?.({ x, y, W, h: H, pad: PAD, sel })}
+        {renderOver?.({ x: xSel, y, W, h: H, pad: PAD, sel })}
         {order.map((boat) => (
           <Line
             key={boat}

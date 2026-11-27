@@ -619,7 +619,7 @@
   color: var(--text-secondary);
 }
 
-/* 今節のST・展示のスパークライン（MeetSparkline）。390pxでは2本を縦に積む */
+/* 今節のST・展示の小さな線（共通の推移の図の1艇版、R-45）。390pxでは2本を縦に積む */
 .rmt-sparks {
   display: grid;
   gap: var(--spacing-3);
@@ -634,6 +634,23 @@
   .rmt-spark-note {
     grid-column: 1 / -1;
   }
+}
+
+.rmt-spark {
+  min-width: 0;
+}
+
+/* 前走の値だけの行（日付は図の横軸）。右端の札の下にそろえる */
+.rmt-spark .rmt-spark-foot {
+  justify-content: flex-end;
+}
+
+/* 基準の破線（ST は通常の平均、展示はその日の会場平均） */
+.rmt-spark-ref {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
 }
 
 .rmt-spark-head,

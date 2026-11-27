@@ -15,7 +15,7 @@ import "./basic-info/TrendChart.css";
 // 図の点。横の位置（xr）と走らない日をまたぐ印は日付の配置（layoutTrendByDate）から。
 // 吹き出しの中身は、選んだ艇なら下の「日別の走り」表と同じ行（艇番・進入・ST を持つ）から。
 // 公式の記号（エ・転 等）は labelOf（RaceMeetTab の finishLabelOf）で言語ごとの表記にする
-function pointOf(r, j, layout, { trendKey, rowOf, labelOf }) {
+export function pointOf(r, j, layout, { trendKey, rowOf, labelOf }) {
   const label = labelOf(r.finish);
   // 値の無い走（ST の F・L、欠場・転覆等）は上の帯に公式の記号を出す（線が切れた理由を見せる）
   const flagged = r[trendKey] == null && typeof r.finish === "string";
@@ -45,6 +45,15 @@ function pointOf(r, j, layout, { trendKey, rowOf, labelOf }) {
   };
 }
 
+// 日付の横軸の目盛り（今節の詳細の小さな線 R-45 も同じ目盛りで並べる）
+export function dayTicksOf(trendDates) {
+  const labels = dayTickLabels(trendDates);
+  return trendDates.map((d, i) => ({
+    xr: dayCenter(i, trendDates.length),
+    label: labels[i],
+  }));
+}
+
 function TrendDayChart({ m }) {
   const { t, trendKey, trendRows, trendDates, selectedBoat, meetRows } = m;
   const labelOf = m.finishLabelOf;
@@ -66,11 +75,7 @@ function TrendDayChart({ m }) {
       ]),
   );
   if (seriesByBoat.size === 0) return null;
-  const labels = dayTickLabels(trendDates);
-  const xTicks = trendDates.map((d, i) => ({
-    xr: dayCenter(i, trendDates.length),
-    label: labels[i],
-  }));
+  const xTicks = dayTicksOf(trendDates);
   return (
     <TrendChart
       seriesByBoat={seriesByBoat}
