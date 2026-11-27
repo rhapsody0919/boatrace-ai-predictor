@@ -8,13 +8,22 @@
   margin-bottom: var(--spacing-4);
 }
 
-/* HUD計器盤の走査線。カード上端を左右に光が流れ、常時計測している印象を作る */
+/* HUD計器盤の走査線。カード上端を左右に光が流れ、常時計測している印象を作る。
+   帯は切り抜きの箱で、光（::before）だけを動かす。光を帯そのものに付けて動かすと、
+   カードが overflow: hidden で見た目は切れても、カードの scrollWidth が動きの間に幅の分だけ広がった（768px で +718px、G3 の点検 2026-11-27） */
 .venue-hud-scanbar {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 2px;
+  overflow: hidden;
+}
+
+.venue-hud-scanbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
     90deg,
     transparent,
@@ -117,7 +126,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .venue-hud-scanbar {
+  .venue-hud-scanbar::before {
     animation: none;
     opacity: 0.5;
     transform: none;
