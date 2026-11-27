@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2992,
-    "filesWithAccess": 331,
-    "tableReaders": 975,
+    "sourceFiles": 3003,
+    "filesWithAccess": 332,
+    "tableReaders": 977,
     "tableWriters": 200,
     "rpcCallers": 58,
     "nameMentions": 286,
@@ -8268,6 +8268,27 @@
           ]
         },
         {
+          "ref": "src/services/racerQueries7.js:22",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "motor_2rate",
+            "motor_number",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/racerQueries7.js:41",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "motor_2rate",
+            "race_id"
+          ]
+        },
+        {
           "ref": "src/services/sherlockService.js:70",
           "op": "select",
           "via": "client",
@@ -8560,6 +8581,8 @@
             "src/services/racerQueries5.js:45",
             "src/services/racerQueries6.js:108",
             "src/services/racerQueries6.js:29",
+            "src/services/racerQueries7.js:22",
+            "src/services/racerQueries7.js:41",
             "src/services/sherlockService.js:70",
             "src/services/watsonService.js:76"
           ],
@@ -8658,6 +8681,7 @@
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:99",
             "src/services/racerQueries6.js:29",
+            "src/services/racerQueries7.js:41",
             "src/services/sherlockService.js:70",
             "src/services/watsonService.js:76"
           ],
@@ -8834,7 +8858,8 @@
             "src/services/motorQueries5.js:38",
             "src/services/motorQueries7.js:47",
             "src/services/motorQueries8.js:32",
-            "src/services/raceQueries3.js:83"
+            "src/services/raceQueries3.js:83",
+            "src/services/racerQueries7.js:22"
           ],
           "writers": [],
           "sql": [
@@ -8859,6 +8884,8 @@
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries8.js:32",
             "src/services/raceQueries3.js:83",
+            "src/services/racerQueries7.js:22",
+            "src/services/racerQueries7.js:41",
             "src/services/sherlockService.js:70"
           ],
           "writers": [],
@@ -9044,7 +9071,8 @@
             "src/services/racerQueries3.js:99",
             "src/services/racerQueries5.js:45",
             "src/services/racerQueries6.js:108",
-            "src/services/racerQueries6.js:29"
+            "src/services/racerQueries6.js:29",
+            "src/services/racerQueries7.js:22"
           ],
           "writers": [
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
@@ -12730,7 +12758,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/seo-morning-sheet.js:87",
+          "ref": "scripts/maintenance/seo-morning-sheet.js:91",
           "op": "select",
           "via": "helper:readAll",
           "columns": []
@@ -30547,12 +30575,12 @@
     },
     {
       "file": "scripts/maintenance/seo-morning-sheet.js",
-      "line": 68,
+      "line": 72,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/seo-morning-sheet.js",
-      "line": 74,
+      "line": 78,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

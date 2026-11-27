@@ -49,7 +49,14 @@ import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
 import BasicInfoTrend, { ViewHead } from "./basic-info/BasicInfoTrend";
+import RacerMotorBand from "./basic-info/RacerMotorBand";
 import "./RaceBasicInfoTab.css";
+
+// 推移の線の下に、選んだ艇の節ごとのモーターの号機と位置の段（レーン B の after B）。
+// 平均ST とモーターの位置は結び付けにくいので、率の線だけに渡す（ファン評価 11/27）
+const renderMotorBand = (racerId, g) => (
+  <RacerMotorBand racerId={racerId} {...g} />
+);
 
 // 指標・範囲・グレード・期間の選択state。グレードと期間は互いに連動する
 function useBasicInfoFilters() {
@@ -409,6 +416,7 @@ function RaceBasicInfoTab({
             retryPeriod: src.retryPeriod,
             raceDate: src.raceDate,
           }}
+          renderBelow={metric === "avgSt" ? undefined : renderMotorBand}
         />
       )}
       {view === "now" && (

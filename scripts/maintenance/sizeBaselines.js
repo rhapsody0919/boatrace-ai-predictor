@@ -12,19 +12,6 @@ export const MAX_FN_LINES = 100; // max-lines-per-function
 export const MAX_COMPLEXITY = 15;
 export const MAX_FILE_LINES = 400; // max-lines
 
-const SKIP_KEYS = new Set([
-  "start",
-  "end",
-  "loc",
-  "range",
-  "extra",
-  "leadingComments",
-  "trailingComments",
-  "innerComments",
-  "comments",
-  "tokens",
-  "errors",
-]);
 const FN_TYPES = new Set([
   "FunctionDeclaration",
   "FunctionExpression",
@@ -52,8 +39,9 @@ const isNode = (v) => v && typeof v === "object" && typeof v.type === "string";
 
 function childNodes(node) {
   const out = [];
-  for (const [k, v] of Object.entries(node)) {
-    if (SKIP_KEYS.has(k) || v === null || typeof v !== "object") continue;
+  for (const v of Object.values(node)) {
+    // 位置（loc・start）・注釈の配列も辿るが、注釈は枝を持たず複雑さに入らない（2026-11-27 に全 15,619 単位で同じと確かめて SKIP_KEYS を外した）
+    if (v === null || typeof v !== "object") continue;
     if (Array.isArray(v)) out.push(...v.filter(isNode));
     else if (isNode(v)) out.push(v);
   }
@@ -106,8 +94,9 @@ function objectUnits(obj) {
 
 function declarationUnits(decl) {
   if (!decl) return [];
-  if (decl.type === "FunctionDeclaration") {
-    return decl.id ? [{ name: decl.id.name, fn: decl }] : [];
+  // 名前の無い export default の関数・アロー関数は「default」の名で数える（2026-11-27 まで単位から抜け、線に掛からなかった）
+  if (decl.type === "FunctionDeclaration" || FN_TYPES.has(decl.type)) {
+    return [{ name: decl.id?.name ?? "default", fn: decl }];
   }
   if (decl.type === "ObjectExpression") return objectUnits(decl);
   if (decl.type === "ClassDeclaration") {

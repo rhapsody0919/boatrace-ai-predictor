@@ -8,7 +8,9 @@
  * 使い方: node scripts/maintenance/seo-morning-sheet.js [--articles a.json] [--changes c.json] [--core-updates u.json] [--tickets N]
  *          [--local-dir <dir> [--series s.json]]
  *   --local-dir: Supabase を読まず、<dir>/gsc_daily.json・gsc_page_daily.json（google-detail-collect.js の日別の出力）を読む（鍵が要らない）。
- *     見張りはファイルの最新の date から同じ規則で出す。growth_url_inspection は空。
+ *     見張りはファイルの最新の date から同じ規則で出す。URL 検査は <dir>/url_inspection.json（無ければ空）。
+ *     <dir>/ga4_daily.json があれば、末尾に「PV の週」の節（GA4 の7日の和の実数と比、scripts/lib/growth/ga4Daily.js）を足す。
+ *     この節だけは実数を出す（--local-dir の出力は手元のファイルに書く前提。repo・票・Slack に貼らない）。見張りが赤でも出す
  *   --series s.json: [{ venue_code, start_date, end_date, title, grade }]（race_series の代わり。--local-dir のときだけ。無ければ空）
  *   a.json: [{ id, url, publishDate, measuredAt?, editDate?, mergedAt? }]（editDate がある物は改稿の判定に使う）
  *   c.json: [{ id, mergedAt, pages: [正規化した page], siteWide }]（同じ反映の枠の変更。git のマージ時刻から窓口が組む）
@@ -23,6 +25,8 @@ import { createClient } from "@supabase/supabase-js";
 import { ptToday, safeError } from "../lib/growth/gscDaily.js";
 import { isMissingTable } from "../lib/growth/gscPageDaily.js";
 import { buildSignals, freshnessReport, isGreen, articleLines, renderSheet, rewriteLine, ticketTemplate } from "../lib/growth/morningSheet.js";
+import { pvWeekLines } from "../lib/growth/ga4Daily.js";
+import { canonicalMismatches } from "../lib/growth/localInspection.js";
 import { localSource } from "../lib/growth/localSheetSource.js";
 import { detectMovers, normalizePage, windows } from "../lib/growth/seoDetect.js";
 
@@ -87,7 +91,7 @@ function supabaseSource(db) {
       readAll(db, "race_series", "venue_code,start_date,end_date,title,grade", (q) =>
         q.lte("start_date", to).gte("end_date", from).order("venue_code").order("start_date")),
     inspections: async () =>
-      (await readAll(db, "growth_url_inspection", "url,inspected_on,canonical_ok,verdict", (q) => q.order("url").order("inspected_on"))) ?? [],
+      (await readAll(db, "growth_url_inspection", "url,inspected_on,canonical_ok,verdict,coverage_state,google_canonical,user_canonical", (q) => q.order("url").order("inspected_on"))) ?? [],
     pageDaily: async (from) =>
       (await readAll(db, "growth_gsc_page_daily", "date,page,clicks,impressions", (q) => q.gte("date", from).order("date").order("page"))) ?? [],
   };
@@ -131,8 +135,20 @@ export function signalWindowEnd(freshness, today) {
   return d && d < today ? d : today;
 }
 
-/** 読み口から1枚（と票の雛形）を組む。出力は行の配列 */
-export async function buildSheetLines(src, args, today, articles = readJson(args.articles)) {
+/** Google が別の正規ページを選んだ URL の節（URL と状態の名前だけ。数字は件数だけ）。検査の行が無ければ出さない */
+export function canonicalLines(latestRows) {
+  if (latestRows.length === 0) return [];
+  const list = canonicalMismatches(latestRows);
+  const head = `\n[正規ページ: Google が別のページを選んだ URL（検査した ${latestRows.length} URL の最新の結果のうち ${list.length}）]`;
+  const byTarget = new Map();
+  for (const m of list) byTarget.set(normalizePage(m.googleCanonical), (byTarget.get(normalizePage(m.googleCanonical)) ?? 0) + 1);
+  // 同じ型のページが1ページに集まっていたら、Googlebot が同じ中身（読み込み中・エラー）を見た印（docs/knowledge/seo.md、2026-10-28 の選手ページ）
+  const piles = [...byTarget].filter(([, n]) => n >= 2).map(([page, n]) => `- 集まり: ${page} に ${n} URL（描画の失敗を疑う）`);
+  return [head, ...piles, ...list.map((m) => `- ${m.url} → Google: ${m.googleCanonical}（指定: ${m.userCanonical ?? "なし"}・${m.coverageState ?? "状態不明"}・${m.inspectedOn}）`)];
+}
+
+/** 読み口から1枚（と票の雛形）を組む。出力は行の配列。ga4 は ga4_daily.json の中身（無ければ null で PV の節を出さない） */
+export async function buildSheetLines(src, args, today, articles = readJson(args.articles), ga4 = null) {
   const freshness = freshnessReport(await Promise.all(TABLES.map((t) => src.tableStats(t))), today);
   const green = isGreen(freshness);
   const dataEnd = signalWindowEnd(freshness, today);
@@ -140,6 +156,8 @@ export async function buildSheetLines(src, args, today, articles = readJson(args
   const articleLinesOut = green ? await loadArticleLines(src, today, articles, args, loaded.inspectionRows) : [];
   const out = [renderSheet({ today, freshness, signals: loaded.signals, articleLinesOut, fallingCount: loaded.falling })];
   if (green) out.push(`察知の窓の終わり: ${dataEnd}（growth_gsc_daily の最新の日。GSC の遅れで欠けた日を窓に入れない）`);
+  if (green) out.push(...canonicalLines(Object.values(loaded.inspectionRows)));
+  if (ga4) out.push(...pvWeekLines(ga4, (await src.pageDaily(ga4.meta.from)) ?? []));
   for (const s of loaded.signals.slice(0, args.tickets)) out.push(`\n--- 「SEO:」票の雛形 ---\n${ticketTemplate(s, today)}`);
   return out;
 }
@@ -147,7 +165,10 @@ export async function buildSheetLines(src, args, today, articles = readJson(args
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   let src;
+  let ga4 = null;
   if (args.localDir) {
+    const file = path.join(args.localDir, "ga4_daily.json");
+    ga4 = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
     src = localSource(args.localDir, args.series);
   } else {
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
@@ -155,7 +176,7 @@ async function main() {
     }
     src = supabaseSource(createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } }));
   }
-  for (const line of await buildSheetLines(src, args, ptToday(new Date()))) console.log(line);
+  for (const line of await buildSheetLines(src, args, ptToday(new Date()), undefined, ga4)) console.log(line);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {

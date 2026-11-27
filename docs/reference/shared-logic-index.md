@@ -73,6 +73,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerEntryCourseFilter.js` | 選手ページの成績の絞り込み「進入コース」（オーナー 2026-11-25）。 | filterByEntryCourse, entryCourseCounts, firstEntryCourseDate, ENTRY_COURSES |
 | `src/pure/racerHistoryWindow.js` | 選手ページの走ごとの履歴の窓（getRacerRaceHistory の期間）と、その窓を月ごとに分ける計算。 | racerHistoryWindowStart, addDaysIso, monthRanges, RACER_HISTORY_DAYS |
 | `src/pure/racerLatestEntry.js` | 選手ページの冒頭の1行目「MM/DD の出走表」（#3258 の #2）。 | officialPeriodKey, latestEntryLine, F_COUNT_RELIABLE_FROM |
+| `src/pure/racerMeetMotors.js` | 選手の推移の線の下の段（レーン B の after B、オーナー 2026-11-25 承認のモック mock-motor-trend/mock.html の … | racerMeetsOf, motorRankPct, motorRankTier, meetMotorBand, MEET_GAP_DAYS |
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか4件 |
 | `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
@@ -201,8 +202,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/ga4MeasurementBreaks.js` | GA4 の計測方法が変わった日（この日の前後で PV を比較してはいけない日）の一覧と、 | ga4PvBreaksWithin, formatGa4PvBreakNotice, GA4_PV_BREAKS |
 | `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, createRestJobStateClient, shouldSkipOnGha, isGhaFetchStopped ほか4件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
+| `scripts/lib/growth/ga4Daily.js` | GA4 の日別の PV（screenPageViews＝page_view の数）と google の自然検索の着地 sessions を取る要求と、週の行を組… | ga4DailyQueries, pageTypeOf, weekWindows, change, pvWeekLines ほか2件 |
 | `scripts/lib/growth/gscDaily.js` | Search Console の日別の明細（query × page × date）を growth_gsc_daily の行にする（BOA-1706、hq 閉… | ptToday, windowDates, toRows, chunk, canPrune ほか13件 |
 | `scripts/lib/growth/gscPageDaily.js` | Search Console の date × page だけの取得（匿名化された語も入るページの合計）と、補充（バックフィル）の道具 | fetchPageDay, toPageRows, isMissingTable, missingTableMessage, assertPageTableExists ほか6件 |
+| `scripts/lib/growth/localInspection.js` | URL 検査（索引の状態・Google が選んだ正規ページ）を手元の JSON に取る部品（google-detail-collect.js が使う。Supab… | planLocalInspections, mergeSnapshot, previousDates, canonicalMismatches, readPreviousSnapshot ほか2件 |
 | `scripts/lib/growth/localSheetSource.js` | seo-morning-sheet の「手元の JSON」の読み口（--local-dir）。Supabase の鍵を置かずに回すための入口。 | parseRows, readRowsFile, localSource, sourceFromRows |
 | `scripts/lib/growth/morningSheet.js` | SEO の朝の1枚の組み立て（SEO データの輪 PR6。設計 seo-data-loop-design §2・§4・§5）。 | freshnessReport, positionBand, buildSignals, ticketTemplate, articleLines ほか4件 |
 | `scripts/lib/growth/seoDetect.js` | 察知の純関数（SEO データの輪 PR3。設計 seo-data-loop-design §4）。 | normalizePage, weightedPosition, classifyIntent, isSeasonalTerm, isEventDriven ほか7件 |
@@ -675,6 +678,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords, fetchRacerScopedRunsOrNull, fetchRacerFrontTakingCountsOrNull |
 | `src/services/racerQueries5.js` | — | getRacerPageData, getRacerAllPeriodStats, getRacerStats |
 | `src/services/racerQueries6.js` | — | getRacerTodayRuns, getRaceFrontTakingByRacer, getRacerLatestEntry |
+| `src/services/racerQueries7.js` | — | getRacerMeetMotors |
 | `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
@@ -690,4 +694,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 648 ファイル / export 3489 件。
+対象 652 ファイル / export 3509 件。
