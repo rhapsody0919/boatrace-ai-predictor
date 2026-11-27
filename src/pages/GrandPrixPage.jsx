@@ -1,8 +1,16 @@
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
-import { AdvanceFlow, PastFinalCards, VenueVsNational } from "../components/meet/GrandPrixCharts";
-import { DAYS, EDITION, FAQ, FLOW, PAST_FINALS } from "../data/grandPrixFeature.js";
+import {
+  AdvanceFlow,
+  Countdown,
+  PastFinalCards,
+  PrizeBars,
+  VenueVsNational,
+} from "../components/meet/GrandPrixCharts";
+import { DAYS, EDITION, FAQ, FLOW, PAST_FINALS, PRIZE_RANKING } from "../data/grandPrixFeature.js";
+import { grandPrixPhase } from "../pure/grandPrixPhase.js";
+import { getTodayJST } from "../utils/dateUtils";
 import { VENUE_SUMMARY_STATS } from "../data/venueSummaryStats.js";
 import "./GrandPrixPage.css";
 
@@ -56,6 +64,31 @@ function Section({ id, title, answer, children }) {
   );
 }
 
+/** 出場18人と獲得賞金。確定（11/29 の後）の値が入るまで棒を出さない */
+function PrizeSection() {
+  return (
+    <Section
+      id="gp-prize-h"
+      title="出場18人と獲得賞金"
+      answer={PRIZE_RANKING.confirmed ? `1位は${PRIZE_RANKING.racers[0].name}。2ndから出る6人と1stから出る12人` : null}
+    >
+      {PRIZE_RANKING.confirmed ? (
+        <>
+          <PrizeBars racers={PRIZE_RANKING.racers} />
+          <p className="gp-note">
+            獲得賞金は<External href="https://www.boatrace-grandprix.jp/">グランプリの特設サイト</External>の
+            {PRIZE_RANKING.asOf.slice(5).replace("-", "/")}現在の値です（万円未満は四捨五入）。
+          </p>
+        </>
+      ) : (
+        <p>
+          出場の18人は、チャレンジカップ（11月29日まで）の後に公式から発表されます。決まりしだい、獲得賞金の図を載せます。
+        </p>
+      )}
+    </Section>
+  );
+}
+
 export default function GrandPrixPage() {
   return (
     <>
@@ -76,11 +109,16 @@ export default function GrandPrixPage() {
           <h1>
             ボートレース グランプリ{year} 特集（{venueName} {EDITION.longDates}）
           </h1>
+          <Countdown
+            phase={grandPrixPhase(getTodayJST(), EDITION)}
+            openLabel={EDITION.shortDates.split("〜")[0]}
+          />
           <p>年間の獲得賞金の上位18人が出場する、1年の総決算の大会です。</p>
           <p className="gp-strong">
             <Link to={`/venue/${venueCode}`}>{venueName}の会場ページ（その日の出走表）→</Link>
           </p>
         </header>
+        <PrizeSection />
         <Section id="gp-flow-h" title="勝ち上がり" answer="18人から、6日間で優勝戦の6人にしぼられる">
           <AdvanceFlow stages={FLOW} />
           <p className="gp-note">

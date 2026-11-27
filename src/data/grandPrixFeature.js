@@ -52,6 +52,24 @@ export const PAST_FINALS = Object.freeze([
   { year: 2021, venue: "住之江", date: "12/19", winner: "瓜生正義", lane: 4, entry: 3, technique: "まくり", trifecta: null, payout: null, popularity: null },
 ]);
 
+/**
+ * 獲得賞金の上位18人（公式 https://www.boatrace-grandprix.jp/ の「Road to THE GRAND PRIX」）。
+ * confirmed が false の間（チャレンジカップの終わる 11/29 の前の暫定）は画面に出さない（ファン4人の結論 2026-11-27）。
+ * 確定の後に、公式の発表の値に差し替えて confirmed を true にする
+ */
+export const PRIZE_RANKING = Object.freeze({
+  asOf: "2026-11-26",
+  confirmed: false,
+  racers: Object.freeze([
+    [4320, "峰竜太", 196592000], [5121, "定松勇樹", 132429000], [4500, "山田康二", 132412338],
+    [3941, "池田浩二", 120213000], [4686, "丸野一樹", 119883200], [3897, "白井英治", 118487000],
+    [4166, "吉田拡郎", 107049000], [4262, "馬場貴也", 106438200], [4418, "茅原悠紀", 95763366],
+    [4719, "上條暢嵩", 89138000], [4344, "新田雄史", 88311200], [4238, "毒島誠", 86006399],
+    [4371, "西山貴浩", 83223000], [4444, "桐生順平", 80739000], [4205, "山口剛", 80511000],
+    [4503, "上野真之介", 80442466], [4445, "宮地元輝", 79205000], [4586, "磯部誠", 76490000],
+  ].map(([toban, name, yen]) => Object.freeze({ toban, name, yen }))),
+});
+
 /** よくある質問。答えは本文と同じ事実だけで書く（FAQPage の JSON-LD にも使う） */
 export const FAQ = Object.freeze([
   {
