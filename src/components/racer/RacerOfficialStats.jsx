@@ -159,6 +159,44 @@ function CourseWinBars({ summary, national }) {
   );
 }
 
+// 進入コース別の表（コース・進入・1着率・2連対率・3連対率・平均ST）
+function CourseTable({ summary }) {
+  return (
+    <div className="racer-official-table-wrap">
+      <table className="racer-official-table">
+        <thead>
+          <tr>
+            <th scope="col">コース</th>
+            <th scope="col">進入</th>
+            <th scope="col">1着率</th>
+            <th scope="col">2連対率</th>
+            <th scope="col">3連対率</th>
+            <th scope="col">平均ST</th>
+          </tr>
+        </thead>
+        <tbody>
+          {summary.courses.map((c) => (
+            <tr key={c.course}>
+              <th scope="row">{c.course}</th>
+              <td>{c.entries === 0 ? "進入なし" : c.entries}</td>
+              <CourseRateCell value={c.winRate} reliability={c.reliability} />
+              <CourseRateCell
+                value={c.top2Rate}
+                reliability={c.reliability}
+              />
+              <CourseRateCell
+                value={c.top3Rate}
+                reliability={c.reliability}
+              />
+              <td>{c.reliability === "none" ? "-" : st(c.avgSt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function CourseSection({ summary, courseBaseline }) {
   const national = courseBaseline?.status === "ready" ? courseBaseline.national : null;
   const first = summary.periods.at(-1);
@@ -216,38 +254,7 @@ function CourseSection({ summary, courseBaseline }) {
           <CourseWinBars summary={summary} national={national} />
         </>
       )}
-      <div className="racer-official-table-wrap">
-        <table className="racer-official-table">
-          <thead>
-            <tr>
-              <th scope="col">コース</th>
-              <th scope="col">進入</th>
-              <th scope="col">1着率</th>
-              <th scope="col">2連対率</th>
-              <th scope="col">3連対率</th>
-              <th scope="col">平均ST</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.courses.map((c) => (
-              <tr key={c.course}>
-                <th scope="row">{c.course}</th>
-                <td>{c.entries === 0 ? "進入なし" : c.entries}</td>
-                <CourseRateCell value={c.winRate} reliability={c.reliability} />
-                <CourseRateCell
-                  value={c.top2Rate}
-                  reliability={c.reliability}
-                />
-                <CourseRateCell
-                  value={c.top3Rate}
-                  reliability={c.reliability}
-                />
-                <td>{c.reliability === "none" ? "-" : st(c.avgSt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <CourseTable summary={summary} />
       {courseBaseline?.status === "error" ? (
         <InlineFetchError onRetry={courseBaseline.reload} />
       ) : (
