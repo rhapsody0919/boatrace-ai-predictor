@@ -12,7 +12,7 @@ const RACE = "/race/2026-10-09-20-09";
 const TABS = [
   "基本情報",
   "龍神ソナー",
-  "AI予想",
+  "イン崩れ",
   "今節",
   "直前情報",
   "枠別情報",
@@ -283,18 +283,18 @@ for (const width of [375, 1024, 1440, 1920]) {
 }
 
 for (const width of [1440, 1920]) {
-  test(`${width}px: AI予想は列の左端から始まり、1つの節は720まで。共有ボタンも左端（BOA-820・BOA-881）`, async ({
+  test(`${width}px: イン崩れは列の左端から始まり、1つの節は720まで。共有ボタンも左端（BOA-820・BOA-881）`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(RACE);
-    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).first().click();
+    await page.locator(".race-tabs-btn", { hasText: "イン崩れ" }).first().click();
     const tab = page
-      .locator(".race-ai-prediction-tab, .prediction-result")
+      .locator(".in-caution-tab")
       .first();
     await expect(tab).toBeVisible({ timeout: 30000 });
     const colLeft = column(width).left;
-    near((await tab.boundingBox()).x, colLeft, "AI予想の左端");
+    near((await tab.boundingBox()).x, colLeft, "イン崩れの左端");
     // 節（1行1項目のリスト）は 720 まで。決まり手と確率が離れすぎない（BOA-619）
     const sections = await tab
       .locator(":scope > *")
