@@ -379,6 +379,14 @@ function BasicInfoFilterBar({
   );
 }
 
+// 勝率の推移（公式の期ごとの段）に渡す値
+const winRateOf = (src) => ({
+  periodStats: src.periodStats,
+  periodFailed: src.periodFailed,
+  retryPeriod: src.retryPeriod,
+  raceDate: src.raceDate,
+});
+
 function RaceBasicInfoTab({
   raceId,
   venueCode,
@@ -464,13 +472,9 @@ function RaceBasicInfoTab({
           recordsOf={src.trendRecordsOf}
           selectedBoat={expandedBoat}
           onSelectBoat={onFocusBoat}
-          winRate={{
-            periodStats: src.periodStats,
-            periodFailed: src.periodFailed,
-            retryPeriod: src.retryPeriod,
-            raceDate: src.raceDate,
-          }}
+          winRate={winRateOf(src)}
           motorBand={src.motorBand}
+          officialAvgSt={src.officialAvgSt}
         />
       )}
       {view === "now" && (
