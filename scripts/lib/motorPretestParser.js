@@ -142,6 +142,18 @@ export function competitionRanks(values) {
   );
 }
 
+/** 前検順位を表ごとに付ける（併催の節は開催ごとの表。開催の違う選手と比べない）。tableOf[j] は rows[j] の表の番号 */
+function ranksByTable(rows, tableOf) {
+  const ranks = new Array(rows.length).fill(null);
+  for (const k of new Set(tableOf)) {
+    const idx = rows.map((_, j) => j).filter((j) => tableOf[j] === k);
+    competitionRanks(idx.map((j) => rows[j].pretest_time)).forEach((r, n) => {
+      ranks[idx[n]] = r;
+    });
+  }
+  return ranks;
+}
+
 /** 場・日・節の題（見出しと日のタブから）。parseMotorPretestHtml の一部 */
 function readPretestMeta($) {
   const venueImage = $(".heading2_area img").first().attr("src") ?? "";
@@ -321,14 +333,7 @@ export function parseMotorPretestHtml(html) {
     };
   }
 
-  // 前検順位は表ごと（併催の節は開催ごとの表）
-  const ranks = new Array(rows.length).fill(null);
-  tables.forEach((_, k) => {
-    const idx = rows.map((_, j) => j).filter((j) => tableOf[j] === k);
-    competitionRanks(idx.map((j) => rows[j].pretest_time)).forEach((r, n) => {
-      ranks[idx[n]] = r;
-    });
-  });
+  const ranks = ranksByTable(rows, tableOf);
   return {
     ...base,
     ...meta,
