@@ -1,5 +1,7 @@
+import { Link } from "react-router-dom";
 import BoatBadge from "../race/BoatBadge";
 import BaselineBar from "../race/BaselineBar";
+import { formatYenMan } from "../../pure/grandPrixPhase.js";
 import "./GrandPrixCharts.css";
 
 // グランプリの特集（/grandprix、BOA-1724）の図。見せ方はオーナーが承認した見本2（visual-designer の案、2026-11-27）。
@@ -143,5 +145,59 @@ export function PastFinalCards({ finals }) {
         ))}
       </div>
     </>
+  );
+}
+
+/**
+ * 開幕までの日数・開催中の日目・終了の帯。phase は pure/grandPrixPhase.js の grandPrixPhase の返り値
+ * @param {{phase: {phase: string, days?: number, day?: number}, openLabel: string}} props
+ */
+export function Countdown({ phase, openLabel }) {
+  const [big, unit, note] =
+    phase.phase === "before"
+      ? [phase.days, "日", `開幕まで（${openLabel}）`]
+      : phase.phase === "during"
+        ? [phase.day, "日目", "開催中"]
+        : ["", "", "開催は終わりました"];
+  return (
+    <p className="gp-countdown">
+      <span className="gp-countdown-num">{big}</span>
+      <span className="gp-countdown-unit">{unit}</span>
+      <span>{note}</span>
+    </p>
+  );
+}
+
+/** 獲得賞金の上位18人の横棒。6位と7位の間に線（2ndから／1stから）。名前は選手ページへ */
+export function PrizeBars({ racers }) {
+  const top = racers[0].yen;
+  const row = (r, i) => {
+    const w = `${(r.yen / top) * 100}%`;
+    return (
+      <div key={r.toban} className={`gp-prize-row${i < 6 ? " gp-prize-row--2nd" : ""}`}>
+        <span className="gp-prize-rank">{i + 1}</span>
+        <Link to={`/racer/${r.toban}`} translate="no">
+          {r.name}
+        </Link>
+        <span className="gp-prize-track">
+          <span className="gp-prize-fill" style={{ width: w }} />
+          <span className="gp-prize-value" style={{ left: w }}>
+            {formatYenMan(r.yen)}
+          </span>
+        </span>
+      </div>
+    );
+  };
+  return (
+    <div className="gp-card gp-prize">
+      <p className="gp-group">
+        <span className="gp-dot gp-dot--2nd" /> トライアル2ndから（賞金1〜6位・6人）
+      </p>
+      {racers.slice(0, 6).map(row)}
+      <p className="gp-group gp-group--cut">
+        <span className="gp-dot gp-dot--1st" /> トライアル1stから（賞金7〜18位・12人）
+      </p>
+      {racers.slice(6, 18).map((r, i) => row(r, i + 6))}
+    </div>
   );
 }
