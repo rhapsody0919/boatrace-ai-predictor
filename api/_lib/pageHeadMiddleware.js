@@ -7,8 +7,13 @@
  * （今の静的な index.html がそのまま出る）。全ての UA に同じ物を返す（UA を見ない）。
  *
  * 入切は環境変数 PAGE_HEAD_KINDS（差し込む種類をカンマ区切り。未設定・空は差し込まない）。kind ごとに出し・戻しができる。
+ *
+ * 1要求1行の JSON のログ（上限の時間を本番の分布で決め直すため）:
+ *   {page_head, outcome, ms, head_ms, shell_ms, cache, ua, country, deploy, limit}
+ *   時間切れの後に裏の材料の取得が終わったら、もう1行 {outcome: "bg_done", ms, cache, ...}（打ち切られなかった本当の時間）
+ *   ua は数えるためだけの粗い分類で、差し込むか・何を返すかには使わない（ADR-0114 決定2「UA で head を変えない」）
  */
-import { waitUntil } from "@vercel/functions";
+import { geolocation, waitUntil } from "@vercel/functions";
 import { STADIUM_NAMES } from "../../src/constants/index.js";
 import {
   PAGE_HEAD_VERSION,
@@ -38,6 +43,27 @@ const RESPONSE_HEADERS = Object.freeze({
   "vercel-cdn-cache-control": "no-store",
   "x-content-type-options": "nosniff",
 });
+
+/**
+ * 数えるためだけの粗い UA の分類（googlebot・other_bot・other）。差し込むか・何を返すかには使わない
+ * @param {string|null|undefined} ua
+ */
+export function uaClassOf(ua) {
+  const s = String(ua ?? "");
+  if (/Googlebot|Google-InspectionTool/i.test(s)) return "googlebot";
+  if (/bot|crawl|spider|slurp/i.test(s)) return "other_bot";
+  return "other";
+}
+
+// どのログの行にも付ける項目（UA の粗い分類・国・配備・使った上限）
+function logContextOf(request, env, timeoutMs) {
+  return {
+    ua: uaClassOf(request.headers.get("user-agent")),
+    country: geolocation(request).country ?? null,
+    deploy: String(env.VERCEL_DEPLOYMENT_ID ?? "").slice(0, 16) || null,
+    limit: timeoutMs,
+  };
+}
 
 /** PAGE_HEAD_KINDS の値から、差し込む種類の集合 */
 export function enabledKinds(value) {
@@ -106,20 +132,32 @@ function targetOf(request, env) {
   return { origin: url.origin, route, pure, api };
 }
 
-// head と外枠を並べて取る。上限の時間を越えたら投げ、材料の取得は waitUntil に渡して最後まで走らせる
-async function fetchBoth({ origin, pure, api }, { fetchImpl, timeoutMs, env, keepAlive }) {
-  const headP = pure
-    ? Promise.resolve({ head: headOf(pure), outcome: "no_head", extra: {} })
-    : fetchApiHead(origin, api, fetchImpl, env);
+// head と外枠を並べて取る。上限の時間を越えたら投げ、材料の取得は waitUntil に渡して最後まで走らせ、
+// 終わった時にもう1行（bg_done）出す。どちらの結果にも、取得にかかった ms を付ける
+async function fetchBoth({ origin, pure, api }, { fetchImpl, timeoutMs, env, keepAlive, now, logBg }) {
+  const t0 = now();
+  const timed = (promise) => promise.then((value) => ({ ...value, ms: now() - t0 }));
+  const headP = timed(
+    pure
+      ? Promise.resolve({ head: headOf(pure), outcome: "no_head", extra: {} })
+      : fetchApiHead(origin, api, fetchImpl, env),
+  );
   // 外枠は必ず /index.html を取る（/ は matcher に入り middleware がもう一度動く。/index.html は matcher の外）
-  const shellP = fetchShell(origin, fetchImpl, timeoutMs);
+  const shellP = timed(fetchShell(origin, fetchImpl, timeoutMs));
   // 片方が先に落ちても、もう片方の失敗を「捕まえていない」にしない
   headP.catch(() => undefined);
   shellP.catch(() => undefined);
   try {
     return await withTimeout(Promise.all([headP, shellP]), timeoutMs);
   } catch (error) {
-    if (api) keepAlive(headP.catch(() => undefined));
+    if (api) {
+      keepAlive(
+        headP.then(
+          (h) => logBg(h.head ? "bg_done" : h.outcome, { ms: h.ms, ...h.extra }),
+          (e) => logBg("bg_error", { message: String(e?.message ?? e).slice(0, 200) }),
+        ),
+      );
+    }
     throw error;
   }
 }
@@ -143,23 +181,28 @@ export async function respondWithPageHead(request, deps = {}) {
   };
   const started = now();
   let kind = null;
+  let context = {};
+  const write = (fields) => log(JSON.stringify({ page_head: kind, ...fields, ...context }));
   const done = (outcome, extra = {}) => {
-    log(JSON.stringify({ page_head: kind, outcome, ms: now() - started, ...extra }));
+    write({ outcome, ms: now() - started, ...extra });
     return undefined;
   };
+  const logBg = (outcome, extra) => write({ outcome, ...extra });
   // middleware の例外は対象の全ページの 5xx になるので、この枝の失敗は種類を問わず素通りにする
   // （AGENTS.md の「try/catch は種類で分けるときだけ」の例外）
   try {
     const target = targetOf(request, env);
     if (!target) return undefined;
     kind = target.route.kind;
-    const [head, shell] = await fetchBoth(target, { fetchImpl, timeoutMs, env, keepAlive });
-    if (!head.head) return done(head.outcome, head.extra);
-    if (shell.html === null) return done("shell_status", { status: shell.status });
+    context = logContextOf(request, env, timeoutMs);
+    const [head, shell] = await fetchBoth(target, { fetchImpl, timeoutMs, env, keepAlive, now, logBg });
+    const timing = { head_ms: head.ms, shell_ms: shell.ms, ...head.extra };
+    if (!head.head) return done(head.outcome, timing);
+    if (shell.html === null) return done("shell_status", { status: shell.status, ...timing });
     const html = injectPageHead(shell.html, head.head);
-    if (html === null) return done("not_injectable", head.extra);
+    if (html === null) return done("not_injectable", timing);
     const ms = now() - started;
-    done("injected", head.extra);
+    done("injected", timing);
     return new Response(html, {
       status: 200,
       headers: { ...RESPONSE_HEADERS, "server-timing": `page-head;dur=${ms}` },
