@@ -1287,7 +1287,7 @@
   - `api/_lib/botRace.js:212` rest(rest)
   - `scripts/lib/eveDeadlinesJob.js:66` select [end_date, start_date, venue_code]
   - `scripts/lib/motorPretestJob.js:197` select [end_date, start_date, venue_code]
-  - `scripts/lib/raceFactsMainJob.js:127` select(helper:all)
+  - `scripts/lib/raceFactsMainJob.js:128` select(helper:all)
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
   - `scripts/lib/snsTodayDigestV3.js:96` rest(rest) [end_date, grade, kind, start_date, title, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
