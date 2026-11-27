@@ -14,8 +14,11 @@ import { NARROW_CHART_RUNS, raceTick } from "./racerPerformanceView";
 
 // 選手ページの成績・調子（RacerPerformanceStats）の展示タイム・ST の推移とレース一覧（常時表示、ADR-0063）
 
-// 見出しの期間の始まり（データの最初の走の年月）。始まりの日は直書きしない（過去の走を足すと前へ伸びる）
-const sinceOf = (rows) => {
+// 見出しの期間。データの最初の走の年月から作り、始まりの日は直書きしない（過去の走を足すと前へ伸びる）。
+// スマホ幅は図を直近 N 走に絞るので、見出しもそう書く（図の中身と食い違わない。visual-designer 11/27）
+const sinceOf = (rows, isNarrow) => {
+  if (isNarrow && rows.length > NARROW_CHART_RUNS)
+    return `直近${NARROW_CHART_RUNS}走`;
   const d = rows[0]?.run?.date;
   return d
     ? `${d.slice(0, 4)}年${Number(d.slice(5, 7))}月以降・最大過去2年`
@@ -37,16 +40,14 @@ export function ExhibitionChart({ view, vcActive, vcLabel }) {
   return (
     <div className="racer-stat-chart">
       <h3>
-        展示タイムの推移（{hasVcData ? sinceOf(runs) : "過去90日"}）
+        展示タイムの推移（{hasVcData ? sinceOf(runs, isNarrow) : "過去90日"}）
         <VcScope vcActive={vcActive} vcLabel={vcLabel} />
       </h3>
+      {/* 図の前は1行だけにし、断りは図の下へ（375px で図が下へ押された。visual-designer 11/27） */}
       <p className="racer-stat-note">
         {hasVcData
-          ? "1走ごとの展示タイム。上ほど速い。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません。点を押すと、その走の値とレース詳細への案内が出ます"
-          : "日ごとの展示タイムの平均。下ほど速い。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません"}
-        {hasVcData &&
-          isNarrow &&
-          `（この画面幅では直近${NARROW_CHART_RUNS}走）`}
+          ? "1走ごとの展示タイム。上ほど速い。"
+          : "日ごとの展示タイムの平均。下ほど速い。"}
       </p>
       {hasVcData ? (
         <RacerRunTrend
@@ -57,6 +58,10 @@ export function ExhibitionChart({ view, vcActive, vcLabel }) {
       ) : (
         <DailyExhibitionChart data={exhibitionChartData} view={view} />
       )}
+      <p className="racer-stat-note">
+        会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません。
+        {hasVcData && "点を押すとそのレースへ"}
+      </p>
     </div>
   );
 }
@@ -108,15 +113,17 @@ export function StTrendChart({ view, vcActive, vcLabel }) {
     <div className="racer-stat-chart racer-st-trend" id={ST_TREND_ID}>
       <h3>
         {/* 見出しの期間はデータの最初の走から（本番ST は 2025-12 から。直書きしない） */}
-        STの推移（{sinceOf(runs)}）
+        STの推移（{sinceOf(runs, isNarrow)}）
         <VcScope vcActive={vcActive} vcLabel={vcLabel} />
       </h3>
       <p className="racer-stat-note">
-        1走ごとの本番ST。上ほど速い（0がスタートライン）。フライングの走は線に含めず、図の上の帯に
-        F で出します。点を押すと、その走の値とレース詳細への案内が出ます
-        {isNarrow && `（この画面幅では直近${NARROW_CHART_RUNS}走）`}
+        1走ごとの本番ST。上ほど速い（0がスタートライン）。
       </p>
       <RacerRunTrend rows={chartRuns(runs)} metric="st" label="STの推移" />
+      <p className="racer-stat-note">
+        フライングの走は線に含めず、図の上の帯に F
+        で出します。点を押すとそのレースへ
+      </p>
     </div>
   );
 }
