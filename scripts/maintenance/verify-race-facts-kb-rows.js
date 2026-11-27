@@ -3,11 +3,10 @@
 // - era は 'kb'、race_date は race_id の日付。kb の期間（〜2025-12-02）の外・race_id と列のずれ・別のレースの艇・艇番の外は throw
 // - 優勝戦は isFinalStage、着は成績コード（01〜06 は着、F・L・欠は着なし、S0 等の失格は着欄も NULL）、条件の出所は K の値があるときだけ 'k_file'
 // - kb に無い列（気温・水温・潮位・複勝・チルト・オリジナル展示・風の扇形）は NULL
-// - 組み立てた行を db-draft.md §9 の SQL を流した PGlite に入れると CHECK を通り、get_racer_runs がその選手の行を返す
+// - 組み立てた行を db-draft.md §9 の SQL（verifyData/race-facts-draft-sql.js の写し）を流した PGlite に入れると CHECK を通り、get_racer_runs がその選手の行を返す
 // 外部接続なし
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import {
   RACE_FACT_COLUMNS,
@@ -16,6 +15,7 @@ import {
   buildKbRaceFact,
   buildKbRunFacts,
 } from "../lib/raceFactsKb.js";
+import { RACE_FACTS_DRAFT_SQL } from "./verifyData/race-facts-draft-sql.js";
 
 const RACE = {
   race_id: "2025-12-02-12-12",
@@ -107,9 +107,7 @@ test("艇の行: 列・着・進入・体重の出所", () => {
 
 const db = new PGlite();
 before(async () => {
-  const doc = readFileSync("docs/design/past-data-backfill/db-draft.md", "utf-8");
-  const sql = /## 9\.[\s\S]*?```sql\n([\s\S]*?)```/.exec(doc)?.[1];
-  assert.ok(sql, "db-draft.md §9 に SQL の塊が無い");
+  const sql = RACE_FACTS_DRAFT_SQL;
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;");
   await db.exec(`BEGIN;${sql}COMMIT;`);
 });
