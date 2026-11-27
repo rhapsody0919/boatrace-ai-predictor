@@ -609,12 +609,7 @@ export const SCRAPE_JOBS = Object.freeze({
   // 13:00 JST なのは、材料である race_results.actual_course_* を書く kfile_sync
   // （07:00 / 12:00）より後にするため。これより前に走らせると、前日ぶんの進入コースを
   // 取り込めず window_end が「前々日」までしか進まない（plan.md §2.4 の障害）。
-  racer_course_technique_stats: {
-    kind: "daily",
-    targetTimeJst: "13:00",
-    leaseSec: 300,
-    maxDurationSec: 300,
-  },
+  racer_course_technique_stats: { kind: "daily", targetTimeJst: "13:00", leaseSec: 300, maxDurationSec: 300 },
 
   // BOA-1479 決まり手・逃げの分布の集計（outcome_distribution・nige_outcome_distribution）。
   // 過去90日の race_results を会場ごとに集計する。外部サイトへの通信は無い。
@@ -641,6 +636,10 @@ export const SCRAPE_JOBS = Object.freeze({
   // 外部サイトへの通信は無く、数えるのは SQL 側（RPC compute_racer_boat_return_baseline）。730日の窓を月ごとに約25回呼ぶ。
   // 1回の所要時間は未検証（適用前に1か月分を EXPLAIN ANALYZE で測る）。実装: scripts/lib/racerBoatReturnBaselineJob.js
   racer_boat_return_baseline: { kind: "daily", targetTimeJst: "01:20", leaseSec: 300, maxDurationSec: 300 },
+
+  // facts の表の main 層（race_facts・run_facts、ADR-0113、docs/design/past-data-backfill/plan.md §3）。外部サイトへの通信は無い。
+  // 30分ごとに前日と当日を、JST 01〜05時は加えて古い半月を1つ組み立て直す（進みは cursor）。実装: scripts/lib/raceFactsMainJob.js
+  race_facts_main: { kind: "continuous", leaseSec: 300, maxDurationSec: 300 },
 
   // BOA-402 「本日のデータ一覧」（/today）の抽出結果。外部サイトへの通信は無い。
   // 実測の実行時間は約5秒。実装: scripts/daily/generate-morning-digest.js
