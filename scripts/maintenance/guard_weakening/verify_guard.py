@@ -23,6 +23,7 @@ sandbox-exec が無い環境では判定を出さず止める側。静的な確�
 from __future__ import annotations
 
 import contextlib
+import difflib
 import hashlib
 import json
 import os
@@ -154,6 +155,29 @@ console.log(JSON.stringify(files.map((f) => {
 # 確かめの形の数（「比べられない」に落とす前の見張りの糸。関門ではない: 条件を空にする書き換えは数に出ない。ops 審査 11/20 P1）。
 # 減れば疑う物: throw 文・process.exit（0 以外）と process.exitCode の代入（0 以外）・.push( の呼び出し・assert 系の名前の呼び出し・リテラル（場面の表・fixture の量）。
 # 増えれば疑う物: process.exit(0) と exitCode = 0（早抜け・上書き）・catch 節（握りつぶし）
+UNITS_JS = r"""
+const path = require("path"), fs = require("fs");
+const nm = process.argv[1], files = process.argv.slice(2);
+const { createRequire } = require("module");
+const parser = createRequire(path.join(nm, "x.js"))("@babel/parser");
+const out = files.map((f) => {
+  try {
+    const src = fs.readFileSync(f, "utf8");
+    const ast = parser.parse(src, { sourceType: "unambiguous", errorRecovery: false, plugins: /\.tsx?$/.test(f) ? ["typescript", "jsx"] : ["jsx"] });
+    return ast.program.body.flatMap((st) => {
+      const d = (st.type === "ExportNamedDeclaration" || st.type === "ExportDefaultDeclaration") ? st.declaration : st;
+      if (!d) return [];
+      const names = d.type === "VariableDeclaration" ? d.declarations.filter((x) => x.id && x.id.type === "Identifier").map((x) => x.id.name)
+        : (d.type === "FunctionDeclaration" || d.type === "ClassDeclaration") && d.id ? [d.id.name] : [];
+      return names.length ? [{ names, start: st.loc.start.line, end: st.loc.end.line }] : [];
+    });
+  } catch (e) {
+    return null;
+  }
+});
+process.stdout.write(JSON.stringify(out));
+"""
+
 CHECKS_JS = r"""
 const path = require("path"), fs = require("fs");
 const nm = process.argv[1], files = process.argv.slice(2);
@@ -677,7 +701,10 @@ OUT_INCOMPARABLE, OUT_FEWER, OUT_FLAKY = "incomparable", "static_fewer", "flaky_
 # 11/25 オーナー yes（A2、コードの健全さの点検）: rule_change のうち、旧が落とす変異が1つ以上あり、新が落とす数が旧以上で、
 # 確かめの形の数（static_fewer）も弱い側へ動いていない物。excused には入れず、incomparable と同じく龍神の CI では警告（赤でない）
 OUT_RULE_KEPT = "rule_change_kept"
-WARN_OUTCOMES = (OUT_INCOMPARABLE, OUT_RULE_KEPT)  # 龍神の CI で赤にせず警告にする型
+# 11/27 オーナー yes（#3565 の道）: split のうち、PR で名前ごと消した最上位の宣言（関数・class・変数）の中の変異を除くと、base の本文で旧の verify が落とす変異を新も全部落とす物
+# （死んだコードとその試験を一緒に消す片付け）。分けても「弱め」になり行き場が無かった。龍神の CI では警告
+OUT_DELETED_OK = "deleted_code"
+WARN_OUTCOMES = (OUT_INCOMPARABLE, OUT_RULE_KEPT, OUT_DELETED_OK)  # 龍神の CI で赤にせず警告にする型
 INCOMPARABLE_HEAD = "【比べられない（人が見る）】"
 BaseRunner = Callable[[], Optional["Runner"]]  # base の実の木（merge-base）の Runner。作れなければ None（「比べられない」と言わず今どおり赤）
 
@@ -795,9 +822,151 @@ def _kills(runner: Runner, mutants: Sequence[Json], passes: Callable[[], bool]) 
     return n
 
 
+def _units(nm: Path, texts: Sequence[str], suffix: str = ".js") -> Optional[List[Optional[List[Json]]]]:
+    """本文ごとの最上位の名前つきの宣言 [{names, start, end}]（UNITS_JS）。解析できない本文は None、node が回らないは全体が None"""
+    d = Path(tempfile.mkdtemp(prefix="verify-guard-units-")).resolve()
+    try:
+        files = []
+        for i, t in enumerate(texts):
+            (d / f"{i}{suffix}").write_text(t, encoding="utf-8")
+            files.append(str(d / f"{i}{suffix}"))
+        r = subprocess.run([*native_arch_prefix(), "node", "--permission", f"--allow-fs-read={d}", f"--allow-fs-read={nm.resolve()}", "-e", UNITS_JS,
+                            str(nm.resolve()), *files], capture_output=True, text=True, timeout=60)
+        out = json.loads(r.stdout)
+    except (subprocess.TimeoutExpired, ValueError, OSError):
+        return None
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    return out if isinstance(out, list) and len(out) == len(texts) else None
+
+
+def added_names(nm: Path, old: Optional[bytes], new: Optional[bytes], suffix: str = ".js") -> Optional[frozenset]:
+    """PR（new）で新しく出た最上位の宣言の名前（base の old に無い物）。new が None は空。解析できないは None"""
+    if new is None:
+        return frozenset()
+    texts = [new.decode("utf-8", "replace")] + ([] if old is None else [old.decode("utf-8", "replace")])
+    us = _units(nm, texts, suffix)
+    if us is None or any(u is None for u in us):
+        return None
+    had = set() if old is None else {n for u in us[1] for n in u["names"]}  # type: ignore[index, union-attr]
+    return frozenset(n for u in us[0] for n in u["names"] if n not in had)  # type: ignore[union-attr]
+
+
+def rewritten_names(nm: Path, old: Optional[bytes], new: Optional[bytes], suffix: str = ".js") -> List[str]:
+    """名前が両方にあり、宣言の字が変わった最上位の宣言の名前（記録だけ。解析できないは空）"""
+    if old is None or new is None:
+        return []
+    o, n = old.decode("utf-8", "replace"), new.decode("utf-8", "replace")
+    us = _units(nm, [o, n], suffix)
+    if us is None or any(u is None for u in us):
+        return []
+    body = lambda text, u: "\n".join(text.splitlines()[int(u["start"]) - 1:int(u["end"])])  # noqa: E731
+    was = {nm_: body(o, u) for u in us[0] for nm_ in u["names"]}  # type: ignore[union-attr]
+    return sorted({nm_ for u in us[1] for nm_ in u["names"] if nm_ in was and was[nm_] != body(n, u)})  # type: ignore[union-attr]
+
+
+def deleted_lines(nm: Path, old: Optional[bytes], new: Optional[bytes], suffix: str = ".js") -> Optional[frozenset]:
+    """base の本文（old）の行のうち、PR（new）で名前ごと無くなった最上位の宣言（関数・class・変数）の行の番号（1 始まり）。
+    名前が PR に残る宣言は書き換えても入れない（書き換えて試験を弱める道を塞ぐ）。new が None（ファイルを消した）は全部の宣言。
+    old が None・宣言が無いは空。解析できないは None（呼ぶ側がこの見分けに当てない）"""
+    if old is None:
+        return frozenset()
+    texts = [old.decode("utf-8", "replace")] + ([] if new is None else [new.decode("utf-8", "replace")])
+    us = _units(nm, texts, suffix)
+    if us is None or any(u is None for u in us):
+        return None
+    kept = set() if new is None else {n for u in us[1] for n in u["names"]}  # type: ignore[index, union-attr]
+    return frozenset(n for u in us[0] if not set(u["names"]) & kept for n in range(int(u["start"]), int(u["end"]) + 1))  # type: ignore[union-attr]
+
+
+DELETED_CODE_BUDGET_SEC = 600  # 目安（根拠なし）。job の上限 30 分（guard-weakening.yml）に、split の verify が2〜3本でも収まるように
+MOVE_MIN_CHARS = 25  # 目安（根拠なし）。短い行（"}"・"return x;" 等）は消した行と足した行に偶然そろうので移したと見なさない
+
+
+def moved_lines(oth: Swap, dels: Mapping[str, frozenset]) -> List[str]:
+    """消した行のうち、PR が足した・書き換えた行（どのファイルでも）に字のまま出る物（前後の空白を除き MOVE_MIN_CHARS 字以上）"""
+    added = set()
+    for o, n in oth.values():
+        if n is None:
+            continue
+        a = (o or b"").decode("utf-8", "replace").splitlines()
+        b = n.decode("utf-8", "replace").splitlines()
+        for tag, _, _, j1, j2 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+            if tag in ("insert", "replace"):
+                added.update(x.strip() for x in b[j1:j2])
+    out = []
+    for r, ns in dels.items():
+        lines = (oth[r][0] or b"").decode("utf-8", "replace").splitlines()
+        out += [lines[i - 1].strip() for i in sorted(ns) if len(lines[i - 1].strip()) >= MOVE_MIN_CHARS and lines[i - 1].strip() in added]
+    return out
+
+
+def deleted_code_missed(runner: Runner, script_rel: str, old_text: str, new_path: Path, cfg: Json, swap: Swap, oth: Swap,
+                        old_on_base: Callable[[], bool], rec: Json) -> Optional[List[str]]:
+    """本文を base へ戻した木で、PR で名前ごと消した最上位の宣言の中の変異を除き、旧の verify が落とす変異を新の verify が落とさない物の並び。
+    消した宣言が1つも無い・解析できないときは None（この見分けに当たらない）。取りこぼしは回し直して同じときだけ数える"""
+    t0 = time.monotonic()
+    got = {r: deleted_lines(runner.nm, o, n, Path(r).suffix) for r, (o, n) in oth.items() if re.search(r"\.(?:m?js|cjs|jsx|tsx?)$", r)}
+    if any(v is None for v in got.values()):
+        return None  # 解析できない本文がある。消した関数を決められないのでこの見分けに当てない（今どおり split）
+    dels: Dict[str, frozenset] = {r: v for r, v in got.items() if v}
+    if not dels:
+        return None
+    js = [(r, o, n) for r, (o, n) in oth.items() if re.search(r"\.(?:m?js|cjs|jsx|tsx?)$", r)]
+    news = [added_names(runner.nm, o, n, Path(r).suffix) for r, o, n in js]
+    if any(x is None or x for x in news) or any(o is None and n is not None for _, o, n in js):
+        # 新しい最上位の名前・新しいファイルを足した（名前を変えて書き直す・移す）。足した物は base の木に無く変異で見られないので当てない
+        rec["deleted_code"] = {"added": sorted({n for x in news if x for n in x})[:5]}
+        return ["新しい最上位の名前・ファイルを足した"]
+    moved = moved_lines(oth, dels)
+    if moved:  # 消した行が足した行に字のまま出る＝移した。移した先は base の木に無く変異で見られないので、この見分けに当てない
+        rec["deleted_code"] = {"moved": moved[:3]}
+        return ["移した（" + moved[0][:60] + "）"]
+    repo = runner.repo
+    prods = product_files(repo, script_rel, [old_text], {r: [o.decode("utf-8", "replace")] for r, (o, _) in swap.items() if o is not None})
+    rewritten = sorted({x for r, o, n in js if r in prods for x in rewritten_names(runner.nm, o, n, Path(r).suffix)})
+    if rewritten:
+        # この verify の製品の中で名前の残る宣言を書き換えた。消した物の中身を呼び出し元へ書き戻す等で、書き換えた本体は base の木に無く変異で見られない
+        rec["deleted_code"] = {"rewritten": rewritten[:5]}
+        return ["製品の宣言を書き換えた（" + "・".join(rewritten[:3]) + "）"]
+    ms: List[Json] = []
+    for p in prods:
+        ms += [m for m in make_mutants(repo, runner.nm, p)[0] if int(m["line"]) not in dels.get(p, frozenset())]  # type: ignore[call-overload]
+    chosen = pick(ms, int(cfg["max_mutants_per_verify"]))  # type: ignore[call-overload]
+    budget = float(cfg.get("deleted_code_budget_sec", DELETED_CODE_BUDGET_SEC))  # type: ignore[arg-type]
+    killed, missed, flaky = 0, [], []
+    for m in chosen:
+        if time.monotonic() - t0 > budget:
+            rec["deleted_code"] = {"timed_out_sec": round(time.monotonic() - t0)}
+            return [f"時間の予算 {budget:.0f} 秒を越えた"]
+        rel = str(m["file"])
+        orig = (repo / rel).read_bytes()
+        try:
+            runner.write(rel, apply_mutant(orig, m))
+            if old_on_base():
+                continue  # 旧が落とさない変異は比べない
+            if not runner.passes(new_path):
+                killed += 1
+                continue
+            if old_on_base():
+                continue  # 旧の1回目の落ちは揺れ。旧が落とす変異に数えない（本線の flaky_old と同じ）
+            killed += 1
+            (missed if runner.passes(new_path) else flaky).append(mkey(m))  # 新が落としたり落とさなかったりは揺れ。緑にしない（本線の flaky_new と同じ）
+        finally:
+            runner.write(rel, orig)
+    rec["deleted_code"] = {"deleted_lines": sum(len(v) for v in dels.values()), "mutants_used": len(chosen), "killed_old": killed, "missed": missed,
+                           "flaky_new": flaky, "sec": round(time.monotonic() - t0)}
+    if flaky:
+        return missed + flaky
+    if killed == 0:  # 残るコードを旧が1つも確かめていない。取りこぼしが無いのは空の通過なので通さない
+        return ["旧の verify が残るコードの変異を1つも落とさない"]
+    return missed
+
+
 def old_red(runner: Runner, script_rel: str, old_path: Path, old_text: str, new_exists: bool, cfg: Json, swap: Swap,
             others: Optional[Others], chosen: Sequence[Json], rec: Json) -> str:
-    """変異なしで旧の verify が PR の木で通らないときの見分け（11/19 オーナー yes、龍神 #2900・#2901）。どれも通さない（止める側）。理由と次の手を返し rec["outcome"] に型を残す。
+    """変異なしで旧の verify が PR の木で通らないときの見分け（11/19 オーナー yes、龍神 #2900・#2901）。excused にはしない（止める側）。理由と次の手を返し rec["outcome"] に型を残す。
+    例外として rule_change_kept（11/25 A2）と deleted_code（11/27、死んだコードの片付け）は WARN_OUTCOMES で、龍神の CI では警告（ADR-0112）。
     PR が変えた守り以外のファイル（others＝対象の本文）だけを base の版へ戻した木で、旧と新を変異なしで回す:
       旧が通らない → old_red_on_base（base でも旧が通らない・環境の違い。比べられない）
       旧も新も通る → split（新の verify は base の本文でも通る＝verify の変更だけを前段の PR に出せ、そこで旧と新を変異で比べられる）
@@ -822,6 +991,7 @@ def old_red(runner: Runner, script_rel: str, old_path: Path, old_text: str, new_
             _set_data(runner, swap, False)
     k_old = n_old = 0
     old_ok = new_ok = False
+    del_missed: Optional[List[str]] = None
     err = ""
     try:
         try:
@@ -831,6 +1001,8 @@ def old_red(runner: Runner, script_rel: str, old_path: Path, old_text: str, new_
         if not err:
             old_ok = bool(oth) and old_on_base()
             new_ok = old_ok and new_exists and runner.passes(new_path)
+            if new_ok and not unrev:
+                del_missed = deleted_code_missed(runner, script_rel, old_text, new_path, cfg, swap, oth, old_on_base, rec)
             if old_ok and not new_ok and new_exists:
                 ms: List[Json] = []
                 for p in product_files(repo, script_rel, [old_text], {r: [o.decode("utf-8", "replace")] for r, (o, _) in swap.items() if o is not None}):
@@ -850,6 +1022,12 @@ def old_red(runner: Runner, script_rel: str, old_path: Path, old_text: str, new_
         rec["outcome"] = OUT_OLD_RED
         return (f"{script_rel}: 【比べられない】変異なしで旧の verify が通らない（PR が変えた本文 {len(oth)} 件を base の版へ戻しても通らない。"
                 "base で旧の verify が通るか・他の verify や registry の変更・作業場所の node_modules を確かめる）")
+    if new_ok and del_missed == []:
+        rec["outcome"] = OUT_DELETED_OK
+        d = rec["deleted_code"]
+        return (f"{script_rel}: 【消したコードの片付け: 警告】PR で名前ごと消した関数等の {d['deleted_lines']} 行の変異を除くと、base の本文で旧の verify が落とす変異 "
+                f"{d['killed_old']}/{d['mutants_used']} を新の verify も全部落とす（死んだコードとその試験を一緒に消した形。この verify の製品で名前の残る宣言は書き換えていない）。"
+                "消した物がほかで使われていないかは build と他の verify が見る前提で、人も見る")
     if new_ok:
         rec["outcome"] = OUT_SPLIT
         return (f"{script_rel}: 【分けよ】守り（verify・verifyData/）と、それが見る本文を同じ PR で動かしたので比べられない。弱めかは未判定（この赤は手で通さない）。"
