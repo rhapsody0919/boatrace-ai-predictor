@@ -29,8 +29,9 @@
 }
 
 /* 12px の太字は 4.5:1 が要る。ホームの一覧・締切の行の地で、16% の塗り・--color-success-text だと
-   ダークの崩れやすい 4.48、ライトの堅め 4.08 に下がった（公開の PR の axe、contrast.spec.js） */
+   ダークの崩れやすい 4.48、ライトの堅め 4.08 に下がった（公開の PR の axe、contrast.spec.js）。
+   堅めは本文色を2割混ぜ、ライトでは濃く・ダークでは明るくする（計算でライト 5.3・ダーク 5.3） */
 .in-caution-badge--low {
-  color: var(--color-success-dark-text);
+  color: color-mix(in srgb, var(--color-success-text) 80%, var(--text-primary));
   background: var(--color-success-bg);
 }

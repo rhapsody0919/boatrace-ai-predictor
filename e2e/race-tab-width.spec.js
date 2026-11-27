@@ -283,7 +283,7 @@ for (const width of [375, 1024, 1440, 1920]) {
 }
 
 for (const width of [1440, 1920]) {
-  test(`${width}px: イン崩れは列の左端から始まり、1つの節は720まで。共有ボタンも左端（BOA-820・BOA-881）`, async ({
+  test(`${width}px: イン崩れは列の左端から始まり、列の右端を超えない。共有ボタンも左端（BOA-820・BOA-881）`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -295,11 +295,12 @@ for (const width of [1440, 1920]) {
     await expect(tab).toBeVisible({ timeout: 30000 });
     const colLeft = column(width).left;
     near((await tab.boundingBox()).x, colLeft, "イン崩れの左端");
-    // 節（1行1項目のリスト）は 720 まで。決まり手と確率が離れすぎない（BOA-619）
-    const sections = await tab
+    // 旧の「節は720まで」は展開予測の1列のリスト（決まり手と確率が離れすぎない、BOA-619）の決まり。
+    // 公開（BOA-822、2026-11-27）の後の注意度のカードは承認モックどおり PC で2段組なので、列の中に収まることを見る
+    const rights = await tab
       .locator(":scope > *")
-      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
-    for (const w of sections) expect(w).toBeLessThanOrEqual(720);
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
+    for (const r of rights) expect(r).toBeLessThanOrEqual(column(width).right + 1);
     // 中の見出しは左そろえ
     const title = tab.locator(".result-verify-title").first();
     if (await title.count()) {
