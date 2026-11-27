@@ -127,7 +127,8 @@ function DailyExhibitionChart({ data, view }) {
 }
 
 /** STの推移（本番ST、履歴が2走以上のときだけ。共通の推移の図） */
-export function StTrendChart({ view, vcActive, vcLabel, stBase, grade }) {
+export function StTrendChart({ view, vcActive, vcLabel, base }) {
+  const { stBase, grade } = base ?? {};
   const { vcData, isNarrow, chartRuns } = view;
   if (!view.showStTrend) return null;
   const runs = vcData.series.filter(

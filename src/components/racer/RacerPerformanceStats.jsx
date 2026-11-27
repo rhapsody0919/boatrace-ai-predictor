@@ -284,6 +284,16 @@ function breakdownBlocks(t, vc, view, venueStats, technique) {
   ];
 }
 
+// ST の推移の比べる線（今の級×同じ進入コースの全国平均）。このページの節の入口（成績・調子の欄）で取る（plan.md §13）。
+// 平均は絞り込みの範囲の走（カードの平均ST と同じ母数）で取るので、描くときに vcData を渡す
+function useStCompare(grade) {
+  const rows = useStCourseBaseline();
+  return (vcData) => ({
+    grade,
+    stBase: stCourseGradeAvg(vcData?.matchedRaces ?? [], rows, grade),
+  });
+}
+
 /**
  * 選手個別ページの成績・調子セクション
  * 選手調子（全国勝率推移）・平均ST・決まり手傾向・展示タイム推移・
@@ -330,8 +340,7 @@ export default function RacerPerformanceStats({
 }) {
   const { t } = useTranslation();
   const winSteps = winRateStepsData(periodRows);
-  // ST の推移の比べる線（今の級×同じ進入コースの全国平均）。このページの節の入口なのでここで取る（plan.md §13）
-  const stBaselineRows = useStCourseBaseline();
+  const stCompare = useStCompare(grade);
   const vc = useRacerVcState(racerId, onHistoryStateChange);
   // 進入コースのラベルは呼ぶ側で足す（useRacerPerformanceView は大きさの基準に凍結された単位なので触らない）
   const view = {
@@ -339,11 +348,6 @@ export default function RacerPerformanceStats({
     vcLabel: vcLabelWithCourse(t, vc),
   };
   const { vcData, vcLabel } = view;
-  const stBase = stCourseGradeAvg(
-    vcData?.matchedRaces ?? [],
-    stBaselineRows,
-    grade,
-  );
   const { snapshotHistoryState, vcActive } = vc;
   const { formSummary, aggregatedStats, venueStats } = stats ?? {};
 
@@ -413,13 +417,7 @@ export default function RacerPerformanceStats({
           </p>
         )}
         <ExhibitionChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
-        <StTrendChart
-          view={view}
-          vcActive={vcActive}
-          vcLabel={vcLabel}
-          stBase={stBase}
-          grade={grade}
-        />
+        <StTrendChart view={view} vcActive={vcActive} vcLabel={vcLabel} base={stCompare(vcData)} />
         <div id="racer-race-list">
           <RaceList vc={vc} view={view} vcLabel={vcLabel} />
         </div>

@@ -21,6 +21,12 @@ const stText = (run) => {
   return run.isFlying ? `F${s}` : s;
 };
 
+// 6艇の中の ST の順位（選手ページの ST の推移だけ。tipStRank の尺度）
+const stRankText = (t, scale, run) =>
+  scale.tipStRank && run.stRank != null
+    ? ` ${t("basicInfo.trend.tipStRank", { rank: run.stRank })}`
+    : "";
+
 function finishText(t, run) {
   if (run.finishRank != null)
     return t("basicInfo.trend.tipRank", { rank: run.finishRank });
@@ -75,10 +81,7 @@ export default function TrendTooltip({
           })}{" "}
           {finishText(t, run)}
           {scale.tipSt === false ? "" : ` ST ${stText(run)}`}
-          {/* 6艇の中の ST の順位（選手ページの ST の推移だけ。tipStRank の尺度） */}
-          {scale.tipStRank && run.stRank != null
-            ? ` ${t("basicInfo.trend.tipStRank", { rank: run.stRank })}`
-            : ""}
+          {stRankText(t, scale, run)}
         </p>
       )}
       {showValue && (
