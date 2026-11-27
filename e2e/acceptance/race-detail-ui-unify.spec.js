@@ -539,7 +539,7 @@ const NARROW_TABS = [
   "今節",
   "直前情報",
   "枠別情報",
-  "AI予想",
+  "イン崩れ",
   "オッズ一覧",
   "結果",
   "モータ情報",
@@ -1003,25 +1003,23 @@ describeFR("FR-5", "モータ情報・直前情報タブ", () => {
 });
 
 // ===========================================================================
-// FR-6 AI予想・オッズ一覧・結果タブ
+// FR-6 イン崩れ（旧AI予想）・オッズ一覧・結果タブ
 // ===========================================================================
 
 describeFR("FR-6", "AI予想・オッズ一覧・結果タブ", () => {
-  test("[spec FR-6 決定事項] AI予想の展開予測の最も高い確率に金枠を付けない", async ({
+  test("[spec FR-6 決定事項] イン崩れタブ（旧AI予想）の表に金枠を付けない。展開予測は出ない（BOA-822 の公開）", async ({
     page,
   }) => {
     await openRaceDetail(page);
-    await openTab(page, "AI予想");
+    await openTab(page, "イン崩れ");
     await installHelpers(page);
-    const section = page.getByText(/展開予測/).first();
-    const visible = await section.isVisible().catch(() => false);
-    test.skip(!visible, "展開予測が表示されていない");
-    // AI予想タブには R1 を付ける表示が無い（spec FR-6）ので、タブ内の表に金枠が無いことを確かめる
+    await expect(page.getByText(/展開予測/)).toHaveCount(0);
+    // タブには R1 を付ける表示が無い（spec FR-6）ので、タブ内の表に金枠が無いことを確かめる
     const cells = await collectAllCells(page);
     const golds = cells.flatMap((l) =>
       l.cells.filter((c) => c.best).map((c) => c.text),
     );
-    expect(golds, `AI予想タブに金枠: ${golds.join(", ")}`).toEqual([]);
+    expect(golds, `イン崩れタブに金枠: ${golds.join(", ")}`).toEqual([]);
   });
 
   test("[spec FR-6 受入基準] ダークテーマでイン崩れ注意度の文字が背景と同化しない（4.5:1以上）", async ({
@@ -1029,7 +1027,7 @@ describeFR("FR-6", "AI予想・オッズ一覧・結果タブ", () => {
   }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await openRaceDetail(page);
-    await openTab(page, "AI予想");
+    await openTab(page, "イン崩れ");
     await installHelpers(page);
     const label = page.getByText(/イン崩れ注意度/).first();
     const visible = await label.isVisible().catch(() => false);
@@ -1053,33 +1051,37 @@ describeFR("FR-6", "AI予想・オッズ一覧・結果タブ", () => {
     expect(low, JSON.stringify(low)).toEqual([]);
   });
 
-  // PR #1209 ファン評価1周目: 段階ラベルの文字が、薄い色を重ねた地の上で 3.5〜3.8:1 だった。
-  // ライト・ダークとも 4.5:1 以上で、アイコンの波紋より前面にあること
+  // PR #1209 ファン評価1周目: 段階ラベルの文字が薄い地の上で 3.5〜3.8:1 だった。
+  // BOA-822 の公開で旧イン崩れ指数（.volatility-display）は出ない。注意度のカードの段・割合の文字を
+  // ライト・ダークとも 4.5:1 以上で守る（波紋の前後の確かめは旧の部品ごと無くなったので外した）
   for (const scheme of ["light", "dark"]) {
-    test(`[plan §10] イン崩れ注意度の段階ラベルは ${scheme} で4.5:1以上、波紋より前面`, async ({
+    test(`[plan §10] イン崩れ注意度のカードの段・割合の文字は ${scheme} で4.5:1以上`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await openRaceDetail(page);
-      await openTab(page, "AI予想");
+      await openTab(page, "イン崩れ");
       await installHelpers(page);
-      const card = page.locator(".volatility-display").first();
+      const card = page.locator(".in-caution-card").first();
       const visible = await card
         .waitFor({ state: "visible", timeout: 15000 })
         .then(() => true)
         .catch(() => false);
-      test.skip(!visible, "イン崩れ注意度（発走前）が表示されていない");
-      const r = await card.evaluate((el) => {
-        const badge = [...el.querySelectorAll("span")].find(
-          (s) => getComputedStyle(s).borderRadius === "12px",
-        );
-        return {
-          ratio: window.__acc.contrast(badge),
-          z: getComputedStyle(badge).zIndex,
-        };
-      });
-      expect(r.ratio).toBeGreaterThanOrEqual(4.5);
-      expect(Number(r.z)).toBeGreaterThanOrEqual(1);
+      test.skip(!visible, "イン崩れ注意度のカードが表示されていない");
+      await expect(page.locator(".volatility-display")).toHaveCount(0);
+      const ratios = await card.evaluate((el) =>
+        [
+          el.querySelector(".in-caution-card-title"),
+          el.querySelector(".in-caution-card-pct"),
+        ]
+          .filter(Boolean)
+          .map((x) => ({
+            text: x.textContent.trim().slice(0, 20),
+            ratio: window.__acc.contrast(x),
+          })),
+      );
+      const low = ratios.filter((r) => r.ratio < 4.5);
+      expect(low, JSON.stringify(low)).toEqual([]);
     });
   }
 
@@ -1099,25 +1101,12 @@ describeFR("FR-6", "AI予想・オッズ一覧・結果タブ", () => {
     ).toEqual([]);
   });
 
-  test("[spec FR-6 / R2] AI予想の確定後の検証で、的中・不的中が緑・赤で示される", async ({
+  test("[spec FR-6 / R2] イン崩れタブに、展開予測の的中・不的中の札は出ない（BOA-822 の公開で表示が無くなった）", async ({
     page,
   }) => {
     await openRaceDetail(page);
-    await openTab(page, "AI予想");
-    await installHelpers(page);
-    // spec に検証の表示文言が無いため「的中」「不的中」の語で特定する
-    const hit = page.getByText(/^的中/).first();
-    const miss = page.getByText(/^不的中/).first();
-    const hasHit = await hit.isVisible().catch(() => false);
-    const hasMiss = await miss.isVisible().catch(() => false);
-    test.skip(
-      !hasHit && !hasMiss,
-      "確定後の検証が表示されていない（レース確定前）",
-    );
-    if (hasHit)
-      expect(await hit.evaluate((el) => window.__acc.isGood(el))).toBe(true);
-    if (hasMiss)
-      expect(await miss.evaluate((el) => window.__acc.isBad(el))).toBe(true);
+    await openTab(page, "イン崩れ");
+    await expect(page.getByText(/^不?的中/)).toHaveCount(0);
   });
 });
 
