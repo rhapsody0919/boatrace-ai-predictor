@@ -81,7 +81,7 @@ Node 側  api → api/_lib → scripts/lib → scripts/lib/pure → src/pure
 | `scripts/` | `daily/`（毎日）・`analysis/`（分析）・`maintenance/`（直し・検査 `verify-*.js`、台帳 `verify-registry.json`）・`db/`・`sns/`・`ml/`・`lib/`（共通。Supabase は `scripts/lib/supabaseClient.js`） |
 | `e2e/` | Playwright（組の分け方は `e2e/shards.json`） |
 | `public/blog/`・`note-articles/` | 記事 |
-| `docs/` | `adr/`（決定）・`design/`（採用した設計）・`operation/`（運用）・`reference/`（参照）・`knowledge/`（知見）・`db-migration/`・`setup/`・`archive/`・`content-manifests/`（記事の索引）・`issues/`（調査の記録）・`proposal/`（提案）。根に新しい文書を置かない |
+| `docs/` | `adr/`（決定）・`design/`（採用した設計）・`operation/`（運用）・`reference/`（参照）・`knowledge/`（知見）・`db-migration/`・`setup/`・`archive/`・`content-manifests/`（記事の索引）・`issues/`（データ・DB の不具合の調査）・`proposal/`（提案・競合・点検）。根に新しい文書を置かない。repo は公開なので非公開の数字・他社の写しは入れず `~/.config/ryujin/private/<話題>/` をパスで指す |
 
 ## 落とし穴（機械にできない判断の線。破ると P1 以上）
 
