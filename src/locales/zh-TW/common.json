@@ -2599,7 +2599,7 @@
       "startsLabel": "出賽數",
       "winRateNote": "💡 各期的值為官方各期成績的勝率（半年計算期間、全部比賽）。線條中斷的期表示沒有出賽紀錄。出賽表的全國勝率（目前值的全國、全部比賽）是依近期成績計算的值，與最右邊的期不一致。",
       "winRateNotYet": "最右邊的下一期（{{from}}～{{to}}）尚未匯入。",
-      "officialStLine": "官方 {{value}}（{{from}}～{{to}}）",
+      "officialStLine": "官方平均ST {{value}}（{{from}}～{{to}}）",
       "tipValueRun": "{{metric}} {{value}}"
     },
     "title": "選手成績比較",

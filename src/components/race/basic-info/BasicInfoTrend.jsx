@@ -100,8 +100,8 @@ function bandBelow(motorBand, sel) {
 }
 
 // 平均ST の推移に、選んだ艇の公式の平均ST（今の公式の期の値）を破線で添える（R-19。racer-form-window.md の
-// 「期の公式値を横線で添える」）。走ごとの30走の平均と、期の公式値を同じ物差しで見比べる。札は右端が6艇の札で
-// 埋まるので、線の左上に置く
+// 「期の公式値を横線で添える」）。走ごとの30走の平均と、期の公式値を同じ物差しで見比べる。図の中は線だけにし、
+// 何の線かは図のすぐ下の凡例に艇番つきで書く（図の中の札は選んだ艇の線に隠れた。visual-designer 11/27）
 function officialLine(officialAvgSt, metric, boat, t) {
   if (metric !== "avgSt") return null;
   const v = officialAvgSt?.rows?.find((r) => r.boatNumber === boat)?.avgSt;
@@ -109,9 +109,10 @@ function officialLine(officialAvgSt, metric, boat, t) {
   if (v == null || !period) return null;
   const ym = (d) => `${d.slice(2, 4)}/${d.slice(5, 7)}`;
   return {
+    boat,
     value: Number(v),
     label: t("basicInfo.trend.officialStLine", {
-      value: Number(v).toFixed(2).replace(/^0/, ""),
+      value: Number(v).toFixed(2),
       from: ym(period.calcFrom),
       to: ym(period.calcTo),
     }),
@@ -121,18 +122,30 @@ function officialLine(officialAvgSt, metric, boat, t) {
 function OfficialLine({ line, y, W, pad }) {
   const ly = y(line.value);
   return (
-    <g className="trc-official">
-      <line
-        x1={pad.l}
-        x2={W - pad.r}
-        y1={ly}
-        y2={ly}
-        className="trc-official-line"
-      />
-      <text x={pad.l + 4} y={ly - 4} className="trc-official-label">
-        {line.label}
-      </text>
-    </g>
+    <line
+      x1={pad.l}
+      x2={W - pad.r}
+      y1={ly}
+      y2={ly}
+      className="trc-official-line"
+    />
+  );
+}
+
+function OfficialLegend({ line }) {
+  return (
+    <p className="trc-official-legend">
+      <svg
+        className="trc-official-sample"
+        width="18"
+        height="6"
+        aria-hidden="true"
+      >
+        <line x1="0" x2="18" y1="3" y2="3" className="trc-official-line" />
+      </svg>
+      <BoatBadge n={line.boat} />
+      <span className="trc-official-label">{line.label}</span>
+    </p>
   );
 }
 
@@ -254,6 +267,7 @@ export default function BasicInfoTrend({
                   : undefined
               }
             />
+            {official && <OfficialLegend line={official} />}
           </div>
           <div className="race-split__side">
             <BoatPicker

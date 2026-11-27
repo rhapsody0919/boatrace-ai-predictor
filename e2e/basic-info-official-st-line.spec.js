@@ -15,11 +15,12 @@ async function openTrend(page, chip) {
   return page.locator(".race-basic-info-tab .trc-wrap");
 }
 
-test("平均STの推移に、選んだ艇の公式の平均STの破線と期の札が出る", async ({ page }) => {
+test("平均STの推移に、選んだ艇の公式の平均STの破線と、艇番つきの凡例が出る", async ({ page }) => {
   const wrap = await openTrend(page, "平均ST");
-  await expect(wrap.locator(".trc-official-line")).toHaveCount(1, { timeout: 30000 });
+  await expect(wrap.locator(".trc-svg .trc-official-line")).toHaveCount(1, { timeout: 30000 });
+  await expect(wrap.locator(".trc-official-legend .rol-boat-badge")).toHaveCount(1);
   await expect(wrap.locator(".trc-official-label")).toHaveText(
-    /^公式 \.\d{2}（\d{2}\/\d{2}〜\d{2}\/\d{2}）$/,
+    /^公式の平均ST 0\.\d{2}（\d{2}\/\d{2}〜\d{2}\/\d{2}）$/,
   );
 });
 
@@ -27,4 +28,5 @@ test("3連対率の推移には公式の平均STの破線を出さない", async
   const wrap = await openTrend(page, "3連対率");
   await expect(wrap.locator(".trc-svg")).toBeVisible({ timeout: 30000 });
   await expect(wrap.locator(".trc-official-line")).toHaveCount(0);
+  await expect(wrap.locator(".trc-official-legend")).toHaveCount(0);
 });

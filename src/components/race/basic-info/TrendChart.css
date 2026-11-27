@@ -451,18 +451,19 @@
   fill: var(--brand-accent-primary);
 }
 
-/* 平均ST の推移に添える公式の平均ST の破線と札（R-19、2026-11-27） */
+/* 平均ST の推移に添える公式の平均ST の破線と、図の下の凡例（R-19、2026-11-27）。破線は「N日あき」の縦の点線
+   （.trc-gap 3 3）と見分けるため長い破線 */
 .trc-official-line {
   stroke: var(--text-secondary);
   stroke-width: 1.5;
-  stroke-dasharray: 6 3;
+  stroke-dasharray: 8 4;
+  opacity: 0.85;
 }
-.trc-official-label {
-  font-size: 10px;
-  fill: var(--text-secondary);
-  /* 6艇の線の上でも読めるよう、地の色の縁で文字を切り離す */
-  paint-order: stroke;
-  stroke: var(--surface-card);
-  stroke-width: 3px;
-  stroke-linejoin: round;
+.trc-official-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
