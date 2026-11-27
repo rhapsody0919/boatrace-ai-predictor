@@ -48,6 +48,10 @@ const MEET_SPARK = Object.freeze({
   dotLabel: false,
   dots: true,
   height: 160,
+  // 1艇だけの図: 線は 2px（6艇の中で目立たせる 3px は基準の破線が負ける）、点は大きく地の色の輪、帯は記号があるときだけ
+  strokeW: 2,
+  dotR: 3.5,
+  bandIfAny: true,
 });
 
 export const TREND_SCALES = Object.freeze({

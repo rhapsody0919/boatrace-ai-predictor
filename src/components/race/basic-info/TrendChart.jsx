@@ -30,6 +30,13 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
     ...extraValues,
   ].filter((v) => v !== null && v !== undefined);
   const { step } = scale;
+  // 記号の帯。bandIfAny の尺度（R-45）は記号の走があるときだけ取る（低い図で描く所を削らない）
+  const band =
+    scale.flags &&
+    (!scale.bandIfAny ||
+      [...seriesByBoat.values()].some((s) => s.some((p) => p.flag)))
+      ? BAND
+      : 0;
   // 図の高さ。尺度が height を持てばそれ（今節の詳細の小さな線 R-45 は低い）
   const h = scale.height ?? H;
   // 負にならない指標（ST）は 0 より下に伸ばさない
@@ -43,7 +50,7 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
   const y = (v) => {
     const r = (v - lo) / (hi - lo);
     // 印の帯（F・L）がある尺度は、値の線をその下から描く
-    const top = PAD.t + (scale.flags ? BAND : 0);
+    const top = PAD.t + band;
     return top + (h - top - PAD.b) * (scale.invert ? r : 1 - r);
   };
   // 右端（最新）をそろえる。点の少ない艇は左を空ける。alignStart（今節の走）は各艇の1走目を左にそろえ、
