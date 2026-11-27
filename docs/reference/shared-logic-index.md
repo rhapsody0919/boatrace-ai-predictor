@@ -55,7 +55,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/nigashiStats.js` | 逃し率（オーナー 2026-11-25）: 2〜6コースに入った走のうち、1コースの艇に逃げで1着を取られた走の割合。 | buildNigashiBreakdown, nationalNigashiBaseline, nigashiByCourse |
 | `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
-| `src/pure/pageHead.js` | 生の HTML の head（JS の前の HTML にページごとの title・description・canonical・JSON-LD を全ての UA に… | pageHeadRoute, getPastVenuePageMeta, getPastVenueBreadcrumbItems, breadcrumbListLd, pastVenuePageHead ほか2件 |
+| `src/pure/pageHead.js` | 生の HTML の head（JS の前の HTML にページごとの title・description・canonical・JSON-LD を全ての UA に… | pageHeadRoute, pageHeadApiRoute, getPastVenuePageMeta, getPastVenueBreadcrumbItems, breadcrumbListLd ほか4件 |
 | `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
 | `src/pure/predictionAssistBoardParts.js` | 思考アシスト（BOA-430）のボードの部品のうち、文言（src/data）を読まない計算。純粋関数だけ。 | firstPlaceComposite, missingFirstBoats, LENSES, stText, METRICS ほか1件 |
 | `src/pure/predictionAssistDeepDive.js` | predictionAssistDeepDive - 思考アシストの深掘りの部品（今節の各走・前の5走・コースの1着・着の色と点・会場の成績の無い艇・得意の決ま… | meetRuns, priorRuns, courseWins, finishOf, monthDay ほか2件 |
@@ -702,4 +702,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 660 ファイル / export 3535 件。
+対象 660 ファイル / export 3537 件。
