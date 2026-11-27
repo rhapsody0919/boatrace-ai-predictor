@@ -77,6 +77,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerMeetMotors.js` | 選手の推移の線の下の段（レーン B の after B、オーナー 2026-11-25 承認のモック mock-motor-trend/mock.html の … | racerMeetsOf, motorRankPct, motorRankTier, meetMotorBand, MEET_GAP_DAYS |
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか4件 |
+| `src/pure/racerPageHead.js` | 選手ページ（/racer/:id）の head の値（title・description・canonical）。人の画面（src/pages/RacerProf… | periodSentence, racerPageMeta |
 | `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
 | `src/pure/racerTodayContext.js` | 選手ページの「今日の出走」の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地成績・今節の着順。 | pickContextRun, courseCell, venueCell, meetFinishes, SMALL_RUNS |
 | `src/pure/racerTodayRuns.js` | — | splitTodayRaceId, finishLabelOf, buildRacerTodayRuns, todayRunsMeetLabel |
@@ -697,4 +698,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 655 ファイル / export 3528 件。
+対象 656 ファイル / export 3530 件。
