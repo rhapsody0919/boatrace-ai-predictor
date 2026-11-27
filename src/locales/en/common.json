@@ -2810,8 +2810,8 @@
     "noteExpectedCourse": "Win rate, local win rate, and top-2 rate are from the official race card. Avg. ST and motor top-2 rate cover the periods in their row labels. The expected-course 1st-place rate covers actual starting courses over the last 3 terms. Other analysis data is aggregated over the past 90 days (180 days for return rate). Highlights mark the best value in this race. For reference only; results are not guaranteed",
     "dayRankTop": "Top {{n}}0%",
     "dayRankBottom": "Bottom {{n}}0%",
-    "localVsNational": "vs national {{diff}}",
-    "dayRankNote": "“Top/Bottom N0%” under win rate and top-2 rate is the position among today’s racers ({{n}} racers; equal values share a position). Under local win rate is the gap from the racer’s national win rate. Neither is colored, and neither predicts the race."
+    "localVsNational": "vs own national {{diff}}",
+    "dayRankNote": "“Top/Bottom N0%” under win rate and top-2 rate is the position among today’s racers ({{n}} racers; equal values share a position, and racers near the middle show either Top 50% or Bottom 50%). Under local win rate is the gap from the racer’s own national win rate. Neither is colored, and neither shows the result of this race."
   },
   "venueTendency": {
     "title": "Venue tendency by lane",

@@ -11,7 +11,7 @@ const rowOf = (page, label) =>
     .first();
 
 for (const width of [375, 1440]) {
-  test(`全国勝率・2連率に「上位N割・下位N割」、当地勝率に「全国比」 ${width}px`, async ({ page }) => {
+  test(`全国勝率・2連率に「上位N割・下位N割」、当地勝率に「全国との差」 ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(RACE);
     await page.locator(".race-tabs-btn", { hasText: "基本情報" }).first().click();
@@ -37,7 +37,7 @@ for (const width of [375, 1440]) {
     const colors = await win.locator(".drt-day-rank").evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).color))]);
     expect(colors.length).toBe(1);
     await expect(rowOf(page, "全国2連率").locator(".drt-day-rank")).not.toHaveCount(0);
-    await expect(rowOf(page, "当地勝率").locator(".drt-local-diff").first()).toContainText(/^全国比 [+-]?\d+\.\d{2}$/);
+    await expect(rowOf(page, "当地勝率").locator(".drt-local-diff").first()).toContainText(/^全国との差 [+-]?\d+\.\d{2}$/);
     await expect(page.getByTestId("drt-day-rank-note")).toContainText(/今日出走する選手（\d+人）/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
