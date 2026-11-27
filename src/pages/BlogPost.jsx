@@ -30,6 +30,7 @@ import {
   BackToTopButton,
   PostHeader,
   TocSection,
+  SideToc,
   RelatedPostsSection,
   PostCta,
 } from "./BlogPostParts.jsx";
@@ -270,6 +271,12 @@ function useArticleContent(content, charts, chartLang) {
           ),
           p: ({ node, ...props }) =>
             isChartOnlyParagraph(node) ? props.children : <p {...props} />,
+          // 表は横に流せる箱に入れ、375px で列を1〜2文字幅に潰さない
+          table: ({ node, ...props }) => (
+            <div className="blog-post-table-scroll">
+              <table {...props} />
+            </div>
+          ),
           // Custom link renderer to open external links in new tab
           a: ({ node, ...props }) => {
             const isExternal = props.href?.startsWith("http");
@@ -334,11 +341,17 @@ function PostBody({
     <div className="blog-post-container">
       <PostHeader post={post} t={t} />
 
-      {headings.length > 0 && <TocSection headings={headings} t={t} />}
+      {/* PC（1100px 以上）は本文の右に目次を常に出し、広い画面の空きを使う。狭い幅は本文の上の畳む目次 */}
+      <div className="blog-post-layout">
+        <div className="blog-post-main">
+          {headings.length > 0 && <TocSection headings={headings} t={t} />}
 
-      <article className="blog-post-content" ref={articleRef}>
-        {articleContent}
-      </article>
+          <article className="blog-post-content" ref={articleRef}>
+            {articleContent}
+          </article>
+        </div>
+        {headings.length > 0 && <SideToc headings={headings} t={t} />}
+      </div>
 
       {/* Related Posts */}
       {relatedPosts.length > 0 && (

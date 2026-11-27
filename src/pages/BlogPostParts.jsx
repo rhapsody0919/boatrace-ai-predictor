@@ -190,6 +190,25 @@ function TocSection({ headings, t }) {
   );
 }
 
+function SideToc({ headings, t }) {
+  return (
+    <aside className="blog-post-side-toc">
+      <nav className="blog-post-side-toc-nav" aria-label={t.tocTitle}>
+        <p className="blog-post-side-toc-title">{t.tocTitle}</p>
+        {headings.map((h) => (
+          <a
+            key={h.id}
+            href={`#${h.id}`}
+            className={`toc-link toc-link-level-${h.level}`}
+          >
+            {h.text}
+          </a>
+        ))}
+      </nav>
+    </aside>
+  );
+}
+
 function RelatedPostsSection({ relatedPosts, t, lang }) {
   return (
     <div className="related-posts">
@@ -231,6 +250,7 @@ export {
   BackToTopButton,
   PostHeader,
   TocSection,
+  SideToc,
   RelatedPostsSection,
   PostCta,
 };
