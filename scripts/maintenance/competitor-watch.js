@@ -18,6 +18,8 @@ import { fileURLToPath } from "node:url";
 
 export const MAX_CHILD_FETCH = 25;
 const UA = "Mozilla/5.0 (compatible; sitemap-diff/1.0)";
+// 艇愛の racer/sitemap/asg.xml は 18 秒かかることがあり、30 秒では朝の回に打ち切られた（2026-11-27）
+const FETCH_TIMEOUT_MS = 60000;
 
 /** sitemap の XML から、ページ（urlset）か子の sitemap（sitemapindex）の一覧を取る */
 export function parseSitemap(xml) {
@@ -103,19 +105,24 @@ async function getText(url) {
   const res = await fetch(url, {
     headers: { "User-Agent": UA },
     redirect: "follow",
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
   return res.text();
 }
 
-async function snapshotSite(site, prevState) {
-  const root = parseSitemap(await getText(site.sitemap));
+/**
+ * 1サイトの今の写し。子の sitemap が読めなかったときは、前の回の値があればそれを使い stale に数える
+ * （1本の遅い子でサイトの回を丸ごと捨てない）。前の回の値が無い子は投げる（空にすると次の回に全部を新しいページと誤る）
+ */
+export async function snapshotSite(site, prevState, get = getText) {
+  const root = parseSitemap(await get(site.sitemap));
   if (!root.isIndex)
     return {
       snap: { [site.sitemap]: root.entries.map((e) => e.loc) },
       meta: {},
       listed: [site.sitemap],
+      stale: [],
     };
   const prevMeta = prevState?.meta ?? {};
   const fetchList = new Set(
@@ -123,9 +130,20 @@ async function snapshotSite(site, prevState) {
   );
   const snap = {};
   const meta = {};
+  const stale = [];
   for (const e of root.entries) {
     if (fetchList.has(e.loc)) {
-      const child = parseSitemap(await getText(e.loc));
+      let child;
+      try {
+        child = parseSitemap(await get(e.loc));
+      } catch (err) {
+        // 読めない子だけ前の回の値で埋める。前の値が無ければサイトの回ごと落とす
+        if (!prevState?.snap?.[e.loc]) throw err;
+        snap[e.loc] = prevState.snap[e.loc];
+        meta[e.loc] = prevMeta[e.loc];
+        stale.push(`${e.loc}: ${err.message}`);
+        continue;
+      }
       snap[e.loc] = child.entries.map((c) => c.loc);
       meta[e.loc] = { lastmod: e.lastmod };
     } else if (prevState?.snap?.[e.loc]) {
@@ -133,7 +151,7 @@ async function snapshotSite(site, prevState) {
       meta[e.loc] = prevMeta[e.loc];
     }
   }
-  return { snap, meta, listed: root.entries.map((e) => e.loc) };
+  return { snap, meta, listed: root.entries.map((e) => e.loc), stale };
 }
 
 function readWebhook() {
@@ -163,7 +181,8 @@ async function watchSite(site, cfg, now, dry) {
   const prev = fs.existsSync(file)
     ? JSON.parse(fs.readFileSync(file, "utf8"))
     : null;
-  const cur = await snapshotSite(site, prev);
+  const { stale, ...cur } = await snapshotSite(site, prev);
+  for (const s of stale) console.error(`competitor-watch: ${site.name} の子を前の回の値で埋めた ${s}`);
   if (!dry) {
     fs.mkdirSync(cfg.stateDir, { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ at: now.toISOString(), ...cur }));
