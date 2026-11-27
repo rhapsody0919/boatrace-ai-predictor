@@ -16,7 +16,7 @@ import "./HomeAiIntro.css";
  * 成績ページへのリンクをクロールできる形で置く。
  * 的中率・回収率の数値は出さない（2026-10-01 ユーザー判断）。以前は展開予測の実測的中率を出していたが、
  * 決まり手を見ずに判定しており、予想なしの「1〜3号艇のどれかが1着」を下回ることが分かった（BOA-617）。
- * /accuracy・/hit-races は日本語のみのページ（TRANSLATED_PATHS 未登録）。言語プレフィックスを
+ * /accuracy は日本語のみのページ（TRANSLATED_PATHS 未登録）。言語プレフィックスを
  * 付けると /en/accuracy → /accuracy のリダイレクトを挟むため、付けずにリンクする。
  *
  * 「レースを開いたら、この2つで確かめる」（SEO 施策 B1、2026-10-11 ユーザー承認のモック）:
@@ -37,7 +37,7 @@ import "./HomeAiIntro.css";
  * どのデータを使い、成績をどこで確かめられるかを最初に読めるようにする（信用の側の手当て）。
  * 「公式」はデータの出どころにだけ使い、集計は当サイトと書く。更新の時刻は年つきの JST
  * （formatUpdatedAtJstParts）で、ボット向けも同じ部品から組む。/profile も ja だけのページなので接頭辞を付けない。
- * /accuracy・/hit-races のリンクはこの③の行だけに置き、節の中で2回出さない
+ * /accuracy のリンクはこの③の行だけに置き（/hit-races は BOA-822 で /accuracy へ転送）、節の中で2回出さない
  *
  * @param {{lastUpdated?: string|null}} props lastUpdated は VenueGridPage の getRaces() の scrapedAt
  */
@@ -70,7 +70,6 @@ function HomeAiIntro({ lastUpdated = null }) {
         <li>
           <span>{t("home.aiIntro.results")}</span>{" "}
           <Link to="/accuracy">{t("home.aiIntro.accuracyLink")}</Link>{" "}
-          <Link to="/hit-races">{t("home.aiIntro.hitRacesLink")}</Link>{" "}
           <span>{t("home.aiIntro.hitRacesNote")}</span>
         </li>
       </ul>

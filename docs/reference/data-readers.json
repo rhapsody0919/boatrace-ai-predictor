@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3045,
+    "sourceFiles": 3048,
     "filesWithAccess": 333,
     "tableReaders": 980,
     "tableWriters": 200,
@@ -1675,7 +1675,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries7.js:78",
+          "ref": "src/services/motorQueries7.js:114",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1862,7 +1862,7 @@
             "src/services/meetQueries2.js:157",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/motorQueries7.js:78",
+            "src/services/motorQueries7.js:114",
             "src/services/raceQueries.js:288",
             "src/services/raceQueries.js:35",
             "src/services/raceQueries2.js:188",
@@ -1895,7 +1895,7 @@
             "src/services/meetQueries2.js:157",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/motorQueries7.js:78",
+            "src/services/motorQueries7.js:114",
             "src/services/raceQueries.js:288",
             "src/services/raceQueries.js:35",
             "src/services/raceQueries2.js:188",
@@ -1924,7 +1924,7 @@
             "src/services/meetQueries2.js:157",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/motorQueries7.js:78",
+            "src/services/motorQueries7.js:114",
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries2.js:66",
             "src/services/raceQueries3.js:90",
@@ -1969,7 +1969,7 @@
           "readers": [
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/motorQueries7.js:78"
+            "src/services/motorQueries7.js:114"
           ],
           "writers": [],
           "sql": []
@@ -1978,7 +1978,7 @@
           "readers": [
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/motorQueries7.js:78"
+            "src/services/motorQueries7.js:114"
           ],
           "writers": [],
           "sql": []
@@ -7965,7 +7965,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries7.js:47",
+          "ref": "src/services/motorQueries7.js:83",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8564,7 +8564,7 @@
             "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:38",
-            "src/services/motorQueries7.js:47",
+            "src/services/motorQueries7.js:83",
             "src/services/motorQueries8.js:32",
             "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:144",
@@ -8868,7 +8868,7 @@
             "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:38",
-            "src/services/motorQueries7.js:47",
+            "src/services/motorQueries7.js:83",
             "src/services/motorQueries8.js:32",
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries7.js:22"
@@ -9062,7 +9062,7 @@
             "src/services/motorQueries3.js:240",
             "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries7.js:47",
+            "src/services/motorQueries7.js:83",
             "src/services/raceQueries.js:169",
             "src/services/raceQueries.js:192",
             "src/services/raceQueries.js:278",

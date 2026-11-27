@@ -8,6 +8,9 @@ import { test, expect } from "./fixtures.js";
  * 展開予測・イン崩れ指数がそのまま出ていた。predictions も中止前に作られて残ることがある
  * （BOA-411。本番では 2026-08-11 大宮の12レースが該当）。
  *
+ * BOA-822 の公開（2026-11-27）で、タブ名は「イン崩れ」・中身は注意度のカード（.in-caution-tab）・中止の案内文は
+ * 「イン崩れ注意度はありません」になった。
+ *
  * DBに依存しないよう Edge API と Supabase REST を差し替える。
  */
 
@@ -58,7 +61,7 @@ const edgeData = {
 };
 
 const COPY_LABEL = "AI用にコピー";
-const CANCELLED_TEXT = "このレースは中止のため、AI予想はありません";
+const CANCELLED_TEXT = "このレースは中止のため、イン崩れ注意度はありません";
 
 test.describe("中止確定レースでAI予想・AI用コピーを出さない（BOA-424）", () => {
   test.beforeEach(async ({ page }) => {
@@ -73,7 +76,7 @@ test.describe("中止確定レースでAI予想・AI用コピーを出さない�
     );
   });
 
-  test("通常のレース: AI用コピーのバナー・ボタンとAI予想タブの中身が出る", async ({
+  test("通常のレース: AI用コピーのバナー・ボタンとイン崩れタブの中身が出る", async ({
     page,
   }) => {
     await page.goto(`/race/${DATE}-09-02`);
@@ -85,14 +88,14 @@ test.describe("中止確定レースでAI予想・AI用コピーを出さない�
     });
     await expect(page.locator(".ai-copy-btn-inline")).toBeVisible();
 
-    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
-    await expect(page.locator(".prediction-result")).toBeVisible({
+    await page.locator(".race-tabs-btn", { hasText: "イン崩れ" }).click();
+    await expect(page.locator(".in-caution-tab")).toBeVisible({
       timeout: 10000,
     });
     await expect(page.getByText(CANCELLED_TEXT)).toHaveCount(0);
   });
 
-  test("中止確定のレース: AI用コピーを出さず、AI予想タブは案内だけを出す", async ({
+  test("中止確定のレース: AI用コピーを出さず、イン崩れタブは案内だけを出す", async ({
     page,
   }) => {
     await page.goto(`/race/${DATE}-09-01`);
@@ -111,12 +114,12 @@ test.describe("中止確定レースでAI予想・AI用コピーを出さない�
     await expect(page.getByText(COPY_LABEL)).toHaveCount(0);
 
     // タブは残す（他タブと扱いを揃える）
-    const aiTab = page.locator(".race-tabs-btn", { hasText: "AI予想" });
+    const aiTab = page.locator(".race-tabs-btn", { hasText: "イン崩れ" });
     await expect(aiTab).toBeVisible();
     await aiTab.click();
     await expect(page.getByTestId("ai-prediction-cancelled")).toHaveText(
       CANCELLED_TEXT,
     );
-    await expect(page.locator(".prediction-result")).toHaveCount(0);
+    await expect(page.locator(".in-caution-tab")).toHaveCount(0);
   });
 });

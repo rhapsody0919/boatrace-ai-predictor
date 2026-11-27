@@ -13,6 +13,10 @@ import { test, expect } from "./fixtures.js";
  * - 桐生 2026-09-24 8R（一部返還）: 不成立の3連複・拡連複が払戻欄から黙って消えた
  * - 戸田 2026-09-19 9R（一部返還）: 返還艇が3着に出た
  *
+ * BOA-822 の公開（2026-11-27）で展開予測の表示（一覧カードの的中・外れの札、AI予想タブの展開予測と答え合わせ）が
+ * 無くなったので、それらを確かめていた test は「出ない」ことの確かめに書き換えた
+ * （一覧カードの「不成立」「返還艇あり」・結果欄の払戻は変えていない）。
+ *
  * DBの中身に依存しないよう、Edge API と Supabase REST を差し替える。値は本番の実データ
  * （2026-09-29 に execute_sql で確認）。
  */
@@ -538,46 +542,37 @@ test.describe("不成立・返還の表示（BOA-543）", () => {
     await expect(noRace).not.toContainText("外れ");
 
     const partial = cards.nth(1).locator(".race-card-header");
-    await expect(partial).toContainText("展開的中");
+    // 展開予測の的中・外れの札は BOA-822 の公開（2026-11-27）で出さない
+    await expect(partial).not.toContainText("展開的中");
+    await expect(partial).not.toContainText("外れ");
     await expect(partial).toContainText("返還艇あり");
   });
 
-  test("AI予想タブ: 不成立は展開予測とイン崩れの振り返りを「判定対象外（不成立）」にする", async ({
+  test("イン崩れタブ: 不成立のレースに、展開予測と答え合わせ（判定対象外・的中）の表示は出ない", async ({
     page,
   }) => {
     await setup(page, [HAMANAKO], { startTimings: HAMANAKO.startTimings });
     await page.goto(`/race/${raceIdOf(HAMANAKO)}`);
-    await page.getByRole("tab", { name: "AI予想" }).click({ timeout: 20000 });
-    const tab = page.locator(".race-ai-prediction-tab");
+    await page.getByRole("tab", { name: "イン崩れ" }).click({ timeout: 20000 });
+    const tab = page.locator(".in-caution-tab");
     await expect(tab).toBeVisible();
-    await expect(tab.locator(".turn-pattern-summary--void")).toContainText(
-      "判定対象外（不成立）",
-    );
-    await expect(tab.locator(".turn-pattern-hit-tag")).toHaveCount(0);
-    // 不成立は行ごとの「返還」印を付けず、まとめの1行だけにする（モックどおり）
-    await expect(tab.locator(".turn-pattern-void-tag")).toHaveCount(0);
-    await expect(tab.locator(".turn-pattern-row--void")).toHaveCount(3);
+    await expect(tab.locator(".turn-pattern-summary")).toHaveCount(0);
+    await expect(tab.locator(".turn-pattern-row")).toHaveCount(0);
+    await expect(tab.locator(".result-volatility-line")).toHaveCount(0);
     await expect(tab).not.toContainText("的中しました");
-    await expect(tab.locator(".result-volatility-line").nth(1)).toContainText(
-      "判定対象外（不成立）",
-    );
   });
 
-  test("AI予想タブ: 一部返還は1着で判定し、返還艇の候補に「返還（判定対象外）」を付ける", async ({
+  test("イン崩れタブ: 一部返還のレースにも、展開予測の的中と「返還（判定対象外）」の印は出ない", async ({
     page,
   }) => {
     await setup(page, [KIRYU], { startTimings: KIRYU.startTimings });
     await page.goto(`/race/${raceIdOf(KIRYU)}`);
-    await page.getByRole("tab", { name: "AI予想" }).click({ timeout: 20000 });
-    const tab = page.locator(".race-ai-prediction-tab");
-    await expect(tab.locator(".turn-pattern-hit-tag")).toHaveCount(1);
-    await expect(tab.locator(".turn-pattern-void-tag")).toHaveText(
-      "返還（判定対象外）",
-    );
-    await expect(tab.locator(".turn-pattern-summary")).toContainText(
-      // 的中は1着の艇で判定するので、決まり手まで当たったと読める「予想の1つが的中」にしない（BOA-724）
-      "上位予想の艇が1着になりました",
-    );
+    await page.getByRole("tab", { name: "イン崩れ" }).click({ timeout: 20000 });
+    const tab = page.locator(".in-caution-tab");
+    await expect(tab).toBeVisible();
+    await expect(tab.locator(".turn-pattern-hit-tag")).toHaveCount(0);
+    await expect(tab.locator(".turn-pattern-void-tag")).toHaveCount(0);
+    await expect(tab.locator(".turn-pattern-summary")).toHaveCount(0);
   });
 });
 

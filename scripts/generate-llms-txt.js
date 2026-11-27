@@ -41,9 +41,10 @@ const CORE_PAGES = [
     description: "龍神レーダーの料金・使い方・データの見方に関するFAQ",
   },
   {
-    title: "AI予想の記録",
+    title: "イン崩れ注意度の実績",
     path: "/accuracy",
-    description: "AI予想の過去の結果の記録",
+    description:
+      "イン崩れ注意度の段（崩れやすい・中くらい・堅め）ごとに、実際に1号艇が1着を逃した割合・件数を全国で数えた実績",
   },
   {
     title: "龍神レーダーについて",

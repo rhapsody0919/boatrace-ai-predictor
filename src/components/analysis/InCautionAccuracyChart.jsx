@@ -36,7 +36,8 @@ function LevelRow({ row, baseRate, t }) {
       ? t("accuracy.inCaution.levelHigh", { level: name, p: HIGH })
       : row.level === "low"
         ? t("accuracy.inCaution.levelLow", { level: name, p: LOW })
-        : t("accuracy.inCaution.levelMid", { level: name, lo: LOW, hi: HIGH });
+        : // 注意度は整数で、中くらいは pct < HIGH。FAQ・About と同じく上端は HIGH − 1 と書く（ファン評価 #3337）
+          t("accuracy.inCaution.levelMid", { level: name, lo: LOW, hi: HIGH - 1 });
   const [zFrom, zTo] = ZONE[row.level];
   return (
     <li className={`ica-row ica-row--${row.level}`}>

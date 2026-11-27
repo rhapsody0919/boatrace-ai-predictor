@@ -10,6 +10,10 @@ import { test, expect } from "./fixtures.js";
  * react-share の X ボタンは href を持たず window.open で intent URL を開くので、
  * window.open を差し替えて開こうとした URL を読む。
  * DBに依存しないよう Edge API と Supabase REST を差し替える（race-cancelled-ai.spec.js と同じ）。
+ *
+ * BOA-822 の公開（2026-11-27）で表示が無くなったので外した: 日本語: 通常の文面1〜5が従来どおり／
+ * en・zh-TW・ko: 通常の文面5種が各言語で出て、日本語が混ざらない（発走前の共有文は注意度の文面だけになり、
+ * 本命・推奨・5種の言い回しは出ない。注意度の文面は下の describe が4言語で守る）
  */
 
 const DATE = "2026-09-22";
@@ -116,15 +120,14 @@ async function shareOnX(page, path) {
 }
 
 test.describe("レース詳細のSNSシェア文面（中止・予想なし）", () => {
-  test("通常のレース: 従来どおり本命・推奨を含む予想の文面", async ({
+  test("通常のレース: 注意度の文面で、本命・推奨を含まない", async ({
     page,
   }) => {
     await setup(page, "ja");
     const text = await shareTextOnX(page, `/race/${DATE}-09-02`);
-    expect(text).toContain("龍神レーダー予想");
     expect(text).toContain("津2R");
-    expect(text).toContain("本命: 1号艇");
-    expect(text).toContain("推奨: 1-");
+    expect(text).toContain("イン崩れ注意度 65%");
+    expect(text).not.toMatch(/本命|推奨|龍神レーダー予想|展開予測/);
   });
 
   test("中止確定のレース: 中止の文面で、本命を含まない", async ({ page }) => {
@@ -158,77 +161,13 @@ test.describe("レース詳細のSNSシェア文面（中止・予想なし）",
   });
 });
 
-// 日本語の通常文面（5種）。i18n 化の前に share.js に直書きしていた文面と一字一句同じであることを確かめる
-const JA_HEAD =
-  "🏁 龍神レーダー予想【09/22 津2R】\n\nモデル: AI予想\n本命: 1号艇\n推奨: 1-2\n\n";
-const JA_BODIES = [
-  "展開予測から分析した結果、この並びが来そう！\nデータ的にも期待できるかも👀",
-  "1マーク展開予測とモーター性能を分析した結果、\nこの組み合わせに注目してます📊",
-  "無料でここまで精度の高い予想が見られるのは嬉しい✨\n今日も当たりますように！",
-  "展開予測から見て、この予想は信頼できそう！\n皆さんはどう思いますか？🤔",
-  "最近的中率が上がってきてて嬉しい😊\nAIの予想、参考にしてみてください！",
-];
-
-// 各言語の通常文面に必ず入る部分（見出し・モデル名・本命）
 const LOCALIZED = [
-  {
-    lang: "en",
-    prefix: "/en",
-    expected: [
-      "Ryujin Radar Prediction",
-      "Model: AI Prediction",
-      "Top pick: Boat 1",
-      "Picks: 1-2",
-    ],
-  },
-  {
-    lang: "zh-TW",
-    prefix: "/zh-TW",
-    expected: ["龍神雷達預測", "模型：AI預測", "首選：1號艇", "推薦：1-2"],
-  },
-  {
-    lang: "ko",
-    prefix: "/ko",
-    expected: [
-      "용신 레이더 예상",
-      "모델: AI 예상",
-      "본명: 1번 보트",
-      "추천: 1-2",
-    ],
-  },
+  { lang: "en", prefix: "/en" },
+  { lang: "zh-TW", prefix: "/zh-TW" },
+  { lang: "ko", prefix: "/ko" },
 ];
-
-// ひらがな・カタカナ（日本語の文面が混ざっていないかの判定。漢字は zh-TW と共通なので見ない）
-const KANA = /[\u3040-\u30ff]/;
 
 test.describe("レース詳細のSNSシェア文面（言語・ハッシュタグ）", () => {
-  for (let v = 0; v < 5; v++) {
-    test(`日本語: 通常の文面${v + 1}が従来どおり`, async ({ page }) => {
-      await setup(page, "ja", v);
-      const { text, hashtags } = await shareOnX(page, `/race/${DATE}-09-02`);
-      expect(text).toBe(JA_HEAD + JA_BODIES[v]);
-      expect(hashtags).toEqual(["ボートレース", "AI予想", "龍神レーダー"]);
-    });
-  }
-
-  for (const { lang, prefix, expected } of LOCALIZED) {
-    test(`${lang}: 通常の文面5種が各言語で出て、日本語が混ざらない`, async ({
-      page,
-    }) => {
-      const texts = [];
-      for (let v = 0; v < 5; v++) {
-        await setup(page, lang, v);
-        texts.push(await shareTextOnX(page, `${prefix}/race/${DATE}-09-02`));
-      }
-      for (const text of texts) {
-        expect(text).not.toMatch(KANA);
-        for (const part of expected) expect(text).toContain(part);
-      }
-      // 5種とも別の文面になっている（どれかが欠けて同じキーに落ちていない）
-      expect(new Set(texts).size).toBe(5);
-    });
-  }
-
   for (const { lang, prefix } of [{ lang: "ja", prefix: "" }, ...LOCALIZED]) {
     test(`${lang}: 中止のレースでは「#AI予想」のタグを付けない`, async ({
       page,

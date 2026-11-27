@@ -109,7 +109,7 @@ async function setup(page, { preview = true, facts = null } = {}) {
   return calls;
 }
 
-// 龍神ソナーは基本情報と AI予想の間の独立タブ（2026-10-08、承認モック sonar-tab v3）
+// 龍神ソナーは基本情報とイン崩れ（旧 AI予想）の間の独立タブ（2026-10-08、承認モック sonar-tab v3）
 async function openSonarTab(page, n = 1) {
   await page.goto(`/race/${DATE}-09-${String(n).padStart(2, "0")}`);
   await expect(page.getByText("テスト選手1").first()).toBeVisible({
@@ -428,7 +428,10 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
   });
 
   test.describe("別タブ化（2026-10-08、承認モック sonar-tab v3）", () => {
-    test("タブは基本情報と AI予想の間。AI予想タブにはソナーを描かず、一番下の案内1行でソナーのタブへ移る", async ({
+    // BOA-822 の公開（2026-11-27）: AI予想タブはイン崩れタブになり、一番下の「ソナーのタブへ移る」案内
+    // （ai-tab-sonar-link）は描かない。案内の押下の確かめ（ソナーのタブへ移る・race_tab_select は1回）は、
+    // 表示が無くなったので外した。ソナーのタブへ入る道は、タブそのものと ?sonar= のリンク（下の test）
+    test("タブは基本情報・龍神ソナー・イン崩れの順。イン崩れタブにはソナーを描かず、旧の案内も出さない", async ({
       page,
     }) => {
       await page.addInitScript(() => {
@@ -437,16 +440,22 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       });
       await setup(page);
       await page.goto(`/race/${DATE}-09-01?tab=aiPrediction`);
-      const link = page.getByTestId("ai-tab-sonar-link");
-      await expect(link).toBeVisible({ timeout: 20000 });
-      const tabs = await page.locator(".race-tabs-btn").allInnerTexts();
-      expect(tabs.slice(0, 3)).toEqual(["基本情報", "龍神ソナー", "AI予想"]);
-      await expect(sectionOf(page)).toHaveCount(0);
-      await link.click();
-      await expect(sectionOf(page)).toBeVisible();
+      const tabs = page.locator(".race-tabs-btn");
+      await expect(tabs.first()).toBeVisible({ timeout: 20000 });
+      expect((await tabs.allInnerTexts()).slice(0, 3)).toEqual([
+        "基本情報",
+        "龍神ソナー",
+        "イン崩れ",
+      ]);
       await expect(
-        page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }),
+        page.locator(".race-tabs-btn", { hasText: /^イン崩れ$/ }),
       ).toHaveAttribute("aria-selected", "true");
+      await expect(page.locator(".in-caution-tab")).toBeVisible();
+      await expect(sectionOf(page)).toHaveCount(0);
+      await expect(page.getByTestId("ai-tab-sonar-link")).toHaveCount(0);
+      // ソナーのタブは、タブを押して開く
+      await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
+      await expect(sectionOf(page)).toBeVisible();
       await expect(page).toHaveURL(/[?&]tab=sonar(&|$)/);
       const selects = await page.evaluate(() =>
         window.__events

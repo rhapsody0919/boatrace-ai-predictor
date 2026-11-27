@@ -29,6 +29,42 @@ async function getSeriesOfRace(venueCode, raceDate) {
 }
 
 /**
+ * この選手がこのモーターで走った走ごとの展示タイムと、そのレースの平均との差・部品交換（P-16・F-051）。
+ * exhibitionByKey は「race_id-艇番」→ exhibition_data の行（同じレースの全艇の行を含む）
+ */
+function buildMeetTrend(meetEntries, exhibitionByKey) {
+  // そのレースの展示タイムの平均（展示のある艇が2艇以上のときだけ）。モーターの推移と同じ「レース内の平均との差」
+  // （オーナー 2026-11-25「B 差で作る」、motorQueries8 の exhibitionDiffs と同じ定義）を図の値にする（P-16）
+  const meanByRace = new Map();
+  for (const row of exhibitionByKey.values()) {
+    if (!(row.exhibition_time > 0)) continue;
+    const acc = meanByRace.get(row.race_id) ?? { sum: 0, n: 0 };
+    meanByRace.set(row.race_id, {
+      sum: acc.sum + row.exhibition_time,
+      n: acc.n + 1,
+    });
+  }
+  return meetEntries
+    .map((e) => {
+      const row = exhibitionByKey.get(`${e.race_id}-${e.boat_number}`);
+      const acc = meanByRace.get(e.race_id);
+      const time = row?.exhibition_time > 0 ? row.exhibition_time : null;
+      return {
+        raceId: e.race_id,
+        date: e.race_id.slice(0, 10),
+        raceNo: Number(e.race_id.slice(-2)),
+        exhibition_time: time,
+        exhibitionDiff:
+          time !== null && acc?.n >= 2 ? time - acc.sum / acc.n : null,
+        // その走の部品交換・プロペラ交換（図の印、F-051）
+        parts: row?.parts_changed?.length ? row.parts_changed : null,
+        propellerChanged: !!row?.propeller_change,
+      };
+    })
+    .filter((row) => row.exhibition_time !== null);
+}
+
+/**
  * 選手の直近出走から今節（開催中の会場）のモーター番号を特定し、
  * そのモーターの機力指数（通算・他選手も含む実績との比較）と、
  * この選手自身が今節このモーターに乗ってからの展示タイム推移を取得する（BOA-265）
@@ -38,7 +74,7 @@ async function getSeriesOfRace(venueCode, raceDate) {
  * race_idは「YYYY-MM-DD-会場コード-レース番号」形式のため、会場コードは
  * 追加クエリ無しでrace_idから直接取り出せる
  * @param {number|string} racerId
- * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { date: string, exhibition_time: number }[], latestPartsEvent: { date: string, propellerChanged: boolean, parts: string[]|null } | null, venueMotorStats: object|null, preGeneration: boolean, meetEnded: boolean|null } | null>}
+ * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { raceId: string, date: string, raceNo: number, exhibition_time: number, exhibitionDiff: number|null, parts: string[]|null, propellerChanged: boolean }[], latestPartsEvent: { date: string, propellerChanged: boolean, parts: string[]|null } | null, venueMotorStats: object|null, preGeneration: boolean, meetEnded: boolean|null } | null>}
  */
 export async function getRacerCurrentMotorStatus(racerId) {
   if (!supabase) return null;
@@ -85,15 +121,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
     );
   }
 
-  const meetTrend = meetEntries
-    .map((e) => ({
-      date: e.race_id.slice(0, 10),
-      raceNo: Number(e.race_id.slice(-2)),
-      exhibition_time:
-        exhibitionByKey.get(`${e.race_id}-${e.boat_number}`)?.exhibition_time ??
-        null,
-    }))
-    .filter((row) => row.exhibition_time !== null);
+  const meetTrend = buildMeetTrend(meetEntries, exhibitionByKey);
 
   // 今節（このモーター使用開始後）の部品交換・プロペラ交換のうち直近1件（BOA-221）
   const latestPartsEvent =

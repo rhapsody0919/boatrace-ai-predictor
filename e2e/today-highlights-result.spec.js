@@ -13,6 +13,14 @@ import { test, expect } from "./fixtures.js";
  * - Edge API が失敗したとき、get_today_races を Supabase へ直接呼ぶ（以前は races への別実装の直接クエリ）
  *
  * DBの中身に依存しないよう、Edge API と Supabase REST を差し替える。
+ *
+ * BOA-822 の公開（2026-11-27）で、欄は旧イン崩れ指数（0〜100、「/ 100」、段は 70・30 の閾値）ではなく
+ * イン崩れ注意度（inCaution の pct・level。「今日のイン崩れ注意度」）で並ぶ。モックの応答には
+ * 旧指数の percentile から pct（= percentile × 100）と段（55 以上 high、35 未満 low、間 mid。
+ * 画面の閾値ではなく、朝の生成が保存する level の代わり）を作って載せる。
+ *
+ * BOA-822 の公開（2026-11-27）で表示が無くなったので外した: 崩れやすさは「/ 100」で出し、% を付けない。
+ * 見出しは 🌪️（旧指数の物差しの表示。代わりに、割合と段の札・「/ 100」を出さないことを下で確かめる）
  */
 
 // 4本。注目レースは min(5, floor(対象本数/2)) 本ずつ出る。
@@ -35,6 +43,12 @@ const DATE = "2026-09-29";
 
 const raceIdOf = (raceNo) =>
   `${DATE}-${String(VENUE_CODE).padStart(2, "0")}-${String(raceNo).padStart(2, "0")}`;
+
+// 注意度の行は、レース詳細のイン崩れタブ（?tab=aiPrediction）を開く
+const hrefOf = (raceNo) => `/race/${raceIdOf(raceNo)}?tab=aiPrediction`;
+
+// 朝の生成が保存する段の代わり（pct から。画面は保存された level をそのまま使う）
+const levelOfPct = (pct) => (pct >= 55 ? "high" : pct < 35 ? "low" : "mid");
 
 /** get_today_races（110 適用後）の形 */
 function edgeTodayResponse(races = RACES) {
@@ -61,6 +75,10 @@ function edgeTodayResponse(races = RACES) {
             percentile: r.percentile,
             isFallback: false,
             level: "standard",
+          },
+          inCaution: {
+            pct: Math.round(r.percentile * 100),
+            level: levelOfPct(Math.round(r.percentile * 100)),
           },
           turnPrediction: r.turnPrediction ?? null,
           racers: [],
@@ -118,16 +136,15 @@ test.describe("ホームの注目レース: 結果のあるレースは中止扱
       await setup(page, { edge });
       await page.goto("/");
       const [high, low] = await readHighlights(page);
-      expect(high).toEqual([`/race/${raceIdOf(1)}`]);
-      expect(low).toEqual([`/race/${raceIdOf(4)}`]);
-      expect([...high, ...low]).not.toContain(`/race/${raceIdOf(2)}`);
+      expect(high).toEqual([hrefOf(1)]);
+      expect(low).toEqual([hrefOf(4)]);
+      expect([...high, ...low]).not.toContain(hrefOf(2));
     });
   }
 });
 
-// BOA-711 U4（2026-10-03 ユーザー判断）: 「95%」は確率に読まれたので、レース詳細の比較バーと同じく
-// 「95 / 100」（0〜100 の物差し）で出す。崩れやすい側の見出しのアイコンはカードと同じ 🌪️
-test("ホームの注目レース: 崩れやすさは「/ 100」で出し、% を付けない。見出しは 🌪️（BOA-711）", async ({
+// BOA-822: 値は割合と段の札で出す。「95 / 100」の物差し（BOA-711）は出さない
+test("ホームの注目レース: 注意度は割合と段の札で出し、「/ 100」の物差しは出さない（BOA-822）", async ({
   page,
 }) => {
   await setup(page, { edge: true });
@@ -138,20 +155,23 @@ test("ホームの注目レース: 崩れやすさは「/ 100」で出し、% �
     .allInnerTexts();
   expect(values.length).toBeGreaterThan(0);
   for (const v of values) {
-    expect(v).toMatch(/^\d+\s*\/ 100$/);
+    expect(v).toMatch(/^\d+%\s*!?\s*(崩れやすい|中くらい|堅め)$/);
   }
-  await expect(page.locator(".volatility-highlights")).toContainText("🌪️");
-  await expect(page.locator(".volatility-highlights")).not.toContainText("⚠️");
-  // 数字が確率に読まれないよう、物差しの意味を書く。すぐ下の「イン崩れ注意（高）」と食い違わないよう、
-  // 「確率ではない」とは書かず順位だと書く（ファン評価1・2周目）
+  const section = page.locator(".volatility-highlights");
+  await expect(section.locator(".volatility-highlights__title")).toHaveText(
+    "今日のイン崩れ注意度",
+  );
+  await expect(section).not.toContainText("/ 100");
+  await expect(section).not.toContainText("🌪️");
+  // 割合の意味（勝率差が同じくらいの過去レースで1号艇が1着を逃した割合）を書く
   await expect(
     page.locator(".volatility-highlights__scale-note"),
-  ).toContainText("100が最も崩れやすい");
+  ).toContainText("1号艇が1着を逃した割合");
 });
 
 // BOA-757: 締切を過ぎたレースが締切前と区別なく並び、これから見るレースを選ぶ導線にならなかった。
 // 締切前のレースが2本以上あれば締切前だけから選び、残っていなければ締切済みから選んで札と注記を付ける
-// 10〜15時の6本。段階は 高: 1R（95）・4R（80）、標準: 3R（60）・5R（40）、本命有利: 2R（20）・6R（5）。
+// 10〜15時の6本。段は 崩れやすい: 1R（95）・4R（80）・3R（60）、中くらい: 5R（40）、堅め: 2R（20）・6R（5）。
 // 1R は3号艇が1着の結果あり。ほかは結果がまだ無い（反映待ち）
 const DAY_RACES = [95, 20, 60, 80, 40, 5].map((p, i) => ({
   raceNo: i + 1,
@@ -172,9 +192,9 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const [high, low] = await readHighlights(page);
-    // 締切前は 13時（80・高）・14時（40・標準）・15時（5・本命有利）の3本
-    expect(high).toEqual([`/race/${raceIdOf(4)}`]);
-    expect(low).toEqual([`/race/${raceIdOf(6)}`]);
+    // 締切前は 13時（80・崩れやすい）・14時（40・中くらい）・15時（5・堅め）の3本
+    expect(high).toEqual([hrefOf(4)]);
+    expect(low).toEqual([hrefOf(6)]);
     await expect(page.locator(".volatility-highlights__closed")).toHaveCount(0);
     await expect(
       page.locator(".volatility-highlights__closed-note"),
@@ -193,9 +213,9 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const [high, low] = await readHighlights(page);
-    expect(high).toEqual([1, 4].map((n) => `/race/${raceIdOf(n)}`));
-    expect(low).toEqual([6, 2].map((n) => `/race/${raceIdOf(n)}`));
-    await expect(page.locator(".volatility-highlights__closed")).toHaveCount(4);
+    expect(high).toEqual([1, 4, 3].map(hrefOf));
+    expect(low).toEqual([6, 2].map(hrefOf));
+    await expect(page.locator(".volatility-highlights__closed")).toHaveCount(5);
     await expect(page.locator(".volatility-highlights__closed").first()).toHaveText(
       "締切",
     );
@@ -204,18 +224,18 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     ).toContainText("振り返りとして表示しています");
     // 振り返りとして結果も出す。予測（コース）と混ざらないよう「結果: N号艇が1着」の形
     const results = page.locator(".volatility-highlights__result");
-    await expect(results).toHaveCount(4);
+    await expect(results).toHaveCount(5);
     await expect(
-      page.locator(`a[href="/race/${raceIdOf(1)}"] .volatility-highlights__result`),
+      page.locator(`a[href="${hrefOf(1)}"] .volatility-highlights__result`),
     ).toHaveText("結果: 3号艇が1着");
     await expect(
-      page.locator(`a[href="/race/${raceIdOf(2)}"] .volatility-highlights__result`),
+      page.locator(`a[href="${hrefOf(2)}"] .volatility-highlights__result`),
     ).toHaveText("結果: 反映待ち");
   });
 
-  // 夕方の残り数本の中で上位・下位を切ると、崩れやすさ28〜33の「標準」が「イン崩れ注意（高）」に
+  // 夕方の残り数本の中で上位・下位を切ると、崩れやすさ28〜33の「中くらい」が「崩れやすい」に
   // 入った（PR #1248 ファン評価1周目）。列にはレース詳細と同じ段階のレースだけを入れる
-  test("13:30: 締切前の「標準」（14時・40）は「イン崩れ注意（高）」に入れない", async ({
+  test("13:30: 締切前の「中くらい」（14時・40）は「崩れやすい」に入れない", async ({
     page,
   }) => {
     await setup(page, {
@@ -225,15 +245,15 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const columns = await readHighlights(page);
-    expect(columns).toEqual([[], [`/race/${raceIdOf(6)}`]]);
+    expect(columns).toEqual([[], [hrefOf(6)]]);
     // 列は消さず、該当なしと書く（PR #1248 ファン評価2周目。列ごと消えると読み込めていないのと区別できなかった）
     await expect(page.locator(".volatility-highlights__empty")).toHaveText(
-      "締切前のレースに、崩れやすさ70以上のレースはありません。",
+      "締切前のレースに、崩れやすい（55%以上）のレースはありません。",
     );
   });
 
-  // 締切前に残ったレースが「標準」だけになると、節ごと消えていた（PR #1248 ファン評価2周目。20:38〜20:44）
-  test("締切前が「標準」だけでも節を出し、両方の列に該当なしと書く", async ({
+  // 締切前に残ったレースが「中くらい」だけになると、節ごと消えていた（PR #1248 ファン評価2周目。20:38〜20:44）
+  test("締切前が「中くらい」だけでも節を出し、両方の列に該当なしと書く", async ({
     page,
   }) => {
     const races = [
@@ -249,8 +269,8 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     const columns = await readHighlights(page);
     expect(columns).toEqual([[], []]);
     await expect(page.locator(".volatility-highlights__empty")).toHaveText([
-      "締切前のレースに、崩れやすさ70以上のレースはありません。",
-      "締切前のレースに、崩れやすさ30以下のレースはありません。",
+      "締切前のレースに、崩れやすい（55%以上）のレースはありません。",
+      "締切前のレースに、堅め（35%未満）のレースはありません。",
     ]);
   });
 
@@ -265,7 +285,7 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     });
     await page.goto("/");
     const columns = await readHighlights(page);
-    expect(columns).toEqual([[], [`/race/${raceIdOf(6)}`]]);
+    expect(columns).toEqual([[], [hrefOf(6)]]);
     await expect(page.locator(".volatility-highlights__closed")).toHaveCount(0);
     await expect(
       page.locator(".volatility-highlights__closed-note"),
@@ -273,7 +293,7 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
   });
 
   // 展開予測の2行目（「1着予想: 1号艇」→「最有力の展開: ① 逃げ」）は、ほぼ全レースが逃げで見分けに使えず、
-  // 「イン崩れ注意（高）」の列で逃げが最有力と言っているように見えた（PR #1248 ファン評価1・2周目）。
+  // 「崩れやすい」の列で逃げが最有力と言っているように見えた（PR #1248 ファン評価1・2周目）。
   // ユーザー判断で外した。データに展開予測があっても出さない
   test("展開予測（1着予想・最有力の展開）は出さない", async ({ page }) => {
     const races = DAY_RACES.map((r) => ({

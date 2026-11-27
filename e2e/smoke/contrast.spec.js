@@ -1,3 +1,4 @@
+// BOA-822 の公開（2026-11-27）で表示が無くなったので外した: /hit-races（/accuracy への転送になり、/accuracy が上で検査済み）
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
 import { test, expect } from "../fixtures.js";
 
@@ -21,7 +22,6 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
     "/races",
     "/races/2026-06-22",
     "/responsible-gambling",
-    "/hit-races",
     "/privacy",
     "/terms",
     "/contact",

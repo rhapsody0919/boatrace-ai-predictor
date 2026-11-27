@@ -32,5 +32,5 @@ export const IN_CAUTION_CONFIG = Object.freeze({
   minCellN: 100,
   lowSampleN: 300,
   prelaunch: Object.freeze({ from: "2025-06-01", to: "2026-10-10" }),
-  launchDate: null,
+  launchDate: "2026-11-27",
 });

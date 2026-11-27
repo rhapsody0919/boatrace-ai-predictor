@@ -152,15 +152,15 @@ export async function botPageTopFacts({ lang, tl, body, has, e }) {
     "<ul>",
     `<li><span>${e(tl("home.aiIntro.operator", { name: "らぷそでぃ" }))}</span> <a href="/profile">${e(tl("home.aiIntro.profileLink"))}</a></li>`,
     `<li><span>${e(tl("home.aiIntro.data"))}</span> ${updatedLine}</li>`,
-    `<li><span>${e(tl("home.aiIntro.results"))}</span> <a href="/accuracy">${e(tl("home.aiIntro.accuracyLink"))}</a> <a href="/hit-races">${e(tl("home.aiIntro.hitRacesLink"))}</a> <span>${e(tl("home.aiIntro.hitRacesNote"))}</span></li>`,
+    `<li><span>${e(tl("home.aiIntro.results"))}</span> <a href="/accuracy">${e(tl("home.aiIntro.accuracyLink"))}</a> <span>${e(tl("home.aiIntro.hitRacesNote"))}</span></li>`,
     "</ul>",
     `<p>${e(tl("home.aiIntro.method"))}</p>`,
   ].join("\n");
   check(`${lang} トップ: 説明文の直後に運営・データ・成績の3行`, has(factsHtml), true);
   check(
-    `${lang} トップ: /profile・/accuracy・/hit-races へのリンクは1本ずつ（接頭辞なし）`,
+    `${lang} トップ: /profile・/accuracy へのリンクは1本ずつ、/hit-races（BOA-822 で転送）は無い（接頭辞なし）`,
     ["/profile", "/accuracy", "/hit-races"].map((href) => body.split(`<a href="${href}">`).length - 1),
-    [1, 1, 1],
+    [1, 1, 0],
   );
   check(`${lang} トップ: 3行に的中率・回収率・% が無い`, /的中率|回収率|%/.test(factsHtml), false);
   {
@@ -268,12 +268,12 @@ export async function botPageTopTextPart1({ lang, textOf }) {
     [true, true],
   );
   check(
-    `${lang} トップ: 成績ページ・的中レースへのリンク（接頭辞なし）`,
+    `${lang} トップ: 実績ページへのリンク（接頭辞なし）があり、的中レース一覧（/hit-races、BOA-822 で転送）へのリンクは無い`,
     [
       has(`<a href="/accuracy">${e(tl("home.aiIntro.accuracyLink"))}</a>`),
-      has(`<a href="/hit-races">${e(tl("home.aiIntro.hitRacesLink"))}</a>`),
+      has(`href="/hit-races"`),
     ],
-    [true, true],
+    [true, false],
   );
   const prefix = lang === "ja" ? "" : `/${lang}`;
   return { tl, html, body, has, e, showAssist, popularPosts, newPosts, prefix };

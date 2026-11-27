@@ -4,11 +4,12 @@
  *
  * - 全行が同じ列を持つ（RACE_FACT_COLUMNS・RUN_FACT_COLUMNS。キーのそろわない行で PostgREST が NULL を書く事故を避ける）
  * - グレードと種別は書き手が決めて渡す（ADR-0104 決定4 の補正は racerCareerSeries.js の gradeOverridesOf）
- * - 優勝戦は isFinalStage（v2）だけで決める（kb_archive_races.stage_kind・is_final_day は使わない。ADR-0104 決定3）
+ * - 優勝戦は isCareerFinalStage（isFinalStage の v2 ＋ オオムラGP・関ヶ原決戦。190 の集計と同じ判定）で決める
+ *   （kb_archive_races.stage_kind・is_final_day は使わない。ADR-0104 決定3）
  * - 着は成績コード（finish_raw）から finishMarkFromCode で出す（本体の結果ページの着欄と 8,805艇で一致）
  * - kb に無い列（気温・水温・潮位・複勝の払戻・チルト・オリジナル展示・風の扇形）は NULL。後の段で書き手が同じ関数を通して埋める
  */
-import { isFinalStage } from "../../src/pure/raceStageConfig.js";
+import { isCareerFinalStage } from "../../src/pure/racerCareerStats.js";
 import { finishMarkFromCode } from "./kbGapFill.js";
 import { KB_FIRST_DATE, KB_LAST_DATE } from "./kbArchiveBoundary.js";
 
@@ -68,7 +69,7 @@ export function buildKbRaceFact(race, venueDay, { grade, seriesKind }) {
     race_grade: orNull(grade),
     series_kind: orNull(seriesKind),
     stage_raw: orNull(race.stage),
-    is_final: race.stage == null ? null : isFinalStage(race.stage),
+    is_final: race.stage == null ? null : isCareerFinalStage(race.stage),
     deadline_time: orNull(race.deadline_time),
     weather: orNull(race.weather),
     wind_speed: orNull(race.wind_speed),

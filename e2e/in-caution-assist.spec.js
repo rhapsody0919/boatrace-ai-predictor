@@ -9,7 +9,7 @@ import {
  *   - 1着のバーはイン崩れ注意度の裏返し（100 − pct）。AI予想タブの注意度と足して 100%
  *   - 行ごとに数えた範囲の名前と件数（1着は勝率差が同じくらい、万舟は級の並びが同じ）
  *   - 枠の下に裏返しの1行
- *   - フラグの外は今のまま（級の並びの1着の割合）
+ *   - 公開（2026-11-27）の後はクエリ無しでも注意度の裏返し
  * 例のレースは 2026-10-06 徳山10R（準優勝戦）。出走表は録画、v16 は固定データ。録画は 157 の適用前で inCaution が無いので、
  * 予想の応答に注意度を足す（試験の値）
  */
@@ -105,17 +105,13 @@ test.describe("思考アシストの1着のバー（BOA-822、?caution=1）", ()
     await expect(page.getByText(/予選も含めると/)).toHaveCount(0);
   });
 
-  test("フラグの外は今のまま（級の並びの1着 58%、裏返しの1行は出さない）", async ({
+  test("公開の後はクエリ無しでも注意度の裏返し（級の並びの1着 58% は出さない）", async ({
     page,
   }) => {
     await page.goto(URL_);
     const card = roughCard(page);
-    await expect(card.locator(".baseline-bar-num").first()).toContainText(
-      "58%",
-      { timeout: 20000 },
-    );
-    await expect(card).not.toContainText("勝率差が同じくらい");
-    await expect(page.getByTestId("rough-in-caution-flip")).toHaveCount(0);
+    await expect(card).toContainText("勝率差が同じくらい", { timeout: 20000 });
+    await expect(page.getByTestId("rough-in-caution-flip")).toHaveCount(1);
   });
 });
 

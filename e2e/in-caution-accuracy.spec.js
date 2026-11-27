@@ -5,7 +5,7 @@ import { test, expect } from "./fixtures.js";
  * 承認モック mock/3-accuracy-375.png。機能フラグの裏、?caution=1）。DB に依存しないよう accuracy_cache を差し替える。
  *   - 公開前: 「公開後」は押せず、公開前の検証を出す。段は崩れやすい→堅め、割合・件数・ぶれ幅、全レースの点線
  *   - 公開直後: 既定は公開後。30件未満の段は割合を出さず件数だけ、公開からの日数
- *   - /winning-technique のタブのラベルと中身もフラグで切り替わる。フラグの外は今のまま
+ *   - /winning-technique のタブのラベルと中身もフラグで切り替わる。2026-11-27 に公開し、?caution=0 でも新しい中身
  */
 
 const PRE = {
@@ -80,7 +80,7 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
     await expect(page.getByTestId("ica-sparse")).toContainText(
       "注意度を出さなかった28レース",
     );
-    expect(rows[1]).toContain("中くらい（注意度35〜55%）");
+    expect(rows[1]).toContain("中くらい（注意度35〜54%）");
     expect(rows[2]).toContain("堅め（注意度35%未満）");
     expect(rows[2]).toContain("27.2%");
     // 旧の展開予測の的中率は出さない
@@ -117,7 +117,7 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
     expect((await rowTexts(page))[0]).toContain("65.7%");
   });
 
-  test("/winning-technique の volatility タブ: ラベルと中身が段ごとの実績になり、フラグの外は今のまま", async ({
+  test("/winning-technique の volatility タブ: ラベルと中身が段ごとの実績になり、公開の後は ?caution=0 でも同じ", async ({
     page,
   }) => {
     await routeAccuracy(page, accuracy(null));
@@ -131,11 +131,11 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
     await expect(page.getByText("イン崩れ指数の実績について")).toHaveCount(0);
 
     await page.goto("/winning-technique?tab=volatility&caution=0");
-    await expect(page.locator(".analysis-tab-btn.active")).toContainText(
-      "イン崩れ指数の実績",
+    await expect(page.locator(".analysis-tab-btn.active")).toHaveText(
+      "🌪️ イン崩れ注意度の実績",
       { timeout: 20000 },
     );
-    await expect(page.locator(".ica")).toHaveCount(0);
+    await expect(page.locator(".ica .ica-row")).toHaveCount(3);
   });
 });
 

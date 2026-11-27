@@ -1,0 +1,62 @@
+{
+  "schema": "content-pr-manifest/v1",
+  "id": "nige-simulation-guide",
+  "kind": "revision",
+  "ticket": "BOA-1725",
+  "paths": [
+    "public/blog/nige-simulation-guide.md"
+  ],
+  "files": {
+    "public/blog/nige-simulation-guide.md": "3fb3db93ef4ed07fe1bbc37d7ebcf249e331672df4b340927ab51e0ec81ce052"
+  },
+  "content_sha256": "697e9dbfe538fe155e49c565ab574b668041d780008e79d4491b5e7cbdbfbc91",
+  "content_at": "2026-11-27T16:04:35+09:00",
+  "judgement_words": [],
+  "reviews": [
+    {
+      "role": "content-qa",
+      "agent": "content-qa",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "697e9dbfe538fe155e49c565ab574b668041d780008e79d4491b5e7cbdbfbc91",
+      "model": "sonnet",
+      "at": "2026-11-27T16:05:35+09:00"
+    },
+    {
+      "role": "wording-editor",
+      "agent": "wording-editor",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "697e9dbfe538fe155e49c565ab574b668041d780008e79d4491b5e7cbdbfbc91",
+      "model": "sonnet",
+      "at": "2026-11-27T16:05:10+09:00"
+    },
+    {
+      "role": "fan",
+      "agent": "boatrace-fan-reviewer",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "697e9dbfe538fe155e49c565ab574b668041d780008e79d4491b5e7cbdbfbc91",
+      "model": "opus",
+      "at": "2026-11-27T16:06:30+09:00"
+    },
+    {
+      "role": "seo-marketer",
+      "agent": "seo-marketer",
+      "result": "pass",
+      "p0": 0,
+      "p1": 0,
+      "reviewed_sha256": "697e9dbfe538fe155e49c565ab574b668041d780008e79d4491b5e7cbdbfbc91",
+      "model": "sonnet",
+      "at": "2026-11-27T16:05:15+09:00"
+    }
+  ],
+  "author": {
+    "model": "claude-opus-5-5",
+    "lane": "session:seo-hiyori-article"
+  },
+  "created_at": "2026-11-27T16:07:20+09:00"
+}

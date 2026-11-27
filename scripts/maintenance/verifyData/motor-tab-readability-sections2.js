@@ -102,16 +102,15 @@ async function section6_4(ctx) {
   const linear = (c) =>
     c.curves.length > 0 && c.curves.every((d) => !/[CQ]/.test(d));
   check(
-    "展示タイムのグラフ（モータ情報・選手ページ）が0.2秒刻みの範囲と目盛りを使い、直線でつなぐ（描いた2つのグラフ）",
-    [
-      [ex, [6.8, 6.9, 6.75]],
-      [card.chart, [6.81, 6.9, 6.7]],
-    ].every(
-      ([c, times]) =>
-        c &&
-        c.yTicks.join("/") === exhibitionTicks(times).join("/") &&
-        linear(c),
-    ),
+    "展示タイムのグラフ（モータ情報）が0.2秒刻みの範囲と目盛りを使い、直線でつなぐ（描いたグラフ）",
+    ex && ex.yTicks.join("/") === exhibitionTicks([6.8, 6.9, 6.75]).join("/") && linear(ex),
+  );
+  // 選手ページは秒でなくレースの平均との差（P-16、オーナー 2026-11-27 承認）。差は −0.02・+0.02・−0.02
+  check(
+    "選手ページの展示タイムの図は、レースの平均との差を0.04秒ごとの目盛り（0 は「平均」）で描き、全部の点を1本の折れ線でつなぐ（描いたカード）",
+    card.chart?.yTicks.join("/") === "−0.04/平均/+0.04" &&
+      card.chart.dots === 3 &&
+      card.chart.linePoints === 3,
   );
 }
 
@@ -128,13 +127,12 @@ export async function section6(ctx) {
 async function section7_1(ctx) {
   const { check, drill, racerCardView: card, scenes, tJa } = ctx;
   const H = (key) => tJa(`analysis.motor.${key}`);
-  const slanted = (c) =>
-    c &&
-    c.xTicks.length === c.xTickTransforms.length &&
-    c.xTickTransforms.every((x) => x.startsWith("rotate(-35"));
+  // 選手ページは札を最初・真ん中・最後の3つに絞り、回さずに両端を図の中へ寄せる（P-16、オーナー 2026-11-27 承認）
   check(
-    "選手ページの展示タイムも、375pxでラベルを間引かない（描いたカードの横軸: 3点とも斜めに出す）",
-    card.chart?.xTicks.length === 3 && slanted(card.chart),
+    "選手ページの展示タイムの横の札は3つを回さずに出し、最初は左寄せ・最後は右寄せで図の中に収める（描いたカード）",
+    card.chart?.xTicks.length === 3 &&
+      card.chart.xTickTransforms.every((x) => x === "") &&
+      card.chart.xTickAnchors.join("/") === "start/middle/end",
   );
   const noRace = await scenes.drillScene({ selectedRace: null });
   check(
@@ -174,9 +172,10 @@ async function section7_2(ctx) {
   );
   const { single } = await ctx.racerCard();
   check(
-    "選手ページの展示タイムの横軸は、レース番号を全部の点に付けるか全部付けない（描いたカード）",
+    "選手ページの展示タイムの横の札は、1日1走でもレース番号を付ける（描いたカード）",
     card.chart?.xTicks.every((x) => / \d+R$/.test(x)) &&
-      single.chart?.xTicks.every((x) => !/R$/.test(x)),
+      single.chart?.xTicks.length === 2 &&
+      single.chart.xTicks.every((x) => / \d+R$/.test(x)),
   );
 }
 

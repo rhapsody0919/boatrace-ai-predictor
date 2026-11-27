@@ -57,7 +57,7 @@ for (const width of [375, 768, 1024, 1440]) {
       "結果4-2-1まくり3連単 ¥8,450",
     );
     const links = done.locator(".venue-race-block__links a");
-    await expect(links).toHaveText(["詳細を見る", "AI予想", "結果"]);
+    await expect(links).toHaveText(["詳細を見る", "イン崩れ注意度", "結果"]);
     const hrefs = await links.evaluateAll((as) =>
       as.map((a) => a.getAttribute("href")),
     );

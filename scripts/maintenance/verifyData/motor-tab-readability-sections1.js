@@ -63,18 +63,31 @@ async function section1_3(ctx) {
   );
 }
 
+// 選手ページの走ごとの展示タイムの図（P-16・F-051、オーナー 2026-11-27 承認）
+function checkRacerMeetChart(check, status, card) {
+  const diffs = (status?.meetTrend ?? []).map((r) => r.exhibitionDiff?.toFixed(2)).join(",");
+  const chart = card.chart ?? { dots: 0, marks: [] };
+  check(
+    "選手ページ: 値はレースの平均との差で、全部の走に点を打ち、部品交換・プロペラ交換の走に印（描いたカード）",
+    diffs === "-0.02,0.02,-0.02" && chart.dots === 3 && chart.marks.join("/") === "部品/ペラ",
+  );
+}
+
 async function section1_4(ctx) {
   const { check } = ctx;
   {
     // 選手ページ: 偽の DB の上で getRacerCurrentMotorStatus を回し、その戻りでカードを描く
     const { status, card, single, small } = await ctx.racerCard();
     const [d1, d2] = [ctx.day(-2).slice(5), ctx.day(-1).slice(5)];
+    // 横の札は「月/日 nR」（P-16、オーナー 2026-11-27 承認。旧: 同じ日に2走あるときだけレース番号）
+    const md = (d) => `${Number(d.slice(0, 2))}/${d.slice(3, 5)}`;
     check(
-      "選手ページ: 同じ日に2回走った日は、横軸にレース番号を添える（全部の点に付ける。1日1走なら付けない。偽の DB の今節のモーターで描いたカード）",
+      "選手ページ: 横の札は最初・真ん中・最後の走で、いつも日付とレース番号（偽の DB の今節のモーターで描いたカード）",
       status?.meetTrend.map((r) => r.raceNo).join(",") === "2,9,4" &&
-        card.chart?.xTicks.join("/") === `${d1} 2R/${d1} 9R/${d2} 4R` &&
-        single.chart?.xTicks.join("/") === `${d1}/${d2}`,
+        card.chart?.xTicks.join("/") === `${md(d1)} 2R/${md(d1)} 9R/${md(d2)} 4R` &&
+        single.chart?.xTicks.join("/") === `${md(d1)} 2R/${md(d2)} 4R`,
     );
+    checkRacerMeetChart(check, status, card);
     check(
       "選手ページ: 説明文の「）」と「、」の間に空白を入れない（描いたカードの説明文）",
       card.caption ===

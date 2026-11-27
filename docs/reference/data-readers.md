@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3045 |
+| 読んだファイル | 3048 |
 | 読み書きのあるファイル | 333 |
 | 表の読み手（箇所） | 980 |
 | 表の書き手（箇所） | 200 |
@@ -418,7 +418,7 @@
   - `src/services/motorQueries5.js:65` select(helper:fetchAllByIn)
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
-  - `src/services/motorQueries7.js:78` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
+  - `src/services/motorQueries7.js:114` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
   - `src/services/motorQueries8.js:100` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:35` select [boat_number, race_id, start_flag]
   - `src/services/raceQueries.js:239` select(helper:fetchAllByIn)
@@ -943,7 +943,7 @@
   - `src/services/motorQueries3.js:303` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
-  - `src/services/motorQueries7.js:47` select [motor_number, race_id, racer_id]
+  - `src/services/motorQueries7.js:83` select [motor_number, race_id, racer_id]
   - `src/services/motorQueries8.js:32` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id]
   - `src/services/mycroftService.js:83` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:144` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]

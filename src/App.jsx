@@ -8,10 +8,9 @@ import AccuracyDashboard from "./components/AccuracyDashboard";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import Terms from "./components/Terms";
 import Contact from "./components/Contact";
-import HitRaces from "./components/HitRaces";
 import { clearCache } from "./services/core.js";
 import { getRaces } from "./services/scheduleQueries.js";
-import { fetchWithRetry, renderFooterExtra } from "./AppParts.jsx";
+import { renderFooterExtra } from "./AppParts.jsx";
 
 // タブ・データ更新時刻・再読込の状態
 function useAppTabState(tab) {
@@ -23,14 +22,6 @@ function useAppTabState(tab) {
   useEffect(() => {
     setActiveTab(tab);
   }, [tab]);
-
-  // データ更新時刻の取得（HitRacesのUpdateStatus表示用）
-  useEffect(() => {
-    if (activeTab !== "hit-races") return;
-    getRaces().then((result) => {
-      if (result?.scrapedAt) setLastUpdated(result.scrapedAt);
-    });
-  }, [activeTab]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -48,7 +39,7 @@ function useAppTabState(tab) {
 
 function renderTabContent(
   activeTab,
-  { lastUpdated, isRefreshing, handleRefresh },
+  { isRefreshing, handleRefresh },
 ) {
   switch (activeTab) {
     case "privacy":
@@ -64,21 +55,12 @@ function renderTabContent(
           isRefreshing={isRefreshing}
         />
       );
-    case "hit-races":
-      return (
-        <HitRaces
-          fetchWithRetry={fetchWithRetry}
-          lastUpdated={lastUpdated}
-          onRefresh={handleRefresh}
-          isRefreshing={isRefreshing}
-        />
-      );
     default:
       return null;
   }
 }
 
-// タブページ（/hit-races・/accuracy・/privacy・/terms・/contact）のシェル。
+// タブページ（/accuracy・/privacy・/terms・/contact）のシェル。/hit-races は BOA-822 で /accuracy へ転送
 // トップ（/）の開催場一覧はVenueGridPage、レース詳細は/race/:raceIdに分離済み
 // （docs/design/venue-list-redesign/参照）
 function App({ tab }) {

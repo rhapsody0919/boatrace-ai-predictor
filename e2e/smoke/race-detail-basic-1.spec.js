@@ -3,7 +3,7 @@ import { test, expect } from "../fixtures.js";
 import { openFixedRaceBasicTab, openFixedRaceBeforeStart } from "./helpers.js";
 
 test.describe("レースページ再設計（BOA-168）", () => {
-  test("発走前のレースでデータ出走表と「AI予想」タブ（展開予測/イン崩れ）が表示される（BOA-346）", async ({
+  test("発走前のレースでデータ出走表と「イン崩れ」タブ（注意度）が表示される（BOA-346 / BOA-822）", async ({
     page,
   }) => {
     // AIデータ分析（展開予測/イン崩れ）は未来志向のUIのため結果確定済みレースでは
@@ -17,10 +17,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // AIデータ分析（展開予測/イン崩れ/出現パターン）はBOA-346で独立タブ「AI予想」に
     // 格上げされた（旧AiAnalysisSectionの折りたたみは廃止、タブ選択自体が開閉を兼ねる）
-    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
-    await expect(page.locator(".prediction-result")).toBeVisible({
+    // BOA-822 の公開（2026-11-27）で表示名は「イン崩れ」、中身は注意度・出現パターン・過去に発生した割合だけ
+    await page.locator(".race-tabs-btn", { hasText: "イン崩れ" }).click();
+    await expect(page.locator(".in-caution-tab")).toBeVisible({
       timeout: 10000,
     });
+    await expect(page.locator(".prediction-result")).toHaveCount(0);
+    await expect(page.locator(".turn-pattern-list")).toHaveCount(0);
     await expect(page.locator(".ai-analysis-header")).toHaveCount(0);
   });
 
@@ -128,9 +131,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
 
     // AI予想タブ（本命艇の予想確定後に描画される、BOA-346で独立タブ化）の読み込みを待つ
     await page
-      .locator(".race-tabs-btn", { hasText: "AI予想" })
+      .locator(".race-tabs-btn", { hasText: "イン崩れ" })
       .click({ timeout: 20000 });
-    await expect(page.locator(".prediction-result")).toBeVisible({
+    await expect(page.locator(".in-caution-tab")).toBeVisible({
       timeout: 15000,
     });
 
@@ -174,7 +177,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
   });
 
-  test("過去日付ページで結果確定レースを選ぶと結果タブに着順・配当・決まり手が表示され、展開予測検証はAI予想タブに表示される（BOA-312/BOA-346）", async ({
+  test("過去日付ページで結果確定レースを選ぶと結果タブに着順・配当・決まり手が表示され、展開予測の検証は出ない（BOA-312/BOA-346/BOA-822）", async ({
     page,
   }) => {
     // unifiedモデル運用開始日（2026-08-11〜）以降の日付を使う。
@@ -203,11 +206,14 @@ test.describe("レースページ再設計（BOA-168）", () => {
       timeout: 15000,
     });
 
-    // 展開予測検証（実測精度）・イン崩れ指数の答え合わせはAI予想タブに移設されている（BOA-346）
-    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
-    await expect(page.locator(".turn-pattern-list")).toBeVisible({
+    // 展開予測検証（実測精度）・イン崩れ指数の答え合わせは BOA-822 の公開（2026-11-27）で無くなり、
+    // 「イン崩れ」タブは注意度だけを出す。展開予測の的中/外れの札・答え合わせは描かない
+    await page.locator(".race-tabs-btn", { hasText: "イン崩れ" }).click();
+    await expect(page.locator(".in-caution-tab")).toBeVisible({
       timeout: 20000,
     });
+    await expect(page.locator(".turn-pattern-list")).toHaveCount(0);
+    await expect(page.locator(".result-verify-section")).toHaveCount(0);
 
     // 「データで振り返る」（RaceReview）はBOA-312で撤去済み。的中/不的中の検証は
     // 上記のAI予想タブ（RaceAiPredictionTab）に統合されている

@@ -206,7 +206,8 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="race/:raceId/assist" element={<ThinkingAssistPage />} />
 
       {/* タブページ（SEO対応: 個別URL） */}
-      <Route path="hit-races" element={<App tab="hit-races" />} />
+      {/* 展開予測の的中一覧は BOA-822 で廃止。/accuracy（イン崩れ注意度の実績）へ移す。vercel.json も 307 */}
+      <Route path="hit-races" element={<Navigate to="/accuracy" replace />} />
       <Route path="accuracy" element={<App tab="accuracy" />} />
       <Route path="picks" element={<LegacyModelPageRedirect />} />
       <Route path="accuracy/history" element={<AccuracyHistory />} />

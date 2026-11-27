@@ -1,12 +1,12 @@
 import { test, expect } from "./fixtures.js";
 
 /**
- * /today のイン崩れ注意度（BOA-822 task 35、機能フラグの裏。?caution=1 で出す）。
+ * /today のイン崩れ注意度（BOA-822 task 35。2026-11-27 に公開、IN_CAUTION_PUBLIC = true）。
  *   - 注目レース: 「50以上なら高い」の旧の指数の欄を、注意度の割合と段の札に替える
  *   - 逃げ等のカード: 開いたときのフッターの「イン崩れ指数 N%」を「イン崩れ注意度 段 N%」に替える
  *   - in_caution_* の無い行（156 の前の過去の行・注意度を出さなかったレース）は欄を出さない（旧の指数にも戻さない）
  *   - 計測: 欄が画面に入ったら日ごとに1回 caution_visible（race_id・段なし）、レースへ移ったら段つきの caution_click
- *   - フラグの外は今のまま（旧の指数）
+ *   - 旧の指数で書いた注目レースの理由の文（公開の日の朝の行）は出さない
  * DB に依存しないよう morning_digest_days・rows を差し替える（today-featured-racer-link.spec.js と同じ形）。
  */
 
@@ -49,7 +49,15 @@ const caution = (pct, level, n) => ({
 });
 
 const ROWS = [
-  metricRow("featured", 1, 2, 4, caution(26, "low", 34842)),
+  // 公開の日の朝の行のように、理由の文が旧の指数で書かれている
+  metricRow("featured", 1, 2, 4, {
+    ...caution(26, "low", 34842),
+    detail: {
+      from: "nige",
+      baselineGrade: "ippan",
+      reason: "AIが当日条件から算出したイン崩れ指数は20%で、過去の実績と当日条件がどちらも同じ方向を向いています。",
+    },
+  }),
   metricRow("nige", 1, 2, 4, caution(26, "low", 34842)),
   metricRow("nige", 2, 3, 5, caution(65, "high", 12000)),
   // 156 の前の行: in_caution_* の列が無い
@@ -121,13 +129,16 @@ test("フラグの側: カードのフッターは注意度、列の無い過去
   await expect(noN).not.toContainText("イン崩れ");
 });
 
-test("フラグの外: 今のまま旧の指数を出す", async ({ page }) => {
+test("公開の後（IN_CAUTION_PUBLIC）: クエリ無しでも注意度で、旧の指数で書いた理由の文は出さない", async ({
+  page,
+}) => {
   const featured = await openDigest(page, "");
-  await expect(featured).toContainText("イン崩れ指数");
-  await expect(featured).toContainText("低い（堅い）");
-  await expect(featured).not.toContainText("イン崩れ注意度");
+  await expect(featured).toContainText("イン崩れ注意度");
+  await expect(featured).not.toContainText("イン崩れ指数");
+  await expect(featured).not.toContainText("低い（堅い）");
+  await expect(featured.locator(".featured-race__reason")).toHaveCount(0);
   const foot = await openCard(page, 2);
-  await expect(foot).toContainText("イン崩れ指数 20%");
+  await expect(foot).not.toContainText("イン崩れ指数");
 });
 
 test("計測: 欄が見えたら1回 caution_visible、レースへ移ったら段つきの caution_click", async ({

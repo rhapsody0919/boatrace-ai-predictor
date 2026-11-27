@@ -369,6 +369,11 @@
       "source": "/outcome-distribution",
       "destination": "/winning-technique?tab=outcome",
       "permanent": true
+    },
+    {
+      "source": "/hit-races",
+      "destination": "/accuracy",
+      "permanent": false
     }
   ],
   "rewrites": [

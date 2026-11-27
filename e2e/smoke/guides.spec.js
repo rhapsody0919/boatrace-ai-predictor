@@ -60,10 +60,11 @@ test.describe("静的ガイドがレース詳細のタブ構成に追随して�
   // レース詳細がタブ構成になったあと、/how-to-use だけが追随し /about・/faq は
   // 「結果」タブにしか触れていなかった。同じ取りこぼしを繰り返さないよう、
   // タブの名前と**並び順**が両ページに載っていることを機械的に固定する。
-  // 正本は PredictionPanelTabs.jsx の buildMainTabs（粒度順。結果は isFinished のときだけ）
+  // 正本は PredictionPanelTabs.jsx の buildMainTabs（粒度順。結果は isFinished のときだけ）。BOA-822 の公開（2026-11-27）で「AI予想」は「イン崩れ」になり、龍神ソナーも数える
   const TABS = [
     "基本情報",
-    "AI予想",
+    "龍神ソナー",
+    "イン崩れ",
     "今節",
     "直前情報",
     "枠別情報",
@@ -81,7 +82,7 @@ test.describe("静的ガイドがレース詳細のタブ構成に追随して�
     for (const [index, tab] of TABS.entries()) {
       await expect(list.locator("li").nth(index)).toContainText(tab);
     }
-    // 発走前は7つ・確定すると8つ、という本数の条件も落とさない
+    // 発走前は8つ・確定すると9つ、という本数の条件も落とさない
     await expect(list.locator("li").last()).toContainText(
       "確定するまでこのタブは出ません",
     );
@@ -106,28 +107,28 @@ test.describe("静的ガイドがレース詳細のタブ構成に追随して�
     const order = TABS.map((tab) => text.indexOf(`【${tab}】`));
     expect(order.every((position) => position >= 0)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
-    // 発走前7つ・確定で8つ、という本数の条件
-    expect(text).toContain("発走前は7つ");
-    expect(text).toContain("8つになります");
+    // 発走前8つ・確定で9つ、という本数の条件
+    expect(text).toContain("発走前は8つ");
+    expect(text).toContain("9つになります");
   });
 
   test("FAQの回答の改行が段落として表示される（空白に潰れない）", async ({
     page,
   }) => {
-    // 回答データは「【展開予測】…改行…【イン崩れ指数】…」と改行で項目を区切るが、
+    // 回答データは「【基本情報】…改行…【龍神ソナー】…」と改行で項目を区切るが、
     // .faq-answer p が white-space: normal のままだと改行が空白に潰れ、
     // 項目が1段落に繋がって読めなくなる（2026-09-28に実測で発見）
     await page.goto("/faq");
     const question = page
       .locator(".faq-question")
-      .filter({ hasText: "展開予測・イン崩れ指数の違いは何ですか？" });
+      .filter({ hasText: "レース詳細ページのタブは何が違うのですか？" });
     await question.click();
     const answer = page.locator(".faq-item.open .faq-answer p").first();
     await expect(answer).toBeVisible();
     const text = await answer.innerText();
     expect(text).toContain("\n");
-    expect(text).toContain("【展開予測】");
-    expect(text).toContain("【イン崩れ指数】");
+    expect(text).toContain("【基本情報】");
+    expect(text).toContain("【イン崩れ】");
   });
 
   test("旧UIの文言が /faq に残っていない", async ({ page }) => {
@@ -159,5 +160,8 @@ test.describe("静的ガイドがレース詳細のタブ構成に追随して�
     // ボタンは raceCard.view =「詳細を見る」、的中はヘッダーナビ nav.hits
     expect(answers).not.toContain("データ分析を見る");
     expect(answers).not.toContain("トップページの「的中レース」タブ");
+    // BOA-822 の公開（2026-11-27）で展開予測は無くなり、的中率の約79%の問いも消えた
+    expect(answers).not.toContain("展開予測");
+    expect(answers).not.toContain("約79%");
   });
 });

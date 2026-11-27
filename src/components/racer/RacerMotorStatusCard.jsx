@@ -1,32 +1,12 @@
 import { Link } from "react-router-dom";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
-import TrendLineChart from "../analysis/TrendLineChart";
+import RacerMotorMeetChart from "./RacerMotorMeetChart";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
 import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
 import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
-import { exhibitionTimeAxis } from "../../utils/chartDomain";
 import "./RacerMotorStatusCard.css";
 
 const isPresent = (value) => value !== null && value !== undefined;
-
-// 同じ日に2回走ると横軸に同じ日付が並び、何の違いか読めない。レース番号を
-// 添える（BOA-513）。その日だけに付けると、付く点と付かない点が混ざって
-// 読みにくいので、1日でも2回走った日があれば全部の点に付ける（BOA-557）
-function buildChartData(trendRows) {
-  const runsOnDate = trendRows.reduce(
-    (count, row) => count.set(row.date, (count.get(row.date) ?? 0) + 1),
-    new Map(),
-  );
-  const hasDoubleRunDay = [...runsOnDate.values()].some((n) => n > 1);
-  return trendRows.map((row) => ({
-    date:
-      hasDoubleRunDay && row.raceNo
-        ? `${row.date.slice(5)} ${row.raceNo}R`
-        : row.date.slice(5),
-    day: row.date.slice(5),
-    exhibition_time: row.exhibition_time,
-  }));
-}
 
 // 走数が少ないときは評価の言葉を出さず、参考値の色にする（BOA-549）
 function resolveTone(powerIndex) {
@@ -100,39 +80,18 @@ function PowerIndexSection({ powerIndex, tone, indexClass }) {
   );
 }
 
-function TrendSection({ chartData, captionHead, isPrevMeet, venueName }) {
-  const exhibitionAxis = exhibitionTimeAxis(
-    chartData.map((row) => row.exhibition_time),
-  );
-  if (chartData.length > 1) {
+// 走ごとの展示タイムの図（P-16）。2走以上で描く。横は走の順で、日付と R を添える
+function TrendSection({ runs, captionHead, isPrevMeet, venueName }) {
+  if (runs.length > 1) {
     return (
       <>
         <p className="racer-motor-status-chart-caption">
-          {`${captionHead}（${
-            isPrevMeet ? `${venueName} ` : ""
-          }${chartData[0].day}〜${
-            chartData[chartData.length - 1].day
-          }）、この選手がこのモーターで出走してからの展示タイム`}
+          {`${captionHead}（${isPrevMeet ? `${venueName} ` : ""}${runs[0].date.slice(5)}〜${runs[runs.length - 1].date.slice(5)}）、この選手がこのモーターで出走してからの展示タイム`}
         </p>
-        <p className="racer-motor-status-note">縦軸は展示タイム。下ほど速い</p>
-        <TrendLineChart
-          data={chartData}
-          yAxisLabel="展示タイム (秒)"
-          yAxisDomain={exhibitionAxis?.domain}
-          yTicks={exhibitionAxis?.ticks}
-          // 375pxでもレース番号付きのラベルを間引かない（BOA-557）
-          slantXLabels
-          yTickDecimals={2}
-          tooltipFormatter={(value) => value.toFixed(2)}
-          series={[
-            {
-              dataKey: "exhibition_time",
-              name: "展示タイム",
-              stroke: "var(--brand-accent-primary)",
-              type: "linear",
-            },
-          ]}
-        />
+        <p className="racer-motor-status-note">
+          縦はそのレースの6艇の展示タイムの平均との差（上ほど速い）。「部品」「ペラ」はその走の前に交換した印。点を押すと秒と交換の中身が出ます
+        </p>
+        <RacerMotorMeetChart runs={runs} />
       </>
     );
   }
@@ -209,12 +168,15 @@ export default function RacerMotorStatusCard({ status }) {
   const isPrevMeet = !preGeneration && meetEnded === true;
   const meetLabel = isPrevMeet ? "前節" : "今節";
   const captionHead = preGeneration ? "直近の節" : meetLabel;
-  const chartData = buildChartData(meetTrend ?? []);
+  const runs = (meetTrend ?? []).map((r) => ({
+    ...r,
+    exhibitionTime: r.exhibition_time,
+  }));
   const { hasPowerIndex, tone } = resolveTone(powerIndex);
 
   return (
     <div
-      className={`racer-motor-status-card${chartData.length > 1 ? " racer-motor-status-card--chart" : ""}`}
+      className={`racer-motor-status-card${runs.length > 1 ? " racer-motor-status-card--chart" : ""}`}
     >
       {/* 直近出走が入れ替え前（数ヶ月前）なら「今節」とは呼ばない */}
       <h2 className="racer-motor-status-title">
@@ -242,7 +204,7 @@ export default function RacerMotorStatusCard({ status }) {
       )}
 
       <TrendSection
-        chartData={chartData}
+        runs={runs}
         captionHead={captionHead}
         isPrevMeet={isPrevMeet}
         venueName={venueName}
