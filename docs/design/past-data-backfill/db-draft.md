@@ -9,7 +9,7 @@
 - **書き手は1つ**（組み立ての関数）。毎回、kb_archive・kb_archive_extra・潮位・本体を全部読んで1行を作る。列の一部だけを書く書き手は作らない
 - 全行が同じ列を持つ payload で `upsertChangedRows`。`built_at` は値の比べから外す
 - 窓の中の PK の集合の差で、消えたレースの行を消す
-- RLS 有効。facts と `facts_coverage` だけ anon・authenticated に SELECT（GRANT を明示。076 以降は既定で剥がす）。書き手は service_role だけ。RPC は1関数1文で REVOKE・GRANT
+- RLS 有効。facts の2表は anon・authenticated に SELECT を付けるが、ポリシーで1選手の行だけを通す（ADR-0113 決定4: run_facts は racer_id と RPC が立てる設定、race_facts は run_facts への EXISTS）。表を直に引くと0行。`facts_coverage` と件数の表は USING (true)。GRANT を明示（076 以降は既定で剥がす）。書き手は service_role だけ。RPC は1関数1文で REVOKE・GRANT
 
 ## 1. `race_facts`（1レース1行）
 
@@ -58,7 +58,7 @@
 
 - 索引: PK と (racer_id, race_id)。一括で入れるときは索引を後で作るか race_id の順に入れる
 - 容量（推定、実測なし）: 2019-04〜今で約253万艇。1行と索引で約180B として約 450MB、race_facts 約42万行で約 85MB。2005-01〜2019-03 を足すと約 +0.8GB
-- 選手の読み: `get_racer_runs(p_racer_id, p_from)`（SECURITY INVOKER、anon に EXECUTE、jsonb を1つ返す。jsonb_agg に ORDER BY race_id）。1000行の上限を避ける。走の多い選手で3秒に収まるかは適用前に EXPLAIN で測る
+- 選手の読み: `get_racer_runs(p_racer_id, p_from)`（SECURITY INVOKER・plpgsql・`SET boatai.facts_racer_id = ''` の句、本文で `PERFORM set_config(..., true)` を先に、anon に EXECUTE、jsonb を1つ返す。jsonb_agg に ORDER BY race_id）。細部は ADR-0113 決定4。走の多い選手で3秒に収まるかは適用前に EXPLAIN で測る（SET ROLE anon で）
 
 ## 3. `kb_archive_extra`（K/B に無い過去分の生の値）
 
