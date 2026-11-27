@@ -284,6 +284,16 @@ function breakdownBlocks(t, vc, view, venueStats, technique) {
   ];
 }
 
+// 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
+const headingOf = (racerName) =>
+  racerName ? (
+    <>
+      <span translate="no">{racerName}</span>の成績・調子
+    </>
+  ) : (
+    "成績・調子"
+  );
+
 // ST の推移の比べる線（今の級×同じ進入コースの全国平均）。このページの節の入口（成績・調子の欄）で取る（plan.md §13）。
 // 平均は絞り込みの範囲の走（カードの平均ST と同じ母数）で取るので、描くときに vcData を渡す
 function useStCompare(grade) {
@@ -351,14 +361,7 @@ export default function RacerPerformanceStats({
   const { snapshotHistoryState, vcActive } = vc;
   const { formSummary, aggregatedStats, venueStats } = stats ?? {};
 
-  // 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
-  const heading = racerName ? (
-    <>
-      <span translate="no">{racerName}</span>の成績・調子
-    </>
-  ) : (
-    "成績・調子"
-  );
+  const heading = headingOf(racerName);
 
   const { technique, pairedTechnique } = techniqueBlocks(vc, view);
 
