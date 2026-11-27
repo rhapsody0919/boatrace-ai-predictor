@@ -59,7 +59,8 @@ middleware.js ──(AI の UA で ADR-0089・0032 の対象)──▶ 今どお
 - **返す応答**: `Content-Type: text/html; charset=utf-8`、`Cache-Control`・`CDN-Cache-Control`・`Vercel-CDN-Cache-Control` は vercel.json の人の HTML と同じ文字列（no-store）、`X-Content-Type-Options: nosniff` を自分で付ける。外枠の `content-encoding`・`content-length`・`etag` は写さない（fetch は展開した本文を返す）。`Server-Timing` に取得の時間を入れる
 - **UA で head を変えない**。本文は AI・bingbot 等だけに人の画面の部分集合を出す（ADR-0089）。head は全ての UA に同じ関数の値で、AI の UA は rewrite 先の HTML の head、ほかの UA は差し込みの head を受ける。Googlebot は人と同じ外枠＋head（ADR-0089 の「Googlebot に出し分けない」を保つ）。時間切れの素通りは UA でなく負荷で決まり、人にも同じ確率で起きるので、UA の出し分けではない
 - クエリ文字列は head の材料に使わない（キャッシュのキーを増やさない。ADR-0089 決定6と同じ）
-- matcher は `/races/:date/:venue` だけを足す（`/races/:date` の一覧は起こさない）。会場コード・日付・選手番号の形の外は素通り
+- matcher は `/races/:path*` を足す（`scripts/maintenance/verify-middleware-routing.js` の matcher の解釈が「固定パス」と「/prefix/:path*」の2形だけのため。`/races/:date` の一覧でも middleware は起動し、素通りする）。会場コード・日付・選手番号の形の外は素通り
+- **入切は環境変数 `PAGE_HEAD_KINDS`**（差し込む kind をカンマ区切り。未設定・空は差し込まない＝今と同じ）。kind ごとに再配備だけで出し・戻しができる。オーナーが Vercel の Production に足す。受け渡し（決定3）が本番に入ってから入れる
 
 ### 3. 起動の後の受け渡し（差し込んだ head と React の head を重ねない、消して0本にもしない）
 
@@ -108,7 +109,7 @@ middleware.js ──(AI の UA で ADR-0089・0032 の対象)──▶ 今どお
 - `/api/page-head` の起動の費用: venue 24 キー×5分、race は本日最大288キー×1分・過去日は長いキャッシュ、racer は6時間。ADR-0089 第2段の見積もり（上限 月約1,000万回）より少ない見込み（未計測）
 - 差し込んだ応答は no-store のままなので、Googlebot の条件付きの再取得（ETag）は効かない。今と同じ。クロールの予算への影響は未確認
 - `docs/reference/seo-architecture-constraints.md` の「JS 実行後でも良い」の判断軸を、本 ADR と同じ PR で改める
-- 戻し方: (1) middleware の差し込みを kind ごとに外す PR (2) 急ぐときは Instant Rollback。版の合わない JSON は素通りになる。差し込みが無くても人の画面は今と同じ
+- 戻し方: (1) `PAGE_HEAD_KINDS` から kind を外して再配備 (2) 急ぐときは Instant Rollback。版の合わない JSON は素通りになる。差し込みが無くても人の画面は今と同じ
 
 ## 段の分け方（各 PR は 300行5ファイル以内）
 
