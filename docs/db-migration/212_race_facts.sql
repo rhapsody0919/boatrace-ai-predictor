@@ -1,13 +1,21 @@
 -- 過去データの facts の表と選手ごとの RPC（docs/design/past-data-backfill/db-draft.md、ADR-0113・ADR-0101 の追記 2026-11-27）
 -- 審査: system-architect 2026-11-27（db-draft の SQL の審査、直して進める → 反映済み）
+-- 直し 2026-11-27: 最初の db-apply（run 45937058925）が get_racer_runs の SET 句で「permission denied to set parameter」で失敗し全部戻った
+--   （本番の postgres は superuser でなく、未知の設定の SET 句を作れない）。SET 句を外し、本文の set_config(…, true) で立てて読んだら空に戻す形にした。
+--   番号は 212 のまま（未適用で台帳に行が無い。docs/operation/db-apply.md「失敗したとき」）。審査 system-architect 2026-11-27
 -- 適用の手順: この塊をマイグレーションの PR（人）→ オーナーの db-apply → kb 層の CLI（オーナー、--apply）→ cron の行（人）→ mode を live（オーナー）
--- 事前の読み取り（claude_ro。BYPASSRLS なので anon の見え方は SET ROLE anon で見る）:
+-- 事前の読み取り（claude_ro は anon の役を持たない〈166〉ので、anon の見え方はオーナーの SQL Editor の
+--   BEGIN READ ONLY; SET LOCAL ROLE anon; …; ROLLBACK; か、anon のキーの PostgREST で見る）:
+--   SELECT set_config('boatai.facts_racer_id','1',true) AS set_ok, current_setting('boatai.facts_racer_id', true) AS v;  -- 1/1 なら非特権の役で立てられる
+--   SELECT pg_get_userbyid(defaclrole) AS owner, defaclnamespace::regnamespace AS nsp, defaclobjtype, defaclacl FROM pg_default_acl;  -- 既定の権限
 --   SELECT rolname, rolbypassrls, rolconfig FROM pg_roles WHERE rolname IN ('service_role','anon','authenticated','authenticator');  -- pgrst.db_pre_request の有無
 --   SELECT extname FROM pg_extension WHERE extname = 'pg_graphql';
 --   anon が EXECUTE できる public・graphql_public の関数で prosrc に set_config・SET LOCAL・動的な EXECUTE を含む物、proconfig に boatai. を含む物（ADR-0113 決定4）
---   走の多い選手で get_racer_runs の EXPLAIN (ANALYZE, BUFFERS)（SET ROLE anon）
+--   走の多い選手で get_racer_runs の EXPLAIN (ANALYZE, BUFFERS)（SQL Editor で SET LOCAL ROLE anon）
 -- 事後: 5表の relrowsecurity が true。anon の run_facts・race_facts の SELECT が true・INSERT が false、kb_archive_extra・backfill_progress の SELECT が false。
---   anon の get_racer_runs の EXECUTE が true・PUBLIC が false。pg_proc.proconfig に boatai.facts_racer_id= がある。anon で select count(*) from run_facts が0
+--   anon の get_racer_runs の EXECUTE が true・PUBLIC が false。pg_proc.proconfig が {search_path=public} だけ。
+--   anon のキーで POST /rest/v1/rpc/get_racer_runs {"p_racer_id":<実在の登番>,"p_from":"2025-12-03"} がエラーでなく []（本番の anon の set_config が通った決め手）、
+--   GET /rest/v1/run_facts?select=race_id&limit=1 が []
 -- 戻し（race_facts のポリシーが run_facts を参照するので race_facts を先に消す。kb_archive_extra を消すと取り込んだ BOATCAST の分は取り直し）:
 --   BEGIN; SET LOCAL lock_timeout = '10s'; DROP FUNCTION IF EXISTS public.get_racer_runs(integer, date); DROP TABLE IF EXISTS public.race_facts;
 --   DROP TABLE IF EXISTS public.run_facts; DROP TABLE IF EXISTS public.kb_archive_extra; DROP TABLE IF EXISTS public.backfill_progress; DROP TABLE IF EXISTS public.facts_coverage; COMMIT;
@@ -101,6 +109,10 @@ DROP POLICY IF EXISTS race_facts_one_racer ON public.race_facts;
 CREATE POLICY race_facts_one_racer ON public.race_facts
   FOR SELECT TO anon, authenticated
   USING (EXISTS (SELECT 1 FROM public.run_facts r WHERE r.race_id = race_facts.race_id));
+REVOKE ALL ON public.race_facts FROM anon;
+REVOKE ALL ON public.race_facts FROM authenticated;
+REVOKE ALL ON public.run_facts FROM anon;
+REVOKE ALL ON public.run_facts FROM authenticated;
 GRANT SELECT ON public.race_facts TO anon;
 GRANT SELECT ON public.race_facts TO authenticated;
 GRANT SELECT ON public.run_facts TO anon;
@@ -115,7 +127,6 @@ LANGUAGE plpgsql
 STABLE
 SECURITY INVOKER
 SET search_path = public
-SET boatai.facts_racer_id = ''
 AS $$
 DECLARE
   v_rows jsonb;
@@ -133,12 +144,15 @@ BEGIN
        WHERE r.racer_id = p_racer_id
          AND r.race_id >= to_char(p_from, 'YYYY-MM-DD')
     ) u;
+  -- 読んだらすぐ空に戻す（同じトランザクションの後の文に残さない）。関数の SET 句は本番の postgres（superuser でない）が
+  -- 未知の設定に作れない（212 の db-apply の失敗、2026-11-27）ので使わない。例外のときはトランザクションごと戻り、セーブポイント・EXCEPTION 節で捕まえてもトランザクションの中だけの設定は戻る
+  PERFORM set_config('boatai.facts_racer_id', '', true);
   RETURN v_rows;
 END;
 $$;
 
 COMMENT ON FUNCTION public.get_racer_runs(integer, date) IS
-  '選手1人の走を jsonb で返す（ADR-0113 決定4）。SECURITY INVOKER。関数の中だけで boatai.facts_racer_id を立て、表の RLS がその選手の行だけを通す';
+  '選手1人の走を jsonb で返す（ADR-0113 決定4）。SECURITY INVOKER。本文の set_config(..., true) で boatai.facts_racer_id を立てて読み、読んだらすぐ空に戻す。表の RLS がその選手の行だけを通す';
 
 REVOKE ALL ON FUNCTION public.get_racer_runs(integer, date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_racer_runs(integer, date) TO anon;
@@ -208,6 +222,8 @@ CREATE TABLE IF NOT EXISTS public.facts_coverage (
 ALTER TABLE public.facts_coverage ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS facts_coverage_read ON public.facts_coverage;
 CREATE POLICY facts_coverage_read ON public.facts_coverage FOR SELECT TO anon, authenticated USING (true);
+REVOKE ALL ON public.facts_coverage FROM anon;
+REVOKE ALL ON public.facts_coverage FROM authenticated;
 GRANT SELECT ON public.facts_coverage TO anon;
 GRANT SELECT ON public.facts_coverage TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.facts_coverage TO service_role;

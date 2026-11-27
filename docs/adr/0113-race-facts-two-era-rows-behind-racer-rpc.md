@@ -31,6 +31,15 @@
 6. **時点の違う値を条件の軸で混ぜない。** `condition_source` を行ごとに書き手が決める（K = レースの時点、本体は 2026-09-19 からは結果ページの値、それより前は発走前の値の行がある）。条件の軸は時点の違う行を数えない。風向は出所で方位の数が違う（K は8・本体は16）ので、検証済みの扇形にして入れる
 7. **2005-01〜2019-03 の K/B は今は取らない**（オーナー 2026-11-27）。2019-04〜をつないで、延びて価値のある統計を見てから決める
 
+### 追記 2026-11-27: 関数の SET 句をやめる（決定4 の直し）
+
+- マイグレーション 212 の最初の db-apply（run 45937058925）が、get_racer_runs の `SET boatai.facts_racer_id = ''` 句で `permission denied to set parameter` になり全部戻った。本番で当てる役 postgres は superuser でなく、未知の独自の設定の SET 句（保存される設定）を作れない（supautils.privileged_role_allowed_configs に boatai.* が無い）。PGlite は superuser で動くので見えなかった
+- 決定4 の「設定は関数の中に閉じる」を次に替える: 本文で `PERFORM set_config('boatai.facts_racer_id', p_racer_id::text, true)` を読みの前に置き、読んだら `PERFORM set_config('boatai.facts_racer_id', '', true)` で空に戻してから返す。第3引数は必ず true（トランザクションの中だけ）。例外のときはトランザクションごと戻り、セーブポイント・EXCEPTION 節で捕まえても set_config(…, true) の値は戻る。本当の歯止めは今までどおり RLS（1トランザクションに1選手）
+- verify (b) は関数の SET 句も NG にし、(d) は「立てる set_config と空に戻す set_config があり、第3引数は true だけ」にする。superuser でない役で当てる試験を `verify-race-facts-nonsuper-apply.js` に置く
+- 番号は 212 のまま直す（未適用で台帳に行が無い。docs/operation/db-apply.md「失敗したとき」）。採らなかった: `GRANT SET ON PARAMETER`（postgres が付与できる見込みが低く、役に恒久の権限が増える）、supautils の設定を足す（Supabase の管理で SQL から変えられない見込み）
+- 本番の anon が本文の set_config で未知の設定を立てられるかは、適用後に anon のキーで `rpc/get_racer_runs` がエラーでなく `[]` を返すことで確かめる（適用前はオーナーの SQL Editor の `BEGIN READ ONLY; SET LOCAL ROLE anon; SELECT set_config(…, true); ROLLBACK;` で見られる）
+- 新しい表に anon の SELECT だけを付ける前に `REVOKE ALL … FROM anon, authenticated` を置く（Supabase の既定の権限で ALL が付いていると、RLS の外の権限が残る。205・208 の形）
+
 ## 却下した選択肢
 
 - **本体の表へ kb を入れる**: B の当地勝率など定義が違い、範囲を指定しない集計（aggregate-racer-stats.js）が黙って変わる（kb-longterm-backfill §4.1）
