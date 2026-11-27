@@ -202,6 +202,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/ga4MeasurementBreaks.js` | GA4 の計測方法が変わった日（この日の前後で PV を比較してはいけない日）の一覧と、 | ga4PvBreaksWithin, formatGa4PvBreakNotice, GA4_PV_BREAKS |
 | `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, createRestJobStateClient, shouldSkipOnGha, isGhaFetchStopped ほか4件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
+| `scripts/lib/growth/ga4Daily.js` | GA4 の日別の PV（screenPageViews＝page_view の数）と google の自然検索の着地 sessions を取る要求と、週の行を組… | ga4DailyQueries, pageTypeOf, weekWindows, change, pvWeekLines ほか2件 |
 | `scripts/lib/growth/gscDaily.js` | Search Console の日別の明細（query × page × date）を growth_gsc_daily の行にする（BOA-1706、hq 閉… | ptToday, windowDates, toRows, chunk, canPrune ほか13件 |
 | `scripts/lib/growth/gscPageDaily.js` | Search Console の date × page だけの取得（匿名化された語も入るページの合計）と、補充（バックフィル）の道具 | fetchPageDay, toPageRows, isMissingTable, missingTableMessage, assertPageTableExists ほか6件 |
 | `scripts/lib/growth/localInspection.js` | URL 検査（索引の状態・Google が選んだ正規ページ）を手元の JSON に取る部品（google-detail-collect.js が使う。Supab… | planLocalInspections, mergeSnapshot, previousDates, canonicalMismatches, readPreviousSnapshot ほか2件 |
@@ -693,4 +694,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 651 ファイル / export 3502 件。
+対象 652 ファイル / export 3509 件。
