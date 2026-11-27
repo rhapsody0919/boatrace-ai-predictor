@@ -2,7 +2,7 @@
 /**
  * 生の HTML の head の材料の関数（/api/page-head/v1/venue/{code}、api/_lib/pageHeadApi.js）が、ボット向け HTML と同じ head を JSON で返し、失敗を CDN に残さないこと。
  *
- * 本番の /api/races/today の実物（2026-10-11 に保存したフィクスチャ）を材料に、関数を直に呼ぶ（ネットに出ない）。
+ * /api/races/today と同じ形の小さな材料（一般戦・SG・開催なし）で、関数を直に呼ぶ（ネットに出ない）。
  * 1. 1〜24 の全会場で 200。title・description・canonical・BreadcrumbList が、同じ材料のボット向け HTML（respondBotPage）の head と同じ。
  *    v=1・kind=venue。訳は関数の束に入る ja の common.json から読む（既定の getT で組む）
  * 2. 正常時の Cache-Control は s-maxage=300・swr 60・stale-if-error 3600
@@ -12,16 +12,24 @@
  * 5. 節の行の取得は anon キーだけを送り、service role の値は環境にあっても送らない
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { createSeriesSource, getLocaleT, respondBotPage } from "../../api/_lib/botPage.js";
 import { createVenueHeadHandler, respondVenueHead } from "../../api/_lib/pageHeadApi.js";
 
-const fixture = readFileSync(
-  new URL("../lib/__fixtures__/races-today/races-today-2026-10-11.json", import.meta.url),
-  "utf8",
-);
-const fresh = () => JSON.parse(fixture);
-const NOW = Date.UTC(2026, 9, 11, 3, 0); // JST 2026-10-11 12:00
+// /api/races/today と同じ形の小さな材料。桐生は一般戦、平和島は SG（節の名前が title に入る）、ほかの会場は開催なし
+const race = (placeCd, raceNo, raceGrade, raceTitle) => ({
+  raceNo, startTime: `${10 + raceNo}:00`, date: "2026-12-15", placeCd, raceGrade, cancellationStatus: null,
+  seriesDay: 1, isFinalDay: false, raceTitle, raceStage: "予選",
+});
+const TODAY = {
+  success: true,
+  scrapedAt: "2026-12-15T01:00:00.000Z",
+  data: [
+    { place_cd: 1, place_name: "桐生", races: [1, 2, 3].map((n) => race(1, n, "ippan", "日本一しょうゆ杯")) },
+    { place_cd: 4, place_name: "平和島", races: [1, 2].map((n) => race(4, n, "SG", "グランプリ")) },
+  ],
+};
+const fresh = () => structuredClone(TODAY);
+const NOW = Date.UTC(2026, 11, 15, 3, 0); // JST 2026-12-15 12:00
 const HOST = { host: "www.boat-ai.jp" };
 const deps = (over = {}) => ({
   getTodayJson: async () => fresh(),
@@ -89,6 +97,7 @@ await check("1. 全会場でボット向け HTML と同じ head（既定の getT
     assert.equal(kind, "venue");
     assert.deepEqual(head, headOfBotHtml(bot.body), `会場 ${code}`);
     assert.equal(head.canonical, `https://www.boat-ai.jp/venue/${code}`);
+    if (code === 4) assert.ok(head.title.includes("グランプリ"), `SG の節の名前が title に無い: ${head.title}`);
   }
 });
 
