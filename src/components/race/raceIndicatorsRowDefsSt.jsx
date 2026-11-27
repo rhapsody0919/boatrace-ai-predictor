@@ -88,8 +88,6 @@ export function buildExhibitionRow(c) {
         "min",
         { digits: 2 },
       ),
-      // 6艇の位置の図（型3）に渡す値。艇番 → { value }
-      positions: exhibition.values,
       render: (p) => {
         const row = exByBoat.get(p.number);
         if (!row) return ph("exhibitionTime");

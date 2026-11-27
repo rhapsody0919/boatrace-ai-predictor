@@ -121,7 +121,7 @@ function TierLegend({ rows }) {
   if (!rows.some((row) => row.tiers?.size > 0)) return null;
   return (
     <p className="rbi-note" data-testid="rbi-tier-legend">
-      {t("beforeInfo.tierLegend")}
+      {t("beforeInfo.tierLegendRows")}
     </p>
   );
 }
@@ -192,7 +192,7 @@ export default function RaceBeforeInfoTabTable({
       <ExhibitionPositionDots
         rows={rows
           .filter((row) => row.tiers?.size > 0)
-          .map((row) => ({ key: row.key, label: row.shortLabel ?? row.label, values: row.positions }))}
+          .map((row) => ({ key: row.key, label: row.shortLabel ?? row.label, values: row.values }))}
       />
       <TierLegend rows={rows} />
     </div>
