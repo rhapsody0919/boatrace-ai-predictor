@@ -3,7 +3,7 @@
 // - era は 'kb'、race_date は race_id の日付。kb の期間（〜2025-12-02）の外・race_id と列のずれ・別のレースの艇・艇番の外は throw
 // - 優勝戦は isCareerFinalStage（190 と同じ。オオムラGP・関ヶ原決戦も優勝戦）、着は成績コード（01〜06 は着、F・L・欠は着なし、S0 等の失格は着欄も NULL）、条件の出所は K の値があるときだけ 'k_file'
 // - kb に無い列（気温・水温・潮位・複勝・チルト・オリジナル展示・風の扇形）は NULL
-// - 組み立てた行を db-draft.md §9 の SQL（verifyData/race-facts-draft-sql.js の写し）を流した PGlite に入れると CHECK を通り、get_racer_runs がその選手の行を返す
+// - 組み立てた行を マイグレーション 212・213（docs/db-migration のファイル、verifyData/race-facts-migration-files.js）を流した PGlite に入れると CHECK を通り、get_racer_runs がその選手の行を返す
 // 外部接続なし
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
