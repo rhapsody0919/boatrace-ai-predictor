@@ -273,9 +273,7 @@ function useArticleContent(content, charts, chartLang) {
             isChartOnlyParagraph(node) ? props.children : <p {...props} />,
           // 表は横に流せる箱に入れ、375px で列を1〜2文字幅に潰さない
           table: ({ node, ...props }) => (
-            <div className="blog-post-table-scroll">
-              <table {...props} />
-            </div>
+            <div className="blog-post-table-scroll"><table {...props} /></div>
           ),
           // Custom link renderer to open external links in new tab
           a: ({ node, ...props }) => {
