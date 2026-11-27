@@ -450,3 +450,19 @@
 .trc-mark-text.is-win {
   fill: var(--brand-accent-primary);
 }
+
+/* 平均ST の推移に添える公式の平均ST の破線と札（R-19、2026-11-27） */
+.trc-official-line {
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+}
+.trc-official-label {
+  font-size: 10px;
+  fill: var(--text-secondary);
+  /* 6艇の線の上でも読めるよう、地の色の縁で文字を切り離す */
+  paint-order: stroke;
+  stroke: var(--surface-card);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}

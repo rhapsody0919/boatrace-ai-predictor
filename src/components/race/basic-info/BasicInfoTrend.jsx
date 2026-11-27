@@ -99,6 +99,43 @@ function bandBelow(motorBand, sel) {
   );
 }
 
+// 平均ST の推移に、選んだ艇の公式の平均ST（今の公式の期の値）を破線で添える（R-19。racer-form-window.md の
+// 「期の公式値を横線で添える」）。走ごとの30走の平均と、期の公式値を同じ物差しで見比べる。札は右端が6艇の札で
+// 埋まるので、線の左上に置く
+function officialLine(officialAvgSt, metric, boat, t) {
+  if (metric !== "avgSt") return null;
+  const v = officialAvgSt?.rows?.find((r) => r.boatNumber === boat)?.avgSt;
+  const period = officialAvgSt?.period;
+  if (v == null || !period) return null;
+  const ym = (d) => `${d.slice(2, 4)}/${d.slice(5, 7)}`;
+  return {
+    value: Number(v),
+    label: t("basicInfo.trend.officialStLine", {
+      value: Number(v).toFixed(2).replace(/^0/, ""),
+      from: ym(period.calcFrom),
+      to: ym(period.calcTo),
+    }),
+  };
+}
+
+function OfficialLine({ line, y, W, pad }) {
+  const ly = y(line.value);
+  return (
+    <g className="trc-official">
+      <line
+        x1={pad.l}
+        x2={W - pad.r}
+        y1={ly}
+        y2={ly}
+        className="trc-official-line"
+      />
+      <text x={pad.l + 4} y={ly - 4} className="trc-official-label">
+        {line.label}
+      </text>
+    </g>
+  );
+}
+
 /**
  * 太線にする艇を選ぶ札（線の無い艇は押せない）。1200px 以上は右の列で6艇の一覧（艇番・選手名・右端の値）になる。
  * 1199px 以下は名前と値を隠し、今までの札の横並び（オーナー 11/25 の案 A）
@@ -152,6 +189,7 @@ export default function BasicInfoTrend({
   onSelectBoat,
   winRate,
   motorBand,
+  officialAvgSt,
 }) {
   const { t } = useTranslation();
   if (metric === "winRate")
@@ -188,6 +226,7 @@ export default function BasicInfoTrend({
   const selected = series.has(selectedBoat)
     ? selectedBoat
     : [...series.keys()][0];
+  const official = officialLine(officialAvgSt, metric, selected, t);
   return (
     <div className="trc-wrap trc-wrap--wide">
       {supported && loading && (
@@ -206,6 +245,14 @@ export default function BasicInfoTrend({
               metric={metric}
               selected={selected}
               renderBelow={bandBelow(motorBand, series.get(selected))}
+              extraValues={official ? [official.value] : []}
+              renderOver={
+                official
+                  ? ({ y, W, pad }) => (
+                      <OfficialLine line={official} y={y} W={W} pad={pad} />
+                    )
+                  : undefined
+              }
             />
           </div>
           <div className="race-split__side">

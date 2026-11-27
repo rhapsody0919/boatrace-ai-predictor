@@ -2605,6 +2605,7 @@
       "startsLabel": "Races",
       "winRateNote": "💡 Each term shows the official term win rate (half-year calculation periods; all races). A break in the line means no races in that term. The national win rate on the race card (current value for national, all races) is calculated from recent results and does not match the rightmost term.",
       "winRateNotYet": "The next term ({{from}}–{{to}}) has not been imported yet.",
+      "officialStLine": "Official {{value}} ({{from}}–{{to}})",
       "tipValueRun": "{{metric}} {{value}}"
     },
     "title": "Racer record comparison",

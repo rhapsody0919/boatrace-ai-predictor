@@ -471,6 +471,7 @@ function RaceBasicInfoTab({
             raceDate: src.raceDate,
           }}
           motorBand={src.motorBand}
+          officialAvgSt={src.officialAvgSt}
         />
       )}
       {view === "now" && (
