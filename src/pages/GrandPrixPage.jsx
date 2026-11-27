@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
-import { DAYS, EDITION, FAQ } from "../data/grandPrixFeature.js";
+import { AdvanceFlow, PastFinalCards, VenueVsNational } from "../components/meet/GrandPrixCharts";
+import { DAYS, EDITION, FAQ, FLOW, PAST_FINALS } from "../data/grandPrixFeature.js";
+import { VENUE_SUMMARY_STATS } from "../data/venueSummaryStats.js";
 import "./GrandPrixPage.css";
 
 // グランプリの特集（/grandprix、ja 専用、BOA-1724）。年なしの永続の URL に毎年積む（seo-marketer 審査 2026-11-27）。
@@ -11,6 +13,17 @@ import "./GrandPrixPage.css";
 const { year, venueName, venueCode } = EDITION;
 const TITLE = `ボートレース グランプリ${year}特集｜${venueName}${EDITION.shortDates}の日程・トライアルの仕組み・過去の優勝戦｜龍神レーダー`;
 const DESCRIPTION = `ボートレースのグランプリ（SG）${year}の出場18人の獲得賞金、トライアル1st・2ndから優勝戦までの勝ち上がり、${venueName}のコース別の1着率、過去の優勝戦、6日間の日程をまとめた特集です。`;
+const SUMMARY_PERIOD = `${VENUE_SUMMARY_STATS.from.replaceAll("-", "/")}〜${VENUE_SUMMARY_STATS.to.replaceAll("-", "/")}`;
+const VENUE_STATS = VENUE_SUMMARY_STATS.venues[String(venueCode)];
+// 答えの1行は会場の要約の向き（月1回の更新で変わりうる）から組む。差がはっきりしない項目は言わない
+const RATE = { higher: "高い", lower: "低い" };
+const SHARE = { higher: "多い", lower: "少ない" };
+const WATER_ANSWER = [
+  VENUE_STATS.vsNational.course1 && `1コースの1着率は全国より${RATE[VENUE_STATS.vsNational.course1]}`,
+  VENUE_STATS.vsNational.makuri && `まくりは全国より${SHARE[VENUE_STATS.vsNational.makuri]}`,
+]
+  .filter(Boolean)
+  .join("、");
 const RELATED = [
   ["/blog/sg-race-guide-2026", "2026年SGレースの日程と会場"],
   ["/blog/omura-wind-direction-guide", "大村の水面と風（風の向き別の1着率）"],
@@ -68,6 +81,29 @@ export default function GrandPrixPage() {
             <Link to={`/venue/${venueCode}`}>{venueName}の会場ページ（その日の出走表）→</Link>
           </p>
         </header>
+        <Section id="gp-flow-h" title="勝ち上がり" answer="18人から、6日間で優勝戦の6人にしぼられる">
+          <AdvanceFlow stages={FLOW} />
+          <p className="gp-note">
+            出典は大村の特設サイトの<External href={EDITION.roadToFinalUrl}>グランプリの勝ち上がりチャート</External>です。
+          </p>
+        </Section>
+        <Section id="gp-water-h" title={`${venueName}の水面`} answer={WATER_ANSWER || null}>
+          <VenueVsNational
+            venue={VENUE_STATS}
+            national={VENUE_SUMMARY_STATS.national}
+            period={SUMMARY_PERIOD}
+            venueName={venueName}
+          />
+          <p className="gp-note">
+            決まり手は全レースのうちの割合で、1コースの1着率とは別の数字です。{venueName}は海水の水面で干満差があり、通年ナイターの会場です。
+          </p>
+        </Section>
+        <Section id="gp-past-h" title="過去の優勝戦">
+          <PastFinalCards finals={PAST_FINALS} />
+          <p className="gp-note">
+            2021〜2023年はグランプリの特設サイト、2024・2025年は公式のレース結果で確かめた値です。2024・2025年は公式の結果に進入の列が無いため、枠番だけを載せています。
+          </p>
+        </Section>
         <Section id="gp-days-h" title="日程（6日間）">
           <ol className="gp-days">
             {DAYS.map((d) => (
@@ -79,9 +115,6 @@ export default function GrandPrixPage() {
               </li>
             ))}
           </ol>
-          <p className="gp-note">
-            勝ち上がりは大村の特設サイトの<External href={EDITION.roadToFinalUrl}>グランプリの勝ち上がりチャート</External>によります。
-          </p>
         </Section>
         <Section id="gp-faq-h" title="よくある質問">
           {FAQ.map(({ q, a }) => (
