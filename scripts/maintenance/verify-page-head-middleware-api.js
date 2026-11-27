@@ -3,7 +3,7 @@
  * middleware の生の HTML の head の差し込みが、会場（本日）・レース詳細では /api/page-head の JSON を取り、版・種類が合うときだけ差し込み、時間切れでも CDN を温めること。
  *
  * 取得の関数と waitUntil を差し替えて api/_lib/pageHeadMiddleware.js を直に呼ぶ（ネットに出ない）。外枠は index.html の head と同じ形の見本。
- * 1. PAGE_HEAD_KINDS に venue・race があるときだけ、/venue/{1〜24}・/race/{実在する日}-{01〜24}-{01〜12} で差し込む。材料は合言葉の見出しつきで
+ * 1. PAGE_HEAD_KINDS に venue・race・racer があるときだけ、/venue/{1〜24}・/race/{実在する日}-{01〜24}-{01〜12}・/racer/{4桁} で差し込む。材料は合言葉の見出しつきで
  *    /api/page-head/v1/{kind}/{key} を取り、ログに内側の x-vercel-cache を出す
  * 2. 形の外（0埋め・範囲外・実在しない日・言語の接頭辞）は外枠も材料も取らない
  * 3. 材料が 404・503・版が違う・種類が違う・JSON でない、外枠が 200 でない、は素通り（undefined）で理由を出す
@@ -24,7 +24,7 @@ const HEAD = (kind, title) => ({
   canonical: "https://www.boat-ai.jp/x",
   jsonLd: [{ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [] }],
 });
-const ON = { PAGE_HEAD_KINDS: "venue,race", INTERNAL_API_KEY: "k-test" };
+const ON = { PAGE_HEAD_KINDS: "venue,race,racer", INTERNAL_API_KEY: "k-test" };
 const json = (body, status = 200, cache = "HIT") =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "x-vercel-cache": cache } });
 
@@ -61,12 +61,13 @@ const check = async (name, fn) => {
   }
 };
 
-await check("1. 会場・レース詳細は /api/page-head の JSON を差し込む", async () => {
+await check("1. 会場・レース詳細・選手は /api/page-head の JSON を差し込む", async () => {
   for (const [path, apiPath, kind] of [
     ["/venue/1", "/api/page-head/v1/venue/1", "venue"],
     ["/venue/24", "/api/page-head/v1/venue/24", "venue"],
     ["/race/2026-12-01-01-05", "/api/page-head/v1/race/2026-12-01-01-05", "race"],
     ["/race/2024-02-29-24-12", "/api/page-head/v1/race/2024-02-29-24-12", "race"],
+    ["/racer/4320", "/api/page-head/v1/racer/4320", "racer"],
   ]) {
     const { res, calls, logs } = await run(`${path}?x=1`, { api: () => json(HEAD(kind, `T-${kind}`)) });
     assert.equal(res?.status, 200, path);
@@ -88,7 +89,7 @@ await check("1. 会場・レース詳細は /api/page-head の JSON を差し込
 });
 
 await check("2. 形の外は何も取らない", async () => {
-  for (const path of ["/venue/01", "/venue/0", "/venue/25", "/venue/1/meet/2026-12-01", "/race/2026-02-30-01-01", "/race/2026-12-01-25-01", "/race/2026-12-01-01-13", "/race/2026-12-01-00-01", "/race/202612010105", "/en/venue/1", "/en/race/2026-12-01-01-05"]) {
+  for (const path of ["/venue/01", "/venue/0", "/venue/25", "/venue/1/meet/2026-12-01", "/race/2026-02-30-01-01", "/race/2026-12-01-25-01", "/race/2026-12-01-01-13", "/race/2026-12-01-00-01", "/race/202612010105", "/en/venue/1", "/en/race/2026-12-01-01-05", "/racer/432", "/racer/43201", "/racer/abcd", "/ko/racer/4320", "/racers"]) {
     const { res, calls } = await run(path);
     assert.equal(res, undefined, path);
     assert.deepEqual(calls, [], path);
