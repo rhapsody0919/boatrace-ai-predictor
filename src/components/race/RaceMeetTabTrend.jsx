@@ -1,21 +1,90 @@
 /**
- * RaceMeetTab の「6艇の推移」（レース単位）。表の数字だけでは「誰が仕上がってきたか」
- * が読めない。同じ節・同じ水面を走った6艇なので、縦の物差しを
- * 共通にして並べる（1艇ずつ切り替えて見比べる手間を無くす）。
- * 値は RaceMeetTabModel の `buildMeetModel` の結果（m）で受け取る。
+ * RaceMeetTab の「6艇の推移」（レース単位）。同じ節・同じ水面を走った6艇を、共通の推移の図
+ * （basic-info/TrendChart）1枚に重ねる（オーナー 2026-11-26「重ねて日付で」）。選んだ艇を太く、ほかは薄く、
+ * 点の中に着順、点を押すと吹き出しとレースへの飛び先。横軸は日付（BOA-538。走数の違う艇の同じ横位置が
+ * 別の日にならないよう、節の日を等間隔に並べて各走をその日の位置に置く）。下の6行は艇を選ぶ行で、前走と
+ * 今節平均 ST・6艇中の順位を出す。値は RaceMeetTabModel の `buildMeetModel` の結果（m）で受け取る。
  */
-import {
-  BOAT_COLORS,
-  BOAT_LINE_COLORS,
-  getBoatChipBackground,
-} from "../../utils/colors";
+import { BOAT_COLORS, getBoatChipBackground } from "../../utils/colors";
 import { lastStartTiming } from "../../pure/basicInfoStats.js";
-import MeetSparkline from "./MeetSparkline";
-import {
-  dayCenter,
-  dayTickLabels,
-  sparkLeftPercent,
-} from "../../utils/trendDateLayout";
+import { trendScaleOf } from "../../pure/trendMetricScale.js";
+import { dayCenter, dayTickLabels } from "../../utils/trendDateLayout";
+import TrendChart from "./basic-info/TrendChart";
+import "./basic-info/TrendChart.css";
+
+// 図の点。横の位置（xr）と走らない日をまたぐ印は日付の配置（layoutTrendByDate）から。
+// 吹き出しの中身は、選んだ艇なら下の「日別の走り」表と同じ行（艇番・進入・ST を持つ）から。
+// 公式の記号（エ・転 等）は labelOf（RaceMeetTab の finishLabelOf）で言語ごとの表記にする
+function pointOf(r, j, layout, { trendKey, rowOf, labelOf }) {
+  const label = labelOf(r.finish);
+  // 値の無い走（ST の F・L、欠場・転覆等）は上の帯に公式の記号を出す（線が切れた理由を見せる）
+  const flagged = r[trendKey] == null && typeof r.finish === "string";
+  return {
+    raceId: r.raceId,
+    date: r.date,
+    value: r[trendKey],
+    mark: label,
+    flag: flagged ? label : null,
+    // 同じ日の2走の間を日の間隔の0.4から0.48へ広げる（点の中に着順を描く丸 r=9 が 375px で重ならない幅）
+    xr: Math.min(
+      1,
+      Math.max(0, layout.centers[j] + (layout.xs[j] - layout.centers[j]) * 1.2),
+    ),
+    breakBefore: layout.breakBefore[j],
+    gapDays: null,
+    run: rowOf(r.raceId) ?? {
+      raceId: r.raceId,
+      date: r.date,
+      venueCode: r.raceId.slice(11, 13),
+      raceNo: Number(r.raceId.slice(14, 16)),
+      boatNumber: null,
+      entryCourse: null,
+      finishRank: typeof r.finish === "number" ? r.finish : null,
+      finishMark: typeof r.finish === "number" ? null : label,
+    },
+  };
+}
+
+function TrendDayChart({ m }) {
+  const { t, trendKey, trendRows, trendDates, selectedBoat, meetRows } = m;
+  const labelOf = m.finishLabelOf;
+  const selRows = new Map((meetRows ?? []).map((r) => [r.raceId, r]));
+  // 今節をまだ走っていない艇（中止の翌日など）は線も札も無いので外す。空の並びは右端の札が読めず落ちる
+  const seriesByBoat = new Map(
+    trendRows
+      .filter(({ runs }) => runs.length > 0)
+      .map(({ player, runs, layout }) => [
+        player.number,
+        runs.map((r, j) =>
+          pointOf(r, j, layout, {
+            trendKey,
+            labelOf,
+            rowOf: (id) =>
+              player.number === selectedBoat ? selRows.get(id) : null,
+          }),
+        ),
+      ]),
+  );
+  if (seriesByBoat.size === 0) return null;
+  const labels = dayTickLabels(trendDates);
+  const xTicks = trendDates.map((d, i) => ({
+    xr: dayCenter(i, trendDates.length),
+    label: labels[i],
+  }));
+  return (
+    <TrendChart
+      seriesByBoat={seriesByBoat}
+      metric={trendKey}
+      scale={trendScaleOf(
+        trendKey === "st" ? "meetDaySt" : "meetDayExhibition",
+      )}
+      selected={selectedBoat}
+      label={t("meetTab.compareTrendTitle")}
+      lineClass="rmt-trend-series"
+      xTicks={xTicks}
+    />
+  );
+}
 
 function TrendMetricChips({ m }) {
   const { t, trendMetric, setTrendMetric } = m;
@@ -39,67 +108,6 @@ function TrendMetricChips({ m }) {
   );
 }
 
-// 右端の数値が何か分からない、という指摘（2026-09-27）。列見出しを出す
-function TrendColumnHead({ m }) {
-  const { t, trendDates } = m;
-  return (
-    <div className="rmt-trend-head">
-      {/* 点の下の数字が着順だと行の中で分かるように（BOA-537）。真ん中の列は
-          日付の目盛りに使うので、名前の列の上に置く */}
-      <span className="rmt-trend-head-sub">{t("meetTab.trendFinishHeader")}</span>
-      {/* 日付の目盛り（点と同じ横位置）。縦のガイド線は引かない */}
-      <span className="rmt-trend-days" aria-hidden="true">
-        {dayTickLabels(trendDates).map((label, i) => (
-          <span
-            key={trendDates[i]}
-            className="rmt-trend-day"
-            style={{
-              left: `${sparkLeftPercent(dayCenter(i, trendDates.length)).toFixed(2)}%`,
-            }}
-          >
-            {label}
-          </span>
-        ))}
-      </span>
-      <span className="rmt-trend-last">{t("meetTab.trendLastHeader")}</span>
-    </div>
-  );
-}
-
-function TrendRowSparkline({ m, p, runs, layout, lastRun }) {
-  const { trendKey, trendDomain, trendMean, finishLabelOf } = m;
-  return (
-    <MeetSparkline
-      points={runs.map((r) => ({ value: r[trendKey] }))}
-      domain={trendDomain}
-      baseline={trendMean}
-      // 線は公式の艇色そのままだと1号艇（白）が背景に溶ける
-      color={BOAT_LINE_COLORS[p.number] || "var(--brand-accent-primary)"}
-      height={34}
-      // 1走の選手も前走の点を出す（空白だと取れていないと読まれる）
-      allowSinglePoint
-      // 前走が F・L なら、1つ前の走に「前走」の大きい点を付けない。
-      // 右端は「F」なのに大きい点が0.09の走に付き、前走が好スタートに
-      // 見えていた（BOA-597 ファン評価1周目）
-      markLast={!lastRun?.mark}
-      xPositions={layout.xs}
-      xCenters={layout.centers}
-      breakBefore={layout.breakBefore}
-      // 各走の着順を点の下に出す（BOA-537。ファン4人のパネル）
-      pointLabels={runs.map((r) =>
-        r.finish === null || r.finish === undefined
-          ? null
-          : {
-              // 公式の記号（エ・転 等）はデータ出走表と同じ表記にする（BOA-654）
-              text: finishLabelOf(r.finish),
-              win: r.finish === 1,
-              mark: typeof r.finish === "string",
-            },
-      )}
-    />
-  );
-}
-
 function TrendStAvg({ m, p }) {
   const { t, meetStRanks } = m;
   const stAvg = meetStRanks.find((row) => row.boat === p.number);
@@ -117,7 +125,7 @@ function TrendStAvg({ m, p }) {
 }
 
 function TrendRow({ m, row }) {
-  const { player: p, runs, layout } = row;
+  const { player: p, runs } = row;
   const { trendKey, selectedBoat, onFocusBoat } = m;
   const color = BOAT_COLORS[p.number] || {};
   // 右端の「前走」。STは直前がFならFと出す（BOA-597）。展示はFでも
@@ -131,9 +139,7 @@ function TrendRow({ m, row }) {
   });
   return (
     <li>
-      {/* 行全体を1つのボタンにする。以前は艇番・選手名だけが押せて、
-          いちばん大きい的の折れ線と右端の値を押しても何も起きなかった。
-          すぐ上の表は「行をタップ」で切り替わるので、そろえる（BOA-550） */}
+      {/* 行全体を1つのボタンにする（BOA-550）。押すと図の太線と下の詳細の艇が替わる */}
       <button
         type="button"
         className="rmt-trend-row"
@@ -154,13 +160,6 @@ function TrendRow({ m, row }) {
             {p.name?.replace(/\s+/g, "")}
           </span>
         </span>
-        <TrendRowSparkline
-          m={m}
-          p={p}
-          runs={runs}
-          layout={layout}
-          lastRun={lastRun}
-        />
         <span className="rmt-trend-last">
           {lastRun === null ? "—" : (lastRun.mark ?? lastRun.value.toFixed(2))}
         </span>
@@ -180,8 +179,8 @@ function TrendRange({ m }) {
     <p className="rmt-trend-range">
       {/* 1日だけの節で「9/20〜9/20」と書かない（BOA-538 ファン評価） */}
       {trendRange.from === trendRange.to
-        ? t("meetTab.compareTrendRangeOneDay", { day: trendRange.from })
-        : t("meetTab.compareTrendRange", trendRange)}
+        ? t("meetTab.trendChartRangeOneDay", { day: trendRange.from })
+        : t("meetTab.trendChartRange", trendRange)}
       {/* 目盛りから抜けている日の理由（BOA-636）。横軸の範囲の中だけ。
           段落の他の文（2xs）に埋もれないよう、この1文だけ一段大きくする
           （ファン評価3周目、予選確定の一文と同じ大きさ） */}
@@ -203,12 +202,16 @@ export default function RaceMeetTabTrend({ m }) {
   const { t, trendDomain, trendKey, trendRows } = m;
   if (!trendDomain) return null;
   return (
-    <div className={`rmt-card${trendKey === "st" ? " rmt-trend-with-avg" : ""}`}>
+    <div
+      className={`rmt-card${trendKey === "st" ? " rmt-trend-with-avg" : ""}`}
+    >
       <div className="rmt-card-head">
         <h3 className="rmt-card-title">{t("meetTab.compareTrendTitle")}</h3>
         <TrendMetricChips m={m} />
       </div>
-      <TrendColumnHead m={m} />
+      <div className="rmt-trend-chart">
+        <TrendDayChart m={m} />
+      </div>
       <ul className="rmt-trend-rows">
         {trendRows.map((row) => (
           <TrendRow key={row.player.number} m={m} row={row} />
@@ -219,8 +222,7 @@ export default function RaceMeetTabTrend({ m }) {
         <p className="rmt-trend-st-avg-note">{t("meetTab.trendStAvgNote")}</p>
       )}
       <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>
-      <p className="rmt-spark-note">{t("meetTab.compareTrendFinishNote")}</p>
-      <p className="rmt-spark-note">{t("meetTab.compareTrendNote")}</p>
+      <p className="rmt-spark-note">{t("meetTab.trendChartNote")}</p>
     </div>
   );
 }

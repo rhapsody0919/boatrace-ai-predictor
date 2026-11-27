@@ -84,6 +84,27 @@ export const TREND_SCALES = Object.freeze({
     dropZero: true,
   }),
   exhibition: Object.freeze({ ...MEET_RUN, step: 0.02, tickStep: 0.05 }),
+  // 今節タブの6艇の推移（R-43、オーナー 2026-11-26「重ねて日付で」）。横軸は日付（点の xr）なので1走目そろえ・N走の目盛りは使わない。
+  // 値の無い走は線を切る（走らない日と同じ扱い）。値の無い走の公式の記号（F・L・欠・転等）は上の帯に出す
+  meetDaySt: Object.freeze({
+    ...MEET_RUN,
+    alignStart: false,
+    bridgeGaps: false,
+    runAxisKey: null,
+    step: 0.05,
+    tickStep: 0.05,
+    min: 0,
+    flags: true,
+  }),
+  meetDayExhibition: Object.freeze({
+    ...MEET_RUN,
+    alignStart: false,
+    bridgeGaps: false,
+    runAxisKey: null,
+    step: 0.02,
+    tickStep: 0.05,
+    flags: true,
+  }),
   lap: Object.freeze({ ...MEET_RUN, step: 0.1, tickStep: 0.5 }),
   turn: Object.freeze({ ...MEET_RUN, step: 0.05, tickStep: 0.2 }),
   straight: Object.freeze({ ...MEET_RUN, step: 0.05, tickStep: 0.2 }),
