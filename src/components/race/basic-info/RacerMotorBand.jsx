@@ -2,41 +2,17 @@
  * 選手の推移の線の下の段（レーン B の after B、オーナー 2026-11-25 承認のモック mock-motor-trend/mock.html の afterB）。
  * 選んだ艇の節ごとに、その選手が乗ったモーターの号機と、その節の会場の出走表の中の位置（上・中・下。src/pure/racerMeetMotors.js）を出す。
  * 推移の図（TrendChart）の renderBelow で描き、図と同じ横の座標 x(i, len) と同じ viewBox の幅で横をそろえる。
+ * データは自分で取らず props で受け取る（取りの hook は入口の RaceBasicInfoTab、plan.md §13）。
  * 見た目は RacerMotorBand.css（rmb- のクラス）
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getRacerMeetMotors } from "../../../services/racerQueries7.js";
 import "./RacerMotorBand.css";
 
 const ROW = 16;
 const BAND_H = ROW * 2 + 12;
 // 号機・区分の字を出す最小の幅（これより狭い節は枠だけ。1〜2走の節で字が重ならない）
 const MIN_TEXT_W = 13;
-
-/** 選んだ艇の節の段を取る。取得の結果は鍵（選手と点）と一緒に持ち、鍵が変われば取り直す */
-function useRacerMeetMotors(racerId, raceIds) {
-  const key =
-    racerId && raceIds.length ? `${racerId}|${raceIds.join(",")}` : null;
-  const [got, setGot] = useState({ key: null, band: null, failed: false });
-  useEffect(() => {
-    if (!key) return undefined;
-    let live = true;
-    getRacerMeetMotors(racerId, raceIds).then(
-      (band) => live && setGot({ key, band, failed: false }),
-      (err) => {
-        console.error("節のモーターの取得エラー:", err?.message);
-        if (live) setGot({ key, band: null, failed: true });
-      },
-    );
-    return () => {
-      live = false;
-    };
-    // raceIds は key に入っている
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-  return got.key === key ? got : { key, band: null, failed: false };
-}
 
 const md = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
 
@@ -148,11 +124,4 @@ export function RacerMotorBandView({ x, W, pad, sel, band, failed }) {
   );
 }
 
-/** 推移の図の renderBelow に渡す形。選んだ艇の選手（racerId）の、図の点（sel）の節の段を取って描く */
-export default function RacerMotorBand({ racerId, ...g }) {
-  const { band, failed } = useRacerMeetMotors(
-    racerId,
-    g.sel.map((p) => p.raceId),
-  );
-  return <RacerMotorBandView {...g} band={band} failed={failed} />;
-}
+export default RacerMotorBandView;
