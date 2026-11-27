@@ -96,6 +96,8 @@ assert.deepEqual(
     payoutPlace1: 110,
     payoutPlace2: 130,
     exhibitionTime: 6.71,
+    // 同じレースの他の5艇の展示の平均（選手ページの展示の推移の比べる相手、2026-11-27）。他の艇の展示が無ければ null
+    othersExhibitionAvg: null,
     startTiming: 0.15,
     isFlying: false,
     finishMark: "2",

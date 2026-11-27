@@ -47,6 +47,23 @@ export function buildRacerRaceHistoryRows({
     if (!stRowsByRace.has(r.race_id)) stRowsByRace.set(r.race_id, []);
     stRowsByRace.get(r.race_id).push(r);
   });
+  // 同じレースの他の5艇の展示タイムの平均。会場・日・風がそろう比べる相手（選手ページの展示の推移の破線。
+  // オーナー 2026-11-27・ファン4人の議論）。他の艇に展示が1つも無ければ null
+  const exRowsByRace = new Map();
+  exhibitionRows.forEach((e) => {
+    if (e.exhibition_time == null) return;
+    if (!exRowsByRace.has(e.race_id)) exRowsByRace.set(e.race_id, []);
+    exRowsByRace.get(e.race_id).push(e);
+  });
+  const othersExhibitionAvgOf = (raceId, boatNumber) => {
+    const others = (exRowsByRace.get(raceId) ?? []).filter(
+      (e) => e.boat_number !== boatNumber,
+    );
+    if (others.length === 0) return null;
+    return (
+      others.reduce((a, e) => a + Number(e.exhibition_time), 0) / others.length
+    );
+  };
   const stRankOf = (raceId, boatNumber) =>
     deriveRaceStContext(stRowsByRace.get(raceId) ?? [], null).byBoat.get(
       boatNumber,
@@ -84,6 +101,10 @@ export function buildRacerRaceHistoryRows({
         payoutPlace1: result.payout_place_1 ?? null,
         payoutPlace2: result.payout_place_2 ?? null,
         exhibitionTime: exhibition?.exhibition_time ?? null,
+        othersExhibitionAvg: othersExhibitionAvgOf(
+          entry.race_id,
+          entry.boat_number,
+        ),
         startTiming: st?.start_timing ?? null,
         isFlying: st?.is_flying === true,
         finishMark: st?.finish_mark ?? null,
