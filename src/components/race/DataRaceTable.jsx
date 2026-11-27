@@ -150,9 +150,19 @@ function DataRaceTable({ raceId, prediction, venueCode, dayRanks = null }) {
   const flyingRowByBoat = useRaceEntryFlyingRows(raceId);
   const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
 
-  const players = [...(prediction?.allPlayers ?? [])].sort(
+  const sortedPlayers = [...(prediction?.allPlayers ?? [])].sort(
     (a, b) => a.number - b.number,
   );
+  // 今日出走する選手の中の位置（意味づけ）は各艇の選手に持たせて行へ渡す（行の文脈を増やさない）
+  const players = dayRanks
+    ? sortedPlayers.map((p) => ({
+        ...p,
+        dayRank: {
+          winRate: dayRanks.winRate.get(p.number) ?? null,
+          twoRate: dayRanks.twoRate.get(p.number) ?? null,
+        },
+      }))
+    : sortedPlayers;
   // 想定コース1着率の行は枠別情報タブの6艇の表と同じフック・同じ行から取る（BOA-1296）
   const courseStats = useSixBoatCourseStats({
     raceDate: raceId?.slice(0, 10),
@@ -178,7 +188,6 @@ function DataRaceTable({ raceId, prediction, venueCode, dayRanks = null }) {
     players,
     analysis,
     courseStats,
-    dayRanks,
     pending: analysis.pending,
     motorDeepLink,
     gradeBadge: (p) => (

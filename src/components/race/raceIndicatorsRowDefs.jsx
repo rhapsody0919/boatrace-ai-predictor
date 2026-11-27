@@ -145,7 +145,7 @@ function localDiffText(t, p) {
 }
 
 export function buildBasicRatioRows(c) {
-  const { t, players, gradeBadge, dayRanks } = c;
+  const { t, players, gradeBadge } = c;
   const winRate = rowFromIndicator(
     t,
     { players },
@@ -175,7 +175,7 @@ export function buildBasicRatioRows(c) {
             {gradeBadge?.(p)}
           </span>
           {winRate.text(p).text}
-          {dayRankText(t, dayRanks?.winRate.get(p.number))}
+          {dayRankText(t, p.dayRank?.winRate)}
         </span>
       ),
     },
@@ -188,7 +188,7 @@ export function buildBasicRatioRows(c) {
         ) : (
           <span className="drt-value">
             {text}
-            {dayRanks && localDiffText(t, p)}
+            {p.dayRank && localDiffText(t, p)}
           </span>
         );
       },
@@ -205,7 +205,7 @@ export function buildBasicRatioRows(c) {
               {text}
               <span className="drt-unit">{unit}</span>
             </span>
-            {dayRankText(t, dayRanks?.twoRate.get(p.number))}
+            {dayRankText(t, p.dayRank?.twoRate)}
           </span>
         );
       },
