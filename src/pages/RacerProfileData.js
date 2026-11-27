@@ -9,6 +9,8 @@ import {
 import { getRacerCurrentMotorStatus } from "../services/motorQueries7.js";
 import { errorMessageOf } from "../utils/errorMessage.js";
 import { NOT_FOUND_PAGE_DATA } from "./RacerProfileMeta.js";
+import { getCourseWinRateBaseline } from "../services/venueQueries.js";
+import { getDaysAgoJST } from "../pure/jstDate.js";
 
 export function useRacerPageData(racerId, validId) {
   const [data, setData] = useState(null);
@@ -118,6 +120,33 @@ export function useRacerPeriodStats(racerId, validId) {
     setPeriodStatsRetry((n) => n + 1);
   };
   return { periodRows, periodFailed, retryPeriod };
+}
+
+// 全選手の同じコースの1着率（直近3期、RPC 199）。進入コース別成績（公式）の差に使う（意味づけ 2026-11-26）。
+// 選手の表も直近3期を足すので窓がそろう。失敗は "error"（0% や「差なし」に化けさせない）
+export function useCourseWinRateNational() {
+  const [load, setLoad] = useState({ status: "loading", national: null });
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    getCourseWinRateBaseline(getDaysAgoJST(0), null)
+      .then((data) => {
+        if (!cancelled) setLoad({ status: "ready", national: data.national });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("全選手のコース別1着率の取得エラー:", err.message);
+        setLoad({ status: "error", national: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [retry]);
+  const reload = () => {
+    setLoad({ status: "loading", national: null });
+    setRetry((n) => n + 1);
+  };
+  return { ...load, reload };
 }
 
 // 前付けの傾向（BOA-1422）。既存の getRacerScopedRaceStats（新しいクエリは無い）を racerId つきで持つ

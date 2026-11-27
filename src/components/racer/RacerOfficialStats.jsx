@@ -5,6 +5,9 @@ import {
   COURSE_SUM_PERIODS,
 } from "../../pure/racerOfficialPeriodStats.js";
 import { buildChartData, chartRates } from "./RacerOfficialStatsLogic";
+import { courseRowDir } from "../../pure/sixBoatCourseStats.js";
+import { toneOf } from "../../pure/compareBaseline.js";
+import InlineFetchError from "../InlineFetchError";
 import "./RacerOfficialStats.css";
 
 /**
@@ -103,7 +106,31 @@ function CourseRateCell({ value, reliability }) {
   );
 }
 
-function CourseSection({ summary }) {
+// 1着率の下の、全選手の同じコース（直近3期）との差（意味づけ 2026-11-26、型1を文字で）。
+// 判定は出走表・枠別情報の6艇の表と同じ（courseRowDir）。▲緑・▼赤は偶然のぶれを超えたときだけ、
+// 「参考」（10〜29走）と基準の無いコースは灰の差だけ
+function CourseDiff({ c, national }) {
+  const avg = national?.[c.course]?.winRate ?? null;
+  if (c.reliability === "none" || c.winRate === null || avg === null) return null;
+  const dir = courseRowDir({
+    reliability: c.reliability === "firm" ? "ok" : "warn",
+    winRate: c.winRate, avg, entries: c.entries, course: c.course,
+  });
+  const tone = toneOf(dir, "high");
+  const mark = dir === "high" ? "▲" : dir === "low" ? "▼" : "";
+  const diff = Math.round((c.winRate - avg) * 10) / 10;
+  return (
+    <span
+      className={`racer-official-sub racer-official-course-diff${tone ? ` ind-${tone}` : ""}`}
+      data-tone={tone ?? "plain"}
+    >
+      {`${mark}${diff > 0 ? "+" : ""}${diff.toFixed(1)}pt`}
+    </span>
+  );
+}
+
+function CourseSection({ summary, courseBaseline }) {
+  const national = courseBaseline?.status === "ready" ? courseBaseline.national : null;
   const first = summary.periods.at(-1);
   const last = summary.periods[0];
   const rangeText = `${first.range.split("〜")[0]}〜${last.range.split("〜")[1]}`;
@@ -164,7 +191,13 @@ function CourseSection({ summary }) {
               <tr key={c.course}>
                 <th scope="row">{c.course}</th>
                 <td>{c.entries === 0 ? "進入なし" : c.entries}</td>
-                <CourseRateCell value={c.winRate} reliability={c.reliability} />
+                <td className={c.reliability === "none" ? "racer-official-empty" : undefined}>
+                  {c.reliability === "none" ? "-" : pct(c.winRate)}
+                  {c.reliability === "reference" && (
+                    <span className="racer-official-sub">参考</span>
+                  )}
+                  <CourseDiff c={c} national={national} />
+                </td>
                 <CourseRateCell
                   value={c.top2Rate}
                   reliability={c.reliability}
@@ -179,6 +212,13 @@ function CourseSection({ summary }) {
           </tbody>
         </table>
       </div>
+      {courseBaseline?.status === "error" ? (
+        <InlineFetchError onRetry={courseBaseline.reload} />
+      ) : (
+        <p className="racer-official-note">
+          1着率の下の数字は、全選手の同じコースの1着率（直近3期）との差です。▲緑・▼赤は、走数から見て偶然のぶれでは説明しにくい差のときだけ付けます。
+        </p>
+      )}
       <p className="racer-official-note">
         元の期:{" "}
         {summary.periods.map((p) => `${p.label}（${p.range}）`).join("・")}。
@@ -190,7 +230,7 @@ function CourseSection({ summary }) {
   );
 }
 
-export default function RacerOfficialStats({ rows, racerName }) {
+export default function RacerOfficialStats({ rows, racerName, courseBaseline }) {
   const periodRows = useMemo(() => buildPeriodRows(rows), [rows]);
   const courseSummary = useMemo(
     () => buildCourseRows(rows, COURSE_SUM_PERIODS),
@@ -254,7 +294,9 @@ export default function RacerOfficialStats({ rows, racerName }) {
         </p>
       </div>
 
-      {courseSummary && <CourseSection summary={courseSummary} />}
+      {courseSummary && (
+        <CourseSection summary={courseSummary} courseBaseline={courseBaseline} />
+      )}
     </section>
   );
 }
