@@ -243,3 +243,16 @@ flowchart LR
 - 119族の全部を定義にするのは大きい。段1は出走表の行（約14）から始め、画面を寄せるたびに増やす。全部を一度に書かない
 - 棚卸しの数字・窓・閾値は未検証（コードを読んだ写し）。定義を書くときにコードで確かめ直す
 - 定義の `select` が今の画面ごとの計算を1つにまとめるので、寄せる PR で数字が変わる画面が出る。変わる画面は PR 本文に前後の値を書く
+
+## 13. 部品の作り方（オーナー 2026-11-27、BOA-1727）
+
+新しく作る部品・直す部品は、データを自分で取らず props で受け取る。取りの hook（`useXxx`）を呼ぶのはページか領域の入口の部品だけ。`window`・`localStorage`・`document` は描画の中で読まない。読むなら `useEffect`・イベントの中か、hook（`useSyncExternalStore` と `getServerSnapshot`）に寄せる。
+
+- **入口の部品**: `src/pages/` の部品と、タブの切り替え（`PredictionPanelTabs.jsx` 等）が直接描くタブ1枚の最上位の部品（例 `RaceBeforeInfoTab`・`RaceMeetTab`）。ページが直接描く節の最上位の部品も入口に数える。入口でない部品（表・図・カード・行）は取りの hook を呼ばない
+- **例外**
+  - ライブの購読（`RaceMeetTab` の `subscribeBoard`・`subscribeRecords`）は入口の部品で hook にまとめ、下へは値だけ渡す
+  - 保存の部品（`useFavorites`・`useTheme`・`useIndicatorLayout`）は hook の中で `typeof window` で守る
+  - focus・scroll・計測のための `document` と ref は、effect の中なら可
+- **直す範囲**: 触った部品だけ。今ある部品（約67ファイル）を一度に直す義務は無い。機械の関所は今回は作らない
+- SSR を採ると決めたら、この決まりを ADR に上げる
+- system-architect の審査: 「直して可」（2026-11-27）。入口の部品の定義を同じ節で決めること、の指摘をここに入れた
