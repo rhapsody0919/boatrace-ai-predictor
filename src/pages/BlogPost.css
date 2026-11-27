@@ -96,6 +96,8 @@
    AA未達のため、両テーマで検証済みのvar(--brand-accent-secondary)（銀）に変更。
    下線もリンク色に揃える */
 .blog-post-content a {
+  /* 出典に生の URL を書いた記事で、375px の幅を横にはみ出さないように折り返す */
+  overflow-wrap: anywhere;
   color: var(--brand-accent-secondary);
   text-decoration: none;
   border-bottom: 1px solid var(--brand-accent-secondary);
