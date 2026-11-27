@@ -3,7 +3,7 @@
  * VenueRaceListPage.jsx から移しただけで、挙動は変えない。過去日付の meta の中身は pageMeta.js の getPastVenuePageMeta（BOA-1723）。
  */
 import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
-import { formatDate } from "../utils/formatters";
+import { getPastVenueBreadcrumbItems } from "../pure/pageHead.js";
 import {
   getPastVenuePageMeta,
   getTodayVenueBreadcrumbItems,
@@ -36,15 +36,6 @@ function firstUpcomingIndex(venueRaces, hhmm) {
       );
 }
 
-function pastBreadcrumbItems(t, date, venueCode, venueName) {
-  return [
-    { name: t("analysisPage.breadcrumbHome"), url: "/" },
-    { name: "過去の予想", url: "/races" },
-    { name: formatDate(date), url: `/races/${date}` },
-    { name: venueName, url: `/races/${date}/${venueCode}` },
-  ];
-}
-
 // 過去日付の title・description・canonical は Node の verify から呼べるよう pageMeta.js で組む（BOA-1723）
 export const pastPageMeta = getPastVenuePageMeta;
 
@@ -52,7 +43,7 @@ export const pastPageMeta = getPastVenuePageMeta;
 export function venueBreadcrumbItems({ isToday, t, date, venueCode, venueName, lang }) {
   return isToday
     ? getTodayVenueBreadcrumbItems(t, venueCode, lang)
-    : pastBreadcrumbItems(t, date, venueCode, venueName);
+    : getPastVenueBreadcrumbItems(t("analysisPage.breadcrumbHome"), date, venueCode, venueName);
 }
 
 // 一覧と、次の発走レースの位置の組
