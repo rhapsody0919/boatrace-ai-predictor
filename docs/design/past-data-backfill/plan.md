@@ -54,6 +54,113 @@ flowchart LR
 - **移す読み手**（data-readers.md で確かめる）: `getRacerRaceHistory`・`getRacerScopedRaceStats`（203 の RPC）・`getRaceFrontTakingByRacer`（racerQueries6.js:84）・`racerHistoryCutoff` の読み手・回収率の基準の RPC。今の整形の関数（racerRaceHistoryRows.js）が読む列を全部 db-draft の対応表に載せる
 - **匿名の読み取り**: ADR-0104 は「匿名に読ませるのは件数の表だけ」とした。走ごとの kb の行を出すのはこれを広げるので、新しい ADR を1本足し、オーナーに1行で確かめる（§10）。190 の表は当面そのまま残し、後で facts から作るよう移すかを ADR に書く
 
+### ER 図（docs/db-migration/212_race_facts.sql から機械生成、`node scripts/maintenance/generate-er-diagram.js past-data-backfill`）
+
+参照SQLファイル: 212_race_facts.sql
+
+以下をplan.mdの「データ設計」節に貼り付けてください:
+
+```mermaid
+erDiagram
+    race_facts {
+        text race_id PK
+        text era
+        date race_date
+        smallint venue_code
+        smallint race_number
+        text race_title
+        smallint series_day
+        boolean is_final_day
+        text race_grade
+        text series_kind
+        text stage_raw
+        boolean is_final
+        time deadline_time
+        text weather
+        numeric(4,1) wind_speed
+        smallint wave_height
+        text wind_sector
+        text condition_source
+        numeric temperature
+        numeric water_temperature
+        smallint tide_cm
+        text tide_phase
+        text technique
+        boolean dead_heat
+        integer payout_win
+        integer payout_place_1
+        integer payout_place_2
+        integer payout_3tan
+        text combo_3tan
+        integer payout_3fuku
+        boolean has_result
+        text race_status
+        smallint rule_version
+        timestamptz built_at
+    }
+    run_facts {
+        text race_id PK
+        smallint boat_number PK
+        text era
+        date race_date
+        integer racer_id
+        text racer_class
+        smallint f_count
+        smallint motor_number
+        smallint course
+        numeric start_timing
+        boolean is_flying
+        boolean is_late_start
+        text finish_code
+        text finish_mark
+        smallint finish_rank
+        numeric exhibition_time
+        numeric weight
+        text weight_source
+        numeric tilt
+        text[] parts_changed
+        numeric oriten_lap
+        numeric oriten_turn
+        numeric oriten_straight
+        smallint rule_version
+        timestamptz built_at
+    }
+    kb_archive_extra {
+        text race_id PK
+        smallint boat_number PK
+        text source PK
+        date race_date
+        text[] item_labels
+        smallint measure_status
+        numeric oriten_lap
+        numeric oriten_turn
+        numeric oriten_straight
+        numeric temperature
+        numeric water_temperature
+        smallint wind_direction16
+        numeric tilt
+        text[] parts_changed
+        timestamptz fetched_at
+    }
+    backfill_progress {
+        text source PK
+        text unit_id PK
+        date target_date
+        text status
+        integer attempts
+        smallint http_status
+        text last_error
+        timestamptz last_attempt_at
+        timestamptz updated_at
+    }
+    facts_coverage {
+        text item PK
+        date first_date
+        date last_date
+        timestamptz computed_at
+    }
+```
+
 ## 4. K/B に無い項目の過去分
 
 公式のページの確かめ（2026-11-27、official-data-spec、実リクエスト20回、2019-04-15・2022-03-24・2024-01-15）と、効き目（data-scientist）:
