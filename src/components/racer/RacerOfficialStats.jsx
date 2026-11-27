@@ -1,12 +1,10 @@
 import { useMemo } from "react";
-import { winRateAxis } from "../../utils/chartDomain";
 import {
   buildPeriodRows,
   buildCourseRows,
   COURSE_SUM_PERIODS,
 } from "../../pure/racerOfficialPeriodStats.js";
 import { buildChartData, chartRates } from "./RacerOfficialStatsLogic";
-import RacerOfficialStatsChart from "./RacerOfficialStatsChart";
 import "./RacerOfficialStats.css";
 
 /**
@@ -202,12 +200,8 @@ export default function RacerOfficialStats({ rows, racerName }) {
 
   const latest = periodRows[0];
   const oldest = periodRows.at(-1);
-  // 折れ線は古い期から順に左→右。出走0の期は点を置かない
-  const chartData = buildChartData(periodRows);
-  // 縦軸は値の幅いっぱいに広げず（小さな上下が大きく見え、推移を「調子」と読ませる。data-scientist）、
-  // 整数の刻みで等間隔に目盛る（BOA-1196。自動だと 1 / 3 / 5 / 8 になる）
-  const rates = chartRates(chartData);
-  const rateAxis = winRateAxis(rates);
+  // 出走のある期があるか（全期出走なしなら、その旨を書く）
+  const rates = chartRates(buildChartData(periodRows));
   const visible = periodRows.slice(0, DEFAULT_VISIBLE_PERIODS);
   const rest = periodRows.slice(DEFAULT_VISIBLE_PERIODS);
 
@@ -244,9 +238,7 @@ export default function RacerOfficialStats({ rows, racerName }) {
             より後の走は、その期が終わって公式の期別成績が公開されると載ります。
           </p>
         )}
-        {chartData.length > 1 && rates.length > 0 && (
-          <RacerOfficialStatsChart chartData={chartData} rateAxis={rateAxis} />
-        )}
+        {/* 期ごとの勝率の段は、成績・調子の欄の「勝率の推移（公式の期ごと）」に1つにまとめた（オーナー 2026-11-27） */}
         <PeriodTable rows={visible} />
         {rest.length > 0 && (
           <details className="racer-official-more">

@@ -1,14 +1,5 @@
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { formatPercent, slashDate } from "../../utils/formatters";
-import { winRateAxis } from "../../utils/chartDomain";
+import RacerOfficialStatsChart from "./RacerOfficialStatsChart";
 
 // 選手ページの成績・調子（RacerPerformanceStats）のカード（選手調子・平均ST・会場×枠番の固定時）と勝率の推移
 
@@ -102,41 +93,20 @@ export function SummaryCards({ formSummary, officialAvgSt, aggregatedStats }) {
 }
 
 /**
- * 全国勝率の推移。当地勝率の線は出さない: 当地勝率は節ごとに会場が変わる値で、線でつなぐと
- * 会場の切り替わりが調子の上下に見え、0.00（当地の出走なし）を0として描いてしまう（number-scope.md §5）
- * 縦軸は期別成績の図と同じ winRateAxis で値の幅に合わせる。0〜12 だと 0.4 の上下が平らに見えた
- * （design-system.md「推移の軸は0から始めず値の幅に合わせる」、G2 の点検 2026-11-26）
+ * 勝率の推移（公式の期ごと）。全国勝率を期ごとの段で描く（オーナー 2026-11-27「期ごとの段に1つ」）。前は出走表の
+ * 全国勝率を日ごとに並べた折れ線（直近約90日、ほぼ平ら）と、公式成績の欄の期別の折れ線の2本があった。
+ * 当地勝率は出さない（節ごとに会場が変わる値で、線でつなぐと会場の切り替わりが調子の上下に見える。number-scope.md §5）。
+ * 縦軸は winRateAxis で値の幅に合わせ、整数の等間隔（design-system.md、BOA-1196）
  */
-export function WinRateChart({ chartData }) {
-  if (!(chartData.length > 0)) return null;
-  const axis = winRateAxis(chartData.map((row) => row.national_win_rate));
+export function WinRateChart({ steps }) {
+  if (!(steps.chartData.length > 0)) return null;
   return (
     <div className="racer-stat-chart">
-      <h3>全国勝率の推移</h3>
-      <ResponsiveContainer width="100%" height={240}>
-        <LineChart
-          data={chartData}
-          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            domain={axis?.domain}
-            ticks={axis?.ticks}
-            interval={0}
-          />
-          <Tooltip formatter={(value) => value?.toFixed(2)} />
-          <Line
-            type="stepAfter"
-            dataKey="national_win_rate"
-            name="全国勝率"
-            stroke="var(--brand-accent-primary)"
-            strokeWidth={2}
-            dot={{ r: 2 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <h3>勝率の推移（公式の期ごと）</h3>
+      <RacerOfficialStatsChart
+        chartData={steps.chartData}
+        rateAxis={steps.rateAxis}
+      />
     </div>
   );
 }
