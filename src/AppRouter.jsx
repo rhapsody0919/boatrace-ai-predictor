@@ -16,6 +16,7 @@ import {
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import { pageViewPath } from "./utils/raceUrlState";
 import useSingleTitle from "./hooks/useSingleTitle";
+import usePageHeadHandoff from "./hooks/usePageHeadHandoff";
 import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
@@ -141,6 +142,12 @@ function AdRefresh() {
 // （InitialLanguageRedirect の / → /en/、LocalizedLayout の location.replace 等）。
 // 待つ間にURLが変われば cleanup で取り消され、最終的なURLだけが1回送られる
 const PAGE_VIEW_SETTLE_MS = 500;
+
+// 生の HTML に差し込んだ head を React の head へ受け渡す（ADR-0114 決定3）。パスは Router から渡す
+function PageHeadHandoff() {
+  usePageHeadHandoff(useLocation().pathname);
+  return null;
+}
 
 function PageViewTracker() {
   const { pathname, search } = useLocation();
@@ -408,6 +415,7 @@ export default function AppRouter() {
       <HashRedirect />
       <AdRefresh />
       <PageViewTracker />
+      <PageHeadHandoff />
       <CookieConsent />
       <SiteFeedback />
       <HreflangTags />
