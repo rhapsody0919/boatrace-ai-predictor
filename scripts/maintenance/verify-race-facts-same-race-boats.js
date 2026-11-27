@@ -7,12 +7,12 @@
 // 外部接続なし
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { inspectMigration } from "../lib/dbApplySql.js";
+import { RACE_FACTS_MIGRATION_SQL, RACE_FACTS_SAME_RACE_SQL } from "./verifyData/race-facts-migration-files.js";
 
-const SQL_212 = readFileSync(new URL("../../docs/db-migration/212_race_facts.sql", import.meta.url), "utf8");
-const SQL_213 = readFileSync(new URL("../../docs/db-migration/213_race_facts_same_race_boats.sql", import.meta.url), "utf8");
+const SQL_212 = RACE_FACTS_MIGRATION_SQL;
+const SQL_213 = RACE_FACTS_SAME_RACE_SQL;
 
 const ROLES =
   "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; CREATE ROLE applier NOSUPERUSER;" +
