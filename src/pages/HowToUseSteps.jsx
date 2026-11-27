@@ -3,8 +3,8 @@ function HowToStepTabDeepDiveContent() {
     <>
       <p>
         データ出走表の上にタブが並んでいます。見たい切り口に合わせて切り替えてください。発走前は
-        <strong>7つ</strong>、レースが確定すると「結果」が加わって
-        <strong>8つ</strong>
+        <strong>8つ</strong>、レースが確定すると「結果」が加わって
+        <strong>9つ</strong>
         になります。スマホでは4つほどしか画面に入らないため、
         <strong>タブの並びを横にスワイプ</strong>
         すると残りが出てきます（右端の「›」でも送れます）。
@@ -12,13 +12,17 @@ function HowToStepTabDeepDiveContent() {
       <div className="step-detail">
         <h4>💡 タブの内容（左から順）</h4>
         <p className="step-note">
-          前半の4つは<strong>6艇をまとめて見る</strong>
+          前半の5つは<strong>6艇をまとめて見る</strong>
           タブ、後半は<strong>艇を1つ選んで掘る</strong>タブです。
         </p>
         <ul>
           <li>
             <strong>基本情報</strong>:
             選手ごとの勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数（n）も併記
+          </li>
+          <li>
+            <strong>龍神ソナー</strong>:
+            今日と条件の近い過去のレース（類似レース）で、どの艇がどう決まったか
           </li>
           <li>
             <strong>イン崩れ</strong>: イン崩れ注意度・出現パターン・過去に発生した割合（ステップ5）
