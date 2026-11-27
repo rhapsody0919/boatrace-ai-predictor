@@ -15,6 +15,7 @@ import {
   useRacerMotor,
   useRacerPeriodStats,
   useRacerFrontTaking,
+  useCourseWinRateNational,
 } from "./RacerProfileData.js";
 import {
   isRacerIdFormat,
@@ -36,7 +37,10 @@ export default function RacerProfile() {
   const [historyLoad, setHistoryLoad] = useState(null);
   const { motorState, motorStatus } = useRacerMotor(racerId, validId);
   const historyState = historyLoad?.racerId === racerId ? historyLoad.state : "loading";
-  const period = useRacerPeriodStats(racerId, validId);
+  const periodStats = useRacerPeriodStats(racerId, validId);
+  // 進入コース別成績（公式）の差の基準（全選手の同じコース、直近3期）。期別の節にまとめて渡す
+  const courseBaseline = useCourseWinRateNational();
+  const period = { ...periodStats, courseBaseline };
   const front = useRacerFrontTaking(racerId, validId);
 
   // インデックス判定は sitemap と共通（src/utils/racerIndexPolicy.js）。ニュースがある選手、または
