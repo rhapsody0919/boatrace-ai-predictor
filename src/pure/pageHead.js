@@ -35,6 +35,36 @@ export function pageHeadRoute(pathname) {
   return null;
 }
 
+/** /api/page-head の JSON の形の版。関数が書き、middleware は違えば素通りにする（配備・Instant Rollback をまたいで CDN に残るため） */
+export const PAGE_HEAD_VERSION = 1;
+
+const TODAY_VENUE_PATH = new RegExp(`^/venue/(${VENUE_CODE})$`);
+const RACE_PATH = /^\/race\/((\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2}))$/;
+const RACER_PATH = /^\/racer\/(\d{4})$/;
+
+/**
+ * head の材料を /api/page-head から取るページか（本日の会場 /venue/{1〜24}、レース詳細 /race/{YYYY-MM-DD-VV-RR}、
+ * 選手 /racer/{4桁}。ja だけ）。
+ * 対象の外は null。apiPath はその材料の関数のパス
+ * @param {string} pathname - デコード前のパス（クエリは含めない）
+ * @returns {{kind: "venue"|"race"|"racer", apiPath: string} | null}
+ */
+export function pageHeadApiRoute(pathname) {
+  const venue = TODAY_VENUE_PATH.exec(pathname);
+  if (venue) return { kind: "venue", apiPath: `/api/page-head/v1/venue/${venue[1]}` };
+  const racer = RACER_PATH.exec(pathname);
+  if (racer) return { kind: "racer", apiPath: `/api/page-head/v1/racer/${racer[1]}` };
+  const race = RACE_PATH.exec(pathname);
+  if (race && isCalendarDate(race[2])) {
+    const venueCode = Number(race[3]);
+    const raceNo = Number(race[4]);
+    if (venueCode >= 1 && venueCode <= 24 && raceNo >= 1 && raceNo <= 12) {
+      return { kind: "race", apiPath: `/api/page-head/v1/race/${race[1]}` };
+    }
+  }
+  return null;
+}
+
 /**
  * 会場ページ（過去日付、/races/:date/:code。ja 専用）。画面には終わったレースの結果の行（着順・決まり手・3連単の配当）が出るので、
  * 「{会場}＋結果」の検索の語で拾われるよう title の頭に「結果・配当」を置く（BOA-1723）。尾は e2e/venue-seo-meta.spec.js が固定
