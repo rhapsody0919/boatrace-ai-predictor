@@ -1,5 +1,5 @@
-// 選手ページの進入コース別成績（公式）の1着率の下に、全選手の同じコース（直近3期）との差を出す
-// （見せ方の型1を文字で、意味づけ 2026-11-26 オーナー承認）。▲緑・▼赤は偶然のぶれを超えたときだけ。
+// 選手ページの進入コース別成績（公式）に、1着率の棒と全選手の同じコース（直近3期）の縦線を出す
+// （見せ方の型1・値の尺度、意味づけ 2026-11-26 オーナー承認、形は 2026-11-27 オーナーが選んだ）。▲緑・▼赤は偶然のぶれを超えたときだけ。
 // 基準の取得に失敗したら差を出さず、取り直しの表示を出す（0 や「差なし」に化けさせない）。
 import { test, expect } from "./fixtures.js";
 
@@ -27,24 +27,37 @@ async function open(page, { fail = false, width = 375 } = {}) {
 }
 
 for (const width of [375, 1440]) {
-  test(`1着率の下に全選手との差、偶然の幅を超えた差だけ緑▲ ${width}px`, async ({ page }) => {
-    const table = await open(page, { width });
-    const first = table.locator("tbody tr").nth(0).locator(".racer-official-course-diff");
-    await expect(first).toBeVisible({ timeout: 30000 });
+  test(`1着率の棒に全選手の縦線、偶然の幅を超えたコースだけ緑▲ ${width}px`, async ({ page }) => {
+    await open(page, { width });
+    const bars = page.locator(".racer-official-winbars .racer-official-bar-row");
+    await expect(bars).toHaveCount(6, { timeout: 30000 });
+    const first = bars.nth(0);
     await expect(first).toHaveAttribute("data-tone", "good");
-    await expect(first).toHaveText(/^▲\+\d+\.\dpt$/);
-    // 差の数字は「1着率 − 全選手」（小数1桁）
-    const rate = Number((await table.locator("tbody tr").nth(0).locator("td").nth(1).textContent()).match(/[\d.]+/)[0]);
-    const diff = Number((await first.textContent()).replace(/[^\d.+-]/g, ""));
-    expect(Math.abs(rate - 10.0 - diff)).toBeLessThanOrEqual(0.15);
-    await expect(page.locator(".racer-official-stats")).toContainText("全選手の同じコースの1着率（直近3期）との差");
+    await expect(first).toContainText("全選手 10.0%");
+    await expect(first.locator(".racer-official-winbar-mark")).toHaveText(/▲全選手より高い/);
+    // 縦線は全選手の率の位置、棒の長さは選手の率（どちらも 0〜100% の尺度）
+    const geo = await first.evaluate((row) => {
+      const track = row.querySelector(".racer-official-winbar-track").getBoundingClientRect();
+      const fill = row.querySelector(".racer-official-winbar-fill").getBoundingClientRect();
+      const base = row.querySelector(".racer-official-winbar-base").getBoundingClientRect();
+      return { fill: fill.width / track.width, base: (base.left + base.width / 2 - track.left) / track.width };
+    });
+    expect(geo.base).toBeCloseTo(0.1, 1);
+    const rate = Number((await first.locator(".racer-official-bar-value").textContent()).match(/1着率 ([\d.]+)%/)[1]);
+    expect(geo.fill).toBeCloseTo(rate / 100, 1);
+    // 色の無いコースは印なし
+    for (let i = 1; i < 6; i += 1) {
+      const tone = await bars.nth(i).getAttribute("data-tone");
+      if (tone === "plain") await expect(bars.nth(i).locator(".racer-official-winbar-mark")).toHaveCount(0);
+    }
+    await expect(page.locator(".racer-official-stats")).toContainText("全選手の同じコースの1着率（直近3期）と比べています");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
 
 test("基準の取得に失敗したら差を出さず、取り直しを出す", async ({ page }) => {
-  const table = await open(page, { fail: true });
+  await open(page, { fail: true });
   await expect(page.locator(".racer-official-stats .inline-fetch-error__retry")).toBeVisible({ timeout: 30000 });
-  await expect(table.locator(".racer-official-course-diff")).toHaveCount(0);
+  await expect(page.locator(".racer-official-winbars")).toHaveCount(0);
   await expect(page.locator(".racer-official-stats")).not.toContainText("全選手の同じコースの1着率");
 });

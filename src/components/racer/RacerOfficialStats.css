@@ -237,3 +237,26 @@
     transform: none;
   }
 }
+
+/* 1着率と全選手の比べ（意味づけ）。縦線＝全選手の同じコース、色は偶然のぶれを超えたときだけ */
+.racer-official-winbars-title {
+  margin: var(--spacing-3) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+.racer-official-winbar-track {
+  position: relative;
+}
+.racer-official-winbar-fill {
+  background: var(--text-secondary);
+}
+.racer-official-winbar-fill--good { background: var(--color-success-text); }
+.racer-official-winbar-fill--bad { background: var(--color-error-text); }
+.racer-official-winbar-base {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text-primary);
+}

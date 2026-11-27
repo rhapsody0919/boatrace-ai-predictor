@@ -106,26 +106,53 @@ function CourseRateCell({ value, reliability }) {
   );
 }
 
-// 1着率の下の、全選手の同じコース（直近3期）との差（意味づけ 2026-11-26、型1を文字で）。
-// 判定は出走表・枠別情報の6艇の表と同じ（courseRowDir）。▲緑・▼赤は偶然のぶれを超えたときだけ、
-// 「参考」（10〜29走）と基準の無いコースは灰の差だけ
-function CourseDiff({ c, national }) {
+// 全選手の同じコース（直近3期）と比べる（意味づけ 2026-11-26）。判定は出走表・枠別情報の6艇の表と同じ（courseRowDir）。
+// ▲緑・▼赤は偶然のぶれを超えたときだけ。「参考」（10〜29走）と基準の無いコースは色なし
+function compareOf(c, national) {
   const avg = national?.[c.course]?.winRate ?? null;
   if (c.reliability === "none" || c.winRate === null || avg === null) return null;
   const dir = courseRowDir({
     reliability: c.reliability === "firm" ? "ok" : "warn",
     winRate: c.winRate, avg, entries: c.entries, course: c.course,
   });
-  const tone = toneOf(dir, "high");
-  const mark = dir === "high" ? "▲" : dir === "low" ? "▼" : "";
-  const diff = Math.round((c.winRate - avg) * 10) / 10;
+  return { avg, dir, tone: toneOf(dir, "high"), diff: c.winRate - avg };
+}
+
+const MARK_TEXT = { good: "▲全選手より高い", bad: "▼全選手より低い" };
+
+// 1着率の棒（0〜100%）に全選手の位置の縦線（型1・値の尺度。オーナー 2026-11-27 が「+28.6pt」の文字より選んだ）。値と全選手の値を並べる
+function CourseWinBars({ summary, national }) {
   return (
-    <span
-      className={`racer-official-sub racer-official-course-diff${tone ? ` ind-${tone}` : ""}`}
-      data-tone={tone ?? "plain"}
-    >
-      {`${mark}${diff > 0 ? "+" : ""}${diff.toFixed(1)}pt`}
-    </span>
+    <ul className="racer-official-bars racer-official-winbars" aria-label="進入コース別の1着率と全選手">
+      {summary.courses.map((c) => {
+        const cmp = compareOf(c, national);
+        return (
+          <li key={c.course} className="racer-official-bar-row" data-tone={cmp?.tone ?? "plain"}>
+            <span className="racer-official-bar-label">{c.course}コース</span>
+            <span className="racer-official-bar-track racer-official-winbar-track">
+              {c.winRate !== null && (
+                <span
+                  className={`racer-official-bar-fill racer-official-winbar-fill${cmp?.tone ? ` racer-official-winbar-fill--${cmp.tone}` : ""}`}
+                  style={{ width: `${c.winRate}%` }}
+                />
+              )}
+              {cmp && (
+                <span className="racer-official-winbar-base" style={{ left: `${cmp.avg}%` }} />
+              )}
+            </span>
+            <span className="racer-official-bar-value">
+              {c.winRate === null
+                ? c.entries === 0 ? "進入なし" : `進入${c.entries}走`
+                : `1着率 ${pct(c.winRate)}${c.reliability === "reference" ? "（参考）" : ""}`}
+              {cmp && `・全選手 ${cmp.avg.toFixed(1)}%`}
+              {cmp?.tone && (
+                <span className={`racer-official-winbar-mark ind-${cmp.tone}`}> {MARK_TEXT[cmp.tone]}</span>
+              )}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -174,6 +201,12 @@ function CourseSection({ summary, courseBaseline }) {
           </li>
         ))}
       </ul>
+      {national && (
+        <>
+          <h4 className="racer-official-winbars-title">1着率（｜は全選手の同じコース・直近3期）</h4>
+          <CourseWinBars summary={summary} national={national} />
+        </>
+      )}
       <div className="racer-official-table-wrap">
         <table className="racer-official-table">
           <thead>
@@ -191,13 +224,7 @@ function CourseSection({ summary, courseBaseline }) {
               <tr key={c.course}>
                 <th scope="row">{c.course}</th>
                 <td>{c.entries === 0 ? "進入なし" : c.entries}</td>
-                <td className={c.reliability === "none" ? "racer-official-empty" : undefined}>
-                  {c.reliability === "none" ? "-" : pct(c.winRate)}
-                  {c.reliability === "reference" && (
-                    <span className="racer-official-sub">参考</span>
-                  )}
-                  <CourseDiff c={c} national={national} />
-                </td>
+                <CourseRateCell value={c.winRate} reliability={c.reliability} />
                 <CourseRateCell
                   value={c.top2Rate}
                   reliability={c.reliability}
@@ -216,7 +243,7 @@ function CourseSection({ summary, courseBaseline }) {
         <InlineFetchError onRetry={courseBaseline.reload} />
       ) : (
         <p className="racer-official-note">
-          1着率の下の数字は、全選手の同じコースの1着率（直近3期）との差です。▲緑・▼赤は、走数から見て偶然のぶれでは説明しにくい差のときだけ付けます。
+          全選手の同じコースの1着率（直近3期）と比べています。▲緑・▼赤は、走数から見て偶然のぶれでは説明しにくい差のときだけ付けます。
         </p>
       )}
       <p className="racer-official-note">
