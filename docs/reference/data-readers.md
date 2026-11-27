@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3038 |
+| 読んだファイル | 3041 |
 | 読み書きのあるファイル | 333 |
 | 表の読み手（箇所） | 980 |
 | 表の書き手（箇所） | 200 |
@@ -428,7 +428,7 @@
   - `src/services/raceQueries2.js:188` select [boat_number, exhibition_time, is_absent, race_id, start_flag, start_timing, tilt]
   - `src/services/raceQueries3.js:90` select [boat_number, exhibition_time, race_id, start_flag, start_timing]
   - `src/services/racerQueries2.js:202` select(helper:fetchAllByIn)
-  - `src/services/racerQueries2.js:330` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:331` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:119` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:194` select(helper:fetchAllByIn)
   - `src/services/sherlockService.js:76` select [boat_number, exhibition_time, race_id, start_timing]
@@ -804,7 +804,7 @@
   - `src/services/motorQueries.js:205` select [is_final_day, race_id, series_day]
   - `src/services/motorQueries3.js:285` select [race_id, race_stage]
   - `src/services/racerQueries2.js:116` select(helper:fetchAllByIn)
-  - `src/services/racerQueries2.js:336` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:337` select(helper:fetchAllByIn)
   - `src/services/racerQueries6.js:36` select(helper:selectByRaceIds)
 - 書き手（6）: 
   - `scripts/lib/raceConditionsWriter.js:44` upsert(helper:upsertChangedRows) [?]
@@ -1256,7 +1256,7 @@
   - `src/services/racerQueries.js:150` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:54` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:188` select(helper:fetchAllByIn)
-  - `src/services/racerQueries2.js:323` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:324` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:37` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:371` select(helper:fetchAllByIn)
   - `src/services/racerQueries6.js:35` select(helper:selectByRaceIds)
@@ -1347,7 +1347,7 @@
   - `src/services/raceQueries.js:233` select(helper:fetchAllByIn)
   - `src/services/raceQueries4.js:22` select [boat_number, entry_course, finish_mark, finish_rank, is_flying, is_late_start, race_id, start_timing]
   - `src/services/racerQueries2.js:194` select(helper:fetchAllByIn)
-  - `src/services/racerQueries2.js:344` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:345` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:113` select(helper:fetchAllByIn)
 - 書き手（6）: 
   - `scripts/lib/kfileSync.js:67` upsert [?]
@@ -1642,7 +1642,7 @@
   - `src/services/poirotService.js:49` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/racerQueries2.js:53` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:182` select(helper:fetchAllByIn)
-  - `src/services/racerQueries2.js:317` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:318` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:252` select [race_date, race_id, race_number, venue_code]
   - `src/services/racerQueries6.js:34` select(helper:selectByRaceIds)
   - `src/services/ruleMatchService.js:158` select [race_id, start_time]

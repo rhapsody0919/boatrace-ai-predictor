@@ -80,6 +80,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか4件 |
 | `src/pure/racerPageHead.js` | 選手ページ（/racer/:id）の head の値（title・description・canonical）。人の画面（src/pages/RacerProf… | periodSentence, racerPageMeta |
 | `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
+| `src/pure/racerStBaseline.js` | 選手ページの ST の推移に引く「今の級×同じ進入コースの全国平均」（オーナー 2026-11-27、ファン4人の議論の推奨）。 | stCourseGradeAvg |
 | `src/pure/racerStructuredData.js` | 選手ページ（/racer/:id）の構造化データ（ProfilePage＋Person・BreadcrumbList の JSON-LD）。人の画面（Racer… | racerStructuredData |
 | `src/pure/racerTodayContext.js` | 選手ページの「今日の出走」の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地成績・今節の着順。 | pickContextRun, courseCell, venueCell, meetFinishes, SMALL_RUNS |
 | `src/pure/racerTodayRuns.js` | — | splitTodayRaceId, finishLabelOf, buildRacerTodayRuns, todayRunsMeetLabel |
@@ -700,4 +701,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 658 ファイル / export 3532 件。
+対象 659 ファイル / export 3533 件。
