@@ -132,7 +132,19 @@ function OfficialLine({ line, y, W, pad }) {
   );
 }
 
+// 図に渡す公式の線（無ければ何も足さない）
+function officialChartProps(official) {
+  if (!official) return {};
+  return {
+    extraValues: [official.value],
+    renderOver: ({ y, W, pad }) => (
+      <OfficialLine line={official} y={y} W={W} pad={pad} />
+    ),
+  };
+}
+
 function OfficialLegend({ line }) {
+  if (!line) return null;
   return (
     <p className="trc-official-legend">
       <svg
@@ -258,16 +270,9 @@ export default function BasicInfoTrend({
               metric={metric}
               selected={selected}
               renderBelow={bandBelow(motorBand, series.get(selected))}
-              extraValues={official ? [official.value] : []}
-              renderOver={
-                official
-                  ? ({ y, W, pad }) => (
-                      <OfficialLine line={official} y={y} W={W} pad={pad} />
-                    )
-                  : undefined
-              }
+              {...officialChartProps(official)}
             />
-            {official && <OfficialLegend line={official} />}
+            <OfficialLegend line={official} />
           </div>
           <div className="race-split__side">
             <BoatPicker
