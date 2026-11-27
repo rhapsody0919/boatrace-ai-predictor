@@ -160,11 +160,11 @@ export function Countdown({ phase, openLabel }) {
         ? [phase.day, "日目", "開催中"]
         : ["", "", "開催は終わりました"];
   return (
-    <p className="gp-countdown">
+    <div className="gp-countdown">
       <span className="gp-countdown-num">{big}</span>
       <span className="gp-countdown-unit">{unit}</span>
       <span>{note}</span>
-    </p>
+    </div>
   );
 }
 

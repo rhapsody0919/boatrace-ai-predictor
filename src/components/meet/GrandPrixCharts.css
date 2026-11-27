@@ -148,8 +148,10 @@
 }
 
 /* 開幕までの日数の帯。高さを固定して、日が変わってもレイアウトがずれないようにする */
-.gp-head .gp-countdown {
+.gp-countdown {
   display: flex;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
   align-items: baseline;
   gap: var(--spacing-2);
   min-height: 64px;
