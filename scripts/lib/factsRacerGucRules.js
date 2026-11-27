@@ -98,12 +98,17 @@ export function racerRunsErrors(stmt) {
   const errors = [];
   if (/\bSECURITY\s+DEFINER\b/i.test(stmt)) errors.push("get_racer_runs: SECURITY DEFINER にしない");
   if (!/\bSECURITY\s+INVOKER\b/i.test(stmt)) errors.push("get_racer_runs: SECURITY INVOKER を明示する");
-  if (!new RegExp(`\\bSET\\s+${GUC.replace(".", "\\.")}\\s*(?:=|TO)\\s*''`, "i").test(stmt)) {
-    errors.push(`get_racer_runs: SET ${GUC} = '' の句で関数の中に閉じる`);
-  }
-  if (!new RegExp(`set_config\\s*\\(\\s*'${GUC.replace(".", "\\.")}'\\s*,[^;]*?,\\s*true\\s*\\)`, "i").test(stmt)) {
+  // 関数の SET 句は、本番の postgres（superuser でない）が未知の設定に作れない（212 の db-apply の失敗、2026-11-27）
+  if (/\bSET\s+"?boatai\./i.test(stmt)) errors.push(`get_racer_runs: ${GUC} を関数の SET 句で立てない（本番で作れない）`);
+  const guc = GUC.replace(".", "\\.");
+  const calls = [...stmt.matchAll(new RegExp(`set_config\\s*\\(\\s*'${guc}'\\s*,\\s*([^,]+?)\\s*,\\s*(\\w+)\\s*\\)`, "gi"))];
+  if (!calls.some((c) => c[1] !== "''" && c[2].toLowerCase() === "true")) {
     errors.push(`get_racer_runs: set_config('${GUC}', …, true) で立てる（第3引数は true）`);
   }
+  if (!calls.some((c) => c[1] === "''" && c[2].toLowerCase() === "true")) {
+    errors.push(`get_racer_runs: 読んだ後に set_config('${GUC}', '', true) で空に戻す`);
+  }
+  if (calls.some((c) => c[2].toLowerCase() !== "true")) errors.push(`get_racer_runs: set_config の第3引数は true だけ`);
   return errors;
 }
 
