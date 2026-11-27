@@ -365,7 +365,7 @@ test("推移の ST/展示 の選択中の枠と、選んだ艇の ST の線に�
     timeout: 30000,
   });
   await expect(
-    page.locator(".rmt-spark .meet-sparkline-line").first(),
+    page.locator(".rmt-spark .rmt-spark-series .trc-stroke").first(),
   ).toBeAttached({ timeout: 30000 });
   const colors = await page.evaluate(() => {
     const css = (v) => {
@@ -377,7 +377,10 @@ test("推移の ST/展示 の選択中の枠と、選んだ艇の ST の線に�
       return c;
     };
     const chip = document.querySelector(".rmt-metric-chip.is-active");
-    const line = document.querySelector(".rmt-spark .meet-sparkline-line");
+    // 今節の詳細の小さな線は共通の推移の図の1艇版（R-45）。線は文字の色
+    const line = document.querySelector(
+      ".rmt-spark .rmt-spark-series .trc-stroke",
+    );
     return {
       gold: css("var(--brand-accent-primary)"),
       chip: chip ? getComputedStyle(chip).borderTopColor : null,

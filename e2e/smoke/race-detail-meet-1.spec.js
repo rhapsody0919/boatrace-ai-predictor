@@ -2,7 +2,6 @@
 import { test, expect } from "../fixtures.js";
 
 test.describe("レースページ再設計（BOA-168）", () => {
-
   test("今節タブ: en・zh-TW の375pxで6艇の表がカードからはみ出さず、必要得点に残りの走数を添える（BOA-596）", async ({
     page,
   }) => {
@@ -78,11 +77,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(trend.locator(".trc-end-flag")).toHaveText(["F"]);
     await expect(trend.locator(".trc-end")).toHaveCount(6);
     await row.click();
-    await expect(page.locator(".rmt-spark-foot").first()).toContainText(
-      "前走 F",
-    );
+    // 今節の詳細の ST の小さな線（共通の図の1艇版、R-45）も、右端の札が値でなく F
     await expect(
-      page.locator(".rmt-spark").first().locator('circle[r="3.2"]'),
+      page.locator(".rmt-spark").first().locator(".trc-end-flag"),
+    ).toContainText("F");
+    await expect(
+      page.locator(".rmt-spark").first().locator(".trc-end:not(.trc-end-flag)"),
     ).toHaveCount(0);
   });
 
@@ -235,7 +235,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(sparkHeads.first()).toContainText("通常");
     await expect(sparkHeads.nth(1)).toContainText("今節の展示");
     await expect(sparkHeads.nth(1)).toContainText("前検");
-    await expect(page.locator(".rmt-sparks .meet-sparkline")).toHaveCount(2);
+    await expect(page.locator(".rmt-sparks .trc-svg")).toHaveCount(2);
 
     // 6艇の推移（同じ縦の物差しで並べる）。ST/展示を切り替えられる
     await expect(page.locator(".rmt-trend-row")).toHaveCount(6);

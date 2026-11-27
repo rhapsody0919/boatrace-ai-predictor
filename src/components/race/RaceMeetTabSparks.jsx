@@ -5,7 +5,10 @@
  * 線は共通の推移の図（basic-info/TrendChart）の1艇版で、横軸は上の6艇の推移（R-43）と同じ日付
  * （オーナー 2026-11-26「既に線がある部品を共通の図へ」）。基準（ST の通常の平均・展示のその日の会場平均）は破線で重ねる。
  */
-import { meetStVerdictTone, MEET_ST_DIFF_THRESHOLD } from "../../pure/basicInfoStats.js";
+import {
+  meetStVerdictTone,
+  MEET_ST_DIFF_THRESHOLD,
+} from "../../pure/basicInfoStats.js";
 import { trendScaleOf } from "../../pure/trendMetricScale.js";
 import { dayTicksOf, pointOf } from "./RaceMeetTabTrend";
 import TrendChart from "./basic-info/TrendChart";
@@ -56,20 +59,6 @@ function StHead({ m }) {
   );
 }
 
-function SparkFoot({ m, last }) {
-  const { t } = m;
-  // 走の日付は図の横軸に出る。ここは前走の値だけ（F のときも値でなく F）
-  return (
-    <div className="rmt-spark-foot">
-      <span>
-        {last === null
-          ? "—"
-          : t("meetTab.sparkLast", { value: last.mark ?? last.value.toFixed(2) })}
-      </span>
-    </div>
-  );
-}
-
 // 選んだ艇の今節の走を、共通の図の点にする（上の6艇の推移と同じ点・同じ横位置）
 function selectedSeries(m, trendKey) {
   const { trendRows, selectedBoat, meetRows, finishLabelOf } = m;
@@ -85,22 +74,43 @@ function selectedSeries(m, trendKey) {
   );
 }
 
-// 基準の破線。refOf(点) が null の所で切る
-function RefLine({ sel, x, y, refOf }) {
+// 基準の破線。refOf(点) が null の所で切る。何の線かの札は右端の札の列に置き（注記を読まずに分かるように）、
+// 前走の札と近いときは上下にずらす
+function RefLine({ sel, x, y, W, pad, refOf, refLabel }) {
   const runs = [[]];
   sel.forEach((p, i) => {
     const v = refOf(p);
     if (v === null || v === undefined) runs.push([]);
-    else runs[runs.length - 1].push(`${x(i, sel.length)},${y(v)}`);
+    else runs[runs.length - 1].push([x(i, sel.length), y(v)]);
   });
-  return runs
-    .filter((r) => r.length > 1)
-    .map((pts) => (
-      <polyline key={pts[0]} className="rmt-spark-ref" points={pts.join(" ")} />
-    ));
+  const lines = runs.filter((r) => r.length > 1);
+  if (lines.length === 0) return null;
+  const tail = lines[lines.length - 1];
+  const ry = tail[tail.length - 1][1];
+  const last = sel.findLast((p) => p.value !== null && p.value !== undefined);
+  const ey = last ? y(last.value) : -Infinity;
+  const near = Math.abs(ry - ey) < 14;
+  return (
+    <g className="rmt-spark-refs">
+      {lines.map((pts) => (
+        <polyline
+          key={pts[0].join()}
+          className="rmt-spark-ref"
+          points={pts.map((q) => q.join(",")).join(" ")}
+        />
+      ))}
+      <text
+        className="rmt-spark-ref-label"
+        x={W - pad.r + 8}
+        y={near ? ey + (ry >= ey ? 18 : -10) : ry + 3}
+      >
+        {refLabel}
+      </text>
+    </g>
+  );
 }
 
-function MeetSpark({ m, trendKey, scaleKey, label, refOf }) {
+function MeetSpark({ m, trendKey, scaleKey, label, refOf, refLabel }) {
   const sel = selectedSeries(m, trendKey);
   if (!sel) return null;
   const refs = sel.map(refOf).filter((v) => typeof v === "number");
@@ -114,26 +124,38 @@ function MeetSpark({ m, trendKey, scaleKey, label, refOf }) {
       lineClass="rmt-spark-series"
       extraValues={refs}
       xTicks={dayTicksOf(m.trendDates)}
-      renderOver={({ x, y, sel: s }) => (
-        <RefLine sel={s} x={x} y={y} refOf={refOf} />
+      renderOver={({ x, y, W, pad, sel: s }) => (
+        <RefLine
+          sel={s}
+          x={x}
+          y={y}
+          W={W}
+          pad={pad}
+          refOf={refOf}
+          refLabel={refLabel}
+        />
       )}
     />
   );
 }
 
 function StSpark({ m }) {
-  const { t, st, lastSt } = m;
+  const { t, st } = m;
   return (
     <div className="rmt-spark">
       <StHead m={m} />
       <MeetSpark
         m={m}
         trendKey="st"
-        scaleKey="meetDaySt"
+        scaleKey="meetSparkSt"
         label={t("meetTab.sparkStTitle")}
         refOf={() => st.baseAvg}
+        refLabel={
+          st.baseAvg === null
+            ? null
+            : t("meetTab.sparkRefSt", { value: st.baseAvg.toFixed(2) })
+        }
       />
-      <SparkFoot m={m} last={lastSt} />
     </div>
   );
 }
@@ -160,7 +182,7 @@ function ExHead({ m }) {
 }
 
 function ExSpark({ m }) {
-  const { t, venueDailyExhibitionAvg, lastExhibition } = m;
+  const { t, venueDailyExhibitionAvg } = m;
   return (
     <div className="rmt-spark">
       <ExHead m={m} />
@@ -169,13 +191,10 @@ function ExSpark({ m }) {
       <MeetSpark
         m={m}
         trendKey="exhibition"
-        scaleKey="meetDayExhibition"
+        scaleKey="meetSparkExhibition"
         label={t("meetTab.sparkExTitle")}
         refOf={(p) => venueDailyExhibitionAvg[p.date] ?? null}
-      />
-      <SparkFoot
-        m={m}
-        last={lastExhibition === null ? null : { value: lastExhibition }}
+        refLabel={t("meetTab.sparkRefEx")}
       />
     </div>
   );

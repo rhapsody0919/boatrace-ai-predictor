@@ -35,6 +35,21 @@ const MEET_RUN = Object.freeze({
   runAxisKey: "beforeInfo.meetFormRunN",
 });
 
+// 今節の日付の横軸の図（R-43・R-45）。値の無い走は線を切り、公式の記号は上の帯に出す
+const MEET_DAY = Object.freeze({
+  ...MEET_RUN,
+  alignStart: false,
+  bridgeGaps: false,
+  runAxisKey: null,
+  flags: true,
+});
+const MEET_SPARK = Object.freeze({
+  ...MEET_DAY,
+  dotLabel: false,
+  dots: true,
+  height: 160,
+});
+
 export const TREND_SCALES = Object.freeze({
   top2Rate: Object.freeze({
     step: 5,
@@ -86,24 +101,20 @@ export const TREND_SCALES = Object.freeze({
   exhibition: Object.freeze({ ...MEET_RUN, step: 0.02, tickStep: 0.05 }),
   // 今節タブの6艇の推移（R-43、オーナー 2026-11-26「重ねて日付で」）。横軸は日付（点の xr）なので1走目そろえ・N走の目盛りは使わない。
   // 値の無い走は線を切る（走らない日と同じ扱い）。値の無い走の公式の記号（F・L・欠・転等）は上の帯に出す
-  meetDaySt: Object.freeze({
-    ...MEET_RUN,
-    alignStart: false,
-    bridgeGaps: false,
-    runAxisKey: null,
-    step: 0.05,
-    tickStep: 0.05,
-    min: 0,
-    flags: true,
-  }),
-  meetDayExhibition: Object.freeze({
-    ...MEET_RUN,
-    alignStart: false,
-    bridgeGaps: false,
-    runAxisKey: null,
+  meetDaySt: Object.freeze({ ...MEET_DAY, step: 0.05, tickStep: 0.05, min: 0 }),
+  meetDayExhibition: Object.freeze({ ...MEET_DAY, step: 0.02, tickStep: 0.05 }),
+  // 今節の詳細の小さな線（R-45、選んだ1艇。オーナー 2026-11-27「基準との差の小さな図に」）。上の6艇の推移と
+  // 同じ日付の横軸で、着順の数字は上に任せて小さな点だけ。低い図（height）にし、縦は値の近くまで詰める
+  meetSparkSt: Object.freeze({
+    ...MEET_SPARK,
     step: 0.02,
     tickStep: 0.05,
-    flags: true,
+    min: 0,
+  }),
+  meetSparkExhibition: Object.freeze({
+    ...MEET_SPARK,
+    step: 0.02,
+    tickStep: 0.05,
   }),
   lap: Object.freeze({ ...MEET_RUN, step: 0.1, tickStep: 0.5 }),
   turn: Object.freeze({ ...MEET_RUN, step: 0.05, tickStep: 0.2 }),
