@@ -44,6 +44,22 @@ function stepPaths(chartData, x0, cw, y) {
   return { flat, rise };
 }
 
+// 最新の期（出走のある最後の期）の段の上に値の札。上の出走表の勝率と食い違って見えないよう、図の終わりの値を示す
+function LatestValue({ chartData, x0, cw, y }) {
+  const i = chartData.findLastIndex((d) => d.winRate != null);
+  if (i < 0) return null;
+  return (
+    <text
+      x={x0(i) + cw / 2}
+      y={y(chartData[i].winRate) - 6}
+      className="rps-latest-value"
+      textAnchor="middle"
+    >
+      {chartData[i].winRate.toFixed(2)}
+    </text>
+  );
+}
+
 function PeriodTip({ d, leftPct }) {
   return (
     <div
@@ -76,6 +92,14 @@ export default function RacerOfficialStatsChart({ chartData, rateAxis }) {
       <svg
         ref={ref}
         className="trc-svg rps-svg"
+        // スマホは帯が約16px と狭いので、押したまま指でなぞって期を選べる（visual-designer 11/27）
+        onPointerMove={(e) => {
+          if (e.pointerType !== "touch") return;
+          const r = e.currentTarget.getBoundingClientRect();
+          const x = ((e.clientX - r.left) * W) / r.width;
+          const i = Math.min(n - 1, Math.max(0, Math.floor((x - PAD.l) / cw)));
+          setPick({ i, pinned: true });
+        }}
         viewBox={`0 0 ${W} ${H}`}
         role="img"
         aria-label="期ごとの勝率（公式）"
@@ -101,6 +125,7 @@ export default function RacerOfficialStatsChart({ chartData, rateAxis }) {
         />
         <path className="rps-rise" d={rise} fill="none" />
         <path className="rps-step" d={flat} fill="none" />
+        <LatestValue chartData={chartData} x0={x0} cw={cw} y={y} />
         {chartData.map((d, i) =>
           labeled(i) ? (
             <text
@@ -149,7 +174,7 @@ export default function RacerOfficialStatsChart({ chartData, rateAxis }) {
         <PeriodTip d={picked} leftPct={((x0(pick.i) + cw / 2) / W) * 100} />
       )}
       <p className="racer-official-note">
-        期ごとの勝率（公式）。期の帯に触れる・押すと、その期の集計期間と走数が出ます。
+        期ごとの勝率（公式）。右端の値は最新の期で、上の「選手調子（全国勝率）」の値は出走表の勝率のため集計の期間が違います。期の帯に触れる・押すと、その期の集計期間と走数が出ます。
       </p>
     </div>
   );
