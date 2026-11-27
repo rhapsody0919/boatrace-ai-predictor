@@ -311,7 +311,6 @@ export default function RacerPerformanceStats({
   periodRows,
 }) {
   const { t } = useTranslation();
-  // 勝率の推移（公式の期ごとの段）。期別成績はページの入口（RacerProfileLoaded）が取って渡す
   const winSteps = winRateStepsData(periodRows);
   const vc = useRacerVcState(racerId, onHistoryStateChange);
   // 進入コースのラベルは呼ぶ側で足す（useRacerPerformanceView は大きさの基準に凍結された単位なので触らない）
