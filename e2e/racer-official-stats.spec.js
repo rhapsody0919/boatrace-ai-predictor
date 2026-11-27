@@ -192,7 +192,9 @@ test("折れ線のツールチップに集計期間を出す（今の半期と�
   expect(latestRange).toBeTruthy();
   // 最新の期の帯（期ごとの段、P-12）に触れると、その期の集計期間
   const dot = page.locator(".racer-official-chart .rps-hit").last();
-  await dot.hover();
+  // 押して吹き出しを留める。触れるだけ（hover）だと、後から読み込む欄で並びがずれて指が図の外に出ると
+  // 吹き出しが消え、CI で落ちた（#3656 の後、2026-11-27）
+  await dot.click();
   await expect(page.locator(".racer-official-chart .rps-tip")).toContainText(
     `集計 ${latestRange}`,
   );
@@ -205,7 +207,8 @@ test("375px: 折れ線の中央の点のツールチップが画面の右端で�
   await page.goto("/racer/3941");
   // 期ごとの段（P-12）の期の帯に触れる。スマホは吹き出しを図の下に幅いっぱいで出す
   const dots = page.locator(".racer-official-chart .rps-hit");
-  await dots.nth(7).hover();
+  // 押して吹き出しを留める（上と同じ理由）
+  await dots.nth(7).click();
   const tip = page.locator(".racer-official-chart .rps-tip");
   await expect(tip).toContainText("勝率");
   const right = await tip.evaluate((el) => el.getBoundingClientRect().right);
