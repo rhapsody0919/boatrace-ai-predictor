@@ -165,6 +165,7 @@
     "recharts": "^3.6.0",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
+    "remark-cjk-friendly": "^2.3.4",
     "remark-gfm": "^4.0.1",
     "twitter-api-v2": "^1.29.0",
     "twitter-text": "^3.1.0",
