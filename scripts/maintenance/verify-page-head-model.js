@@ -4,7 +4,7 @@
  *
  * src/ の本文は読まない（import して呼んだ値で見る。外枠は index.html の head と同じ形の見本）。
  * 1. pageHeadRoute は /races/{実在する日}/{1〜24} だけを受ける（0埋め・範囲外・実在しない日・言語の接頭辞・末尾の / は null）
- * 2. 過去日の会場の title・description・canonical は人の画面の口（src/utils/pageMeta.js）と同じ関数・同じ文
+ * 2. 過去日の会場の title・description・canonical の字（人の画面は src/utils/pageMeta.js の再 export で同じ関数。その値は verify-venue-past-meta-keywords が見る）
  * 3. JSON-LD は画面の Breadcrumb が出す BreadcrumbList（src/utils/breadcrumbLd.js）と同じ値。URL の解決が要るパスは出さない
  * 4. 差し込み: title はちょうど1つで値に既定の文、description・canonical が1つずつ、JSON-LD が読めて </script> で抜けない、
  *    値はエスケープされる。外枠の title が1つでない・description か canonical が既にある・値が欠ける・サイトの外の canonical・</head> が無い、は null
@@ -12,7 +12,6 @@
 import assert from "node:assert/strict";
 import ja from "../../src/locales/ja/common.json" with { type: "json" };
 import * as head from "../../src/pure/pageHead.js";
-import * as pageMeta from "../../src/utils/pageMeta.js";
 import { toBreadcrumbListLd } from "../../src/utils/breadcrumbLd.js";
 
 // 外枠（index.html）の head と同じ形の見本: title が1つ、description・canonical は無い、共通の JSON-LD が3つ。
@@ -72,8 +71,7 @@ check("1. pageHeadRoute は過去日の会場ページの形だけを受ける",
   }
 });
 
-check("2. 過去日の会場の meta は人の画面の口と同じ", () => {
-  assert.equal(pageMeta.getPastVenuePageMeta, head.getPastVenuePageMeta);
+check("2. 過去日の会場の meta の字（人の画面は src/utils/pageMeta.js の再 export で同じ関数を読む）", () => {
   assert.deepEqual(head.getPastVenuePageMeta("桐生", "2026-11-26", 1), {
     title: "桐生競艇の結果・配当 2026年11月26日(木)のレース一覧・AIデータ分析 - 龍神レーダー",
     description:
