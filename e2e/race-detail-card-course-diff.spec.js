@@ -54,7 +54,7 @@ for (const width of [375, 1440]) {
     await expect(second).not.toContainText(/[▲▼]/);
     const colors = await Promise.all([first, second].map((l) => l.evaluate((el) => getComputedStyle(el).color)));
     expect(colors[0]).not.toBe(colors[1]);
-    await expect(row).toContainText("全国の同じコースの1着率との差");
+    await expect(row).toContainText("全国の同じコースとの差");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
