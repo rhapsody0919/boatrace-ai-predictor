@@ -1,0 +1,12 @@
+{
+  "feature": "BOA-1724 グランプリの特集（/grandprix、年なしの永続の URL）",
+  "released": "2026-12-05",
+  "content": {
+    "static_pages": ["/grandprix"],
+    "note_articles": [],
+    "blog_posts": ["sg-race-guide-2026", "sg-g1-race-strategy", "omura-wind-direction-guide"],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}
