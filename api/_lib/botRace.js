@@ -271,6 +271,28 @@ export function createSeriesSource({
 }
 
 /**
+ * レース詳細の head の材料（title・description・canonical とパンくず）。人の画面（RaceDetailPage）と同じ関数・同じ条件
+ * （中止・結果の有無、本日か過去日か）で組む。ボット向け HTML（本日だけ）と生の HTML の head（pageHeadApi.js、過去日も）が使う
+ *
+ * @param {object[]} races - その日の全レース（pickHeadingFields 済み）
+ * @param {{lang: string, raceId: string, venueCode: number, raceNo: number, date: string}} key
+ * @param {(key: string, params?: object) => string} t
+ * @param {boolean} isToday - 本日（JST）の id か
+ * @returns {{meta: {title: string, description: string, canonical: string}, breadcrumbItems: object[]}|null} その id のレースが無ければ null
+ */
+export function raceHeadParts(races, key, t, isToday) {
+  const race = races.find((r) => r.raceId === key.raceId) ?? null;
+  if (!race) return null;
+  return {
+    meta: getRaceDetailMeta(t, key, key.lang, {
+      cancelled: isRaceCancelled(race),
+      finished: !!race.result?.finished,
+    }),
+    breadcrumbItems: getRaceDetailBreadcrumbItems(t, key, isToday, key.lang),
+  };
+}
+
+/**
  * レース詳細のモデル（人の初期表示の部分集合）
  *
  * @param {object[]} races - その日の全レース（pickHeadingFields 済み）
@@ -292,11 +314,7 @@ export function buildRaceModel(races, key, t, series = null) {
   return {
     lang: key.lang,
     path: `/race/${key.raceId}`,
-    meta: getRaceDetailMeta(t, key, key.lang, {
-      cancelled: isRaceCancelled(race),
-      finished: !!race.result?.finished,
-    }),
-    breadcrumbItems: getRaceDetailBreadcrumbItems(t, key, isToday, key.lang),
+    ...raceHeadParts(races, key, t, isToday),
     gradeLabel: heading.gradeConfig?.label ?? null,
     seriesTitle: heading.seriesTitle,
     h1: `🚤 ${venueName} ${key.raceNo}R`,
