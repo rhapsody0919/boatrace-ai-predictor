@@ -165,3 +165,62 @@
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
 }
+
+/* 期ごとの段（P-12、オーナー 2026-11-27「期ごとの段に1つ」）。選手1人なので艇の色でなく文字の色の段 */
+.racer-official-chart {
+  position: relative;
+}
+.rps-step {
+  stroke: var(--text-primary);
+  stroke-width: 2.5;
+}
+.rps-rise {
+  stroke: var(--text-secondary);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+.rps-latest {
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+.rps-picked {
+  fill: var(--brand-accent-primary);
+  opacity: 0.12;
+}
+.rps-hit {
+  cursor: pointer;
+}
+.rps-tip {
+  position: absolute;
+  top: 4px;
+  z-index: 2;
+  max-width: 220px;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 6px;
+  background: var(--surface-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
+  transform: translateX(8px);
+  pointer-events: none;
+}
+.rps-tip.is-flip {
+  transform: translateX(calc(-100% - 8px));
+}
+.rps-tip-line {
+  margin: 0;
+}
+
+/* スマホは共通の推移の図と同じく、吹き出しを図のすぐ下に幅いっぱいの帯で出す（画面の端で切れない） */
+@media (max-width: 767px) {
+  .rps-tip,
+  .rps-tip.is-flip {
+    position: relative;
+    top: 0;
+    left: 0 !important;
+    max-width: none;
+    margin-top: var(--spacing-1);
+    transform: none;
+  }
+}
