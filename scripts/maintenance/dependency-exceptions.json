@@ -3,8 +3,8 @@
   "edges": {
     "constants-no-up": {
       "src/config/languages.js": ["src/pure/localizePath.js"],
-      "src/constants/raceStageConfig.js": ["src/pure/raceStageConfig.js"],
-      "src/constants/techniqueNames.js": ["src/pure/techniqueNames.js"]
+      "src/constants/raceStageConfig.js": ["src/pure/raceStageConfig.js"]
+
     },
     "node-to-src": {
       "api/_lib/botPage.js": ["src/utils/botPageModel.js","src/utils/dateUtils.js"],
