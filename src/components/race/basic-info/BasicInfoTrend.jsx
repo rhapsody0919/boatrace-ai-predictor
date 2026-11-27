@@ -9,6 +9,7 @@ import BoatBadge from "../BoatBadge";
 import InlineFetchError from "../../InlineFetchError";
 import TrendChart from "./TrendChart";
 import WinRateTrend from "./WinRateTrend";
+import RacerMotorBand from "./RacerMotorBand";
 import { filterRecords, getRecentRaces } from "../../../pure/basicInfoStats.js";
 import { TREND_METRICS, trendSeries } from "../../../pure/racerTrendSeries.js";
 import "./TrendChart.css";
@@ -87,6 +88,17 @@ function seriesOf({
   return out;
 }
 
+// 線の下の段（選んだ艇の節ごとのモーター、レーン B の after B）。取得は入口（RaceBasicInfoTab）が持ち、
+// 取った走がこの図の選んだ艇の点と同じときだけ描く（艇を替えた直後の古い段を出さない）
+function bandBelow(motorBand, sel) {
+  if (!motorBand || !sel) return undefined;
+  if (motorBand.raceIds.join(",") !== sel.map((p) => p.raceId).join(","))
+    return undefined;
+  return (g) => (
+    <RacerMotorBand {...g} band={motorBand.band} failed={motorBand.failed} />
+  );
+}
+
 /**
  * 太線にする艇を選ぶ札（線の無い艇は押せない）。1200px 以上は右の列で6艇の一覧（艇番・選手名・右端の値）になる。
  * 1199px 以下は名前と値を隠し、今までの札の横並び（オーナー 11/25 の案 A）
@@ -139,7 +151,7 @@ export default function BasicInfoTrend({
   selectedBoat,
   onSelectBoat,
   winRate,
-  renderBelow,
+  motorBand,
 }) {
   const { t } = useTranslation();
   if (metric === "winRate")
@@ -193,15 +205,7 @@ export default function BasicInfoTrend({
               seriesByBoat={series}
               metric={metric}
               selected={selected}
-              // 線の下の段（選んだ艇の節ごとのモーター。取得は使う側が持つ）
-              renderBelow={
-                renderBelow &&
-                ((g) =>
-                  renderBelow(
-                    sortedPlayers.find((p) => p.number === selected)?.racerId,
-                    g,
-                  ))
-              }
+              renderBelow={bandBelow(motorBand, series.get(selected))}
             />
           </div>
           <div className="race-split__side">

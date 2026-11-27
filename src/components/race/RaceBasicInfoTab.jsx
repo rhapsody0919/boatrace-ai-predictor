@@ -25,14 +25,17 @@
  *
  * 部品は basic-info/ に分けてある（BOA-1401）。ここは状態と取得を束ねるだけ
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { parseRaceId } from "../../utils/raceId";
 import {
   recordsBeforeRace,
   currentTermStart,
+  filterRecords,
 } from "../../pure/basicInfoStats.js";
+import { trendSeries } from "../../pure/racerTrendSeries.js";
+import { getRacerMeetMotors } from "../../services/racerQueries7.js";
 import {
   useOfficialRates,
   useOfficialAvgSt,
@@ -49,14 +52,54 @@ import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
 import BasicInfoTrend, { ViewHead } from "./basic-info/BasicInfoTrend";
-import RacerMotorBand from "./basic-info/RacerMotorBand";
 import "./RaceBasicInfoTab.css";
 
-// 推移の線の下に、選んだ艇の節ごとのモーターの号機と位置の段（レーン B の after B）。
-// 平均ST とモーターの位置は結び付けにくいので、率の線だけに渡す（ファン評価 11/27）
-const renderMotorBand = (racerId, g) => (
-  <RacerMotorBand racerId={racerId} {...g} />
-);
+// 推移の線の下の段（選んだ艇の節ごとのモーター、レーン B の after B）の走。選ぶ艇は推移（BasicInfoTrend）と
+// 同じ決め方（選んだ艇に線が無ければ最初に線のある艇）。平均ST とモーターの位置は結び付けにくいので率の線だけ（ファン評価 11/27）
+function selectedTrendRuns({ trend, sortedPlayers, recordsOf, expandedBoat }) {
+  if (!trend || !["top2Rate", "top3Rate"].includes(trend.metric)) return null;
+  const { metric, ...where } = trend;
+  const idsOf = (p) => {
+    const records = recordsOf(p.racerId);
+    if (!Array.isArray(records)) return [];
+    const scoped = filterRecords(records, { ...where, period: "current" });
+    return trendSeries(scoped, metric).map((pt) => pt.raceId);
+  };
+  const first = sortedPlayers.filter((p) => p.number === expandedBoat);
+  for (const p of [...first, ...sortedPlayers]) {
+    const raceIds = idsOf(p);
+    if (raceIds.length > 0) return { racerId: p.racerId, raceIds };
+  }
+  return null;
+}
+
+// 段の取得。取りの hook は入口のこのタブで呼び、段の部品には値だけ渡す（plan.md §13）。
+// 結果は鍵（選手と走）と一緒に持ち、鍵が変われば取り直す
+function useMotorBand(runs) {
+  const key = runs?.racerId
+    ? `${runs.racerId}|${runs.raceIds.join(",")}`
+    : null;
+  const [got, setGot] = useState({ key: null, band: null, failed: false });
+  useEffect(() => {
+    if (!key) return undefined;
+    let live = true;
+    getRacerMeetMotors(runs.racerId, runs.raceIds).then(
+      (band) => live && setGot({ key, band, failed: false }),
+      (err) => {
+        console.error("節のモーターの取得エラー:", err?.message);
+        if (live) setGot({ key, band: null, failed: true });
+      },
+    );
+    return () => {
+      live = false;
+    };
+    // runs は key に入っている
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  if (!key) return null;
+  const state = got.key === key ? got : { band: null, failed: false };
+  return { raceIds: runs.raceIds, band: state.band, failed: state.failed };
+}
 
 // 指標・範囲・グレード・期間の選択state。グレードと期間は互いに連動する
 function useBasicInfoFilters() {
@@ -110,6 +153,7 @@ function useBasicInfoSources({
   sortedPlayers,
   expandedBoat,
   needsOwnAggregation,
+  trend,
 }) {
   const racerIdsKey = sortedPlayers.map((p) => p.racerId ?? "").join(",");
   const raceDate = parseRaceId(raceId)?.date ?? null;
@@ -153,6 +197,14 @@ function useBasicInfoSources({
     : new Date();
   // 「今期」の初日（BOA-775）。表示中のレースの日付で決める
   const currentTermFrom = currentTermStart(raceDate);
+  const motorBand = useMotorBand(
+    selectedTrendRuns({
+      trend,
+      sortedPlayers,
+      recordsOf: trendRecordsOf,
+      expandedBoat,
+    }),
+  );
 
   return {
     officialRates,
@@ -172,6 +224,7 @@ function useBasicInfoSources({
     raceDate,
     periodAnchor,
     currentTermFrom,
+    motorBand,
   };
 }
 
@@ -357,6 +410,7 @@ function RaceBasicInfoTab({
     expandedBoat,
     // 推移は6選手の走の記録を使うので、推移を開いたら6人ぶん取る
     needsOwnAggregation: needsOwnAggregation || view === "trend",
+    trend: view === "trend" && { metric, scope, grade, venueCode },
   });
 
   if (sortedPlayers.length === 0) return null;
@@ -416,7 +470,7 @@ function RaceBasicInfoTab({
             retryPeriod: src.retryPeriod,
             raceDate: src.raceDate,
           }}
-          renderBelow={metric === "avgSt" ? undefined : renderMotorBand}
+          motorBand={src.motorBand}
         />
       )}
       {view === "now" && (
