@@ -11,8 +11,8 @@ import "./GrandPrixPage.css";
 // 節のページはグランプリを対象外にしている（utils/meetPageModel.js の OUT_OF_SCOPE_TITLE）ので、つなぐ先は会場ページ。
 // 展開予測（AI タブ）は廃止の方針なので、つながない
 const { year, venueName, venueCode } = EDITION;
-const TITLE = `ボートレース グランプリ${year}特集｜${venueName}${EDITION.shortDates}の日程・トライアルの仕組み・過去の優勝戦｜龍神レーダー`;
-const DESCRIPTION = `ボートレースのグランプリ（SG）${year}の出場18人の獲得賞金、トライアル1st・2ndから優勝戦までの勝ち上がり、${venueName}のコース別の1着率、過去の優勝戦、6日間の日程をまとめた特集です。`;
+const TITLE = `競艇グランプリ${year}特集｜${venueName}${EDITION.shortDates}の日程・トライアルの仕組み・過去の優勝戦｜龍神レーダー`;
+const DESCRIPTION = `競艇（ボートレース）のグランプリ（SG）${year}の出場18人の獲得賞金、トライアル1st・2ndから優勝戦までの勝ち上がり、${venueName}のコース別の1着率、過去の優勝戦、6日間の日程をまとめた特集です。`;
 const SUMMARY_PERIOD = `${VENUE_SUMMARY_STATS.from.replaceAll("-", "/")}〜${VENUE_SUMMARY_STATS.to.replaceAll("-", "/")}`;
 const VENUE_STATS = VENUE_SUMMARY_STATS.venues[String(venueCode)];
 // 答えの1行は会場の要約の向き（月1回の更新で変わりうる）から組む。差がはっきりしない項目は言わない
