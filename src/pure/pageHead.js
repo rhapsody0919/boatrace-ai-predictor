@@ -54,8 +54,7 @@ export function getPastVenuePageMeta(venueName, date, venueCode) {
 }
 
 /**
- * 会場ページ（過去日付）のパンくず（ホーム › 過去の予想 › 日付 › 会場名）。JSON-LD がこれを使う。
- * 画面の Breadcrumb は今 src/pages/VenueRaceListPageModel.js の pastBreadcrumbItems（同じ並び）。次の PR でこちらへ寄せて1つにする
+ * 会場ページ（過去日付）のパンくず（ホーム › 過去の予想 › 日付 › 会場名）。画面の Breadcrumb と生の head の JSON-LD が同じ値を使う
  */
 export function getPastVenueBreadcrumbItems(homeName, date, venueCode, venueName) {
   return [

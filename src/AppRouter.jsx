@@ -16,6 +16,7 @@ import {
 import { refreshAdsOnRouteChange, trackPageView } from "./utils/analytics";
 import { pageViewPath } from "./utils/raceUrlState";
 import useSingleTitle from "./hooks/useSingleTitle";
+import usePageHeadHandoff from "./hooks/usePageHeadHandoff";
 import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
@@ -400,6 +401,7 @@ function LocalizedLayout({ lng }) {
 
 export default function AppRouter() {
   useSingleTitle();
+  usePageHeadHandoff();
   return (
     <>
       <HashRedirect />
