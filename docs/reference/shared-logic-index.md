@@ -54,7 +54,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/nigashiStats.js` | 逃し率（オーナー 2026-11-25）: 2〜6コースに入った走のうち、1コースの艇に逃げで1着を取られた走の割合。 | buildNigashiBreakdown, nationalNigashiBaseline, nigashiByCourse |
 | `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
-| `src/pure/pageHead.js` | 生の HTML の head（JS の前の HTML にページごとの title・description・canonical・JSON-LD を全ての UA に… | pageHeadRoute, getPastVenuePageMeta, getPastVenueBreadcrumbItems, pastVenuePageHead, injectPageHead ほか1件 |
+| `src/pure/pageHead.js` | 生の HTML の head（JS の前の HTML にページごとの title・description・canonical・JSON-LD を全ての UA に… | pageHeadRoute, getPastVenuePageMeta, getPastVenueBreadcrumbItems, breadcrumbListLd, pastVenuePageHead ほか2件 |
 | `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
 | `src/pure/predictionAssistBoardParts.js` | 思考アシスト（BOA-430）のボードの部品のうち、文言（src/data）を読まない計算。純粋関数だけ。 | firstPlaceComposite, missingFirstBoats, LENSES, stText, METRICS ほか1件 |
 | `src/pure/predictionAssistDeepDive.js` | predictionAssistDeepDive - 思考アシストの深掘りの部品（今節の各走・前の5走・コースの1着・着の色と点・会場の成績の無い艇・得意の決ま… | meetRuns, priorRuns, courseWins, finishOf, monthDay ほか2件 |
@@ -76,9 +76,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerLatestEntry.js` | 選手ページの冒頭の1行目「MM/DD の出走表」（#3258 の #2）。 | officialPeriodKey, latestEntryLine, F_COUNT_RELIABLE_FROM |
 | `src/pure/racerMeetMotors.js` | 選手の推移の線の下の段（レーン B の after B、オーナー 2026-11-25 承認のモック mock-motor-trend/mock.html の … | racerMeetsOf, motorRankPct, motorRankTier, meetMotorBand, MEET_GAP_DAYS |
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
+| `src/pure/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName, formatRacerKana |
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか4件 |
 | `src/pure/racerPageHead.js` | 選手ページ（/racer/:id）の head の値（title・description・canonical）。人の画面（src/pages/RacerProf… | periodSentence, racerPageMeta |
 | `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
+| `src/pure/racerStructuredData.js` | 選手ページ（/racer/:id）の構造化データ（ProfilePage＋Person・BreadcrumbList の JSON-LD）。人の画面（Racer… | racerStructuredData |
 | `src/pure/racerTodayContext.js` | 選手ページの「今日の出走」の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地成績・今節の着順。 | pickContextRun, courseCell, venueCell, meetFinishes, SMALL_RUNS |
 | `src/pure/racerTodayRuns.js` | — | splitTodayRaceId, finishLabelOf, buildRacerTodayRuns, todayRunsMeetLabel |
 | `src/pure/racerTrendSeries.js` | 選手の成績の「推移の線」（直近 N 走ごとの移動）を作る（2026-11-24 オーナー決定、モック改訂3）。 | trendSeries, trendGapIndexes, TREND_WINDOW, TREND_MAX_POINTS, TREND_GAP_DAYS ほか1件 |
@@ -600,7 +602,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceView.js` | レース詳細と思考アシストの上部の切り替え（BOA-430 PR6、spec D-22・D-36 (6)）。 | readRaceView, writeRaceView, shouldOpenAssist, hasViewQuery, showNewBadge ほか2件 |
 | `src/utils/racerConditionStats.js` | — | tallyWinPlaceShow, aggregateRacerConditionStats, STRONG_WIND_MS, RACER_CONDITION_MIN_RUNS |
 | `src/utils/racerIndexPolicy.js` | 選手ページ（/racer/:racerId）を検索エンジンにインデックスさせるかの判定（集客レーン、2026-10-02）。 | isRacerIndexable, RACER_INDEX_GRADES, RACER_INDEX_ACTIVE_DAYS |
-| `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName, formatRacerKana |
+| `src/utils/racerName.js` | — | — |
 | `src/utils/racerPagePath.js` | 選手ページの「STの推移」のアンカー（BOA-879） | ST_TREND_ID, racerPagePath |
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
 | `src/utils/racerVenueBoatStats.js` | 選手ページの会場×枠番×グレード×レース種別の絞り込み集計（純関数、BOA-1244）。 | toReturnRate, racerHistoryCutoff, aggregateRacerVenueBoatStats |
@@ -698,4 +700,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 656 ファイル / export 3530 件。
+対象 658 ファイル / export 3532 件。
