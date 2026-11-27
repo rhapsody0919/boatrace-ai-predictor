@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { countCategories, filterBlogPosts } from "../pure/blogListFilter.js";
 import { Link, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import { getFeaturedPosts, getPostsForLang } from "../data/blogPosts";
@@ -23,6 +24,12 @@ const UI_TEXT = {
     blogLabel: "ブログ",
     sortNewest: "新着順",
     sortOldest: "古い順",
+    searchPlaceholder: "記事を探す（例: 多摩川・決まり手・風）",
+    searchLabel: "記事を探す",
+    featuredMore: (n) => `注目記事をすべて見る（${n}本）`,
+    featuredLess: "注目記事を閉じる",
+    showMore: (n) => `さらに表示（残り${n}本）`,
+    resultCount: (n) => `${n}本`,
   },
   en: {
     title:
@@ -39,6 +46,12 @@ const UI_TEXT = {
     blogLabel: "Blog",
     sortNewest: "Newest",
     sortOldest: "Oldest",
+    searchPlaceholder: "Search articles",
+    searchLabel: "Search articles",
+    featuredMore: (n) => `Show all featured (${n})`,
+    featuredLess: "Show fewer featured",
+    showMore: (n) => `Show more (${n} left)`,
+    resultCount: (n) => `${n} articles`,
   },
   "zh-TW": {
     title: "部落格 | 龍神雷達 - 賽艇預測・數據分析・戰略資訊",
@@ -54,6 +67,12 @@ const UI_TEXT = {
     blogLabel: "部落格",
     sortNewest: "最新排序",
     sortOldest: "最舊排序",
+    searchPlaceholder: "搜尋文章",
+    searchLabel: "搜尋文章",
+    featuredMore: (n) => `顯示全部精選文章（${n}篇）`,
+    featuredLess: "收起精選文章",
+    showMore: (n) => `顯示更多（剩餘${n}篇）`,
+    resultCount: (n) => `${n}篇`,
   },
   ko: {
     title: "블로그 | 용신 레이더 - 경정 예측・데이터 분석・전략 정보",
@@ -69,6 +88,12 @@ const UI_TEXT = {
     blogLabel: "블로그",
     sortNewest: "최신순",
     sortOldest: "오래된순",
+    searchPlaceholder: "기사 검색",
+    searchLabel: "기사 검색",
+    featuredMore: (n) => `주목 기사 모두 보기 (${n}개)`,
+    featuredLess: "주목 기사 접기",
+    showMore: (n) => `더 보기 (남은 ${n}개)`,
+    resultCount: (n) => `${n}개`,
   },
 };
 
@@ -93,12 +118,17 @@ function buildBreadcrumbJsonLd(t, langKey, canonicalUrl) {
   };
 }
 
+// 注目記事は先頭の3本だけを出し、残りは「すべて見る」で開く（32本が何画面も続き新着に届かなかった）
+const FEATURED_FIRST = 3;
+
 function BlogFeaturedSection({ t, featuredPosts, langKey }) {
+  const [showAll, setShowAll] = useState(false);
+  const shown = showAll ? featuredPosts : featuredPosts.slice(0, FEATURED_FIRST);
   return (
     <section className="featured-section">
       <h2>{t.featuredHeading}</h2>
       <div className="featured-grid">
-        {featuredPosts.map((post) => (
+        {shown.map((post) => (
           <Link
             key={post.id}
             to={localizePath(`/blog/${post.id}`, langKey)}
@@ -119,6 +149,16 @@ function BlogFeaturedSection({ t, featuredPosts, langKey }) {
           </Link>
         ))}
       </div>
+      {featuredPosts.length > FEATURED_FIRST && (
+        <button
+          type="button"
+          className="blog-featured-toggle"
+          aria-expanded={showAll}
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll ? t.featuredLess : t.featuredMore(featuredPosts.length)}
+        </button>
+      )}
     </section>
   );
 }
@@ -126,6 +166,8 @@ function BlogFeaturedSection({ t, featuredPosts, langKey }) {
 function BlogCategoryFilter({
   t,
   availableCategories,
+  categoryCounts,
+  totalCount,
   selectedCategory,
   setSelectedCategory,
 }) {
@@ -136,6 +178,7 @@ function BlogCategoryFilter({
         onClick={() => setSelectedCategory("all")}
       >
         {t.allButton}
+        <span className="blog-category-count">{totalCount}</span>
       </button>
       {availableCategories.map((category) => (
         <button
@@ -144,6 +187,7 @@ function BlogCategoryFilter({
           onClick={() => setSelectedCategory(category)}
         >
           {category}
+          <span className="blog-category-count">{categoryCounts[category]}</span>
         </button>
       ))}
     </div>
@@ -169,14 +213,16 @@ function BlogSortFilter({ t, sortOrder, setSortOrder }) {
   );
 }
 
-function BlogPostGrid({ sortedPosts, langKey }) {
+// 全ての記事のカードを置き、visibleCount 本より後ろは hidden で隠す（リンクは DOM に残し、クローラーが全ての記事へたどれる）
+function BlogPostGrid({ sortedPosts, visibleCount, langKey }) {
   return (
     <div className="blog-grid">
-      {sortedPosts.map((post) => (
+      {sortedPosts.map((post, i) => (
         <Link
           key={post.id}
           to={localizePath(`/blog/${post.id}`, langKey)}
           className="blog-card"
+          hidden={i >= visibleCount}
         >
           {isWithinDays(post.date, 7) && <span className="new-badge">NEW</span>}
           <div className="blog-card-content">
@@ -201,10 +247,71 @@ function BlogPostGrid({ sortedPosts, langKey }) {
   );
 }
 
-export default function Blog() {
-  const { pathname } = useLocation();
+// 一覧は20本ずつ出し、「さらに表示」で足す（163本を1ページに並べてスマホで約3.9万pxあった）
+const PAGE_SIZE = 20;
+
+// 分類・探す語・並び・出す本数の状態と、それで絞って並べた記事。絞り方を変えたら出す本数を20に戻す
+function useBlogListView(basePosts) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
+  const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { categoryCounts, categories } = countCategories(basePosts);
+  const sortedPosts = filterBlogPosts(basePosts, {
+    category: selectedCategory,
+    query,
+  }).sort((a, b) =>
+    sortOrder === "oldest"
+      ? new Date(a.date) - new Date(b.date)
+      : new Date(b.date) - new Date(a.date),
+  );
+  return {
+    selectedCategory,
+    selectCategory: (c) => {
+      setSelectedCategory(c);
+      setVisibleCount(PAGE_SIZE);
+    },
+    sortOrder,
+    setSortOrder,
+    query,
+    changeQuery: (q) => {
+      setQuery(q);
+      setVisibleCount(PAGE_SIZE);
+    },
+    visibleCount,
+    showMore: () => setVisibleCount((n) => n + PAGE_SIZE),
+    categoryCounts,
+    categories,
+    sortedPosts,
+  };
+}
+
+function BlogListResults({ t, view, langKey }) {
+  const { sortedPosts, visibleCount, showMore } = view;
+  return (
+    <>
+      <p className="blog-result-count">{t.resultCount(sortedPosts.length)}</p>
+      <BlogPostGrid
+        sortedPosts={sortedPosts}
+        visibleCount={visibleCount}
+        langKey={langKey}
+      />
+      {sortedPosts.length > visibleCount && (
+        <button type="button" className="blog-show-more" onClick={showMore}>
+          {t.showMore(sortedPosts.length - visibleCount)}
+        </button>
+      )}
+      {sortedPosts.length === 0 && (
+        <div className="no-posts">
+          <p>{t.noPosts}</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function Blog() {
+  const { pathname } = useLocation();
 
   const { lng } = parseLangFromPath(pathname);
   const isTranslated = lng !== "ja" && Boolean(UI_TEXT[lng]);
@@ -213,22 +320,8 @@ export default function Blog() {
   // 翻訳版はその言語のデータが存在する記事のみを対象にする（未翻訳記事は一覧に出さない）
   const langKey = isTranslated ? lng : "ja";
   const basePosts = getPostsForLang(langKey);
-
   const featuredPosts = getFeaturedPosts(langKey);
-  const availableCategories = [
-    ...new Set(basePosts.map((post) => post.category)),
-  ];
-
-  const filteredPosts =
-    selectedCategory === "all"
-      ? basePosts
-      : basePosts.filter((post) => post.category === selectedCategory);
-
-  const sortedPosts = [...filteredPosts].sort((a, b) =>
-    sortOrder === "oldest"
-      ? new Date(a.date) - new Date(b.date)
-      : new Date(b.date) - new Date(a.date),
-  );
+  const view = useBlogListView(basePosts);
 
   const blogHref = localizePath("/blog", langKey);
   const canonicalUrl = `https://www.boat-ai.jp${blogHref}`;
@@ -259,34 +352,42 @@ export default function Blog() {
           <p>{t.subheading}</p>
         </div>
 
-        {/* Featured Posts */}
-        {selectedCategory === "all" && featuredPosts.length > 0 && (
-          <BlogFeaturedSection
-            t={t}
-            featuredPosts={featuredPosts}
-            langKey={langKey}
-          />
-        )}
-
-        {/* Category Filter */}
-        <BlogCategoryFilter
-          t={t}
-          availableCategories={availableCategories}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
+        <input
+          type="search"
+          className="blog-search-input"
+          placeholder={t.searchPlaceholder}
+          aria-label={t.searchLabel}
+          value={view.query}
+          onChange={(e) => view.changeQuery(e.target.value)}
         />
 
-        {/* Sort Order */}
-        <BlogSortFilter t={t} sortOrder={sortOrder} setSortOrder={setSortOrder} />
+        {/* Featured Posts（分類で絞った時・探している時は出さない） */}
+        {view.selectedCategory === "all" &&
+          view.query === "" &&
+          featuredPosts.length > 0 && (
+            <BlogFeaturedSection
+              t={t}
+              featuredPosts={featuredPosts}
+              langKey={langKey}
+            />
+          )}
 
-        {/* Blog Posts Grid */}
-        <BlogPostGrid sortedPosts={sortedPosts} langKey={langKey} />
+        <BlogCategoryFilter
+          t={t}
+          availableCategories={view.categories}
+          categoryCounts={view.categoryCounts}
+          totalCount={basePosts.length}
+          selectedCategory={view.selectedCategory}
+          setSelectedCategory={view.selectCategory}
+        />
 
-        {filteredPosts.length === 0 && (
-          <div className="no-posts">
-            <p>{t.noPosts}</p>
-          </div>
-        )}
+        <BlogSortFilter
+          t={t}
+          sortOrder={view.sortOrder}
+          setSortOrder={view.setSortOrder}
+        />
+
+        <BlogListResults t={t} view={view} langKey={langKey} />
       </div>
     </>
   );
