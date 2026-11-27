@@ -492,11 +492,16 @@ def copy_worktree(src: Path, dst: Path) -> None:
 CLOCK_BOUNDARIES: Dict[str, Tuple[int, int]] = {"hour": (3600000, 0), "jst_day": (86400000, 15 * 3600000)}
 CLOCK_LABELS = {"hour": "正時（HH:59:58 から）", "jst_day": "JST の日付の変わり目（UTC 14:59:58 から）"}
 CLOCK_LEAD_MS = 2000
+# 正時の確かめは JST の日付の変わり目（UTC 15:00）と重なる正時を飛ばす。23時台（JST）に回すと次の正時が日付の変わり目にもなり、
+# 日付だけに依る verify が「正時」でも落ちて、どちらの区切りか見分けられなかった（試験が 23 時台にだけ落ちた、2026-11-27）
+CLOCK_AVOID: Dict[str, str] = {"hour": "jst_day"}
 CLOCK_SHIFT_JS = """'use strict';
 const R = Date, real = R.now.bind(R);
 const period = Number(process.env.GUARD_CLOCK_PERIOD_MS), phase = Number(process.env.GUARD_CLOCK_PHASE_MS), lead = Number(process.env.GUARD_CLOCK_LEAD_MS);
 const t0 = real();
-const boundary = Math.ceil((t0 - phase) / period) * period + phase;
+let boundary = Math.ceil((t0 - phase) / period) * period + phase;
+const avoidPeriod = Number(process.env.GUARD_CLOCK_AVOID_PERIOD_MS || 0), avoidPhase = Number(process.env.GUARD_CLOCK_AVOID_PHASE_MS || 0);
+if (avoidPeriod > 0 && (boundary - avoidPhase) % avoidPeriod === 0) boundary += period;
 const offset = boundary - lead - t0;
 const now = () => real() + offset;
 class FakeDate extends R {
@@ -577,6 +582,9 @@ class Runner:
             env["GUARD_CLOCK_PERIOD_MS"] = str(CLOCK_BOUNDARIES[clock][0])
             env["GUARD_CLOCK_PHASE_MS"] = str(CLOCK_BOUNDARIES[clock][1])
             env["GUARD_CLOCK_LEAD_MS"] = str(CLOCK_LEAD_MS)
+            if clock in CLOCK_AVOID:
+                env["GUARD_CLOCK_AVOID_PERIOD_MS"] = str(CLOCK_BOUNDARIES[CLOCK_AVOID[clock]][0])
+                env["GUARD_CLOCK_AVOID_PHASE_MS"] = str(CLOCK_BOUNDARIES[CLOCK_AVOID[clock]][1])
         return self.run(argv, self.repo, env, int(self.cfg["run_timeout_sec"])) == 0  # type: ignore[call-overload]
 
 
