@@ -139,7 +139,7 @@ function RowLabel({ row, deepLink }) {
   );
 }
 
-function DataRaceTable({ raceId, prediction, venueCode }) {
+function DataRaceTable({ raceId, prediction, venueCode, dayRanks = null }) {
   const { t } = useTranslation();
   // 選んだ艇（?boat=）はほかのタブと同じ URL の値（BOA-492、オーナー 2026-11-23 承認の5）
   const { focusedBoat, handleFocusBoat } = useRaceUrlState();
@@ -178,6 +178,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
     players,
     analysis,
     courseStats,
+    dayRanks,
     pending: analysis.pending,
     motorDeepLink,
     gradeBadge: (p) => (
@@ -221,6 +222,11 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       </div>
 
       <p className="drt-note">💡 {t("dataTable.noteExpectedCourse")}</p>
+      {dayRanks && (
+        <p className="drt-note" data-testid="drt-day-rank-note">
+          {t("dataTable.dayRankNote", { n: dayRanks.n })}
+        </p>
+      )}
       <GuideLinks deepLink={deepLink} />
     </div>
   );
