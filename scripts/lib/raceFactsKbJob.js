@@ -30,8 +30,9 @@ export function buildWindowRows({ races, boats, venueDays }, overrideGrades) {
   for (const race of races) {
     const day = dayById.get(race.venue_day_id) ?? null;
     const grade = overrideGrades.get(race.race_id) ?? day?.race_grade ?? null;
-    raceRows.push(buildKbRaceFact(race, day, { grade, seriesKind: null }));
-    runRows.push(...buildKbRunFacts(race, boatsByRace.get(race.race_id) ?? []));
+    const raceBoats = boatsByRace.get(race.race_id) ?? [];
+    raceRows.push(buildKbRaceFact(race, day, { grade, seriesKind: null, boats: raceBoats }));
+    runRows.push(...buildKbRunFacts(race, raceBoats));
   }
   const raceIds = new Set(races.map((r) => r.race_id));
   const orphan = boats.find((b) => !raceIds.has(b.race_id));

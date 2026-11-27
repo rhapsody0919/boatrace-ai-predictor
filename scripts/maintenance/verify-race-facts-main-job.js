@@ -47,6 +47,8 @@ const rows = buildMainWindowRows(WINDOW, new Map());
 assert.equal(rows.raceRows[0].race_grade, "ippan");
 assert.equal(rows.runRows.length, 2);
 assert.equal(rows.runRows[1].finish_rank, 1);
+assert.deepEqual(rows.raceRows[0].racer_ids, [4001, 4002, null, null, null, null], "そのレースの出走表から racer_ids");
+assert.deepEqual(rows.raceRows[0].finish_order, [2, 1, 3, null, null, null]);
 assert.equal(buildMainWindowRows(WINDOW, new Map([[RACE.race_id, "G2"]])).raceRows[0].race_grade, "G2", "補正が先");
 
 // 流れ（偽の読み書き）

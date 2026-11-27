@@ -56,6 +56,7 @@ export function buildMainWindowRows({ races, entries, results, timings, exhibiti
     const result = resultOf.get(race.race_id) ?? null;
     raceRows.push(buildMainRaceFact({
       race, result, conditions: conditionsOf.get(race.race_id) ?? null, series: seriesOf(race), override: overrideGrades.get(race.race_id) ?? null,
+      entries: entriesOf.get(race.race_id) ?? [],
     }));
     runRows.push(...buildMainRunFacts(race, entriesOf.get(race.race_id) ?? [], {
       result, timings: timingsOf.get(race.race_id) ?? [], exhibitions: exhibitionsOf.get(race.race_id) ?? [],
