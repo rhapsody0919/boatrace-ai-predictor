@@ -262,10 +262,11 @@ function courseDiffOf(row) {
   if (!row || row.reliability === "none" || row.winRate == null || row.avg == null) return null;
   const diff = Math.round(row.winRate) - Math.round(row.avg);
   const dir = courseRowDir(row);
-  const tone = toneOf(dir, "high") ?? "plain";
+  // 色は共通の ind-good・ind-bad（src/styles/indicators.css。▲▼ を必ず添える決まり）、ほかは drt-sub の灰
+  const tone = { good: " ind-good", bad: " ind-bad" }[toneOf(dir, "high")] ?? "";
   const mark = dir === "high" ? "▲" : dir === "low" ? "▼" : "";
   return (
-    <span className={`drt-course-diff drt-course-diff--${tone}`}>
+    <span className={`drt-sub drt-course-diff${tone}`} data-tone={toneOf(dir, "high") ?? "plain"}>
       {`${mark}${diff > 0 ? "+" : ""}${diff}pt`}
     </span>
   );
@@ -284,7 +285,8 @@ function buildExpectedCourseWinRateRow(t, { status, rows }) {
     key: "expectedCourseWinRate",
     label: t("dataTable.rowExpectedCourseWinRate"),
     shortLabel: t("review.cols.expectedCourseWinRate"),
-    note: t("dataTable.expectedCourseWinRateNoteDiff"),
+    note: t("dataTable.expectedCourseWinRateNote"),
+    noteDiff: t("dataTable.expectedCourseWinRateNoteDiff"),
     wrapNote: true,
     // 旧い行の「超展開データ」（枠番で数える会場の集計）へは送らない。値の元は枠別情報タブの6艇の表
     tab: null,

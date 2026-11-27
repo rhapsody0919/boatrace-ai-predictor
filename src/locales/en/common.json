@@ -2800,7 +2800,7 @@
     "motorBadgeDown": "Motor ↓",
     "rowExpectedCourseWinRate": "Expected-course 1st-place rate",
     "expectedCourseWinRateNote": "The expected-course 1st-place rate is aggregated by actual starting course over the last 3 terms",
-    "expectedCourseWinRateNoteDiff": "Last 3 terms by starting course. Below: gap from the national rate for the same course (▲▼ = hard to explain by chance alone)",
+    "expectedCourseWinRateNoteDiff": "Below: gap from the national rate for the same course (▲▼ = hard to explain by chance alone)",
     "noteExpectedCourse": "Win rate, local win rate, and top-2 rate are from the official race card. Avg. ST and motor top-2 rate cover the periods in their row labels. The expected-course 1st-place rate covers actual starting courses over the last 3 terms. Other analysis data is aggregated over the past 90 days (180 days for return rate). Highlights mark the best value in this race. For reference only; results are not guaranteed"
   },
   "venueTendency": {

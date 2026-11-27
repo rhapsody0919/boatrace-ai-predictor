@@ -47,10 +47,10 @@ for (const width of [375, 1440]) {
     // 1号艇（1コース）: 75% − 55% = +20pt、緑▲
     const first = cells.nth(0).locator(".drt-course-diff");
     await expect(first).toHaveText("▲+20pt");
-    await expect(first).toHaveClass(/drt-course-diff--good/);
+    await expect(first).toHaveAttribute("data-tone", "good");
     // 2号艇（2コース、15走）: 差は出すが灰で印なし
     const second = cells.nth(1).locator(".drt-course-diff");
-    await expect(second).toHaveClass(/drt-course-diff--plain/);
+    await expect(second).toHaveAttribute("data-tone", "plain");
     await expect(second).not.toContainText(/[▲▼]/);
     const colors = await Promise.all([first, second].map((l) => l.evaluate((el) => getComputedStyle(el).color)));
     expect(colors[0]).not.toBe(colors[1]);
@@ -63,5 +63,5 @@ test("差が偶然の幅に収まる艇は灰で印なし", async ({ page }) => 
   const row = await open(page, plain);
   const first = row.locator("td.drt-cell").nth(0).locator(".drt-course-diff");
   await expect(first).toHaveText("+7pt");
-  await expect(first).toHaveClass(/drt-course-diff--plain/);
+  await expect(first).toHaveAttribute("data-tone", "plain");
 });
