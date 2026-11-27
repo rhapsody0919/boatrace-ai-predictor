@@ -189,6 +189,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/eveDeadlinesRows.js` | 前夜の締切予定（eveDeadlinesJob.js）の純な部分: 書く行・優勝戦の判定・raceindex の振り分け・通知・戻り値。 | eveIsFinal, eveRow, isSameEveRow, parseVenueIndex, acceptVenueIndex ほか4件 |
 | `scripts/lib/exhibitionJobParts.js` | scrape-exhibition-data.js の部品。公式ページの解析結果から展示の行を組み立て、 | toLegacyExhibition, upsertExhibitionRows, groupTargetsByVenue, absorbVenueResults, markHaveData ほか4件 |
 | `scripts/lib/exhibitionRunForRaces.js` | — | fetchExhibitionDetailed, runForRaces, updateRaceConditionsWeather |
+| `scripts/lib/factsRacerGucRules.js` | facts の表の絞りの設定（boatai.facts_racer_id）を立てる道が get_racer_runs だけかを、SQL の文で照らす規則（ADR… | stripComments, splitTopLevel, statementErrors, racerRunsErrors, checkSql ほか2件 |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -695,4 +696,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 653 ファイル / export 3515 件。
+対象 654 ファイル / export 3522 件。
