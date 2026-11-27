@@ -10,6 +10,8 @@
  * 日別（gsc_daily.json・gsc_page_daily.json）: 直近 dailyDays 日（末日は窓と同じ lagDays 日前、日付は GSC の PT のまま）の
  *   date×query×page と date×page を growth_gsc_daily・growth_gsc_page_daily と同じ行で保存する（seo-morning-sheet --local-dir が読む）。
  *   取得は scripts/lib/growth/gscDaily.js・gscPageDaily.js の fetchDay・fetchPageDay（1日ずつ・25000行のページ送り）。
+ * GA4 の日別（ga4_daily.json）: GSC の日別と同じ日付の [date, channel] の PV と google の自然検索の着地 sessions を、ページの型ごとに
+ *   （要求は scripts/lib/growth/ga4Daily.js。hostName は設定の ga4Host、既定 www.boat-ai.jp。ga4Timezone はプロパティの時間帯の控え）。
  * URL 検査（url_inspection.json）: 設定の inspection（{ sitemap: 既定 本番の sitemap.xml の URL（ファイルのパスも可）, max: 既定200 }、false で止める）。
  *   GSC・GA4 を書いた後に回し、URL ごとの最新の行の写しを書く（scripts/lib/growth/localInspection.js。seo-morning-sheet --local-dir が読む）。
  * 数字は公開リポジトリに入れない（outDir はリポジトリの外）。全部の API が取れたときだけ日付の置き場に書く。
@@ -20,6 +22,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { API_ROW_CAP, fetchDay } from "../lib/growth/gscDaily.js";
 import { dateRange, fetchPageDay } from "../lib/growth/gscPageDaily.js";
+import { ga4DailyQueries } from "../lib/growth/ga4Daily.js";
 import { collectInspections, readPreviousSnapshot } from "../lib/growth/localInspection.js";
 
 const DAY = 86400000;
@@ -281,6 +284,18 @@ async function collectWindow({ sc, ga }, cfg, property, window, now) {
   ];
 }
 
+/** GA4 の日別。日付は GSC の日別と同じ（lagDays 日前まで dailyDays 日）。1つでも落ちたら投げる */
+async function collectGa4Daily(ga, cfg, property, now) {
+  const dates = dailyDatesFor(now, { timezone: cfg.timezone, dailyDays: cfg.dailyDays ?? 60, lagDays: cfg.lagDays ?? 3 });
+  const window = { name: "daily", startDate: dates[0], endDate: dates.at(-1) };
+  const host = cfg.ga4Host ?? "www.boat-ai.jp";
+  const series = {};
+  for (const q of ga4DailyQueries(host))
+    series[q.name] = await report(ga, property, window, q.dimensions, q.metrics, q.dimensionFilter);
+  const meta = { from: window.startDate, to: window.endDate, collected_at: now.toISOString(), property, host, ga4_timezone: cfg.ga4Timezone ?? null };
+  return ["ga4_daily", { meta, series }];
+}
+
 /** sitemap.xml の本文。URL なら取る（作業の場所の古い public/sitemap.xml を読まない）、ほかはファイルのパス */
 async function readSitemap(src) {
   if (!/^https?:\/\//.test(src)) return fs.readFileSync(path.resolve(src), "utf8");
@@ -330,6 +345,7 @@ async function main(argv) {
   for (const w of windows)
     files.push(...(await collectWindow(c, cfg, property, w, now)));
   files.push(...(await collectDaily(c.sc, cfg, now)));
+  files.push(await collectGa4Daily(c.ga, cfg, property, now));
   const outDir = path.join(cfg.outDir, today);
   fs.mkdirSync(outDir, { recursive: true });
   for (const [name, data] of files)
