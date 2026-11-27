@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkCjkFriendly from "remark-cjk-friendly";
 import {
   getPostById,
   getRelatedPosts,
@@ -20,7 +18,10 @@ import { extractFaqItems } from "../utils/blogFaqSchema";
 import BLOG_IMAGE_DIMENSIONS from "virtual:blog-image-dimensions";
 import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
-import { blogRehypePlugins } from "../utils/blogMarkdownSanitize.js";
+import {
+  blogRehypePlugins,
+  blogRemarkPlugins,
+} from "../utils/blogMarkdownSanitize.js";
 import BlogChart from "../components/blog/BlogChart";
 import { stripBlogLeadingH1 } from "../utils/blogLeadingH1.js";
 import { loadBlogCharts } from "../utils/blogChartLoader.js";
@@ -260,8 +261,8 @@ function useArticleContent(content, charts, chartLang) {
   return useMemo(
     () => (
       <ReactMarkdown
-        // cjk-friendly: 「、**強調**まで」のように日本語の約物の隣の ** を太字にする（CommonMark の規則では生で残る）
-        remarkPlugins={[remarkGfm, remarkCjkFriendly]}
+        // gfm と、日本語の約物の隣の ** を太字にする cjk-friendly（blogMarkdownSanitize.js）
+        remarkPlugins={blogRemarkPlugins}
         // 生の HTML を許可リストで削ってから描く（script・iframe・on*・javascript: を通さない）
         rehypePlugins={blogRehypePlugins}
         components={{

@@ -3,7 +3,7 @@
  *
  * 1. 記事の頁（src/pages/BlogPost.jsx）に、約物の隣の ** を含む Markdown を渡して描くと、<strong> になり本文に ** が残らない
  *    （CommonMark の規則だけでは「%**ま」の ** は閉じと見なされず生で残る。2026-11-27 に 41 ファイル・91 か所で出ていた）
- * 2. 今ある全ての記事（public/blog/*.md）を頁と同じ remark の組（gfm＋cjk-friendly）で読むと、
+ * 2. 今ある全ての記事（public/blog/*.md）を頁と同じ remark の組（src/utils/blogMarkdownSanitize.js の blogRemarkPlugins）で読むと、
  *    コードの外の文に ** が残らない（新しい記事が別の形で壊れたら落ちる）
  *
  * 使い方: node scripts/maintenance/verify-blog-cjk-emphasis.js
@@ -13,10 +13,9 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkCjkFriendly from "remark-cjk-friendly";
 import { visit } from "unist-util-visit";
 import { renderBlogPost } from "./verifyData/blog-post-page.js";
+import { blogRemarkPlugins } from "../../src/utils/blogMarkdownSanitize.js";
 
 const SAMPLE =
   "全24会場を並べると、**1コース逃げ率は最小40.3%〜最大59.0%**まで開きます。\n\n" +
@@ -38,7 +37,7 @@ test("今ある全ての記事で、コードの外の文に ** が残らない"
   const dir = new URL("../../public/blog/", import.meta.url);
   const files = (await readdir(dir)).filter((f) => f.endsWith(".md"));
   assert.ok(files.length > 100, `記事が少なすぎる（${files.length}）。置き場が変わったか`);
-  const parser = unified().use(remarkParse).use(remarkGfm).use(remarkCjkFriendly);
+  const parser = unified().use(remarkParse).use(blogRemarkPlugins);
   const leftovers = [];
   for (const file of files) {
     const tree = parser.parse(await readFile(new URL(file, dir), "utf8"));
