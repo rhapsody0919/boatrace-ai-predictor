@@ -7,6 +7,7 @@ BOA-161（ブログ記事のOGP/Twitterカード未反映バグ）の調査で�
 - boatAIは `vercel.json` で `/((?!api/).*) → /index.html` のみを行う純粋なクライアントサイドSPA（React + Vite）。SSR・プリレンダリングの仕組みは無い。
   - （2026-10-11 注記）例外として、AI クローラー・SNS のシェア用ボットにだけ、ビルド時に作った静的 HTML を返している（ADR 0032。`middleware.js`・`src/config/aiCrawlerBots.js`・`scripts/generate-ai-snapshots.js`）。返すのは日本語のブログ記事・`/winning-technique`・`/today` だけで、トップ・会場・レース詳細・選手・翻訳ページは今も JS を実行しないと中身が無い。Googlebot には出し分けない
 - ページ固有の `<title>` / `<meta>` / `<link rel="canonical">` タグは、Reactコンポーネントがマウントされた後にJavaScriptで書き換えられる。
+  - （2026-11-27 注記）ADR-0114 で、選手・会場（本日）・レース詳細・過去日の会場のページは、生の HTML（JS の前）にもページごとの title・description・canonical・JSON-LD を全ての UA に同じに入れる（middleware が配備の index.html に差し込む。失敗は今の外枠のまま）。トップ・/today・ブログ・言語版は今もマウントの後だけ
 - Googlebot、および一部のX(Twitter)クローラーはJSレンダリングに対応しているため、`title` / `meta description` / 構造化データ（JSON-LD）等はReactでの実装で正しく取得できる。
 - Facebookなど**JavaScriptを実行しないクローラー**は、初期HTML（`index.html` に静的に書かれたタグ）しか見ない。ReactコンポーネントがJSで書き換えたページ固有のOGP/Twitterカードタグは反映されない。
 - `og:url` は `index.html` に静的に置かない（BOA-691、ADR 0084）。Facebook は `og:url` が指す URL を辿ってその情報を使うため、トップ固定の `og:url` があると、JS を実行しないクローラーには全ページがトップとして扱われ、レース詳細や記事を共有してもトップに飛ぶ。無ければ共有された URL そのものが使われる。URL を持つページ（記事・一覧等）は `useSocialMeta` が `og:url` タグを作って付ける
@@ -17,7 +18,7 @@ SEO・集客施策を検討・実装する際は、その施策が「JS実行後
 
 | 施策 | JS実行後でも良いか | 対応方針 |
 |------|---------------------|----------|
-| 検索順位・インデックス精度（title/description/構造化データ/内部リンク等） | 可（Googlebotはレンダリングする） | Reactコンポーネントでの実装で概ね機能する |
+| 検索順位・インデックス精度（title/description/構造化データ/内部リンク等） | 足りない（2026-11-27 に改めた）。Googlebot は描画するが、描画の待ち・描画の失敗・描画しない取得器では生の HTML しか見られない。生の HTML が全ページ同じ title で canonical が無かった間、レース・選手の長尾のクリックが少なかった（GSC 10/27〜11/23、因果は未検証） | React の実装に加え、生の HTML にも同じ関数の値を入れる（ADR-0114）。新しいページは ADR-0114 の差し込みに足すかを決める |
 | SNSシェア時のリンクプレビュー（OGP/Twitterカード） | 不可（Facebook等は非JS実行） | Vercel Edge Functionでのボット判定＋静的HTML返却、またはページのSSG化が必要 |
 
 「Reactでmetaタグを出力したから直った」と判断する前に、上記の区別を必ず確認すること。DevTools/Playwrightでの確認はJS実行後の状態を見ているため、非JS実行クローラーの見え方とは異なる点に注意する。
