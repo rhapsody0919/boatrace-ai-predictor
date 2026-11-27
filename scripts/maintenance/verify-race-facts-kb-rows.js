@@ -1,7 +1,7 @@
 // kb_archive の1レースから race_facts・run_facts の行を組み立てる純関数（scripts/lib/raceFactsKb.js）が、列をそろえ、規則どおりに値を決め、facts の表の CHECK を通ることを守る（ADR-0113）
 // - 列は RACE_FACT_COLUMNS・RUN_FACT_COLUMNS とちょうど同じ（キーのそろわない行を作らない）
 // - era は 'kb'、race_date は race_id の日付。kb の期間（〜2025-12-02）の外・race_id と列のずれ・別のレースの艇・艇番の外は throw
-// - 優勝戦は isFinalStage、着は成績コード（01〜06 は着、F・L・欠は着なし、S0 等の失格は着欄も NULL）、条件の出所は K の値があるときだけ 'k_file'
+// - 優勝戦は isCareerFinalStage（190 と同じ。オオムラGP・関ヶ原決戦も優勝戦）、着は成績コード（01〜06 は着、F・L・欠は着なし、S0 等の失格は着欄も NULL）、条件の出所は K の値があるときだけ 'k_file'
 // - kb に無い列（気温・水温・潮位・複勝・チルト・オリジナル展示・風の扇形）は NULL
 // - 組み立てた行を db-draft.md §9 の SQL（verifyData/race-facts-draft-sql.js の写し）を流した PGlite に入れると CHECK を通り、get_racer_runs がその選手の行を返す
 // 外部接続なし
@@ -70,6 +70,9 @@ test("レースの行: 列・値・kb に無い列は NULL", () => {
   assert.equal(plain.race_title, null);
   assert.equal(plain.series_kind, "lady");
   assert.equal(buildKbRaceFact({ ...RACE, stage: null }, DAY, { grade: null, seriesKind: null }).is_final, null);
+  for (const stage of ["オオムラGP", "関ヶ原決戦"]) {
+    assert.equal(buildKbRaceFact({ ...RACE, stage }, DAY, { grade: null, seriesKind: null }).is_final, true, stage);
+  }
   assert.equal(buildKbRaceFact({ ...RACE, dead_heat: true }, DAY, { grade: null, seriesKind: null }).dead_heat, true);
   assert.equal(buildKbRaceFact({ ...RACE, has_result: false }, DAY, { grade: null, seriesKind: null }).has_result, false);
 });
