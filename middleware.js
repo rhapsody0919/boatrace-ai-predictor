@@ -22,6 +22,10 @@
  *    「//」・「\」を含むパスだけは段階に依らず 400。enforce（段階4）は環境変数と Redeploy だけで入る。
  *    除外（/api/cron・/api/admin・/api/bot-page）はログも出さず、既存の守り（下の Basic 認証等）へ進む
  *
+ * 5. 生の HTML の head の差し込み（api/_lib/pageHeadMiddleware.js）。対象のパス（今は /races/{日}/{会場}）では、全ての UA に
+ *    同じ host の /index.html へページごとの title・description・canonical・JSON-LD を入れて返す。失敗は素通り。
+ *    入切は環境変数 PAGE_HEAD_KINDS（未設定は差し込まない）。上のスナップショット・関数への rewrite が先に勝つ
+ *
  * 4. 断るクローラー（Reflectionbot・meta-externalagent・Bytespider、src/config/aiCrawlerBots.js の
  *    BLOCKED_CRAWLER_USER_AGENTS）は matcher の全パスで 403（robots.txt を守らない物への備え。Supabase の枠越え 11/19）。
  *    matcher の外のパス（静的ファイル等）は middleware が起動しないので止まらない
@@ -38,6 +42,7 @@ import {
   normalizeGateMode,
 } from "./api/_lib/apiGate.js";
 import searchBotIpRanges from "./api/_lib/searchBotIpRanges.js";
+import { respondWithPageHead } from "./api/_lib/pageHeadMiddleware.js";
 
 export const config = {
   matcher: [
@@ -74,6 +79,8 @@ export const config = {
     "/ko",
     "/ko/",
     "/ko/venue/:path*",
+    // 生の HTML の head の差し込み: 過去日の会場（/races/{日}/{会場}。形の判定は src/pure/pageHead.js の pageHeadRoute 側）
+    "/races/:path*",
     // BOA-848 第2段: 本日のレース詳細とその言語版（id の形と「本日」の判定は resolveSnapshotPath 側）
     "/race/:path*",
     "/en/race/:path*",
@@ -189,4 +196,6 @@ export default async function middleware(request) {
     // /?x=1 と /?x=2 で関数の CDN キャッシュのキーを増やさないため（ADR 0089 決定6）
     return rewrite(new URL(snapshotPath, request.url));
   }
+
+  return respondWithPageHead(request);
 }
