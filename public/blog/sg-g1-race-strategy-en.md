@@ -1,245 +1,136 @@
-# Strategy for Winning SG and G1 Races [Cracking Grade Races]
+# How to Read G1 Races — Qualifying vs. the Final, Score Rate, and Racers on the Bubble
 
-## Introduction
+G1 is the grade just below SG. Many A1-class racers enter, so the starting assumptions for prediction change compared with regular races.
 
-"SG and G1 races are too hard — I can't win on them..."
-
-Many bettors feel this way. It's true grade races require a completely different approach from regular races.
-
-But **once you understand what makes grade races distinct, they can actually be easier to win on in some ways**. This article breaks down the character of SG and G1 races and how to bet on them.
+This article explains the kinds of G1 and how your reading should change when you look at grade races such as G1 and SG.
 
 ---
 
-## What is a "grade race"?
+## Boat race grades
 
-### Boat racing's grade tiers
+Boat race meets are graded as follows, from highest to lowest.
 
-Boat racing has the following grade tiers.
+| Grade | What kind of meet |
+|-------|-------------------|
+| **SG** | The top grade, held 8 times a year. The Grand Prix in December closes the year |
+| **G1** | The grade below SG. Includes venue anniversary meets, regional championships, and Premium G1 |
+| **G2** | The grade below G1 |
+| **G3** | The grade below G2 |
+| **Regular** | Meets that fit none of the above |
 
-| Grade | Races/year | Winner's prize (approx.) | Eligibility |
-|---------|-----------|----------------|---------|
-| **SG** | 8 | ¥30M–¥100M+ | Top racers only |
-| **G1** | ~60 | ¥4.8M–¥10M | Mainly Class A1/A2 |
-| **G2** | ~10 | ¥4M+ | Racers meeting specific conditions |
-| **G3** | ~100 | ¥2M+ | Selected by host venue |
-| **Regular** | Many | ~¥1M | No conditions |
+---
 
-![Boat race grades at a glance. From SG (8 races/year, ¥30M-¥100M+ prize) down to G1, G2, G3, and Regular races, compared by prize scale](/images/blog/sg-grade-tiers-en.jpg)
+## Kinds of G1
 
-### The 8 SG (Special Grade) races
+### Anniversary meets
 
-**The 8 SG races held each year:**
+G1 meets each venue holds to mark its opening anniversary. Most carry a venue-specific name (such as "XX Grand Prize" or "XX Champion Cup"), so you cannot always tell from the name alone that it is a G1.
 
-1. **Boat Race Classic** (March)
-2. **Boat Race All-Star** (May)
-3. **Grand Champion** (June)
-4. **Ocean Cup** (July)
-5. **Boat Race Memorial** (August)
-6. **Boat Race Derby** (October)
-7. **Challenge Cup** (November)
-8. **Grand Prix / Grand Prix Series** (December)
+### Regional championships
 
-**Character:**
-- The nation's top racers gather
-- High prize money
-- High fan attention
+G1 meets held for each region. The [official BOAT RACE G1/G2 schedule for 2026](https://www.boatrace.jp/owpc/pc/race/gradesch?year=2026&hcd=02) lists six regional championships: Kanto, Tokai, Kinki, Shikoku, Chugoku, and Kyushu.
+
+### Premium G1 (PG1)
+
+G1 meets with a special standing. Besides the SG meets, the official SG/PG1 list for 2026 includes the following.
+
+| Meet | Venue | Dates |
+|------|-------|-------|
+| BBC Tournament | Amagasaki | Jan 22–25 |
+| Speed Queen Memorial | Naruto | Feb 24–Mar 1 |
+| Masters Champion | Miyajima | Apr 21–26 |
+| Ladies Champion | Tokuyama | Aug 6–11 |
+| Young Derby | Wakamatsu | Sep 22–27 |
+| Queens Climax | Suminoe | Dec 26–31 |
+
+Check the official site for the day's racing.
 
 ---
 
 ## How grade races differ from regular races
 
-### 1. Racer skill level is uniform
+### 1. The gap between racers is small
 
-**In a regular race:**
-- A mix of Class A1 through B2
-- A large gap in ability
-- A Class A1 racer in lane 1 signals a solid race
+Regular races mix racers from A1 down to B2. G1 and SG have many A1-class racers, so choosing by class is harder. Even with an A1 racer in Boat 1, the other five boats are also top racers.
 
-**In a grade race:**
-- Nearly everyone is Class A1
-- A small gap in ability
-- Even lane 1 isn't a sure thing
+### 2. Motor differences matter more
 
-**The effect:**
-- Predictions become harder
-- Payouts tend to run higher
-- Almost anyone can win depending on how the race develops
+When the gap between racers is small, **motor differences** can sometimes decide the finishing order. Look at the motor top-2 rate together with that meet's exhibition time and lap time.
 
-### 2. The motor lottery matters more
+### 3. Some racers are on the bubble
 
-In grade races, **since the gap in racer ability is small, motor performance often decides the outcome**.
-
-**Regular races:**
-Gap in racer ability > gap in motor performance
-
-**Grade races:**
-Gap in racer ability ≈ gap in motor performance
-
-**How to adjust:**
-Always check the motor's 2nd-place-or-better rate. A racer who drew a motor at 40%+ deserves extra attention.
-
-### 3. Some racers race aggressively to qualify
-
-In grade races, **some racers push harder than usual just to advance out of the qualifying round**.
-
-**Approximate qualifying cutoff:**
-- A points average around 5.50–6.00
-- Especially intense on days 1–3
-
-**What "racing aggressively" means:**
-Pushing harder than usual in an attempt to secure a qualifying spot.
-
-**The effect:**
-- More aggressive starts
-- More overtakes
-- Higher risk of an accident (capsize or falling overboard)
+In G1 and SG meets that have semifinals, racers with the highest qualifying score rates advance to the semifinals. On the last qualifying day, a racer right at the semifinal line may race more aggressively than usual to gain even one place. Such a racer is said to be **on the bubble**.
 
 ---
 
-## 5 strategies for winning on grade races
+## Read qualifying differently from the semifinal and final
 
-### Strategy 1: Bet differently in qualifying vs. the finals
+### Qualifying: read each racer's score-rate situation
 
-**Qualifying round (days 1–4) character:**
-- Racers are hungry for points
-- More racers pushing beyond their usual limits
-- More prone to upsets
+In qualifying, each racer needs a different result.
 
-**Semifinal/final character:**
-- Only the top-performing racers remain
-- Lane 1 tends to be strong (occupied by a racer who's already won through)
-- Relatively predictable results
+- A racer with a comfortable score rate may race without taking risks
+- A racer at the semifinal line may attack while on the bubble
 
-**How to adjust your bets:**
+### Semifinal and final: racers who made it through
 
-| Round | Recommended strategy |
-|------|------------|
-| Qualifying (days 1–4) | Target longshots, spread wide |
-| Semifinal | Anchor lane 1, spread moderately |
-| Final | Anchor lane 1, narrow and commit |
+Semifinal lanes are assigned based on qualifying score-rate rank, and higher-ranked racers tend to get inner lanes. The semifinal and final are races among racers who made it through, so read them on different assumptions from qualifying.
 
-### Strategy 2: Check the points average
+- How the Boat 1 racer got through qualifying (score-rate rank, how the motor came along)
+- The exhibition and start form of the racers in the outer lanes
 
-In grade races, a racer's **points average** becomes an important indicator.
+---
 
-**What points average means:**
-The average score earned based on finishing position across races.
+## Reading the score rate
 
-**How points are scored:**
-- 1st: 10 pts
-- 2nd: 8 pts
-- 3rd: 6 pts
-- 4th: 4 pts
-- 5th: 2 pts
-- 6th: 1 pt
+Score rate is "(total placing points in this meet − deductions for accidents and the like) ÷ races run." Qualifying points by finishing place are as follows.
+
+| Place | 1st | 2nd | 3rd | 4th | 5th | 6th |
+|-------|-----|-----|-----|-----|-----|-----|
+| Qualifying / regular | 10 | 8 | 6 | 4 | 2 | 1 |
+| Dream race | 12 | 10 | 9 | 7 | 6 | 5 |
+
+Special races use different points, and the semifinal and final do not count toward the score rate. Some G1 meets, such as tournament-format meets, advance racers differently.
 
 **How to use it:**
-- High points average → strong odds of qualifying
-- Low points average → may be pushing harder than usual
-
-**Targeting a racer pushing hard:**
-A racer sitting right on the qualifying cutoff on the final day of the qualifying round is likely to race more aggressively.
-
-### Strategy 3: Watch the Dream Race
-
-**What the Dream Race is:**
-Race 12 on day 1 of a grade race, featuring especially notable racers from the field.
-
-**Character:**
-- Lane assignments are often decided by fan vote
-- Lane 1 isn't necessarily the most popular racer
-- Racer motivation runs high
-
-**What to target:**
-- Popularity and ability don't always line up here
-- A real opportunity for a longshot
-
-### Strategy 4: Pay attention to local racers
-
-**The local racer's advantage:**
-- Deep knowledge of the water conditions
-- Support from local fans
-- High motivation
-
-**Situations especially worth watching:**
-- A G1 anniversary race is held at the racer's home venue
-- A local ace is entered
-
-**What the data shows about the home advantage:**
-Some data suggests local racers win at a rate roughly 5–10% higher than visiting racers.
-
-### Strategy 5: Take it easy on day 1
-
-**Why day 1 is hard to predict:**
-- Motor tuning is still an unknown
-- Racer form isn't clear yet
-- Lane approach isn't predictable yet
-
-**Recommended approach:**
-- Bet small and observe on day 1
-- Bet more confidently from day 2 onward, once you have data
-- Watch day 1's races to get a feel for tendencies
+- On the last qualifying day, line up the six boats' score rates against the semifinal line to see who is on the bubble
+- Racers with higher score rates tend to get inner lanes in the semifinal
 
 ---
 
-## Watch out for these grade-race traps
+## Things to watch in G1
 
-### Trap 1: Overbetting on the popular pick
+### Dream race
 
-Grade races draw high attention, and **betting money tends to concentrate on popular racers**.
+The Dream race is the featured opening-day race, run by racers selected from the meet's entrants. Its points differ from qualifying (see the table above), so its effect on the score rate differs too.
 
-**The result:**
-- The popular racer's odds drop too low
-- Even a hit pays out little
-- Risk of a break-even hit (winning but still losing money)
+### Local racers
 
-**How to avoid it:**
-If you're anchoring around a popular racer, target longshots for the other spots.
+You can check how a racer does at the host venue with the local win rate (win rate at that venue) on the race card.
 
-### Trap 2: Assuming lane 1 is "safe" just because it's SG
+### Opening day has little data
 
-Do you assume "it's all top racers, so lane 1 must be solid"?
-
-**What the data actually shows:**
-SG races' lane-1 win rate runs about the same as regular races, or even slightly lower.
-
-**Why:**
-- Every other racer is also top-tier
-- Starts tend to be more aggressive
-- A weak start from the inside can get punished immediately
-
-### Trap 3: Going all-in only on the final
-
-"I'll win it all back on the final race!" is a dangerous mindset.
-
-**Character of the final:**
-- Odds tend to be distorted (money concentrates on the popular pick)
-- Trying to recover everything in one race often leads to a big loss
-
-**The right approach:**
-Build your profit gradually, starting from the qualifying round.
+On opening day there is still little data on how the meet's motors are coming along or on racers' form. Look at exhibition times together with the motor's figures from earlier meets.
 
 ---
 
-## How Ryujin Radar handles grade races
+## Viewing G1 on Ryujin Radar
 
-Ryujin Radar provides its usual predictions for grade races as well.
-
-**Things to keep in mind:**
-- Since the gap in racer ability is small, prediction difficulty rises in grade races
-- The confidence score may run lower than usual
-- Place and Trio bets, which prioritize hit rate, are a good approach here
+- **Venue page**: Go from the venue list on the [top page](/en/) to a venue that is racing. The venue page shows the race card for each race of the day (win rate, local win rate, motor), with a link to each race's AI prediction. The meet title and grade are shown as well
+- **Meet page**: During SG, G1, and G2 meets, the banner on the venue page leads to the score-rate ranking of every racer in the meet and the semifinal cut (Grand Prix, Grand Prix Series, Queens Climax, and tournament meets are not covered)
+- **"This meet" tab in race details**: Shows the six boats' score rates in this meet next to the semifinal line (estimate)
+- **AI prediction and Lane-1 upset caution level**: Check the AI's prediction built from racer, motor, exhibition, and weather data, and a guide to how often Boat 1 misses first place
 
 ---
 
 ## Summary
 
-**5 strategies for winning on grade races:**
+1. **Know the kinds of G1** — anniversary meets, regional championships, Premium G1
+2. **The gap between racers is small** — look at motor and exhibition differences
+3. **In qualifying, read each racer's score-rate situation** — find racers on the bubble
+4. **In the semifinal and final, look at how racers got through** — score-rate rank and how the motor came along
+5. **Know the points** — the Dream race uses different points
 
-1. **Bet differently in qualifying vs. the final** — qualifying is more volatile, the final tends to be more predictable
-2. **Check the points average** — spot racers likely to push hard
-3. **Watch the Dream Race** — a real opportunity for a longshot
-4. **Pay attention to local racers** — their water knowledge is a real edge
-5. **Take it easy on day 1** — commit once you have the data
+---
 
-Grade races are hard, but understanding their character opens up real opportunities. Give this a try the next time an SG or G1 comes around.
+*AI predictions and data are for reference and do not guarantee any result. Only people aged 20 or over who live in Japan can bet on boat races.*
