@@ -101,10 +101,10 @@
 
 マイグレーションの PR（人）では、下の塊をそのまま `docs/db-migration/<番号>_race_facts.sql` にする（番号は PR を作るときの origin/master の最大＋1）。同じ PR に verify を2本足す（下書きは同じフォルダの verify-drafts.md、次の PR で足す）。
 
-**未確認の前提（2026-11-27 時点）**: 歯止めの作り（ADR-0113 決定4）は、次の3つが本番で「無い」ことを前提にしている。オーナーに読み取りの SQL を渡して頼んである（窓口）。結果が来るまで、この塊を適用の根拠にしない。1つでも「有る」なら、この節と ADR-0113 を見直す
-- `pgrst.db_pre_request`（authenticator・anon・authenticated の rolconfig）。有ると、要求ごとに走る関数が設定を立てうる
-- `pg_graphql` の拡張。有ると表の形が匿名に見える（行は RLS で1選手まで）
-- anon が EXECUTE できる public・graphql_public の関数で、本文に set_config・SET LOCAL・動的な EXECUTE を含む物、設定に boatai. を含む物（schema-snapshot は 186 時点で、今は 211 まで）
+**前提の確かめ（2026-11-27、オーナーが本番を読み取り）**: 歯止めの作り（ADR-0113 決定4）は、次の3つが本番で「無い」ことを前提にしている。3つとも無いことを確かめた。どれかが後で足されたら、この節と ADR-0113 を見直す
+- `pgrst.db_pre_request`: 無い。rolconfig の行は authenticator だけで、中身は `session_preload_libraries=supautils, safeupdate`・`statement_timeout=8s`・`lock_timeout=8s`（anon・authenticated は行なし）
+- `pg_graphql` の拡張: 無い（0行）
+- anon が EXECUTE できる public・graphql_public の関数で、本文に set_config・SET LOCAL・動的な EXECUTE を含む物、設定に boatai. を含む物: 無い（0行）
 
 手元の試験（PGlite 18.3、2026-11-27、全部通った）:
 - 1つのトランザクションで2回流せる。戻しの SQL（頭の注釈）が通り、戻した後に当て直せる
