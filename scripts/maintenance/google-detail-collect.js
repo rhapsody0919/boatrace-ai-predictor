@@ -10,6 +10,8 @@
  * 日別（gsc_daily.json・gsc_page_daily.json）: 直近 dailyDays 日（末日は窓と同じ lagDays 日前、日付は GSC の PT のまま）の
  *   date×query×page と date×page を growth_gsc_daily・growth_gsc_page_daily と同じ行で保存する（seo-morning-sheet --local-dir が読む）。
  *   取得は scripts/lib/growth/gscDaily.js・gscPageDaily.js の fetchDay・fetchPageDay（1日ずつ・25000行のページ送り）。
+ * URL 検査（url_inspection.json）: 設定の inspection（{ sitemap: 既定 本番の sitemap.xml の URL（ファイルのパスも可）, max: 既定200 }、false で止める）。
+ *   GSC・GA4 を書いた後に回し、URL ごとの最新の行の写しを書く（scripts/lib/growth/localInspection.js。seo-morning-sheet --local-dir が読む）。
  * 数字は公開リポジトリに入れない（outDir はリポジトリの外）。全部の API が取れたときだけ日付の置き場に書く。
  * --now に過去の時刻を渡すと、その日の回を取り直せる（窓は日付から決まるので、抜けた日も後から同じ物が取れる）。
  */
@@ -18,6 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { API_ROW_CAP, fetchDay } from "../lib/growth/gscDaily.js";
 import { dateRange, fetchPageDay } from "../lib/growth/gscPageDaily.js";
+import { collectInspections, readPreviousSnapshot } from "../lib/growth/localInspection.js";
 
 const DAY = 86400000;
 const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -278,6 +281,31 @@ async function collectWindow({ sc, ga }, cfg, property, window, now) {
   ];
 }
 
+/** sitemap.xml の本文。URL なら取る（作業の場所の古い public/sitemap.xml を読まない）、ほかはファイルのパス */
+async function readSitemap(src) {
+  if (!/^https?:\/\//.test(src)) return fs.readFileSync(path.resolve(src), "utf8");
+  const res = await fetch(src);
+  if (!res.ok) throw new Error(`sitemap の取得の失敗: ${src} ${res.status}`);
+  return res.text();
+}
+
+/** URL 検査を回して url_inspection.json を書く（GSC・GA4 のファイルを書いた後。落ちても前のファイルは残る） */
+async function writeInspection(sc, cfg, outDir, today, now) {
+  const insp = await collectInspections(
+    sc,
+    {
+      siteUrl: cfg.siteUrl,
+      xml: await readSitemap(cfg.inspection?.sitemap ?? "https://www.boat-ai.jp/sitemap.xml"),
+      prevRows: readPreviousSnapshot(cfg.outDir, today),
+      max: cfg.inspection?.max,
+    },
+    today,
+    now,
+  );
+  fs.writeFileSync(path.join(outDir, "url_inspection.json"), `${JSON.stringify(insp, null, 2)}\n`);
+  console.log(`google-detail-collect: URL 検査 ${insp.meta.inspected}/${insp.meta.planned} 件（落ち ${insp.meta.failed}）`);
+}
+
 async function main(argv) {
   const opt = {};
   for (let i = 0; i < argv.length; i += 2) {
@@ -310,6 +338,7 @@ async function main(argv) {
       `${JSON.stringify(data, null, 2)}\n`,
     );
   console.log(`google-detail-collect: ${outDir} に ${files.length} ファイル`);
+  if (cfg.inspection !== false) await writeInspection(c.sc, cfg, outDir, today, now);
 }
 
 if (
