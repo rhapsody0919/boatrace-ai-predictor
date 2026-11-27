@@ -17,7 +17,7 @@ import {
 /** 外枠の取得の上限（目安 300ms、根拠なし。本番の分布で決め直す） */
 export const PAGE_HEAD_TIMEOUT_MS = 300;
 
-// 画面のパンくずの「ホーム」（ja の analysisPage.breadcrumbHome と同じ字。一致は verify が見る）。
+// 画面のパンくずの「ホーム」（ja の analysisPage.breadcrumbHome と同じ字。訳を変えたらここも変える）。
 // middleware に ja の common.json（約280KB）を束ねないため字で持つ
 const HOME_NAME = "ホーム";
 
