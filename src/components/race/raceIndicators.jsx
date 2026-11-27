@@ -59,8 +59,8 @@ export {
 // 行の素（key・label・値の字・best の候補）は src/pure/raceIndicatorText.js（表とコピーで共有、RA41d）。
 // ここは画面の分だけ（best の印と render）を足す。速いほど良い数字なので best は最小値（dir: "min"）
 // 6艇の上位2・下位2の印を付ける種別（意味づけ 2026-11-26）。上位・下位で1着に差が出ると検証した物だけ
-// （一周・まわり足。docs/knowledge/stat-findings.md 23行）。直線は効き目が確かめられず付けない（同 27行）
-const TIER_KINDS = ["一周", "まわり足"];
+// （周回＝一周・半周ラップとまわり足。docs/knowledge/stat-findings.md 22行）。直線は効き目が確かめられず付けない（同 27行）
+const TIER_KINDS = ["一周", "半周ラップ", "まわり足"];
 
 export function buildOriginalExhibitionRows(t, originalExhibition) {
   const byBoat = originalExhibition?.byBoat ?? {};
@@ -75,6 +75,8 @@ export function buildOriginalExhibitionRows(t, originalExhibition) {
       tiers: TIER_KINDS.includes(kind)
         ? rankTiers(candidates, "min", { digits: 2 })
         : null,
+      // 6艇の位置の図（型3）に渡す値。展示タイムの行（rowFromIndicator）の values と同じ形: 艇番 → { value }
+      values: new Map(candidates.map((c) => [c.boat, { value: c.value }])),
       formatValue,
       render: (p) => {
         const value = toNumber(byBoat[p.number]?.[kind]);
