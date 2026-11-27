@@ -2794,7 +2794,7 @@
     "motorBadgeDown": "機力↓",
     "rowExpectedCourseWinRate": "想定コース1着率",
     "expectedCourseWinRateNote": "想定コース1着率は直近3期・進入コースで集計しています",
-    "expectedCourseWinRateNoteDiff": "直近3期・進入コースで集計。下は全国の同じコースとの差（▲▼は偶然を超えた差）",
+    "expectedCourseWinRateNoteDiff": "直近3期・進入コースで集計。下は全国の同じコースとの差（▲▼は偶然のぶれでは説明しにくい差）",
     "noteExpectedCourse": "勝率・当地・2連率は公式の出走表の値です。平均ST・モーター2連率は行の名前の期間、想定コース1着率は直近3期の進入コース、そのほかの分析データは過去90日間（回収率は180日間）の実績集計です。ハイライトはレース内で最も良い値。参考値であり結果を保証するものではありません"
   },
   "venueTendency": {
