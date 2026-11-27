@@ -75,6 +75,8 @@ export function buildOriginalExhibitionRows(t, originalExhibition) {
       tiers: TIER_KINDS.includes(kind)
         ? rankTiers(candidates, "min", { digits: 2 })
         : null,
+      // 6艇の位置の図（型3）に渡す値。艇番 → { value }
+      positions: new Map(candidates.map((c) => [c.boat, { value: c.value }])),
       formatValue,
       render: (p) => {
         const value = toNumber(byBoat[p.number]?.[kind]);

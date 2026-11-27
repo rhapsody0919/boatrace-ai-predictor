@@ -1,9 +1,11 @@
 /**
- * 展示タイムの6艇の位置（見せ方の型3、意味づけ 2026-11-26 オーナー承認）。
+ * 展示の6艇の位置（見せ方の型3、意味づけ 2026-11-26 オーナー承認）。
+ * 印の付く行（展示タイム・一周・半周ラップ・まわり足、2026-11-27 オーナー）をボタンで切り替え、
  * 1本の数直線に6艇の札を置く。左ほど速い。札は艇の色のまま、良し悪しの色は付けない
  * （良し悪しは表の ▲▼ が言う。ここは「どれだけ離れているか」だけを見せる）。
  * 近すぎて札が重なる艇は段を上げる。同じタイムは同じ位置に積む。
  */
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 
@@ -34,22 +36,22 @@ function place(points, min, max) {
   });
 }
 
-export default function ExhibitionPositionDots({ values }) {
-  const { t } = useTranslation();
-  const points = [...(values ?? new Map())]
+// 値のある艇を速い順に（表示の桁2で丸め、同じ値は艇番の順）
+function pointsOf(values) {
+  return [...(values ?? new Map())]
     .map(([boat, v]) => ({ boat, value: v?.value }))
     .filter((pt) => typeof pt.value === "number" && Number.isFinite(pt.value))
     .map((pt) => ({ ...pt, value: Number(pt.value.toFixed(2)) }))
     .sort((a, b) => a.value - b.value || a.boat - b.boat);
-  if (points.length < 2) return null;
+}
+
+function DotsLine({ points }) {
   const min = points[0].value;
   const max = points[points.length - 1].value;
-  if (min === max) return null;
   const placed = place(points, min, max);
   const levels = Math.max(...placed.map((pt) => pt.level)) + 1;
   return (
-    <figure className="rbi-posdots" data-testid="rbi-position-dots">
-      <figcaption className="rbi-posdots-title">{t("beforeInfo.positionTitle")}</figcaption>
+    <>
       <div className="rbi-posdots-track" style={{ "--rbi-posdots-levels": levels }}>
         {placed.map((pt) => {
           const color = BOAT_COLORS[pt.boat] || {};
@@ -79,6 +81,39 @@ export default function ExhibitionPositionDots({ values }) {
           </span>
         ))}
       </div>
+    </>
+  );
+}
+
+/** @param {{rows: {key: string, label: string, values: Map<number, {value: number|null}>|undefined}[]}} props */
+export default function ExhibitionPositionDots({ rows }) {
+  const { t } = useTranslation();
+  const [selectedKey, setSelectedKey] = useState(null);
+  // 2艇以上に違う値がある行だけ（全艇同値・1艇だけは位置に意味が無い）
+  const usable = (rows ?? [])
+    .map((row) => ({ ...row, points: pointsOf(row.values) }))
+    .filter((row) => row.points.length >= 2 && row.points[0].value !== row.points.at(-1).value);
+  if (usable.length === 0) return null;
+  const selected = usable.find((row) => row.key === selectedKey) ?? usable[0];
+  return (
+    <figure className="rbi-posdots" data-testid="rbi-position-dots">
+      <figcaption className="rbi-posdots-title">{t("beforeInfo.positionTitle")}</figcaption>
+      {usable.length > 1 && (
+        <div className="rbi-posdots-switch" role="group">
+          {usable.map((row) => (
+            <button
+              key={row.key}
+              type="button"
+              className={`rbi-posdots-switch-btn${row.key === selected.key ? " is-active" : ""}`}
+              aria-pressed={row.key === selected.key}
+              onClick={() => setSelectedKey(row.key)}
+            >
+              {row.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <DotsLine key={selected.key} points={selected.points} />
     </figure>
   );
 }

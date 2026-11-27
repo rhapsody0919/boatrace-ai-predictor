@@ -190,7 +190,9 @@ export default function RaceBeforeInfoTabTable({
         </table>
       </div>
       <ExhibitionPositionDots
-        values={rows.find((row) => row.key === "exhibition" && row.tiers?.size > 0)?.values}
+        rows={rows
+          .filter((row) => row.tiers?.size > 0)
+          .map((row) => ({ key: row.key, label: row.shortLabel ?? row.label, values: row.positions }))}
       />
       <TierLegend rows={rows} />
     </div>

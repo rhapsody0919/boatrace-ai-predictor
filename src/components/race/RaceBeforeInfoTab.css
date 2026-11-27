@@ -323,3 +323,24 @@
   height: 5px;
   background: var(--text-secondary);
 }
+/* 位置の図の行の切り替え（選んでいる印は本文色。金は「6艇で1位」の印なので使わない） */
+.race-before-info-tab .rbi-posdots-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+.race-before-info-tab .rbi-posdots-switch-btn {
+  padding: 2px var(--spacing-2);
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.race-before-info-tab .rbi-posdots-switch-btn.is-active {
+  font-weight: 700;
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
