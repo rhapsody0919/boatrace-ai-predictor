@@ -189,6 +189,15 @@ tr.racer-vc-row-highlight td:first-child {
   color: var(--text-secondary);
 }
 
+/* 走ごとの推移（P-31・P-32、共通の推移の図の1本の線）。選手1人なので艇の色の縁は付けず文字の色の1本。
+   ダークの2号艇の色の規則より強く当てる（R-45 と同じ） */
+.racer-run-trend .trc-line.racer-run-series .trc-stroke {
+  stroke: var(--text-primary);
+}
+.racer-run-trend .trc-line.racer-run-series .trc-halo {
+  display: none;
+}
+
 .racer-stat-chart {
   background: var(--surface-card);
   border: 1px solid var(--border-hairline);

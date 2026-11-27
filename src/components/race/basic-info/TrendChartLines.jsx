@@ -252,9 +252,10 @@ export function EndLabels({ seriesByBoat, selected, xFor, y, scale, W }) {
           className="trc-leader"
           strokeDasharray={e.stale || early(e) ? "2 2" : undefined}
         />
-        <Badge cx={lx} cy={yy} boat={e.boat} />
+        {/* noBadge の尺度（選手ページ）は艇番の札を描かず、値を札の位置から書く */}
+        {!scale.noBadge && <Badge cx={lx} cy={yy} boat={e.boat} />}
         <text
-          x={lx + 10}
+          x={scale.noBadge ? lx - 6 : lx + 10}
           y={yy + 4}
           className={`trc-end${e.flag ? ` trc-end-flag trc-flag-${e.flag}` : ""}`}
           fontWeight={e.boat === selected ? 700 : 400}
