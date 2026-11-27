@@ -143,9 +143,10 @@ test("今節タブの折れ線は、点に合わせるとその走の日付・R�
   await expect(meetTab).toBeVisible({ timeout: 30000 });
   await meetTab.click();
 
-  const spark = page.locator(".rmt-sparks .meet-sparkline-wrap").first();
+  // 今節の詳細の小さな線は共通の推移の図の1艇版（R-45）。吹き出しも共通の図の物
+  const spark = page.locator(".rmt-sparks .trc-chartbox").first();
   await expect(spark).toBeVisible({ timeout: 60000 });
-  const tip = page.locator(".meet-sparkline-tip");
+  const tip = page.locator(".rmt-sparks .trc-tip");
 
   // 合わせるまでは出ていない
   await expect(tip).toHaveCount(0);
@@ -169,7 +170,8 @@ test("今節タブの折れ線は、点に合わせるとその走の日付・R�
     expect(text).toMatch(/\d+R/);
 
     // 表の同じ走（吹き出しの日付とRで引く）と、値・着順が一致する
-    const [, date, raceNo] = text.match(/^(\d+\/\d+)\s+(\d+)R/);
+    // 吹き出しの1行目は「日付 会場 R グレード」
+    const [, date, raceNo] = text.match(/(\d+\/\d+)\s+\S+\s+(\d+)R/);
     const row = page
       .locator(".race-history-table-row")
       .filter({ hasText: `${raceNo}R` })
@@ -179,13 +181,19 @@ test("今節タブの折れ線は、点に合わせるとその走の日付・R�
     // 表の列は 日付/R/着順/枠番/進入/展示/ST/決まり手/単勝配当
     // （着順は BOA-569 で R の右へ移した）
     const finish = cells[2];
-    const st = cells[6];
+    // 表の ST は「0.14(4)」と6艇の中の順位が付く。吹き出しは値だけ
+    const st = cells[6].replace(/\(\d\)$/, "");
     expect(text).toContain(st);
     expect(text).toContain(finish);
   });
 
+  // スマホでは吹き出しは図のすぐ下に流れで入り、部品（見出し・図・吹き出しの .rmt-spark）を下へ伸ばす
+  // （共通の推移の図）。見出し・下の図に重ならないことを、吹き出しが出た後の部品の箱で確かめる
+  const block = page.locator(".rmt-sparks .rmt-spark").first();
+  const shown = await block.boundingBox();
   await test.step("吹き出しはグラフの箱からはみ出さない", async () => {
-    // 縦: 上に出すと見出し（平均・通常値）に、下に出すと「前走 0.09」の行に重なる
+    // 縦: 上に出すと見出し（平均・通常値）に、下に出すと下の図に重なる
+    const box = shown;
     const tipBox = await tip.boundingBox();
     expect(tipBox.y).toBeGreaterThanOrEqual(box.y - 1);
     expect(tipBox.y + tipBox.height).toBeLessThanOrEqual(
@@ -198,9 +206,10 @@ test("今節タブの折れ線は、点に合わせるとその走の日付・R�
   });
 
   await test.step("長い文言でも箱の幅を超えない（英語）", async () => {
+    const box = await block.boundingBox();
     // 文言の長さに一番効くのは着順不明のとき。日本語より英語が長い
     await page.evaluate(() => {
-      const el = document.querySelector(".meet-sparkline-tip");
+      const el = document.querySelector(".rmt-sparks .trc-tip");
       if (el)
         el.textContent = "9/26 R11 · Trial 6.69(3) · Unplaced (rank unknown)";
     });

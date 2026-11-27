@@ -105,17 +105,20 @@ function Flags({ points, boat, selected, x }) {
 }
 
 // 選んだ艇の点（走ごとの生の値の図）
-function Dots({ points, boat, x, y }) {
+// dotR（尺度）を持つ図は点を大きくし、灰の輪で線と地から切り離す（1艇だけの低い図 R-45。線と同じ色の艇・
+// 地と同じ色の艇の点が溶けた）
+function Dots({ points, boat, x, y, scale }) {
   return points.map((p, i) =>
     p.value == null ? null : (
       <circle
         key={`d${p.raceId}`}
         cx={x(i, points.length)}
         cy={y(p.value)}
-        r={2}
+        className="trc-dot"
+        r={scale.dotR ?? 2}
         fill={BOAT_COLORS[boat].bg}
-        stroke="#9ca3af"
-        strokeWidth={0.5}
+        stroke={scale.dotR ? "var(--text-secondary)" : "#9ca3af"}
+        strokeWidth={scale.dotR ? 1.5 : 0.5}
       />
     ),
   );
@@ -165,7 +168,7 @@ function Halo({ segs, boat, dim, scale, w }) {
 
 export function Line({ points, boat, selected, x, y, scale, lineClass }) {
   const segs = segmentsOf(points, x, y);
-  const w = selected ? 3 : 1.4;
+  const w = selected ? (scale.strokeW ?? 3) : 1.4;
   const { dim, attrs } = lineAttrs(boat, selected, scale, lineClass);
   return (
     <g {...attrs}>
@@ -184,7 +187,7 @@ export function Line({ points, boat, selected, x, y, scale, lineClass }) {
         <DotMarks points={points} boat={boat} x={x} y={y} />
       )}
       {scale.dots && selected && (
-        <Dots points={points} boat={boat} x={x} y={y} />
+        <Dots points={points} boat={boat} x={x} y={y} scale={scale} />
       )}
       {scale.flags && (
         <Flags points={points} boat={boat} selected={selected} x={x} />
@@ -247,9 +250,7 @@ export function EndLabels({ seriesByBoat, selected, xFor, y, scale, W }) {
           x2={lx - 8}
           y2={yy}
           className="trc-leader"
-          strokeDasharray={
-            e.stale || early(e) ? "2 2" : undefined
-          }
+          strokeDasharray={e.stale || early(e) ? "2 2" : undefined}
         />
         <Badge cx={lx} cy={yy} boat={e.boat} />
         <text

@@ -392,6 +392,8 @@
   .trc-tip,
   .trc-tip.is-flip {
     position: relative;
+    /* 流れに入れたので top でずらさない（ずらすと図の箱の下へ 4px はみ出し、下の物に重なる） */
+    top: 0;
     left: 0 !important;
     max-width: none;
     margin-top: var(--spacing-1);

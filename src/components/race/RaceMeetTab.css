@@ -619,7 +619,7 @@
   color: var(--text-secondary);
 }
 
-/* 今節のST・展示のスパークライン（MeetSparkline）。390pxでは2本を縦に積む */
+/* 今節のST・展示の小さな線（共通の推移の図の1艇版、R-45）。390pxでは2本を縦に積む */
 .rmt-sparks {
   display: grid;
   gap: var(--spacing-3);
@@ -636,8 +636,39 @@
   }
 }
 
-.rmt-spark-head,
-.rmt-spark-foot {
+.rmt-spark {
+  min-width: 0;
+}
+
+/* 1艇だけの線なので艇の色の縁は付けず、文字の色の1本にする（1号艇の白に灰の縁がライトで二重線に見えた。
+   visual-designer 11/27）。点は艇の色のまま */
+/* ダークの2号艇の色の規則（[data-theme] .trc-line-2 .trc-stroke）より強く当てる */
+.rmt-spark .trc-line.rmt-spark-series .trc-stroke {
+  stroke: var(--text-primary);
+}
+.rmt-spark .trc-line.rmt-spark-series .trc-halo {
+  display: none;
+}
+
+/* 基準の破線（ST は通常の平均、展示はその日の会場平均）。本線と太さ・形で分ける */
+.rmt-spark-ref {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 3;
+}
+/* 破線より速い側の面（基準より速い走の量）。上の見出しの「踏んでいる」と同じ緑を薄く */
+.rmt-spark-gain {
+  fill: var(--color-success);
+  fill-opacity: 0.14;
+  stroke: none;
+}
+.rmt-spark-ref-label {
+  font-size: var(--font-size-2xs);
+  fill: var(--text-secondary);
+}
+
+.rmt-spark-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -652,8 +683,7 @@
   color: var(--text-primary);
 }
 
-.rmt-spark-base,
-.rmt-spark-foot {
+.rmt-spark-base {
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;

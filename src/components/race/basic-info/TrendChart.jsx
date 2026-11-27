@@ -30,6 +30,15 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
     ...extraValues,
   ].filter((v) => v !== null && v !== undefined);
   const { step } = scale;
+  // 記号の帯。bandIfAny の尺度（R-45）は記号の走があるときだけ取る（低い図で描く所を削らない）
+  const band =
+    scale.flags &&
+    (!scale.bandIfAny ||
+      [...seriesByBoat.values()].some((s) => s.some((p) => p.flag)))
+      ? BAND
+      : 0;
+  // 図の高さ。尺度が height を持てばそれ（今節の詳細の小さな線 R-45 は低い）
+  const h = scale.height ?? H;
   // 負にならない指標（ST）は 0 より下に伸ばさない
   const lo = Math.max(
     scale.min ?? -Infinity,
@@ -41,8 +50,8 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
   const y = (v) => {
     const r = (v - lo) / (hi - lo);
     // 印の帯（F・L）がある尺度は、値の線をその下から描く
-    const top = PAD.t + (scale.flags ? BAND : 0);
-    return top + (H - top - PAD.b) * (scale.invert ? r : 1 - r);
+    const top = PAD.t + band;
+    return top + (h - top - PAD.b) * (scale.invert ? r : 1 - r);
   };
   // 右端（最新）をそろえる。点の少ない艇は左を空ける。alignStart（今節の走）は各艇の1走目を左にそろえ、
   // 下の行の見出しの分だけ左を空ける
@@ -65,7 +74,7 @@ function scaleOf(seriesByBoat, scale, W, extraValues = []) {
     g += tickStep
   )
     ticks.push(g);
-  return { x, y, ticks, n, at, xFor };
+  return { x, y, ticks, n, at, xFor, h };
 }
 
 /** 横の目盛りの線と左の数字（走ごとの線と勝率の段で共通） */
@@ -111,12 +120,12 @@ function ValueAxis({ ticks, y, W, scale, t }) {
 }
 
 // 日付の横軸の目盛り（xTicks を渡す図だけ。走の順の目盛りの代わり）
-function DateAxis({ xTicks, at }) {
+function DateAxis({ xTicks, at, h }) {
   return xTicks.map((k) => (
     <text
       key={`${k.xr}-${k.label}`}
       x={at(k.xr)}
-      y={H - 18}
+      y={h - 18}
       className="trc-tick trc-day"
       textAnchor="middle"
     >
@@ -128,7 +137,7 @@ function DateAxis({ xTicks, at }) {
 // 横の目盛り。日付の横軸（xTicks）か、選んだ艇の走の日付・「最新」・休みの印
 function XAxis({ xTicks, at, ...rest }) {
   return xTicks ? (
-    <DateAxis xTicks={xTicks} at={at} />
+    <DateAxis xTicks={xTicks} at={at} h={rest.h} />
   ) : (
     <SelectedAxis {...rest} />
   );
@@ -142,7 +151,7 @@ function drawOrder(seriesByBoat, selected) {
 }
 
 // 選んだ艇の日付の目盛り・「最新」・休みの印
-function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
+function SelectedAxis({ sel, selected, x, W, runAxisKey, n, h }) {
   const { t } = useTranslation();
   if (sel.length === 0) return null;
   // 今節の走の図は日付でなく「N走」（艇ごとに走ったレースは違う。日は図の下の行）
@@ -153,7 +162,7 @@ function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
           <text
             key={i}
             x={x(i, n)}
-            y={H - 18}
+            y={h - 18}
             className="trc-tick"
             textAnchor="middle"
           >
@@ -173,7 +182,7 @@ function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
         <text
           key={i}
           x={x(i, sel.length)}
-          y={H - 18}
+          y={h - 18}
           className="trc-tick"
           textAnchor="middle"
         >
@@ -182,14 +191,14 @@ function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
       ))}
       <text
         x={W - PAD.r}
-        y={H - 18}
+        y={h - 18}
         className="trc-tick trc-latest"
         textAnchor="middle"
       >
         {t("basicInfo.trend.latest")}
       </text>
-      <Badge cx={PAD.l + 6} cy={H - 6} boat={selected} r={6} />
-      <text x={PAD.l + 16} y={H - 2} className="trc-axisnote">
+      <Badge cx={PAD.l + 6} cy={h - 6} boat={selected} r={6} />
+      <text x={PAD.l + 16} y={h - 2} className="trc-axisnote">
         {t("basicInfo.trend.axisNote")}
       </text>
       {trendGapIndexes(sel).map((i, k, all) => {
@@ -206,7 +215,7 @@ function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
               x1={gx}
               x2={gx}
               y1={PAD.t}
-              y2={H - PAD.b}
+              y2={h - PAD.b}
               className="trc-gap"
             />
             <Badge cx={gx - 40} cy={PAD.t - 8 + dy} boat={selected} r={6} />
@@ -222,6 +231,7 @@ function SelectedAxis({ sel, selected, x, W, runAxisKey, n }) {
 
 // 選んだ点の縦の点線と印、点を選ぶ当たりの面（図の中の全面、透明）。縦のスクロールは指に任せる
 function PickLayer({ picked, px, y, selected, W, pointer, scale }) {
+  const h = scale.height ?? H;
   return (
     <>
       {picked && (
@@ -230,7 +240,7 @@ function PickLayer({ picked, px, y, selected, W, pointer, scale }) {
             x1={px}
             x2={px}
             y1={PAD.t}
-            y2={H - PAD.b}
+            y2={h - PAD.b}
             className="trc-pick-line"
           />
           {/* 値の無い走は印の帯がある尺度だけ帯に印。点の中に着順を描く尺度は着順を隠さない外の輪だけ */}
@@ -258,7 +268,7 @@ function PickLayer({ picked, px, y, selected, W, pointer, scale }) {
         x={PAD.l}
         y={PAD.t}
         width={W - PAD.l - PAD.r}
-        height={H - PAD.t - PAD.b}
+        height={h - PAD.t - PAD.b}
         fill="transparent"
         {...pointer}
       />
@@ -292,6 +302,7 @@ function useSelectedPick(sel, xSel, selected, W) {
  *   renderBelow?: (g: {x: Function, W: number, pad: object, sel: Array<object>}) => any }} props
  *   scale を渡さなければ metric の既定の尺度。label は図の読み上げの名前（無ければ基本情報の題）。
  *   renderOver は線の下に重ねる SVG、renderBelow は図の下に描く物（どちらも図と同じ横の座標 x(i, len)）。
+ *   renderOver の x は選んだ艇の点の横位置（日付の横軸では点の xr、無ければ走の順）
  *   extraValues は縦軸の範囲に含める重ね書きの値、lineClass は線の g に足すクラス（使う側の試験の当て先）。
  *   extraHeight は図の下に足す高さで、renderOver が y >= h に同じ svg の中で描く（今節の足の走の行）。
  *   xTicks（[{xr, label}]）は日付の横軸の目盛り。点の xr（0〜1）と breakBefore（走らない日をまたぐ）と組で使う
@@ -311,7 +322,7 @@ export default function TrendChart({
 }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
-  const { x, y, ticks, n, at, xFor } = scaleOf(
+  const { x, y, ticks, n, at, xFor, h } = scaleOf(
     seriesByBoat,
     scale,
     W,
@@ -331,7 +342,7 @@ export default function TrendChart({
       <svg
         ref={ref}
         className="trc-svg"
-        viewBox={`0 0 ${W} ${H + extraHeight}`}
+        viewBox={`0 0 ${W} ${h + extraHeight}`}
         role="img"
         aria-label={
           label ??
@@ -342,11 +353,11 @@ export default function TrendChart({
       >
         <ValueAxis ticks={ticks} y={y} W={W} scale={scale} t={t} />
         <XAxis
-          {...{ xTicks, at, sel, selected, x, W, n }}
+          {...{ xTicks, at, sel, selected, x, W, n, h }}
           runAxisKey={scale.runAxisKey}
         />
         {/* 使う側が線の下に重ねる物（会場平均の線など）。座標は図と同じ */}
-        {renderOver?.({ x, y, W, h: H, pad: PAD, sel })}
+        {renderOver?.({ x: xSel, y, W, h, pad: PAD, sel })}
         {order.map((boat) => (
           <Line
             key={boat}

@@ -2,9 +2,18 @@
  * RaceMeetTab 詳細の、今節の走順に並べた小さな線（ST・展示）。数字の羅列だと8走ぶんの上下を
  * 頭の中で組み立てることになる（2026-09-27、ファン視点の議論）。
  * 判定文は出さず、形と基準線を見せて読み手に委ねる。
+ * 線は共通の推移の図（basic-info/TrendChart）の1艇版で、横軸は上の6艇の推移（R-43）と同じ日付
+ * （オーナー 2026-11-26「既に線がある部品を共通の図へ」）。基準（ST の通常の平均・展示のその日の会場平均）は破線で重ねる。
  */
-import { meetStVerdictTone, MEET_ST_DIFF_THRESHOLD } from "../../pure/basicInfoStats.js";
-import MeetSparkline from "./MeetSparkline";
+import { useId } from "react";
+import {
+  meetStVerdictTone,
+  MEET_ST_DIFF_THRESHOLD,
+} from "../../pure/basicInfoStats.js";
+import { trendScaleOf } from "../../pure/trendMetricScale.js";
+import { dayTicksOf, pointOf } from "./meetTrendPoints";
+import TrendChart from "./basic-info/TrendChart";
+import "./basic-info/TrendChart.css";
 
 // 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く。
 // 小さな差・走数の少ないときは色を付けない（meetStVerdictTone）
@@ -51,41 +60,146 @@ function StHead({ m }) {
   );
 }
 
-function SparkFoot({ m, last }) {
-  const { t, firstMeetDate } = m;
+// 選んだ艇の今節の走を、共通の図の点にする（上の6艇の推移と同じ点・同じ横位置）
+function selectedSeries(m, trendKey) {
+  const { trendRows, selectedBoat, meetRows, finishLabelOf } = m;
+  const row = trendRows.find((r) => r.player.number === selectedBoat);
+  if (!row || row.runs.length === 0) return null;
+  const byId = new Map((meetRows ?? []).map((r) => [r.raceId, r]));
+  return row.runs.map((r, j) =>
+    pointOf(r, j, row.layout, {
+      trendKey,
+      labelOf: finishLabelOf,
+      rowOf: (id) => byId.get(id),
+    }),
+  );
+}
+
+// 値と基準がどちらもある走の続き（線と破線の間の面を作る単位）
+function gainSegments(sel, x, y, refOf) {
+  const segs = [[]];
+  sel.forEach((p, i) => {
+    const r = refOf(p);
+    if (p.value == null || r == null) segs.push([]);
+    else
+      segs[segs.length - 1].push({
+        x: x(i, sel.length),
+        yv: y(p.value),
+        yr: y(r),
+      });
+  });
+  return segs.filter((g) => g.length > 1);
+}
+
+// 破線より速い側（上）だけを薄く塗る（オーナー 2026-11-27「破線より速い側を薄く塗る」）。線と破線の間の面を、
+// 破線より上の範囲で切り抜く。基準より速い走の量が面で読める。上向き・下向きの判定ではない
+function GainFill({ sel, x, y, refOf }) {
+  const id = useId();
+  const segs = gainSegments(sel, x, y, refOf);
+  const pts = (arr) => arr.map((q) => `${q[0]},${q[1]}`).join(" ");
+  return segs.map((g, k) => {
+    const ref = g.map((q) => [q.x, q.yr]);
+    const clip = `${id}-gain-${k}`;
+    return (
+      <g key={clip}>
+        <clipPath id={clip}>
+          <polygon
+            points={pts([...ref, [g[g.length - 1].x, 0], [g[0].x, 0]])}
+          />
+        </clipPath>
+        <polygon
+          className="rmt-spark-gain"
+          clipPath={`url(#${clip})`}
+          points={pts([...g.map((q) => [q.x, q.yv]), ...ref.reverse()])}
+        />
+      </g>
+    );
+  });
+}
+
+// 基準の破線。refOf(点) が null の所で切る。何の線かの札は右端の札の列に置き（注記を読まずに分かるように）、
+// 前走の札と近いときは上下にずらす
+function RefLine({ sel, x, y, W, pad, refOf, refLabel }) {
+  const runs = [[]];
+  sel.forEach((p, i) => {
+    const v = refOf(p);
+    if (v === null || v === undefined) runs.push([]);
+    else runs[runs.length - 1].push([x(i, sel.length), y(v)]);
+  });
+  const lines = runs.filter((r) => r.length > 1);
+  if (lines.length === 0) return null;
+  const tail = lines[lines.length - 1];
+  const ry = tail[tail.length - 1][1];
+  const last = sel.findLast((p) => p.value !== null && p.value !== undefined);
+  const ey = last ? y(last.value) : -Infinity;
+  const near = Math.abs(ry - ey) < 14;
   return (
-    <div className="rmt-spark-foot">
-      <span>{firstMeetDate}</span>
-      <span>
-        {last === null
-          ? "—"
-          : t("meetTab.sparkLast", { value: last.mark ?? last.value.toFixed(2) })}
-      </span>
-    </div>
+    <g className="rmt-spark-refs">
+      <GainFill sel={sel} x={x} y={y} refOf={refOf} />
+      {lines.map((pts) => (
+        <polyline
+          key={pts[0].join()}
+          className="rmt-spark-ref"
+          points={pts.map((q) => q.join(",")).join(" ")}
+        />
+      ))}
+      <text
+        className="rmt-spark-ref-label"
+        x={W - pad.r + 8}
+        y={near ? ey + (ry >= ey ? 18 : -10) : ry + 3}
+      >
+        {refLabel}
+      </text>
+    </g>
+  );
+}
+
+function MeetSpark({ m, trendKey, scaleKey, label, refOf, refLabel }) {
+  const sel = selectedSeries(m, trendKey);
+  if (!sel) return null;
+  const refs = sel.map(refOf).filter((v) => typeof v === "number");
+  return (
+    <TrendChart
+      seriesByBoat={new Map([[m.selectedBoat, sel]])}
+      metric={trendKey}
+      scale={trendScaleOf(scaleKey)}
+      selected={m.selectedBoat}
+      label={label}
+      lineClass="rmt-spark-series"
+      extraValues={refs}
+      xTicks={dayTicksOf(m.trendDates)}
+      renderOver={({ x, y, W, pad, sel: s }) => (
+        <RefLine
+          sel={s}
+          x={x}
+          y={y}
+          W={W}
+          pad={pad}
+          refOf={refOf}
+          refLabel={refLabel}
+        />
+      )}
+    />
   );
 }
 
 function StSpark({ m }) {
-  const { meetRows, sparkLabel, stRankByRace, st, lastSt } = m;
+  const { t, st } = m;
   return (
     <div className="rmt-spark">
       <StHead m={m} />
-      <MeetSparkline
-        points={meetRows.map((r) => ({
-          value: r.startTiming ?? null,
-          label: sparkLabel(
-            r,
-            "meetTab.compareTrendSt",
-            r.startTiming,
-            stRankByRace[r.raceId] ?? null,
-          ),
-        }))}
-        baseline={st.baseAvg}
-        // 金は「6艇で最良」の印。ダークでは5号艇の線と同じ色にも見えた（BOA-757）
-        color="var(--text-primary)"
-        markLast={!lastSt?.mark}
+      <MeetSpark
+        m={m}
+        trendKey="st"
+        scaleKey="meetSparkSt"
+        label={t("meetTab.sparkStTitle")}
+        refOf={() => st.baseAvg}
+        refLabel={
+          st.baseAvg === null
+            ? null
+            : t("meetTab.sparkRefSt", { value: st.baseAvg.toFixed(2) })
+        }
       />
-      <SparkFoot m={m} last={lastSt} />
     </div>
   );
 }
@@ -112,31 +226,19 @@ function ExHead({ m }) {
 }
 
 function ExSpark({ m }) {
-  const { meetRows, sparkLabel, venueDailyExhibitionAvg, lastExhibition } = m;
+  const { t, venueDailyExhibitionAvg } = m;
   return (
     <div className="rmt-spark">
       <ExHead m={m} />
-      <MeetSparkline
-        points={meetRows.map((r) => ({
-          value: r.exhibitionTime ?? null,
-          label: sparkLabel(
-            r,
-            "meetTab.compareTrendEx",
-            r.exhibitionTime,
-            r.exhibitionRank ?? null,
-          ),
-        }))}
-        // 基準は「その日の会場全体の展示平均」。水面は日ごとに
-        // 0.08秒動くため（若松2026-09-22〜27の実測で6.829〜6.907）、
-        // 生タイムだけでは重い日の6.90と軽い日の6.90を同じに読む
-        referenceSeries={meetRows.map(
-          (r) => venueDailyExhibitionAvg[r.date] ?? null,
-        )}
-        color="var(--color-info-text)"
-      />
-      <SparkFoot
+      {/* 基準は「その日の会場全体の展示平均」。水面は日ごとに 0.08秒動くため（若松2026-09-22〜27の実測で
+          6.829〜6.907）、生タイムだけでは重い日の6.90と軽い日の6.90を同じに読む */}
+      <MeetSpark
         m={m}
-        last={lastExhibition === null ? null : { value: lastExhibition }}
+        trendKey="exhibition"
+        scaleKey="meetSparkExhibition"
+        label={t("meetTab.sparkExTitle")}
+        refOf={(p) => venueDailyExhibitionAvg[p.date] ?? null}
+        refLabel={t("meetTab.sparkRefEx")}
       />
     </div>
   );
