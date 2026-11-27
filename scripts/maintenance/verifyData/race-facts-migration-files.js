@@ -4,27 +4,28 @@
  * （racer-boat-return-baseline-sql.js と同じ形）。
  */
 import { readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
 
-const MIGRATION_DIR = process.env.RACE_FACTS_MIGRATION_DIR ?? "docs/db-migration";
-const SNAPSHOT = process.env.RACE_FACTS_SNAPSHOT ?? "docs/reference/schema-snapshot.json";
+const MIGRATION_DIR = new URL("../../../docs/db-migration/", import.meta.url);
 
-/** NNN_race_facts.sql の本文（無ければ throw） */
-export function readRaceFactsMigration() {
-  const file = readdirSync(MIGRATION_DIR).find((f) => /^\d+_race_facts\.sql$/.test(f));
-  if (!file) throw new Error(`${MIGRATION_DIR} に NNN_race_facts.sql が無い`);
-  return readFileSync(path.join(MIGRATION_DIR, file), "utf-8");
-}
+/** マイグレーション 212 の本文 */
+export const RACE_FACTS_MIGRATION_SQL = readFileSync(
+  new URL("../../../docs/db-migration/212_race_facts.sql", import.meta.url),
+  "utf8",
+);
 
 /** 全てのマイグレーションの [ファイル名, 本文]（名前の順） */
 export function readAllMigrations() {
   return readdirSync(MIGRATION_DIR)
     .filter((f) => f.endsWith(".sql"))
     .sort()
-    .map((f) => [f, readFileSync(path.join(MIGRATION_DIR, f), "utf-8")]);
+    .map((f) => [f, readFileSync(new URL(f, MIGRATION_DIR), "utf8")]);
 }
 
 /** schema-snapshot.json の関数の一覧 */
 export function readSnapshotFunctions() {
-  return JSON.parse(readFileSync(SNAPSHOT, "utf-8")).functions ?? [];
+  const text = readFileSync(
+    new URL("../../../docs/reference/schema-snapshot.json", import.meta.url),
+    "utf8",
+  );
+  return JSON.parse(text).functions ?? [];
 }

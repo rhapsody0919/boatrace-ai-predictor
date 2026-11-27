@@ -5,13 +5,15 @@
 //   - anon が自分で設定を立てても、1トランザクションに1選手の行しか見えない。anon は書けない。読み取り専用のトランザクションでも RPC が通る
 //   - kb_archive_extra は艇の行にレースの列を入れられない・2025-12-03 以降を入れられない。backfill_progress は試した単位に時刻が要る
 //   - 戻しの SQL（race_facts を先に消す）が通り、戻した後に当て直せる
+//   - db-apply の検査（inspectMigration・classifyMigration）を通る: 1つのトランザクション・拒否なし・5表・重い道で止めなし
 // 外部接続なし
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
-import { readRaceFactsMigration } from "./verifyData/race-facts-migration-files.js";
+import { RACE_FACTS_MIGRATION_SQL } from "./verifyData/race-facts-migration-files.js";
+import { classifyMigration, inspectMigration } from "../lib/dbApplySql.js";
 
-const sql = readRaceFactsMigration();
+const sql = RACE_FACTS_MIGRATION_SQL;
 const ROLLBACK = `BEGIN; SET LOCAL lock_timeout = '10s';
   DROP FUNCTION IF EXISTS public.get_racer_runs(integer, date); DROP TABLE IF EXISTS public.race_facts;
   DROP TABLE IF EXISTS public.run_facts; DROP TABLE IF EXISTS public.kb_archive_extra;
@@ -113,4 +115,17 @@ test("戻しと当て直し", async () => {
   assert.equal((await db.query("SELECT to_regclass('public.run_facts') AS t")).rows[0].t, null);
   await apply();
   assert.equal(await count("run_facts"), 0);
+});
+
+test("db-apply の検査を通る", () => {
+  const inspection = inspectMigration(sql);
+  assert.deepEqual(inspection.rejections, []);
+  assert.equal(inspection.mode, "single-transaction");
+  assert.deepEqual(
+    inspection.tables.map((t) => t.table),
+    ["backfill_progress", "facts_coverage", "kb_archive_extra", "race_facts", "run_facts"],
+  );
+  const lane = classifyMigration(sql, "212_race_facts.sql");
+  assert.equal(lane.label, "heavy");
+  assert.deepEqual(lane.stops, []);
 });
