@@ -66,13 +66,14 @@ async function fetchShell(origin, fetchImpl, timeoutMs) {
  * @returns {Promise<Response|undefined>} 差し込んだ HTML。素通りは undefined
  */
 export async function respondWithPageHead(request, deps = {}) {
-  const {
-    env = process.env,
-    fetchImpl = (...args) => fetch(...args),
-    timeoutMs = PAGE_HEAD_TIMEOUT_MS,
-    log = console.log,
-    now = Date.now,
-  } = deps;
+  const { env, fetchImpl, timeoutMs, log, now } = {
+    env: process.env,
+    fetchImpl: (...args) => fetch(...args),
+    timeoutMs: PAGE_HEAD_TIMEOUT_MS,
+    log: console.log,
+    now: Date.now,
+    ...definedOf(deps),
+  };
   const started = now();
   let kind = null;
   const done = (outcome, extra = {}) => {
@@ -82,15 +83,13 @@ export async function respondWithPageHead(request, deps = {}) {
   // middleware の例外は対象の全ページの 5xx になるので、この枝の失敗は種類を問わず素通りにする
   // （AGENTS.md の「try/catch は種類で分けるときだけ」の例外）
   try {
-    if (request.method !== "GET") return undefined;
-    const url = new URL(request.url);
-    const route = pageHeadRoute(url.pathname);
-    if (!route || !enabledKinds(env.PAGE_HEAD_KINDS).has(route.kind)) return undefined;
-    kind = route.kind;
-    const head = headOf(route);
+    const target = targetOf(request, env);
+    if (!target) return undefined;
+    kind = target.route.kind;
+    const head = headOf(target.route);
     if (!head) return done("no_head");
     // 外枠は必ず /index.html を取る（/ は matcher に入り middleware がもう一度動く。/index.html は matcher の外）
-    const shell = await fetchShell(url.origin, fetchImpl, timeoutMs);
+    const shell = await fetchShell(target.origin, fetchImpl, timeoutMs);
     if (shell.html === null) return done("shell_status", { status: shell.status });
     const html = injectPageHead(shell.html, head);
     if (html === null) return done("not_injectable");
@@ -101,8 +100,25 @@ export async function respondWithPageHead(request, deps = {}) {
       headers: { ...RESPONSE_HEADERS, "server-timing": `page-head;dur=${ms}` },
     });
   } catch (error) {
-    return done(error?.name === "TimeoutError" ? "timeout" : "error", {
-      message: String(error?.message ?? error).slice(0, 200),
-    });
+    return done(...failureOf(error));
   }
+}
+
+// 差し込む対象か。GET で、パスが対象の形で、その種類が PAGE_HEAD_KINDS にあるときだけ
+function targetOf(request, env) {
+  if (request.method !== "GET") return null;
+  const url = new URL(request.url);
+  const route = pageHeadRoute(url.pathname);
+  if (!route || !enabledKinds(env.PAGE_HEAD_KINDS).has(route.kind)) return null;
+  return { origin: url.origin, route };
+}
+
+// undefined の値を落とす（呼び手が渡した undefined で既定を消さない）
+const definedOf = (obj) =>
+  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
+
+// 例外の理由（時間切れか、それ以外か）と短い文
+function failureOf(error) {
+  const outcome = error?.name === "TimeoutError" ? "timeout" : "error";
+  return [outcome, { message: String(error?.message ?? error).slice(0, 200) }];
 }
