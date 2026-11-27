@@ -5,10 +5,10 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3052,
-    "filesWithAccess": 334,
+    "sourceFiles": 3055,
+    "filesWithAccess": 335,
     "tableReaders": 981,
-    "tableWriters": 202,
+    "tableWriters": 204,
     "rpcCallers": 58,
     "nameMentions": 286,
     "tablesWithoutReaders": 21,
@@ -30483,7 +30483,8 @@
       "kind": "table",
       "name": "race_facts",
       "refs": [
-        "scripts/lib/raceFactsMainJob.js:150"
+        "scripts/lib/raceFactsMainJob.js:150",
+        "scripts/maintenance/race-facts-backfill.js:95"
       ]
     },
     {
@@ -30499,7 +30500,8 @@
       "kind": "table",
       "name": "run_facts",
       "refs": [
-        "scripts/lib/raceFactsMainJob.js:146"
+        "scripts/lib/raceFactsMainJob.js:146",
+        "scripts/maintenance/race-facts-backfill.js:91"
       ]
     },
     {

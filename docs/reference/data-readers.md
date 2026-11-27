@@ -10,10 +10,10 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3052 |
-| 読み書きのあるファイル | 334 |
+| 読んだファイル | 3055 |
+| 読み書きのあるファイル | 335 |
 | 表の読み手（箇所） | 981 |
-| 表の書き手（箇所） | 202 |
+| 表の書き手（箇所） | 204 |
 | RPC の呼び手（箇所） | 58 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
@@ -2344,9 +2344,9 @@
 - table `growth_gsc_daily`: `scripts/lib/growth/gscDaily.js:168`, `scripts/lib/growth/gscDaily.js:181`, `scripts/lib/growth/gscDaily.js:187`
 - table `growth_gsc_page_daily`: `scripts/lib/growth/gscPageDaily.js:73`, `scripts/lib/growth/gscPageDaily.js:85`, `scripts/lib/growth/gscPageDaily.js:92`
 - table `growth_url_inspection`: `scripts/lib/growth/urlInspection.js:98`, `scripts/lib/growth/urlInspection.js:109`, `scripts/lib/growth/urlInspection.js:119`
-- table `race_facts`: `scripts/lib/raceFactsMainJob.js:150`
+- table `race_facts`: `scripts/lib/raceFactsMainJob.js:150`, `scripts/maintenance/race-facts-backfill.js:95`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
-- table `run_facts`: `scripts/lib/raceFactsMainJob.js:146`
+- table `run_facts`: `scripts/lib/raceFactsMainJob.js:146`, `scripts/maintenance/race-facts-backfill.js:91`
 - table `site_feedback`: `src/services/analogyFeedback.js:35`
 - table `site_feedback_hourly`: `scripts/maintenance/content-ops-checks/check-site-feedback-received.js:56`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`, `scripts/maintenance/verifyData/sns-send-runner-scenes-4.js:174`
