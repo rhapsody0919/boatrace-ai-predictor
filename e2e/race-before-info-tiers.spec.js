@@ -52,6 +52,16 @@ for (const width of [375, 1440]) {
     const exRow = await rowByLabel(table, "展示T");
     const colors = await exRow.locator("td.drt-cell:not(.drt-best) .drt-value").evaluateAll((els) => [...new Set(els.map((el) => getComputedStyle(el).color))]);
     expect(colors.length).toBe(1);
+    // 一番速い値の金枠は残り、その値は行の最小（速い）
+    const ex = await cellValues(exRow);
+    const best = ex.filter((c) => c.cls.includes("drt-best"));
+    expect(best.length, "展示T の金枠").toBeGreaterThanOrEqual(1);
+    const minEx = Math.min(...ex.filter((c) => Number.isFinite(c.value)).map((c) => c.value));
+    best.forEach((c) => expect(c.value).toBe(minEx));
+    // 表の中に印の要素も ▲速い・▼遅い の字も残っていない
+    await expect(table.locator(".drt-tier-mark")).toHaveCount(0);
+    await expect(table).not.toContainText("速い");
+    await expect(table).not.toContainText("遅い");
     await expect(page.getByTestId("rbi-tier-legend")).toHaveCount(0);
     // 差の大きさを見る「6艇の位置」の図は残る
     await expect(page.getByTestId("rbi-position-dots")).toBeVisible();
