@@ -11,8 +11,12 @@
  *   検索結果を読み取らない（Google の規約）
  * - 初めての回は基準を取るだけで知らせない。Slack の webhook は Keychain（hq-slack-webhook / hq）。値は出さない
  */
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import {
+  SLACK_WEBHOOK_KEYCHAIN,
+  postSlack as postSlack_,
+  readKeychain,
+} from "../lib/alertKit.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -154,21 +158,6 @@ export async function snapshotSite(site, prevState, get = getText) {
   return { snap, meta, listed: root.entries.map((e) => e.loc), stale };
 }
 
-function readWebhook() {
-  try {
-    return execFileSync(
-      "/usr/bin/security",
-      ["find-generic-password", "-s", "hq-slack-webhook", "-a", "hq", "-w"],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-      },
-    ).trim();
-  } catch {
-    return null;
-  }
-}
-
 const isDue = (site, now) => site.every !== "weekly" || now.getUTCDay() === 1; // 毎週は月曜（UTC）
 
 /** 1サイトを読み、前の回と比べて知らせの1行を返す（初めての回・新しいページ無しは null） */
@@ -182,7 +171,10 @@ async function watchSite(site, cfg, now, dry) {
     ? JSON.parse(fs.readFileSync(file, "utf8"))
     : null;
   const { stale, ...cur } = await snapshotSite(site, prev);
-  for (const s of stale) console.error(`competitor-watch: ${site.name} の子を前の回の値で埋めた ${s}`);
+  for (const s of stale)
+    console.error(
+      `competitor-watch: ${site.name} の子を前の回の値で埋めた ${s}`,
+    );
   if (!dry) {
     fs.mkdirSync(cfg.stateDir, { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ at: now.toISOString(), ...cur }));
@@ -199,17 +191,19 @@ async function watchSite(site, cfg, now, dry) {
 }
 
 async function postSlack(lines) {
-  const hook = readWebhook();
+  // Keychain の読みと Slack への POST は共通の部品（scripts/lib/alertKit.js。15秒で打ち切り、文に webhook を入れない）
+  const { service, account } = SLACK_WEBHOOK_KEYCHAIN;
+  const hook = readKeychain(service, account);
   if (!hook)
     throw new Error(
-      "Slack の webhook が Keychain に無い（hq-slack-webhook / hq）",
+      `Slack の webhook が Keychain に無い（${service} / ${account}）`,
     );
-  const res = await fetch(hook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: `[競合の新しいページ]\n${lines.join("\n")}` }),
-  });
-  if (!res.ok) throw new Error(`Slack に出せない: HTTP ${res.status}`);
+  const text = `[競合の新しいページ]\n${lines.join("\n")}`;
+  const { ok, status } = await postSlack_(hook, text, fetch);
+  if (!ok) {
+    const why = typeof status === "number" ? `HTTP ${status}` : status;
+    throw new Error(`Slack に出せない: ${why}`);
+  }
   console.log(`competitor-watch: Slack に ${lines.length} 件`);
 }
 
