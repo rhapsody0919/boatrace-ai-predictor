@@ -290,12 +290,14 @@ test.describe("子1 レース詳細「モータ情報」タブの6艇表", () =>
         .first();
       const weight = await fontWeightOf(label);
       const framed = await hasFrame(label);
+      // 試験名は変異検査が名前で突き合わせるので残す。最大の値の金枠・太字は外した（6艇の最大は偶然の幅を
+      // 超えたと言えない。plan.md §14、オーナー 2026-11-28）ので、最大の値にも他の値にも付けない
       if (values[i] === max) {
         expect(
           weight,
-          `最大値（行${i + 1}）が太字でない`,
-        ).toBeGreaterThanOrEqual(600);
-        expect(framed, `最大値（行${i + 1}）に枠が無い`).toBe(true);
+          `最大値（行${i + 1}）が太字になっている`,
+        ).toBeLessThan(600);
+        expect(framed, `最大値（行${i + 1}）に枠がある`).toBe(false);
       } else {
         expect(
           weight,

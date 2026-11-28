@@ -112,14 +112,14 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       "9位/60",
       "7位/60",
     ]);
-    // 最良（40.0、6号艇）の値ラベルだけに印
+    // 最大の値の金枠は外した（plan.md §14、オーナー 2026-11-28）。最良（40.0、6号艇）にも印を付けない
     expect(rows.map((r) => r.best)).toEqual([
       false,
       false,
       false,
       false,
       false,
-      true,
+      false,
     ]);
     // 取得日は当日扱いなら最新、過去扱いならレース日以前で最新（児島は 9/23 から中身が同じ）
     await expect(page.locator(".motor-venue-rank-note")).toContainText(
@@ -251,13 +251,15 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       timeout: 30000,
     });
     const { rows } = await readTable(page);
+    // 試験名は変異検査が名前で突き合わせるので残す。最大の値の金枠は外した（plan.md §14、オーナー 2026-11-28）ので、
+    // 1桁で同じに見える最大の2艇のどちらにも印を付けない
     expect(rows.map((r) => r.best)).toEqual([
       false,
       false,
       false,
       false,
-      true,
-      true,
+      false,
+      false,
     ]);
   });
 
