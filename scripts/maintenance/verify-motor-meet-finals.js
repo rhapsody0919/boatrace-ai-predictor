@@ -9,24 +9,23 @@
  *   - 節の中に優勝戦の走があれば優出、その走が1着で公式の記号（F 等）が無ければ優勝。優勝戦の無い節は印なし
  *   - 図は選んだ艇の節の点（今日まで延ばした右端は除く）の上にだけ印を描く。印を渡さなければ描かない
  */
+import * as fakeDb from "./verifyData/fakeServiceSupabase.js";
+import { build as bundle } from "esbuild";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createRequire } from "node:module";
-import { build as bundle } from "esbuild";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  createFakeSupabase,
-  installLocalStorage,
-  registerFakeServiceSupabase,
-  setFakeSupabase,
-} from "./verifyData/fakeServiceSupabase.js";
 
-registerFakeServiceSupabase();
-installLocalStorage();
+fakeDb.registerFakeServiceSupabase();
+fakeDb.installLocalStorage();
 const failures = [];
-const check = (name, ok, detail = "") => { if (!ok) failures.push(`${name} ${detail}`); };
-console.log = console.warn = () => {};
+function check(name, ok, detail = "") {
+  if (!ok) failures.push(`${name} ${detail}`);
+}
+// 取得の中の console.log・warn は止める（結果の行だけを出す）
+console.log = () => {};
+console.warn = () => {};
 
 // --- 取得: 走に優勝戦かを付ける
 const V = 2;
@@ -42,7 +41,7 @@ for (let n = 0; n < 6; n += 1)
     for (let boat = 1; boat <= 6; boat += 1)
       entries.push({ race_id: rid(n, no), boat_number: boat, motor_number: boat * 10, motor_2rate: 30, motor_3rate: 50, player_name: `選手${boat}`, grade: "A1" });
   }
-setFakeSupabase(createFakeSupabase({
+fakeDb.setFakeSupabase(fakeDb.createFakeSupabase({
   venue_motor_start_dates: [{ venue_code: V, start_date: day(0) }],
   races,
   race_entries: entries,
