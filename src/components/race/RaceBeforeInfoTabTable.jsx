@@ -103,29 +103,8 @@ function RowNote({ rowKey }) {
   );
 }
 
-// 6艇の上位2・下位2の印（意味づけ 2026-11-26、型2）。色だけに頼らず ▲▼ と言葉を添える。
-// 字は CSS の ::after（data-mark）で出し、セルの文字（値）には混ぜない（値を読む既存の試験・コピーを崩さない）
-function TierMark({ tier }) {
-  const { t } = useTranslation();
-  if (!tier) return null;
-  return (
-    <span
-      className="drt-tier-mark"
-      data-mark={t(tier === "top" ? "beforeInfo.tierTop" : "beforeInfo.tierBottom")}
-    />
-  );
-}
-
-function TierLegend({ rows }) {
-  const { t } = useTranslation();
-  if (!rows.some((row) => row.tiers?.size > 0)) return null;
-  return (
-    <p className="rbi-note" data-testid="rbi-tier-legend">
-      {t("beforeInfo.tierLegendRows")}
-    </p>
-  );
-}
-
+// 6艇の上位2・下位2の印（緑▲速い・赤▼遅い）と凡例は外した（plan.md §14、オーナー 2026-11-28 案A: 値だけ。
+// 差の大きさは表の下の「6艇の位置」の図で見る。row.tiers はその図に出す行を選ぶのにだけ使う）
 function TableRow({ row, sortedPlayers, deepLink, onLinkClick }) {
   return (
     <tr>
@@ -140,10 +119,9 @@ function TableRow({ row, sortedPlayers, deepLink, onLinkClick }) {
       {sortedPlayers.map((p) => (
         <td
           key={p.number}
-          className={`${cellClass(p.number, row.best)} ${row.cellClass?.(p) ?? ""}${row.tiers?.has(p.number) ? ` drt-tier-${row.tiers.get(p.number)}` : ""}`}
+          className={`${cellClass(p.number, row.best)} ${row.cellClass?.(p) ?? ""}`}
         >
           {row.render(p)}
-          <TierMark tier={row.tiers?.get(p.number)} />
         </td>
       ))}
     </tr>
@@ -194,7 +172,6 @@ export default function RaceBeforeInfoTabTable({
           .filter((row) => row.tiers?.size > 0)
           .map((row) => ({ key: row.key, label: row.shortLabel ?? row.label, values: row.values }))}
       />
-      <TierLegend rows={rows} />
     </div>
   );
 }

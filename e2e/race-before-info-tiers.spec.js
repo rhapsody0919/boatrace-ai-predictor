@@ -1,5 +1,6 @@
-// 直前情報の展示の表で、展示タイム・一周・まわり足の行だけに6艇の上位2・下位2の印（▲速い・▼遅い）を付ける
-// （見せ方の型2、意味づけ 2026-11-26 オーナー承認）。直線は効き目が確かめられず印なし。
+// 直前情報の展示の表の展示タイム・一周・まわり足の行に、6艇の上位2・下位2の印（緑▲速い・赤▼遅い）と凡例を出さない
+// （plan.md §14、オーナー 2026-11-28 案A: 値だけ。差は表の下の「6艇の位置」の図で見る）。
+// 試験の名前は前のまま（guard-weakening が名前の消えた試験を弱めたと数えるため）。中身は「印が無い」ことを見る。
 import { test, expect } from "./fixtures.js";
 
 // オリジナル展示（一周・まわり足・直線）がそろう録画のレース（race-detail-wide-screen.spec.js と同じ）
@@ -37,31 +38,23 @@ for (const width of [375, 1440]) {
     await page.locator(".race-tabs-btn", { hasText: /^直前情報$/ }).click();
     const table = page.locator(".drt-table").first();
     await expect(table.locator("tbody tr")).toHaveCount(15, { timeout: 30000 });
-    for (const label of ["展示T", "一周", "まわり足"]) {
+    for (const label of ["展示T", "一周", "まわり足", "直線"]) {
       const cells = await cellValues(await rowByLabel(table, label));
-      const top = cells.filter((c) => c.cls.includes("drt-tier-top"));
-      const bottom = cells.filter((c) => c.cls.includes("drt-tier-bottom"));
-      expect(top.length, `${label} の上位`).toBeGreaterThanOrEqual(2);
-      expect(bottom.length, `${label} の下位`).toBeGreaterThanOrEqual(2);
-      top.forEach((c) => expect(c.mark).toContain("▲速い"));
-      bottom.forEach((c) => expect(c.mark).toContain("▼遅い"));
-      cells.forEach((c) => expect(c.text).not.toMatch(/[▲▼]/));
-      // 上位は印の無い艇より速く（小さく）、下位は遅い
-      const others = cells.filter((c) => !c.cls.includes("drt-tier-") && Number.isFinite(c.value));
-      for (const o of others) {
-        top.forEach((c) => expect(c.value).toBeLessThanOrEqual(o.value));
-        bottom.forEach((c) => expect(c.value).toBeGreaterThanOrEqual(o.value));
-      }
+      // 値は全艇に出たまま
+      expect(cells.filter((c) => Number.isFinite(c.value)).length, `${label} の値`).toBeGreaterThanOrEqual(5);
+      cells.forEach((c) => {
+        expect(c.cls, `${label} の色の印`).not.toContain("drt-tier-");
+        expect(c.mark, `${label} の印の字`).toBe("");
+        expect(c.text, `${label} の ▲▼`).not.toMatch(/[▲▼]/);
+      });
     }
-    // 印の色は意味トークン（緑・赤）で、印の無いセルの字の色と違う
+    // 値の字の色は、一番速い値の金枠を除き、印の有無で変わらない（緑・赤が残っていない）
     const exRow = await rowByLabel(table, "展示T");
-    const colorOf = (loc) => loc.evaluate((el) => getComputedStyle(el).color);
-    const plainColor = await colorOf(exRow.locator("td.drt-cell:not([class*='drt-tier-']) .drt-value").first());
-    expect(await colorOf(exRow.locator("td.drt-tier-top .drt-tier-mark").first())).not.toBe(plainColor);
-    expect(await colorOf(exRow.locator("td.drt-tier-bottom .drt-tier-mark").first())).not.toBe(plainColor);
-    const straight = await cellValues(await rowByLabel(table, "直線"));
-    expect(straight.some((c) => c.cls.includes("drt-tier-"))).toBe(false);
-    await expect(page.getByTestId("rbi-tier-legend")).toContainText("当社の過去データで確かめた行");
+    const colors = await exRow.locator("td.drt-cell:not(.drt-best) .drt-value").evaluateAll((els) => [...new Set(els.map((el) => getComputedStyle(el).color))]);
+    expect(colors.length).toBe(1);
+    await expect(page.getByTestId("rbi-tier-legend")).toHaveCount(0);
+    // 差の大きさを見る「6艇の位置」の図は残る
+    await expect(page.getByTestId("rbi-position-dots")).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
