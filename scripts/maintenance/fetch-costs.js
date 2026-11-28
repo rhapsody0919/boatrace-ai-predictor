@@ -19,7 +19,6 @@
  *
  * 検証: scripts/maintenance/verify-fetch-costs.js（時計と取得を固定して回す）
  */
-import { execFileSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -30,6 +29,8 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// Keychain の読み（値を出さない、無ければ null）は共通の部品（scripts/lib/alertKit.js）
+import { readKeychain } from "../lib/alertKit.js";
 
 export const CHARGES_URL = "https://api.vercel.com/v1/billing/charges";
 export const SOURCE = "vercel";
@@ -183,20 +184,6 @@ function writeAtomic(file, text) {
 }
 
 const rowsText = (rows) => rows.map((r) => `${JSON.stringify(r)}\n`).join("");
-
-/** Keychain の汎用パスワード。無ければ null。値は返すだけで出さない（標準エラーも捨てる） */
-function readKeychain(service, account) {
-  try {
-    const v = execFileSync(
-      "/usr/bin/security",
-      ["find-generic-password", "-s", service, "-a", account, "-w"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
-    ).trim();
-    return v || null;
-  } catch {
-    return null;
-  }
-}
 
 async function main() {
   const dir =

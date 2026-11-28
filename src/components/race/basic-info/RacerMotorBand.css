@@ -1,4 +1,5 @@
-/* 選手の推移の線の下の段（RacerMotorBand.jsx）。上＝金の塗り・中＝枠だけ・下＝薄い地（モック afterB） */
+/* 選手の推移の線の下の段（RacerMotorBand.jsx）。枠は全部同じ見た目で、2連率の無い節だけ点線。
+   位置で色を分けない（1つの節の上下は偶然の幅を超えたと言えない。plan.md §14、オーナー 2026-11-28） */
 .rmb-svg {
   display: block;
   width: 100%;
@@ -21,20 +22,6 @@
   fill: none;
   stroke: var(--text-secondary);
   stroke-width: 0.8;
-}
-
-.rmb-seg--high .rmb-box {
-  fill: var(--brand-accent-primary);
-  stroke: none;
-}
-
-.rmb-seg--high .rmb-tier {
-  fill: var(--surface-card);
-}
-
-.rmb-seg--low .rmb-box {
-  fill: var(--border-hairline);
-  stroke-width: 0.5;
 }
 
 .rmb-seg--none .rmb-box {
