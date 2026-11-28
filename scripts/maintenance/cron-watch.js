@@ -13,21 +13,21 @@
  *
  * 検証: scripts/maintenance/verify-cron-watch.js（時計と取得を固定）
  */
-import { execFileSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  SLACK_WEBHOOK_KEYCHAIN,
+  freshAlerts,
+  postSlack,
+  readKeychain,
+  writeStateAtomic,
+} from "../lib/alertKit.js";
 import { PROJECT_ID, step } from "./cron-watch-fetch.js";
 import { judge } from "./cron-watch-judge.js";
 
-export const WEBHOOK_KEYCHAIN = { service: "hq-slack-webhook", account: "hq" };
+export const WEBHOOK_KEYCHAIN = SLACK_WEBHOOK_KEYCHAIN;
 export const ERR_STREAK = 2; // 問い合わせの失敗がこの回数続いたら mid（鍵の期限切れ等で盲目になるのを知らせる）
 export const NOTIFIED_KEEP_DAYS = 45;
 const HOUR = 3600 * 1000;
@@ -59,7 +59,7 @@ export async function runWatch({
   fetchImpl,
 }) {
   const st = await step({ state, now, ids, readToken, fetchImpl });
-  const fresh = alerts(st, now).filter((a) => !(a.key in (st.notified ?? {})));
+  const fresh = freshAlerts(alerts(st, now), st);
   const base = `cron-watch: ${st.err_streak ? `取得に失敗（${st.last_error}）` : "取得した"}`;
   const done = (ok, line, notified = st.notified) => ({
     ok: ok && !st.err_streak,
@@ -75,12 +75,7 @@ export async function runWatch({
       `Keychain に Slack の webhook が無い（${fresh.length} 件を出せない: ${keys}）`,
     );
   const text = `:rotating_light: Vercel Cron の警報（龍神 cron-watch）\n${fresh.map((a) => `• [${a.level}] ${a.text}`).join("\n")}`;
-  const res = await fetchImpl(hook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-    signal: AbortSignal.timeout(15000),
-  }).catch((e) => ({ ok: false, status: e?.name ?? "Error" }));
+  const res = await postSlack(hook, text, fetchImpl);
   if (!res.ok)
     return done(
       false,
@@ -105,29 +100,6 @@ export async function runWatch({
 
 const readJson = (f, fallback) =>
   existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : fallback;
-
-/** Keychain の汎用パスワード。無ければ null。値は返すだけで出さない */
-const readKeychain = (service, account) => {
-  const args = ["find-generic-password", "-s", service, "-a", account, "-w"];
-  try {
-    const out = execFileSync("/usr/bin/security", args, {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    return out.trim() || null;
-  } catch {
-    return null;
-  }
-};
-
-/** state.json を同じ場所の一時ファイル経由で置き換える（途中で止まっても半端な state を残さない） */
-function saveState(dir, state) {
-  mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const file = path.join(dir, "state.json");
-  const tmp = `${file}.tmp${process.pid}`;
-  writeFileSync(tmp, JSON.stringify(state, null, 1), { mode: 0o600 });
-  renameSync(tmp, file);
-}
 
 async function main() {
   const root = path.join(os.homedir(), ".config/ryujin/private");
@@ -157,7 +129,7 @@ async function main() {
       readKeychain(WEBHOOK_KEYCHAIN.service, WEBHOOK_KEYCHAIN.account),
     fetchImpl: fetch,
   });
-  saveState(dir, r.state);
+  writeStateAtomic(path.join(dir, "state.json"), r.state);
   console[r.ok ? "log" : "error"](r.line);
   return r.ok ? 0 : 1;
 }
