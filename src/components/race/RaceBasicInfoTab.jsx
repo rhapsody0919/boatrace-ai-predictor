@@ -25,8 +25,7 @@
  *
  * 部品は basic-info/ に分けてある（BOA-1401）。ここは状態と取得を束ねるだけ
  */
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useEffect, useMemo, useState } from "react";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { parseRaceId } from "../../utils/raceId";
 import {
@@ -52,6 +51,13 @@ import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
 import BasicInfoTrend, { ViewHead } from "./basic-info/BasicInfoTrend";
+import BasicInfoLegends, { BarScaleNotes } from "./basic-info/BasicInfoNotes";
+import { useDatePredictions } from "../../hooks/useDatePredictions";
+import {
+  collectDayEntrantValues,
+  dayDistribution,
+  withDayScale,
+} from "../../pure/dayEntrantStats.js";
 import "./RaceBasicInfoTab.css";
 
 // 推移の線の下の段（選んだ艇の節ごとのモーター、レーン B の after B）の走。選ぶ艇は推移（BasicInfoTrend）と
@@ -178,6 +184,13 @@ function useBasicInfoSources({
   });
   // Fバッジの「今節」の印（BOA-440）
   const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
+  // 今日出走する選手の勝率の分布（意味づけ 2026-11-28）。その日の全レースはページが既に読んだ物
+  // （useDatePredictions の withCache の同じ鍵）で、通信は増えない
+  const { races: dayRaces } = useDatePredictions(raceDate);
+  const dayWinRate = useMemo(
+    () => dayDistribution(collectDayEntrantValues(dayRaces, "winRate")),
+    [dayRaces],
+  );
 
   // 表示中のレースより前の走だけを使う（BOA-605。枠別情報タブの BOA-603 と同じ）。
   // 過去のレースを開いたとき、そのレース自身と後日の走がバー・得意会場・条件別に入り、
@@ -225,6 +238,7 @@ function useBasicInfoSources({
     periodAnchor,
     currentTermFrom,
     motorBand,
+    dayWinRate,
   };
 }
 
@@ -260,6 +274,7 @@ function BasicInfoBarBlock({ row, shared }) {
         expanded={expandedBoat === boat}
         onToggle={() => toggleExpanded(boat)}
         barWidth={barWidthPercent(value)}
+        refLine={scale.refLinePercent}
         isBest={bestBoats.has(boat)}
         metric={metric}
         valueDigits={valueDigits}
@@ -296,39 +311,11 @@ function BasicInfoBarBlock({ row, shared }) {
   );
 }
 
-// Fバッジ・Lバッジ・事故率の目印の凡例
-function BasicInfoLegends({ officialRates, accidentByRacer }) {
-  const { t } = useTranslation();
-  return (
-    <>
-      {/* Fバッジ・Lバッジの凡例。選手名の行は <button> で「?」を置けず、説明は
-          title（ホバー）だけになるため、スマホでは意味を知る手段が無かった
-          （BOA-440 ファン評価1周目）。バッジが1つも無いレースでは出さない */}
-      {(officialRates ?? []).some(
-        (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
-      ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
-      {/* 事故率の目印の凡例（BOA-327）。目印が1つでも出ているときだけ。「あと◯点」を予選の得点と
-          取り違えないよう、何の点数かを書く（ファン評価1周目） */}
-      {[...accidentByRacer.values()].some((a) => a.showBadge) && (
-        <p className="rbit-note">{t("basicInfo.accidentLegend")}</p>
-      )}
-    </>
-  );
-}
-
 // 今の値の棒（6艇）と凡例
 function NowBars({ values, shared, scale, src }) {
-  const { t } = useTranslation();
   return (
     <>
-      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
-          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
-          読ませないよう書き添える（#1064 ファン評価2周目） */}
-      {scale.isRelativeScaleMetric && (
-        <p className="rbit-metric-caveat rbit-relative-note">
-          {t("basicInfo.relativeBarNote")}
-        </p>
-      )}
+      <BarScaleNotes scale={scale} />
       {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
       <div className="race-split">
         <div className="race-split__main">
@@ -435,7 +422,11 @@ function RaceBasicInfoTab({
     recordsOf: src.recordsOf,
     periodAnchor: src.periodAnchor,
   });
-  const scale = buildBarScale(values, metric, needsOwnAggregation);
+  const scale = withDayScale(
+    buildBarScale(values, metric, needsOwnAggregation),
+    src.dayWinRate,
+    { metric, scope, needsOwnAggregation },
+  );
 
   const shared = {
     sortedPlayers,
