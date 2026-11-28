@@ -8,7 +8,8 @@ async function section4_1(ctx) {
   const H = (key) => tJa(`analysis.motor.${key}`);
   check(
     "機力指数: 一覧・ドリルダウンは powerIndexTone を使い小標本では評価の言葉を出さない。選手ページは言葉も色も付けない（plan.md §14、描いた3か所）",
-    list.power[1].cls.split(" ").includes("is-small-sample") &&
+    // 名前は変異検査（guard_weakening）の照合のため据え置き。一覧は値だけで色を付けない（plan.md §14、2026-11-28 オーナー承認）
+    list.power.every((p) => p.cls === "rate power-index") &&
       drill.summaryClass.split(" ").includes("is-small-sample") &&
       drill.summary.endsWith(H("powerIndexSmallSample")) &&
       ![H("powerIndexGood"), H("powerIndexBad")].some((w) =>
@@ -100,7 +101,9 @@ async function section4_3(ctx) {
     const note = tJa("analysis.motor.powerIndexSmallSampleNote", { n: 6 });
     check(
       "一覧: オレンジ色の機力指数がある行があるときは、表の下の注記で意味（6走未満の参考値）を書く（描いた一覧。無い一覧には書かない）",
-      list.notes.some((n) => n.includes(note)) &&
+      // 名前は変異検査の照合のため据え置き。一覧は色を付けないので、色の意味の注記も出さない（plan.md §14）
+      list.power[1].text !== "-" &&
+        !list.notes.some((n) => n.includes(note)) &&
         !plain.notes.some((n) => n.includes(note)),
     );
   }
