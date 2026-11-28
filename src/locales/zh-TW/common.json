@@ -1950,6 +1950,7 @@
         "entryColType": "進場",
         "entryColShare": "比例",
         "entryColB1": "1號艇的勝率",
+        "entryColB1Short": "1號艇勝率",
         "hintTagPast": "過去紀錄（非預測）",
         "hintTagWaku": "照枠進場時",
         "hintSrcAria": "此水道與整體的差異",

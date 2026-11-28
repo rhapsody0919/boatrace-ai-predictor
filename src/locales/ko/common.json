@@ -1950,6 +1950,7 @@
         "entryColType": "진입",
         "entryColShare": "비율",
         "entryColB1": "1번 보트의 1착률",
+        "entryColB1Short": "1번 보트 1착률",
         "hintTagPast": "과거 기록(예상 아님)",
         "hintTagWaku": "와쿠나리일 때",
         "hintSrcAria": "이 코스와 전체의 차이",

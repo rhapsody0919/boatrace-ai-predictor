@@ -2115,6 +2115,7 @@ button.af-bar {
 
 .af-ent-head span:nth-child(n + 2) {
   text-align: right;
+  white-space: nowrap;
 }
 
 .af-tab-scenario .af-ent {

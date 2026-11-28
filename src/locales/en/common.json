@@ -1956,6 +1956,7 @@
         "entryColType": "Entry",
         "entryColShare": "Share",
         "entryColB1": "Boat 1 win rate",
+        "entryColB1Short": "Boat 1 win rate",
         "hintTagPast": "Past record (not a prediction)",
         "hintTagWaku": "If wakunari",
         "hintSrcAria": "This course vs overall",
