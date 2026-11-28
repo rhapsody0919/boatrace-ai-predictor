@@ -74,7 +74,7 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
     expect(rows[0]).toContain("崩れやすい（注意度55%以上）");
     expect(rows[0]).toContain("65.7%");
     expect(rows[0]).toContain(
-      "22,071レース中 65.7%（全体の29%のレース）・ぶれ幅 65.1〜66.3%",
+      "22,071レース中 65.7%（全体の29%のレース）",
     );
     // 段に入らなかったレースの説明（2周目 P2）
     await expect(page.getByTestId("ica-sparse")).toContainText(

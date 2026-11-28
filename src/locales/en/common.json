@@ -3929,6 +3929,7 @@
   "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {
+    "inCautionMargin": "Margin for each level's share (how much it can move by chance): {{margins}}. The margin assumes each race is independent. Races cluster by day and venue, so the real margin is a little wider.",
     "winRate": "The racer's national win rate, the figure used for class ratings. Higher means a stronger racer",
     "localWinRate": "The racer's win rate at this venue. A guide to whether this is one of their strong venues",
     "motor": "The share of races this motor finished 1st or 2nd. A higher figure suggests a motor in good condition",
@@ -4189,6 +4190,7 @@
       "levelMid": "{{level}} (caution level {{lo}}–{{hi}}%)",
       "levelLow": "{{level}} (caution level under {{p}}%)",
       "count": "{{rate}}% of {{n}} races ({{share}}% of all races) · margin {{lo}}–{{hi}}%",
+      "countRate": "{{rate}}% of {{n}} races ({{share}}% of all races)",
       "countFew": "{{n}} races (too few to show a share)",
       "legend": "Light band under each bar = that tier's caution-level range. If the bar ends inside the band, the result matches the tier. Dotted line = all races",
       "fewNote": "{{days}} days since launch. A share is shown once a tier reaches 30 races.",

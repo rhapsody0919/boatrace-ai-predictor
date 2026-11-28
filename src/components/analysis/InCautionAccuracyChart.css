@@ -6,10 +6,27 @@
   margin: var(--spacing-4) 0;
 }
 
-.ica-title {
+/* /accuracy の .accuracy-dashboard h2（2rem・銀・青い影）と分析ツールの .motor-condition-container h2 は
+   要素名つきで .ica-title より強く、/accuracy で見出しがにじんでいた。.ica を前に足して勝たせ、
+   大きさは分析ツールの見出し（1.5rem、768px 以下 1.25rem）にそろえる（G4 T-31、2026-11-28 オーナー承認） */
+.ica .ica-title {
   margin: 0;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
+  text-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .ica .ica-title {
+    font-size: 1.25rem;
+  }
+}
+
+.ica-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
 }
 
 .ica-lead {
