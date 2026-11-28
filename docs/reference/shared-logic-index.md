@@ -119,6 +119,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
 | `scripts/lib/accuracyCacheStats.js` | — | summarizeHits, computeStats, jstDateStr, addMonths, volatilityByLevel ほか4件 |
+| `scripts/lib/alertKit.js` | 見張りの CLI（cost-alerts・cron-watch・actions-fresh・competitor-watch・費用の取得）が写して重ねていた部品… | readKeychain, postSlack, writeStateAtomic, SLACK_WEBHOOK_KEYCHAIN, freshAlerts |
 | `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか2件 |
 | `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition, MAX_RACES |
 | `scripts/lib/analogyV16ExhibitionToday.js` | アナロジー・ファインダー v16 の展示後の段の「今日の展示の値」（today-exhibition。BOA-271 T4-2）。 | todayExhibition, BOATS |
@@ -709,4 +710,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 667 ファイル / export 3562 件。
+対象 668 ファイル / export 3567 件。
