@@ -2646,6 +2646,7 @@
     "periodSummary": "▸ Filter by period",
     "winRateSwitchCaveat": "* With a grade or period filter, this shows the 1st-place rate (% of races won under those conditions), not the official win-rate points",
     "relativeBarNote": "* Bar length compares only these 6 boats. Even a small gap can make a big difference in length, so check the numbers for the actual gap",
+    "dayMedianNote": "Bar length runs from the lowest to the highest win rate among today’s racers ({{n}} racers). The vertical line is today’s middle (win rate {{median}}).",
     "sampleCount": "(n={{n}})",
     "noData": "(No data)",
     "viewTrend": "Last 10 races",

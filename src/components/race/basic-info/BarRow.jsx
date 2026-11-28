@@ -71,6 +71,7 @@ export default function BarRow({
   expanded,
   onToggle,
   barWidth,
+  refLine = null,
   isBest,
   metric,
   valueDigits,
@@ -120,6 +121,23 @@ export default function BarRow({
             style={{
               width: `${barWidth}%`,
               background: color.bg,
+            }}
+          />
+        )}
+        {/* 今日出走する選手の真ん中の線（意味づけ 2026-11-28）。塗りの上でも見えるよう面の色の縁を付ける */}
+        {refLine !== null && (
+          <span
+            className="rbit-bar-ref"
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: `${refLine}%`,
+              top: 0,
+              bottom: 0,
+              width: 2,
+              marginLeft: -1,
+              background: "var(--text-primary)",
+              boxShadow: "0 0 0 1px var(--surface-card)",
             }}
           />
         )}

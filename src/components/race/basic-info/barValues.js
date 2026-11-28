@@ -89,7 +89,9 @@ export function computeBarValues(sortedPlayers, ctx) {
 }
 
 // 棒の長さの尺度・表示の桁・最良の艇を決める
-export function buildBarScale(values, metric, needsOwnAggregation) {
+// day: 今日出走する選手の勝率の分布（dayDistribution）。渡されたら勝率（公式・全国）の棒を
+// 6艇の中でなく今日の出走者の最小〜最大で決め、真ん中（中央値）の線の位置を返す（意味づけ 2026-11-28）
+export function buildBarScale(values, metric, needsOwnAggregation, day = null) {
   const numericValues = values
     .map((v) => v.value)
     .filter((v) => v !== null && v !== undefined);
@@ -103,8 +105,12 @@ export function buildBarScale(values, metric, needsOwnAggregation) {
   const isRelativeScaleMetric =
     metric === "avgSt" || (metric === "winRate" && !needsOwnAggregation);
 
+  const dayScale = metric === "winRate" && !needsOwnAggregation && day ? day : null;
+  const dayPercent = (v) =>
+    5 + (Math.max(0, Math.min(1, (v - dayScale.min) / (dayScale.max - dayScale.min || 1))) * 95);
   const barWidthPercent = (value) => {
     if (value === null || value === undefined) return 0;
+    if (dayScale) return dayPercent(value);
     if (isRelativeScaleMetric) {
       if (maxValue === minValue) return 50;
       const ratio = (value - minValue) / (maxValue - minValue);
@@ -135,5 +141,12 @@ export function buildBarScale(values, metric, needsOwnAggregation) {
     { digits: valueDigits },
   );
 
-  return { isRelativeScaleMetric, barWidthPercent, valueDigits, bestBoats };
+  return {
+    isRelativeScaleMetric: isRelativeScaleMetric && !dayScale,
+    barWidthPercent,
+    valueDigits,
+    bestBoats,
+    day: dayScale,
+    refLinePercent: dayScale ? dayPercent(dayScale.median) : null,
+  };
 }

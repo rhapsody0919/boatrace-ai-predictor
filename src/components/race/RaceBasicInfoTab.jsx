@@ -25,7 +25,7 @@
  *
  * 部品は basic-info/ に分けてある（BOA-1401）。ここは状態と取得を束ねるだけ
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { parseRaceId } from "../../utils/raceId";
@@ -52,6 +52,8 @@ import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
 import BasicInfoTrend, { ViewHead } from "./basic-info/BasicInfoTrend";
+import { useDatePredictions } from "../../hooks/useDatePredictions";
+import { collectDayEntrantValues, dayDistribution } from "../../pure/dayEntrantStats.js";
 import "./RaceBasicInfoTab.css";
 
 // 推移の線の下の段（選んだ艇の節ごとのモーター、レーン B の after B）の走。選ぶ艇は推移（BasicInfoTrend）と
@@ -260,6 +262,7 @@ function BasicInfoBarBlock({ row, shared }) {
         expanded={expandedBoat === boat}
         onToggle={() => toggleExpanded(boat)}
         barWidth={barWidthPercent(value)}
+        refLine={scale.refLinePercent}
         isBest={bestBoats.has(boat)}
         metric={metric}
         valueDigits={valueDigits}
@@ -327,6 +330,11 @@ function NowBars({ values, shared, scale, src }) {
       {scale.isRelativeScaleMetric && (
         <p className="rbit-metric-caveat rbit-relative-note">
           {t("basicInfo.relativeBarNote")}
+        </p>
+      )}
+      {scale.day && (
+        <p className="rbit-metric-caveat" data-testid="rbit-day-median-note">
+          {t("basicInfo.dayMedianNote", { n: scale.day.n, median: scale.day.median.toFixed(2) })}
         </p>
       )}
       {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
@@ -421,6 +429,14 @@ function RaceBasicInfoTab({
     trend: view === "trend" && { metric, scope, grade, venueCode },
   });
 
+  // 今日出走する選手の勝率の分布（意味づけ 2026-11-28）。タブ1枚の入口なので取りの hook をここで呼ぶ（BOA-1727）。
+  // その日の全レースはページが既に読んだ物（withCache の同じ鍵）で、通信は増えない
+  const { races: dayRaces } = useDatePredictions(raceId?.slice(0, 10));
+  const day = useMemo(
+    () => dayDistribution(collectDayEntrantValues(dayRaces, "winRate")),
+    [dayRaces],
+  );
+
   if (sortedPlayers.length === 0) return null;
 
   const values = computeBarValues(sortedPlayers, {
@@ -435,7 +451,7 @@ function RaceBasicInfoTab({
     recordsOf: src.recordsOf,
     periodAnchor: src.periodAnchor,
   });
-  const scale = buildBarScale(values, metric, needsOwnAggregation);
+  const scale = buildBarScale(values, metric, needsOwnAggregation, scope === "national" ? day : null);
 
   const shared = {
     sortedPlayers,
