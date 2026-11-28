@@ -12,7 +12,9 @@
  *   4. 無ければ1回取得する。404 は「未公開を確認した」として、その日は終える（補足の起動は叩かない）
  *   5. 展開・解析・検査（レコード数・異常0件・ファイル名と期の一致）。満たさなければ書かない（error）
  *   6. 生ファイルを Storage（raw-pages）に保管し、台帳 raw_snapshots に記録する（失敗しても取り込みは失敗にしない）
- *   7. racer_period_stats に、変更のある行だけ upsert する
+ *   7. racer_sex（214）に、まだ無い選手の性別だけを書く（racerSexRows.js）。失敗は例外で、racer_period_stats を書かない。
+ *      後に置くと、stats を書いた後に落ちた期が翌日 already_imported で終わり、性別が二度と書かれない（db-draft §1.5）
+ *   8. racer_period_stats に、変更のある行だけ upsert する
  *
  * 取得の負荷: 公開を待つあいだは1日1リクエスト。期ごとの上限は FAN_PUBLISH_DEADLINE_DAYS 回。取り込み済みなら0。
  *
@@ -32,6 +34,7 @@ import {
 import { buildStatsRows, FAN_TABLES, NUMERIC_SCALES } from "./fanPeriodRows.js";
 import { diffRows } from "./unchangedRows.js";
 import { RAW_HTML_BUCKET } from "./rawHtmlArchive.js";
+import { syncRacerSex } from "./racerSexRows.js";
 
 /** 期の終わりから、未公開を待つ日数の上限。これを過ぎたら取得せずに通知する（plan.md §8.2） */
 export const FAN_PUBLISH_DEADLINE_DAYS = 105;
@@ -262,6 +265,45 @@ async function writeStatsBatches(
   return { written };
 }
 
+/** racer_period_stats の行と、既存行との差分（変更のある行だけ書く） */
+async function planStatsWrites(ctx, fan) {
+  const { rows, warnings } = buildStatsRows(fan);
+  const existing = await readExistingRows(
+    ctx.client,
+    fan.period,
+    Object.keys(rows[0]),
+  );
+  const { toWrite, stats } = diffRows(existing, rows, {
+    keyColumns: FAN_TABLES.stats.keyColumns,
+    scales: NUMERIC_SCALES[FAN_TABLES.stats.table],
+  });
+  const diff = {
+    rows: rows.length,
+    toWrite: toWrite.length,
+    unchanged: stats.unchanged,
+    existing: existing.length,
+  };
+  return { rows, warnings, toWrite, stats, diff };
+}
+
+/** racer_sex の1段（stats より先）。shadow は数えるだけ。読み・書きの失敗は例外（共通ラッパが error にする） */
+async function racerSexStep(ctx, fan) {
+  const sex = await syncRacerSex(ctx.client, fan, {
+    dryRun: ctx.mode !== "live",
+  });
+  const { rows, skipped, written, unchanged } = sex;
+  return {
+    racerSex: {
+      rows,
+      skipped,
+      written,
+      unchanged,
+      conflicts: sex.conflicts.length,
+    },
+    sexWarnings: sex.warnings,
+  };
+}
+
 /**
  * @param {Object} ctx 共通ラッパの文脈（targetDate・mode・politeFetch・client・query・worker）
  * @param {{sleepMs?: number, decode?: Function, minRecords?: number}} [options] テスト用の差し替え
@@ -299,29 +341,26 @@ export async function runFanPeriodJob(
       report: { ...report, status: "invalid", summary },
     };
 
-  const { rows, warnings } = buildStatsRows(fan);
-  const existing = await readExistingRows(
-    ctx.client,
-    fan.period,
-    Object.keys(rows[0]),
+  const { rows, warnings, toWrite, stats, diff } = await planStatsWrites(
+    ctx,
+    fan,
   );
-  const { toWrite, stats } = diffRows(existing, rows, {
-    keyColumns: FAN_TABLES.stats.keyColumns,
-    scales: NUMERIC_SCALES[FAN_TABLES.stats.table],
-  });
-  const diff = {
-    rows: rows.length,
-    toWrite: toWrite.length,
-    unchanged: stats.unchanged,
-    existing: existing.length,
-  };
+  const { racerSex, sexWarnings } = await racerSexStep(ctx, fan);
+  const allWarnings = [...warnings, ...sexWarnings];
 
   if (ctx.mode !== "live") {
     return {
       rowsWritten: 0,
       rowsParsed: rows.length,
       ...(probe ? { incomplete: true } : {}),
-      report: { ...report, status: "parsed", summary, diff, warnings },
+      report: {
+        ...report,
+        status: "parsed",
+        summary,
+        diff,
+        racerSex,
+        warnings: allWarnings,
+      },
       body: { fanId: id, status: "parsed", diff },
     };
   }
@@ -345,8 +384,9 @@ export async function runFanPeriodJob(
     status: "imported",
     summary,
     diff: { ...diff, written },
+    racerSex,
     rawPath: archived.path,
-    warnings: [...warnings, ...(archived.warning ? [archived.warning] : [])],
+    warnings: [...allWarnings, ...(archived.warning ? [archived.warning] : [])],
   };
   return {
     rowsWritten: written,
