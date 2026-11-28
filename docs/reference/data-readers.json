@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3090,
-    "filesWithAccess": 335,
-    "tableReaders": 982,
-    "tableWriters": 202,
+    "sourceFiles": 3094,
+    "filesWithAccess": 336,
+    "tableReaders": 983,
+    "tableWriters": 203,
     "rpcCallers": 58,
     "nameMentions": 286,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 17,
+    "notInSnapshot": 18,
     "unresolved": 38,
     "parseErrors": 0,
     "uncoveredFiles": 57
@@ -18345,7 +18345,7 @@
       "readers": [],
       "writers": [
         {
-          "ref": "scripts/lib/fanPeriodJob.js:116",
+          "ref": "scripts/lib/fanPeriodJob.js:119",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -18370,19 +18370,19 @@
         },
         "page_type": {
           "readers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "writers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "sql": []
         },
         "key": {
           "readers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "writers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "sql": []
         },
@@ -18394,37 +18394,37 @@
         "storage_path": {
           "readers": [],
           "writers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "sql": []
         },
         "bytes": {
           "readers": [],
           "writers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "sql": []
         },
         "sha256": {
           "readers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "writers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "sql": []
         },
         "parser_version": {
           "readers": [],
           "writers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "sql": []
         },
         "run": {
           "readers": [],
           "writers": [
-            "scripts/lib/fanPeriodJob.js:116"
+            "scripts/lib/fanPeriodJob.js:119"
           ],
           "sql": []
         }
@@ -29349,10 +29349,13 @@
     {
       "job": "fan_period",
       "entry": "api/cron/fan-period.js",
-      "reachableFiles": 33,
+      "reachableFiles": 34,
       "writes": {
+        "racer_sex": [
+          "scripts/lib/racerSexRows.js:97"
+        ],
         "raw_snapshots": [
-          "scripts/lib/fanPeriodJob.js:116"
+          "scripts/lib/fanPeriodJob.js:119"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -30505,6 +30508,14 @@
     },
     {
       "kind": "table",
+      "name": "racer_sex",
+      "refs": [
+        "scripts/lib/racerSexRows.js:61",
+        "scripts/lib/racerSexRows.js:97"
+      ]
+    },
+    {
+      "kind": "table",
       "name": "run_facts",
       "refs": [
         "scripts/lib/raceFactsWrite.js:29"
@@ -30566,17 +30577,17 @@
     },
     {
       "file": "scripts/lib/fanPeriodJob.js",
-      "line": 86,
+      "line": 89,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/lib/fanPeriodJob.js",
-      "line": 159,
+      "line": 162,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/lib/fanPeriodJob.js",
-      "line": 247,
+      "line": 250,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

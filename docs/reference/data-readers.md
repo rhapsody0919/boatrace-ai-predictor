@@ -10,16 +10,16 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3090 |
-| 読み書きのあるファイル | 335 |
-| 表の読み手（箇所） | 982 |
-| 表の書き手（箇所） | 202 |
+| 読んだファイル | 3094 |
+| 読み書きのあるファイル | 336 |
+| 表の読み手（箇所） | 983 |
+| 表の書き手（箇所） | 203 |
 | RPC の呼び手（箇所） | 58 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 286 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
-| コードが使うのに写しに無い名前 | 17 |
+| コードが使うのに写しに無い名前 | 18 |
 | 名前が式で拾えなかった箇所 | 38 |
 | 構文木にできなかったファイル | 0 |
 | 対象外の言語のファイル（Python 等） | 57 |
@@ -231,7 +231,7 @@
 | eve_deadlines | api/cron/eve-deadlines.js | 30 | eve_race_deadlines, scrape_job_state, scrape_slots |
 | eve_deadlines_reconcile | api/cron/eve-deadlines-reconcile.js | 30 | eve_race_deadlines, scrape_job_state, scrape_slots |
 | exhibition | api/cron/exhibition.js | 63 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| fan_period | api/cron/fan-period.js | 33 | raw_snapshots, scrape_job_state, scrape_slots |
+| fan_period | api/cron/fan-period.js | 34 | racer_sex, raw_snapshots, scrape_job_state, scrape_slots |
 | in_caution_dispatch | api/cron/in-caution-dispatch.js | 23 | scrape_job_state, scrape_slots |
 | in_caution_health | api/cron/in-caution-health.js | 31 | scrape_job_state, scrape_slots |
 | in_caution_today_health | api/cron/in-caution-today-health.js | 31 | scrape_job_state, scrape_slots |
@@ -1683,7 +1683,7 @@
 - 取得のジョブ: fan_period
 - 読み手（0）: なし
 - 書き手（1）: 
-  - `scripts/lib/fanPeriodJob.js:116` upsert [bytes, key, page_type, parser_version, run, sha256, storage_path]
+  - `scripts/lib/fanPeriodJob.js:119` upsert [bytes, key, page_type, parser_version, run, sha256, storage_path]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: id, captured_at, storage_path, bytes, parser_version, run
 
 ### <a id="t-rule_applications"></a>rule_applications
@@ -2347,6 +2347,7 @@
 - table `growth_url_inspection`: `scripts/lib/growth/urlInspection.js:98`, `scripts/lib/growth/urlInspection.js:109`, `scripts/lib/growth/urlInspection.js:119`
 - table `race_facts`: `scripts/lib/raceFactsWrite.js:33`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
+- table `racer_sex`: `scripts/lib/racerSexRows.js:61`, `scripts/lib/racerSexRows.js:97`
 - table `run_facts`: `scripts/lib/raceFactsWrite.js:29`
 - table `site_feedback`: `src/services/analogyFeedback.js:35`
 - table `site_feedback_hourly`: `scripts/maintenance/content-ops-checks/check-site-feedback-received.js:56`
@@ -2361,9 +2362,9 @@
   - `scripts/analysis/verify-race-analysis-rpc.js:376` RPC の名前が変数（.rpc(式)）
   - `scripts/lib/boatcast/oritenSchema.js:50` 表の名前が変数（.from(式)）
   - `scripts/lib/dataHealth/job.js:71` RPC の名前が変数（.rpc(式)）
-  - `scripts/lib/fanPeriodJob.js:86` 表の名前が変数（.from(式)）
-  - `scripts/lib/fanPeriodJob.js:159` 表の名前が変数（.from(式)）
-  - `scripts/lib/fanPeriodJob.js:247` 表の名前が変数（.from(式)）
+  - `scripts/lib/fanPeriodJob.js:89` 表の名前が変数（.from(式)）
+  - `scripts/lib/fanPeriodJob.js:162` 表の名前が変数（.from(式)）
+  - `scripts/lib/fanPeriodJob.js:250` 表の名前が変数（.from(式)）
   - `scripts/lib/growth/sitemapInspection.js:70` 表の名前が変数（.from(式)）
   - `scripts/lib/pitReportSchema.js:40` 表の名前が変数（.from(式)）
   - `scripts/lib/raceResultSchema.js:84` 表の名前が変数（.from(式)）
