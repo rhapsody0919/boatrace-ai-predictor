@@ -40,7 +40,11 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     ).toHaveText("ベージュの地は、その列で一番の値です。");
     await expect(
       page.locator(".table-note", { hasText: "金枠の値は" }),
-    ).toBeVisible();
+    ).toHaveCount(0); // 金枠は外した（plan.md §14、オーナー 2026-11-28）
+    // 行を押す説明は金枠の文を除いて残す
+    await expect(
+      page.locator(".table-note", { hasText: "表の行をクリック" }),
+    ).toHaveText("💡 表の行をクリックするとそのモーターの節ごとの推移が見られます。");
     await page.locator(".motor-ranking-table tbody tr").first().click();
     await expect(page.locator(".motor-ranking-table")).toHaveCount(0);
     await expect(
@@ -74,7 +78,7 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       await expect(page.locator(".motor-stat-rank1")).toHaveCount(0);
       await expect(
         page.locator(".table-note", { hasText: "金枠の値は" }),
-      ).toBeVisible();
+      ).toHaveCount(0); // 金枠は外した（plan.md §14、オーナー 2026-11-28）
       await expect(
         page.locator(".table-note", { hasText: "ベージュの地は" }),
       ).toHaveCount(0);
@@ -215,7 +219,7 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     ).toHaveCount(0);
     await expect(
       page.locator(".table-note", { hasText: "金枠の値は" }),
-    ).toBeVisible();
+    ).toHaveCount(0); // 金枠は外した（plan.md §14、オーナー 2026-11-28）
     await expect(page.locator(".motor-venue-rank")).toHaveCount(0);
     await expect(
       page.locator(".motor-ranking-table thead th", {
