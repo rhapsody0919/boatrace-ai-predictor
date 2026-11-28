@@ -12,6 +12,7 @@ import { MAIN_TABLES_START } from "./kbArchiveBoundary.js";
 import { halfMonthRanges, addDays } from "./racerCareerSeries.js";
 import { MAX_STALE_RATIO } from "./racerCareerCore.js";
 import { buildMainRaceFact, buildMainRunFacts } from "./raceFactsMain.js";
+import { seriesFinder } from "./raceFactsKb.js";
 import { fetchAll } from "./supabaseClient.js";
 import { writeFactsWindow } from "./raceFactsWrite.js";
 import { loadJudgeInputs } from "./racerCareerDb.js";
@@ -97,13 +98,8 @@ export async function runRaceFactsMainJob({
   return { totals, windows, nextCursor };
 }
 
-/** 同じ会場で日付を含む節（始まりの遅い方）。race_series は節ごとの1行 */
-export function seriesFinder(series) {
-  return (race) =>
-    series
-      .filter((s) => s.venue_code === race.venue_code && s.start_date <= race.race_date && race.race_date <= s.end_date)
-      .sort((a, b) => (a.start_date < b.start_date ? 1 : -1))[0] ?? null;
-}
+/** 節の当て方は kb と共有（raceFactsKb.js）。既存の読み手のために出し直す */
+export { seriesFinder };
 
 const byRange = (q, { from, to }) => q.gte("race_id", from).lt("race_id", to);
 const MAIN_PARTS = [

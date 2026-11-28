@@ -3,12 +3,13 @@
  * 読み書きは呼び手が渡す（CLI: scripts/maintenance/race-facts-backfill.js）。ここは順番・グレードの当て方・消す行の決め方だけ。
  *
  * - グレードは 190 と同じ: 特別な節の補正（racerCareerDb.js の loadJudgeInputs が返す overrides）を先に、無ければ
- *   kb_archive_venue_days.race_grade（ADR-0104 決定4）。種別（series_kind）は今は NULL（後の段で race_series から当てる）
+ *   kb_archive_venue_days.race_grade（ADR-0104 決定4）。種別（series_kind）は race_series の節から main と同じ seriesFinder で当てる
+ *   （窓に series が無ければ NULL。本番の kb の開催日で節が当たらないのは12日・2節に当たる日は0、2026-11-28 の読み取り）
  * - 窓の中に facts の kb の行があって、組み立て直した行に無い物は消す（レースが消えた・作り直した後の孤立した行。db-draft §0）。
  *   消える行が窓の既存の行の2割を超えたら、allowMassDelete が無い限り書かずに止める（racerCareerCore.js と同じ線）
  * - 窓に kb のレースが1つも無い半月は飛ばす（年末年始の休み）。全部で0レースなら throw（kb_archive が空か範囲の誤り）
  */
-import { buildKbRaceFact, buildKbRunFacts } from "./raceFactsKb.js";
+import { buildKbRaceFact, buildKbRunFacts, seriesFinder } from "./raceFactsKb.js";
 import { MAX_STALE_RATIO } from "./racerCareerCore.js";
 
 /** 窓の既存の行のキーのうち、組み立てた行に無い物 */
@@ -18,8 +19,9 @@ export function staleKeysOf(existingKeys, builtKeys) {
 }
 
 /** 1つの窓の行を組み立てる（純関数） */
-export function buildWindowRows({ races, boats, venueDays }, overrideGrades) {
+export function buildWindowRows({ races, boats, venueDays, series = [] }, overrideGrades) {
   const dayById = new Map(venueDays.map((d) => [d.venue_day_id, d]));
+  const seriesOf = seriesFinder(series);
   const boatsByRace = new Map();
   for (const b of boats) {
     if (!boatsByRace.has(b.race_id)) boatsByRace.set(b.race_id, []);
@@ -31,7 +33,7 @@ export function buildWindowRows({ races, boats, venueDays }, overrideGrades) {
     const day = dayById.get(race.venue_day_id) ?? null;
     const grade = overrideGrades.get(race.race_id) ?? day?.race_grade ?? null;
     const raceBoats = boatsByRace.get(race.race_id) ?? [];
-    raceRows.push(buildKbRaceFact(race, day, { grade, seriesKind: null, boats: raceBoats }));
+    raceRows.push(buildKbRaceFact(race, day, { grade, seriesKind: seriesOf(race)?.kind ?? null, boats: raceBoats }));
     runRows.push(...buildKbRunFacts(race, raceBoats));
   }
   const raceIds = new Set(races.map((r) => r.race_id));
@@ -44,7 +46,7 @@ export function buildWindowRows({ races, boats, venueDays }, overrideGrades) {
  * @param {{
  *   ranges: Array<{from: string, to: string}>,
  *   overrides: { raceIds: string[], grades: string[] },
- *   fetchWindow: (range: {from: string, to: string}) => Promise<{races: object[], boats: object[], venueDays: object[]}>,
+ *   fetchWindow: (range: {from: string, to: string}) => Promise<{races: object[], boats: object[], venueDays: object[], series?: object[]}>,
  *   fetchExistingKeys: (range: {from: string, to: string}) => Promise<{race: string[], run: string[]}>,
  *   writeWindow: (plan: {range: object, raceRows: object[], runRows: object[], staleRace: string[], staleRun: string[]}) => Promise<{written: number}>,
  *   allowMassDelete?: boolean,

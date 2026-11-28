@@ -19,7 +19,7 @@ import { windSectorOf } from "../../src/pure/windSector.js";
 /**
  * 組み立ての規則を変えたら上げる（facts の行の rule_version）。表ごとに持つ: upsertChangedRows は変わった行を全列で書くので、
  * 片方の規則で共通の版を上げると、もう片方の全行（kb の run_facts 約221万艇）も書き直す（data-gaps plan.md §3.1）
- * - race 3: wind_sector を入れた（2026-11-28）
+ * - race 3: wind_sector と、kb の series_kind（race_series の節から）を入れた（2026-11-28）
  */
 export const RACE_FACTS_RULE_VERSION = 3;
 export const RUN_FACTS_RULE_VERSION = 2;
@@ -55,6 +55,14 @@ function assertKbRace(race) {
     throw new Error(`kb の期間（${KB_FIRST_DATE}〜${KB_LAST_DATE}）の外: ${race.race_id}`);
   }
   return date;
+}
+
+/** 同じ会場で日付を含む節（始まりの遅い方）。race_series は節ごとの1行。kb と main で同じ当て方にする（data-gaps plan.md §3.1） */
+export function seriesFinder(series) {
+  return (race) =>
+    series
+      .filter((s) => s.venue_code === race.venue_code && s.start_date <= dateText(race.race_date) && dateText(race.race_date) <= s.end_date)
+      .sort((a, b) => (a.start_date < b.start_date ? 1 : -1))[0] ?? null;
 }
 
 /** 艇番の順（1〜6）の選手の登録番号（マイグレーション 213 の race_facts.racer_ids）。欠けた艇は null */
