@@ -11,8 +11,8 @@
 --   anon・authenticated からは読めない（ポリシーを置かない＋REVOKE）。書き手は service_role（RLS を越える）。
 --
 -- 適用前の確認（読み取り。claude_ro）:
---   SELECT to_regclass('public.racer_sex');
---   -> NULL
+--   SELECT to_regclass('public.racer_sex'), to_regrole('claude_ro');
+--   -> NULL, claude_ro（表が既にあれば CREATE TABLE IF NOT EXISTS は黙って何もしないので、当てずに中身と制約を見比べる）
 --
 -- 適用後の確認（読み取りのみ）:
 --   SELECT conname, contype FROM pg_constraint WHERE conrelid = 'public.racer_sex'::regclass ORDER BY contype;
@@ -21,9 +21,13 @@
 --   -> true
 --   SELECT has_table_privilege('anon', 'public.racer_sex', 'select'), has_table_privilege('authenticated', 'public.racer_sex', 'select');
 --   -> false, false
+--   SELECT has_table_privilege('service_role', 'public.racer_sex', 'insert'), has_table_privilege('service_role', 'public.racer_sex', 'update'),
+--          has_table_privilege('claude_ro', 'public.racer_sex', 'select');
+--   -> true, true, true（GRANT は書かない。service_role は Supabase の既定、claude_ro は 166 の既定の権限で付く。
+--      書くと db-apply が heavy にする。false なら書き手が落ちるので、GRANT を足した版を出し直す）
 --
 -- 適用の後: 書き手の PR（fanPeriodJob.js の1段と過去分の CLI）→ 過去分の CLI（オーナーの --apply）→ 件数と sex の内訳、
---   plan.md §4 の Q8a・Q8b を racer_sex に替えて回す。
+--   plan.md §4 の Q8a・Q8b を racer_sex に替えて回す。updated_at を埋めるトリガーは無い（書き手が入れ、差分の比較には sex だけを使う）。
 --
 -- 戻し（書き手を戻した後）:
 --   BEGIN; SET LOCAL lock_timeout = '10s'; DROP TABLE IF EXISTS public.racer_sex; COMMIT;
