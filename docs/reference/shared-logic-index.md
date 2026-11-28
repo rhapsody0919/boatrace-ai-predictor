@@ -30,6 +30,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/compareBaseline.js` | 数字に「基準との比べ」「6艇の中の比べ」を付けるための判定（意味づけ、2026-11-26 オーナー承認）。 | judgeRateVsBaseline, judgeMeanVsBaseline, toneOf, rankTiers, Z_LINE ほか1件 |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
 | `src/pure/dataFormat.js` | 表とグラフの数字の書き方（docs/reference/design-system.md「表とグラフ」決まり5・6、 | EMPTY, SMALL_SAMPLE_N, fixed, formatWinRate, rateParts ほか5件 |
+| `src/pure/dayEntrantStats.js` | 今日出走する選手の勝率の分布（基本情報タブの勝率バーに「今日の真ん中」の線を引く、意味づけ 2026-11-28）。 | collectDayEntrantValues, dayDistribution, withDayScale, DAY_MIN_RACERS |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
@@ -708,4 +709,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 666 ファイル / export 3558 件。
+対象 667 ファイル / export 3562 件。
