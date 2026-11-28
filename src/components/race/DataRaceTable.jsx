@@ -139,7 +139,7 @@ function RowLabel({ row, deepLink }) {
   );
 }
 
-function DataRaceTable({ raceId, prediction, venueCode, dayRanks = null }) {
+function DataRaceTable({ raceId, prediction, venueCode }) {
   const { t } = useTranslation();
   // 選んだ艇（?boat=）はほかのタブと同じ URL の値（BOA-492、オーナー 2026-11-23 承認の5）
   const { focusedBoat, handleFocusBoat } = useRaceUrlState();
@@ -150,19 +150,11 @@ function DataRaceTable({ raceId, prediction, venueCode, dayRanks = null }) {
   const flyingRowByBoat = useRaceEntryFlyingRows(raceId);
   const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
 
-  const sortedPlayers = [...(prediction?.allPlayers ?? [])].sort(
-    (a, b) => a.number - b.number,
-  );
-  // 今日出走する選手の中の位置（意味づけ）は各艇の選手に持たせて行へ渡す（行の文脈を増やさない）
-  const players = dayRanks
-    ? sortedPlayers.map((p) => ({
-        ...p,
-        dayRank: {
-          winRate: dayRanks.winRate.get(p.number) ?? null,
-          twoRate: dayRanks.twoRate.get(p.number) ?? null,
-        },
-      }))
-    : sortedPlayers;
+  // 当地勝率の下の「全国との差」（意味づけ）はこの表だけに出す。一覧カードの出走表は同じ行定義を使うので、
+  // 各艇の選手に印を持たせて行へ渡す（行の文脈を増やさない）
+  const players = [...(prediction?.allPlayers ?? [])]
+    .sort((a, b) => a.number - b.number)
+    .map((p) => ({ ...p, showLocalDiff: true }));
   // 想定コース1着率の行は枠別情報タブの6艇の表と同じフック・同じ行から取る（BOA-1296）
   const courseStats = useSixBoatCourseStats({
     raceDate: raceId?.slice(0, 10),
@@ -231,11 +223,9 @@ function DataRaceTable({ raceId, prediction, venueCode, dayRanks = null }) {
       </div>
 
       <p className="drt-note">💡 {t("dataTable.noteExpectedCourse")}</p>
-      {dayRanks && (
-        <p className="drt-note" data-testid="drt-day-rank-note">
-          {t("dataTable.dayRankNote", { n: dayRanks.n })}
-        </p>
-      )}
+      <p className="drt-note" data-testid="drt-local-diff-note">
+        {t("dataTable.localDiffNote")}
+      </p>
       <GuideLinks deepLink={deepLink} />
     </div>
   );

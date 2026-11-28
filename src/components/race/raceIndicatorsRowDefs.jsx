@@ -3,7 +3,7 @@
  * buildRowDefs が各 build*Rows を順に並べる
  */
 import { Link } from "react-router-dom";
-import { localVsNational } from "../../pure/dayEntrantRank.js";
+import { localVsNational } from "../../pure/localVsNational.js";
 import { EMPTY } from "../../pure/dataFormat.js";
 import {
   bestOfIndicator,
@@ -124,16 +124,7 @@ export function rowFromIndicator(t, data, id, key) {
   };
 }
 
-// 今日出走する選手の中の位置（上位N割・下位N割）と、当地−全国の差。どちらも色なし（意味づけ、オーナー 2026-11-28）
-function dayRankText(t, rank) {
-  if (!rank) return null;
-  return (
-    <span className="drt-sub drt-day-rank" data-side={rank.side}>
-      {t(rank.side === "top" ? "dataTable.dayRankTop" : "dataTable.dayRankBottom", { n: rank.tenths })}
-    </span>
-  );
-}
-
+// 当地勝率の下の、本人の全国勝率との差（色なし、意味づけ）。勝率・2連率の「上位N割」は表には出さない（オーナー 2026-11-28）
 function localDiffText(t, p) {
   const diff = localVsNational(p.localWinRate, p.winRate);
   if (diff === null) return null;
@@ -175,7 +166,6 @@ export function buildBasicRatioRows(c) {
             {gradeBadge?.(p)}
           </span>
           {winRate.text(p).text}
-          {dayRankText(t, p.dayRank?.winRate)}
         </span>
       ),
     },
@@ -188,7 +178,7 @@ export function buildBasicRatioRows(c) {
         ) : (
           <span className="drt-value">
             {text}
-            {p.dayRank && localDiffText(t, p)}
+            {p.showLocalDiff && localDiffText(t, p)}
           </span>
         );
       },
@@ -205,7 +195,6 @@ export function buildBasicRatioRows(c) {
               {text}
               <span className="drt-unit">{unit}</span>
             </span>
-            {dayRankText(t, p.dayRank?.twoRate)}
           </span>
         );
       },
