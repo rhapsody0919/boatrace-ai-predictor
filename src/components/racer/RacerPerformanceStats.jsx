@@ -25,6 +25,7 @@ import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
 import { racerStatsClassName } from "./racerStatsLayout";
 import { winRateStepsData } from "./RacerOfficialStatsLogic";
 import RacerBoatReturns from "./RacerBoatReturns";
+import RacerTrifectaInvolvement from "./RacerTrifectaInvolvement";
 import {
   BothFixedNoRuns,
   CourseBreakdown,
@@ -231,19 +232,18 @@ function overviewBlocks(t, vc, view, venueStats, technique) {
   ];
 }
 
-/** 決まり手と枠番別回収率の節。絞らずに会場別・枠番別がそろうときは overviewBlocks の包みへ入れ、下で二重に出さない */
-function techniqueBlocks(vc, view) {
+/** 決まり手・枠番別回収率・3連単配当の節。絞らずに会場別・枠番別がそろうときは overviewBlocks の包みへ入れ、下で二重に出さない */
+function techniqueBlocks(vc, view, racerId) {
   const section = <TechniqueSection view={view} vcActive={vc.vcActive} vcLabel={view.vcLabel} />;
   const technique = (
-    <>{view.showTechniqueSection && section}<RacerBoatReturns vc={vc} vcLabel={view.vcLabel} /></>
+    <>
+      {view.showTechniqueSection && section}
+      <RacerBoatReturns vc={vc} vcLabel={view.vcLabel} />
+      <RacerTrifectaInvolvement racerId={racerId} vc={vc} vcLabel={view.vcLabel} />
+    </>
   );
-  const paired =
-    !vc.vcVenueFixed &&
-    !vc.vcBoatFixed &&
-    vc.vcGrade === "all" &&
-    vc.vcStage === "all" &&
-    view.hasVenueStats &&
-    view.hasCourseStats;
+  const unfiltered = !vc.vcVenueFixed && !vc.vcBoatFixed && vc.vcGrade === "all" && vc.vcStage === "all";
+  const paired = unfiltered && view.hasVenueStats && view.hasCourseStats;
   return { technique, pairedTechnique: paired ? technique : null };
 }
 
@@ -331,7 +331,7 @@ export default function RacerPerformanceStats({
     "成績・調子"
   );
 
-  const { technique, pairedTechnique } = techniqueBlocks(vc, view);
+  const { technique, pairedTechnique } = techniqueBlocks(vc, view, racerId);
 
   if (loading) {
     return (
