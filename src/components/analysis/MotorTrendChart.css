@@ -144,7 +144,7 @@ p.mtc-tip-wrap {
 }
 
 /* 推移の見出しの「?」は見出しのすぐ右に寄せる（右の「今の値｜推移」との間を空けない） */
-.trc-head > .trc-title + .term-hint {
+.mtc-head > .trc-title + .term-hint {
   margin-right: auto;
   align-self: center;
 }

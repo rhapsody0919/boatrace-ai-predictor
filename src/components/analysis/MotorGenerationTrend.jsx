@@ -36,7 +36,7 @@ const dayDiff = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(
 export function MotorViewHead({ view, setView, metric }) {
   const { t } = useTranslation();
   return (
-    <div className="trc-head">
+    <div className="trc-head mtc-head">
       <p className="trc-title">{t(view === "now" ? "analysis.motor.genTrend.nowTitle" : `analysis.motor.genTrend.title.${metric}`)}</p>
       {/* 推移の読み方（点の意味・描かない区間・偶然の幅）は見出しの横の「?」の中（plan.md §14、オーナー 2026-11-28） */}
       {view === "trend" && (
