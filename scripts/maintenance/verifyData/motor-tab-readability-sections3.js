@@ -7,14 +7,14 @@ async function section4_1(ctx) {
   const { check, drill, list, racerCardView: card, tJa } = ctx;
   const H = (key) => tJa(`analysis.motor.${key}`);
   check(
-    "機力指数: 一覧・ドリルダウン・選手ページの3か所で powerIndexTone を使い、小標本では評価の言葉を出さない（描いた3か所）",
+    "機力指数: 一覧・ドリルダウンは powerIndexTone を使い小標本では評価の言葉を出さない。選手ページは言葉も色も付けない（plan.md §14、描いた3か所）",
     list.power[1].cls.split(" ").includes("is-small-sample") &&
       drill.summaryClass.split(" ").includes("is-small-sample") &&
       drill.summary.endsWith(H("powerIndexSmallSample")) &&
       ![H("powerIndexGood"), H("powerIndexBad")].some((w) =>
         drill.summary.includes(w),
       ) &&
-      card.indexClass.split(" ").includes("is-small-sample"),
+      card.indexClass === "racer-motor-status-index",
   );
   check(
     "グラフ: 縦軸のラベルを縦方向の中央に置き（375px で切れない）、展示タイムの目盛りは小数2桁にそろえる（描いたグラフ）",
@@ -121,8 +121,8 @@ async function section4_4(ctx) {
     );
   }
   check(
-    "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる（描いたカード）",
-    card.index.endsWith(" — 走数が少ないため参考値"),
+    "選手ページ: 機力指数は値・期間・走数と「?」だけで、良し悪しや参考値の言葉を付けない（plan.md §14、描いたカード）",
+    /^機力指数 0\.0（過去90日・4走の平均）\?$/.test(card.index) && !card.index.includes(" — "),
   );
 }
 

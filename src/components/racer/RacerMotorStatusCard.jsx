@@ -2,46 +2,11 @@ import { Link } from "react-router-dom";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import RacerMotorMeetChart from "./RacerMotorMeetChart";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
-import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
-import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
+import { formatPowerIndex } from "../../utils/smallSampleRate";
+import TermHintButton from "../race/TermHintButton";
 import "./RacerMotorStatusCard.css";
 
 const isPresent = (value) => value !== null && value !== undefined;
-
-// 走数が少ないときは評価の言葉を出さず、参考値の色にする（BOA-549）
-function resolveTone(powerIndex) {
-  const hasPowerIndex =
-    powerIndex?.power_index !== null && powerIndex?.power_index !== undefined;
-  const tone = hasPowerIndex
-    ? powerIndexTone(
-        powerIndex.power_index,
-        powerIndex.sample_count,
-        SMALL_SAMPLE_THRESHOLD,
-      )
-    : null;
-  return { hasPowerIndex, tone };
-}
-
-function toneIndexClass(tone) {
-  return (
-    {
-      good: "power-index-good",
-      bad: "power-index-bad",
-      small: "is-small-sample",
-    }[tone] ?? ""
-  );
-}
-
-function toneVerdict(tone) {
-  if (tone === "small") return " — 走数が少ないため参考値";
-  return ` — ${
-    tone === "good"
-      ? "モーターは乗る選手の実力以上に走っている"
-      : tone === "bad"
-        ? "モーターは乗る選手の実力より低調"
-        : "モーターは乗る選手の実力相応"
-  }`;
-}
 
 function freshnessBadges(venueMotorStats) {
   return [
@@ -61,36 +26,31 @@ function freshnessBadges(venueMotorStats) {
   ].filter(Boolean);
 }
 
-function PowerIndexSection({ powerIndex, tone, indexClass }) {
+// 機力指数は値・期間・走数だけ。良し悪しの言葉と色は付けない（偶然の幅を見ていないため）。
+// 読み方は「?」の中（plan.md §14、オーナー 2026-11-28）
+function PowerIndexSection({ powerIndex }) {
   return (
-    <>
-      <p className={`racer-motor-status-index ${indexClass}`}>
-        機力指数 {formatPowerIndex(powerIndex.power_index)}（
-        {powerIndex.clipped_by_generation
-          ? "現行モーターの使用開始以降"
-          : "過去90日"}
-        ・{powerIndex.sample_count}走の平均）
-        {toneVerdict(tone)}
-      </p>
-      <p className="racer-motor-status-note">
-        💡
-        機力指数は「このモーターに乗った過去のレースで実際に2着以内だったか」−「その時乗っていた選手自身の全国2連率」の差を全レース分平均した値です。プラスが大きいほど、乗った選手の実力を超えて走っているモーターと言えます（このモーターを過去に使った他の選手の実績も含みます）。
-      </p>
-    </>
+    <p className="racer-motor-status-index">
+      機力指数 {formatPowerIndex(powerIndex.power_index)}（
+      {powerIndex.clipped_by_generation
+        ? "現行モーターの使用開始以降"
+        : "過去90日"}
+      ・{powerIndex.sample_count}走の平均）
+      <TermHintButton termKey="motorPowerIndex" />
+    </p>
   );
 }
 
-// 走ごとの展示タイムの図（P-16）。2走以上で描く。横は走の順で、日付と R を添える
 function TrendSection({ runs, captionHead, isPrevMeet, venueName }) {
   if (runs.length > 1) {
     return (
       <>
-        <p className="racer-motor-status-chart-caption">
-          {`${captionHead}（${isPrevMeet ? `${venueName} ` : ""}${runs[0].date.slice(5)}〜${runs[runs.length - 1].date.slice(5)}）、この選手がこのモーターで出走してからの展示タイム`}
-        </p>
-        <p className="racer-motor-status-note">
-          縦はそのレースの6艇の展示タイムの平均との差（上ほど速い）。「部品」「ペラ」はその走の前に交換した印。点を押すと秒と交換の中身が出ます
-        </p>
+        <div className="racer-motor-status-chart-head">
+          <p className="racer-motor-status-chart-caption">
+            {`${captionHead}（${isPrevMeet ? `${venueName} ` : ""}${runs[0].date.slice(5)}〜${runs[runs.length - 1].date.slice(5)}）、この選手がこのモーターで出走してからの展示タイム`}
+          </p>
+          <TermHintButton termKey="racerMotorMeetChart" />
+        </div>
         <RacerMotorMeetChart runs={runs} />
       </>
     );
@@ -172,7 +132,7 @@ export default function RacerMotorStatusCard({ status }) {
     ...r,
     exhibitionTime: r.exhibition_time,
   }));
-  const { hasPowerIndex, tone } = resolveTone(powerIndex);
+  const hasPowerIndex = isPresent(powerIndex?.power_index);
 
   return (
     <div
@@ -196,11 +156,7 @@ export default function RacerMotorStatusCard({ status }) {
       />
 
       {hasPowerIndex && (
-        <PowerIndexSection
-          powerIndex={powerIndex}
-          tone={tone}
-          indexClass={toneIndexClass(tone)}
-        />
+        <PowerIndexSection powerIndex={powerIndex} />
       )}
 
       <TrendSection

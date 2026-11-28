@@ -53,6 +53,8 @@ test("ニュースが0件の選手にはニュースの節が無く、ある選�
   });
 });
 
+// 名前は変異検査（試験名で旧と新を対応させる）のため旧のまま。中身は plan.md §14（オーナー 2026-11-28）で
+// 「上ほど速い」は図の「?」の中へ、機力指数は評価の言葉を付けない形に変わった
 test("今節のモーターの展示タイムのグラフに「上ほど速い」、機力指数の評価の主語はモーター", async ({
   page,
 }) => {
@@ -60,12 +62,13 @@ test("今節のモーターの展示タイムのグラフに「上ほど速い�
   const card = page.locator(".racer-motor-status-card");
   await expect(card.locator("h2")).toBeVisible({ timeout: 30000 });
   // 4586 は録画で推移（2走以上）と機力指数の評価の両方が出る選手。出ない録画になったら落ちて気づく
-  // 値はレースの平均との差で上ほど速い（P-16、オーナー 2026-11-27 承認。旧: 秒で「下ほど速い」）
-  await expect(card.locator(".racer-motor-status-note").filter({ hasText: "上ほど速い" })).toHaveCount(1);
-  const verdict = card.locator(".racer-motor-status-index");
-  await expect(verdict).toHaveCount(1);
-  await expect(verdict).not.toContainText(/ — 選手の実力/);
-  await expect(verdict).toContainText(
-    / — (モーターは乗る選手の実力|走数が少ない)/,
-  );
+  // 値はレースの平均との差で上ほど速い（P-16、オーナー 2026-11-27 承認）。説明は図の見出しの「?」の中（plan.md §14、オーナー 2026-11-28）
+  await card.locator(".racer-motor-status-chart-head .term-hint__button").click();
+  await expect(page.locator(".term-hint__popover")).toContainText("上ほど速い");
+  // 機力指数は値・期間・走数だけ。良し悪しの言葉（旧「— モーターは乗る選手の実力…」）と色は付けない
+  const index = card.locator(".racer-motor-status-index");
+  await expect(index).toHaveCount(1);
+  await expect(index).toContainText(/走の平均）/);
+  await expect(index).not.toContainText(" — ");
+  await expect(index).toHaveAttribute("class", "racer-motor-status-index");
 });
