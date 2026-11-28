@@ -2,14 +2,21 @@ import ClassLineup from "./ClassLineup";
 import BaselineBar from "../BaselineBar";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
-/** 小さいバー1本（値・全国の全レースの線・矢印） */
+/**
+ * 小さいバー1本（値と、括弧に全国の全レースの値。点線の下に「全国」）。
+ * 2026-11-28 オーナー決定: ↑↓→ と凡例をやめ「63%（全国55%）」にする（plan.md §14 の値と比べる相手）
+ */
 function MiniBar({ label, row }) {
   if (!row) return null;
   const pct = Math.round(row.rate * 100);
   return (
-    <BaselineBar label={label} rate={row.rate} base={row.base}>
-      <b>{pct}%</b> {row.verdict ? ASSIST_COPY.verdictArrow[row.verdict] : ""}{" "}
-      {ASSIST_COPY.roughBase(Math.round(row.base * 100))}
+    <BaselineBar
+      label={label}
+      rate={row.rate}
+      base={row.base}
+      baseLabel={ASSIST_COPY.roughBaseTick}
+    >
+      <b>{pct}%</b>（{ASSIST_COPY.roughBase(Math.round(row.base * 100))}）
     </BaselineBar>
   );
 }
@@ -98,8 +105,6 @@ export default function RoughCardButton({
         }
         row={rough.manshu}
       />
-      {/* 矢印を単独で読めるようにする（BOA-808 の4） */}
-      <span className="ta-note">{ASSIST_COPY.roughLegend}</span>
       <span className="ta-rough-foot">
         <LineupBlock lineup={lineup} inCautionMode={inCautionMode} />
         <FootNote scope={scope} round={round} inCautionMode={inCautionMode} />
