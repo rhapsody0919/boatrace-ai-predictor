@@ -7,7 +7,7 @@
  *   - 同じ日に2走する選手を2回数えない。racerId が無い・勝率が空・0 の選手は外す
  *   - 200人未満（朝の取り込みの途中など）は物差しを作らない
  *   - 真ん中は中央値（偶数人は真ん中2人の平均、小数2桁）
- *   - 棒は 5〜100%（最低の選手でも見える）、範囲の外は端に寄せる。線は真ん中の位置
+ *   - 棒は 10〜100%（最低の選手でも見える）、範囲の外は端に寄せる。線は真ん中の位置
  *   - 置き換えるのは勝率・全国・公式の値のときだけ（当地・今期・グレード・他の指標は元の尺度のまま）
  */
 import {
@@ -80,7 +80,7 @@ const base = {
 const day = { n: 584, min: 2, max: 8, median: 5 };
 const on = { metric: "winRate", scope: "national", needsOwnAggregation: false };
 const s = withDayScale(base, day, on);
-check("最低は 5%", s.barWidthPercent(2) === 5, String(s.barWidthPercent(2)));
+check("最低は 10%", s.barWidthPercent(2) === 10, String(s.barWidthPercent(2)));
 check(
   "最高は 100%",
   s.barWidthPercent(8) === 100,
@@ -88,9 +88,9 @@ check(
 );
 check(
   "範囲の外は端に寄せる",
-  s.barWidthPercent(9) === 100 && s.barWidthPercent(1) === 5,
+  s.barWidthPercent(9) === 100 && s.barWidthPercent(1) === 10,
 );
-check("線は真ん中の位置", s.refLinePercent === 52.5, String(s.refLinePercent));
+check("線は真ん中の位置", s.refLinePercent === 55, String(s.refLinePercent));
 check("値なしは 0", s.barWidthPercent(null) === 0);
 check(
   "6艇の中の比べの注記は出さない",
