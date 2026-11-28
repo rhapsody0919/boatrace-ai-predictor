@@ -156,9 +156,10 @@ test.describe("レース詳細の表示の細部", () => {
         { timeout: 30000 },
       )
       .toBeGreaterThanOrEqual(10);
-    // 長さは6艇の中の相対比較なので、差の大きさは数字で見るよう書き添える（ファン評価2周目 P1）
-    await expect(page.locator(".rbit-relative-note")).toContainText(
-      "この6艇の中での比較",
+    // 長さの決め方を書き添える（ファン評価2周目 P1）。勝率（公式・全国）は今日出走する選手の最低〜最高で決める
+    // （意味づけ 2026-11-28 オーナーが「この6艇の中での比較」の注記から替えると決めた）
+    await expect(page.getByTestId("rbit-day-median-note")).toContainText(
+      "今日出走する選手",
     );
   });
 
