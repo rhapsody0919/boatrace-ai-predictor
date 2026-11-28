@@ -6,6 +6,13 @@ import { motorRate3View } from "../../utils/motorFreshRate";
 import RateBar from "../common/RateBar";
 import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
 import { POWER_INDEX_TONE_CLASS } from "./motorConditionView";
+import TermHintButton from "../race/TermHintButton";
+
+// 差の字（小数1桁、負はマイナス記号）。丸めて 0 は ±0.0
+const signedGap = (d) => {
+  const v = Math.abs(d).toFixed(1);
+  return v === "0.0" ? "±0.0" : `${d < 0 ? "−" : "+"}${v}`;
+};
 
 export function MotorListHead({ firstMeet, showVenueRank, officialMode, periodDays, hasPretest, showFirstPlaceRate, showFinalCount, showChampionshipCount }) {
   const { t } = useTranslation();
@@ -29,6 +36,8 @@ export function MotorListHead({ firstMeet, showVenueRank, officialMode, periodDa
               ? "analysis.motor.freshRate2Header"
               : "analysis.motor.officialRate2Header",
           )}
+          {/* 下の差と順位の読み方は「?」の中（plan.md §14） */}
+          <TermHintButton termKey="motorOfficialRate2Gap" />
         </th>
         {showVenueRank && (
           <th className="motor-wrap-head motor-venue-rank-head">
@@ -107,8 +116,8 @@ function MotorNumCell({ row, currentParts, partsBoat, setPartsBoat }) {
 
 function RateBarCell({ row, i, view, explainBoat, setExplainBoat }) {
   const { t } = useTranslation();
-  const { officialRates, officialRateMax, officialRateBestBoats, officialRateTiers, rateViews, rateLabel } = view;
-  const tier = officialRateTiers?.get(row.boat_number);
+  const { officialRates, officialRateMax, officialRateBestBoats, officialRateGaps, rateViews, rateLabel } = view;
+  const gap = officialRateGaps?.get(row.boat_number);
   return (
     <>
       {/* 連対率は**小数1桁**で出す（BOA-474、2026-09-28）。
@@ -163,10 +172,10 @@ function RateBarCell({ row, i, view, explainBoat, setExplainBoat }) {
             )
           }
         />
-        {/* 6艇の上位2・下位2の印（意味づけ、型2）。色だけに頼らず ▲▼ と言葉を添える */}
-        {tier && (
-          <span className={`motor-tier-mark motor-tier-mark--${tier}`} data-tier={tier}>
-            {t(tier === "top" ? "analysis.motor.tierTop" : "analysis.motor.tierBottom")}
+        {/* 他の艇の平均との差と順位（plan.md §14、オーナー 2026-11-28。旧: ▲高い・▼低い）。色は付けない */}
+        {gap && (
+          <span className="motor-waku-n motor-rate-gap" data-rank={gap.rank}>
+            {t("analysis.motor.rateGap", { diff: signedGap(gap.diff), rank: gap.rank })}
           </span>
         )}
         {/* 入れ替えから90日以内の公式の値は、何走で出た数字かを添える（BOA-830） */}
