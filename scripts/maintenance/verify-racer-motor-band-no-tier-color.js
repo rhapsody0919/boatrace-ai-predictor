@@ -7,8 +7,8 @@ import { readFileSync } from "node:fs";
 
 const css = readFileSync(new URL("../../src/components/race/basic-info/RacerMotorBand.css", import.meta.url), "utf8");
 const failures = [];
-for (const tier of ["high", "mid", "low"]) {
-  if (css.includes(`.rmb-seg--${tier}`)) failures.push(`.rmb-seg--${tier} の見た目の規則が残っている（位置で色を分けない）`);
+for (const selector of [".rmb-seg--high", ".rmb-seg--mid", ".rmb-seg--low"]) {
+  if (css.includes(selector)) failures.push(`${selector} の見た目の規則が残っている（位置で色を分けない）`);
 }
 if (!/\.rmb-seg--none \.rmb-box\s*\{[^}]*stroke-dasharray/.test(css)) failures.push("2連率の無い節（--none）の点線が無い");
 if (failures.length > 0) {
