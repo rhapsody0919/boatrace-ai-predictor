@@ -78,6 +78,12 @@ COMMENT ON TABLE public.racer_sex IS '選手の性別（fan 由来、1=男・2=�
   - facts の書き手は racer_sex を `fetchAll`＋`order(racer_id)` で読み、失敗は throw
 - 埋まらない所: 新人は次の期の fan に載るまで性別が分からない見込み（fan に何時点の登録者が載るかは未検証）。main の新人の居るレースは最大で半年余り field_gender が NULL。画面の女子戦は plan.md §3.2 の `series_kind` との OR で当面を補う
 - 古い版との両立: 表を足すだけなので、古いコードは影響を受けない。コードが先に出ると取り込みと facts の書き手が例外で止まる（黙って壊れはしない）
+- 事前（読み取り）: `SELECT to_regclass('public.racer_sex');` が NULL
+- 事後（読み取り）:
+  - `SELECT conname, contype FROM pg_constraint WHERE conrelid = 'public.racer_sex'::regclass;` で PK と CHECK の2行
+  - `SELECT relrowsecurity FROM pg_class WHERE oid = 'public.racer_sex'::regclass;` が true
+  - `SELECT has_table_privilege('anon', 'public.racer_sex', 'select');` が false
+  - 過去分の取り込みの後は件数と sex=1・2 の内訳。続けて Q8a・Q8b を racer_sex に替えて回す（plan.md §4）
 - 戻し（書き手を戻した後）: `BEGIN; SET LOCAL lock_timeout='10s'; DROP TABLE IF EXISTS public.racer_sex; COMMIT;`
 - racer_profiles.sex を埋める `sync-profiles --apply` は回さない。読み手が居ないうえ、racer-profiles の Cron と同じ列（ability_index 等の SEASON_COLUMNS）を二重に書く
 
