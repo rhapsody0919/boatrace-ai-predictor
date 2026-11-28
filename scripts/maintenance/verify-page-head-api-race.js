@@ -3,7 +3,7 @@
  * 生の HTML の head の材料の関数（/api/page-head/v1/race/{id}、api/_lib/pageHeadApi.js）が、レース詳細の本日・過去日の head を人の画面と同じ条件で返し、失敗を CDN に残さないこと。
  *
  * /api/predictions/{date}?light=true と同じ形の小さな材料（pickHeadingFields 済み）で、関数を直に呼ぶ（ネットに出ない）。
- * 1. 本日の id は、同じ材料のボット向け HTML（respondRacePage）と title・description・canonical・BreadcrumbList が同じ。s-maxage=60
+ * 1. 本日の id は、同じ材料のボット向け HTML（respondRacePage）と title・description・canonical・BreadcrumbList が同じ。s-maxage=300（材料の /api/predictions と同じ）
  * 2. title は結果が出たら「結果・払戻」、中止なら「中止」の文（人の getRaceDetailMeta の条件）
  * 3. 過去日の id は 200・s-maxage=86400 で、パンくずは「ホーム › 過去の予想 › 日付 › 会場 › NR」（本日の形にしない）
  * 4. 材料にその id が無い・id の形の外・版なし・余分な段は 404・no-store、GET・HEAD の外は 405、host が変なら 400
@@ -81,7 +81,7 @@ await check("1. 本日の id はボット向け HTML と同じ head", async () =
   for (const id of ["2026-12-15-04-01", "2026-12-15-04-02", "2026-12-15-04-03"]) {
     const res = await call(id);
     assert.equal(res.status, 200, id);
-    assert.equal(res.headers["Cache-Control"], "public, max-age=0, s-maxage=60, stale-while-revalidate=30, stale-if-error=3600");
+    assert.equal(res.headers["Cache-Control"], "public, max-age=0, s-maxage=300, stale-while-revalidate=60, stale-if-error=3600");
     const bot = await respondRacePage(
       { method: "GET", url: `/race/${id}`, headers: HOST },
       { getRaces, now: () => NOW, getT: getLocaleT, getSiteJsonLd: async () => [], getSeries: async () => null },
