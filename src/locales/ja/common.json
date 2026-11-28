@@ -2802,7 +2802,7 @@
     "expectedCourseWinRateNote": "想定コース1着率は直近3期・進入コースで集計しています",
     "expectedCourseWinRateNoteDiff": "下は全国の同じコースとの差（▲▼は偶然のぶれでは説明しにくい差）",
     "noteExpectedCourse": "勝率・当地・2連率は公式の出走表の値です。平均ST・モーター2連率は行の名前の期間、想定コース1着率は直近3期の進入コース、そのほかの分析データは過去90日間（回収率は180日間）の実績集計です。ハイライトはレース内で最も良い値。参考値であり結果を保証するものではありません",
-    "localVsNational": "全国{{diff}}",
+    "localVsNational": "{{diff}}",
     "localDiffNote": "当地勝率の下の数字は、本人の全国勝率との差です（＋は当地のほうが高い。当地の出走が無い選手は出しません）。"
   },
   "venueTendency": {

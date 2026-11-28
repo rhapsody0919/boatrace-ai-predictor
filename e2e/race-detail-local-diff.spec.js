@@ -1,4 +1,4 @@
-// 出走表（基本情報）の当地勝率の下に、本人の全国勝率との差（「全国+0.28」、色なし）を出す（意味づけ 2026-11-28）。
+// 出走表（基本情報）の当地勝率の下に、本人の全国勝率との差（「+0.28」、色なし。読み方は表の下の注記）を出す（意味づけ 2026-11-28）。
 // 勝率・2連率の「今日の出走者の中の上位N割」は、オーナーとファン役4人が「表には不要」としたので出さない。
 import { test, expect } from "./fixtures.js";
 
@@ -32,7 +32,7 @@ for (const width of [375, 1440]) {
     for (const c of cells) {
       const win = Number(c.win.match(/(\d+\.\d{2})/)?.[1]);
       const loc = Number(c.local.match(/^(\d+\.\d{2})/)?.[1]);
-      const diff = c.local.match(/全国([+-]?\d+\.\d{2})/)?.[1];
+      const diff = c.local.match(/^\d+\.\d{2}([+±-]\d+\.\d{2})$/)?.[1]?.replace("±", "");
       if (!(loc > 0)) {
         expect(diff, "当地 0.00 は差を出さない").toBeUndefined();
         continue;

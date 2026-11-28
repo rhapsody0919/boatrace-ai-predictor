@@ -2802,7 +2802,7 @@
     "expectedCourseWinRateNote": "預想道次第1名率依最近3期的實際進場道次統計",
     "expectedCourseWinRateNoteDiff": "下方為與全國同一道次的差距（▲▼為難以只用偶然波動解釋的差距）",
     "noteExpectedCourse": "勝率、當地勝率、2連率為官方出走表的數值。平均ST、馬達2連率採用列名所示期間，預想道次第1名率採用最近3期的進場道次，其餘分析資料為過去90天（回收率為180天）的實績統計。標示為同場比賽中最佳數值。僅供參考，不保證結果",
-    "localVsNational": "全國{{diff}}",
+    "localVsNational": "{{diff}}",
     "localDiffNote": "當地勝率下方的數字是與本人全國勝率的差距（+表示當地較高。沒有當地出賽的選手不顯示）。"
   },
   "venueTendency": {

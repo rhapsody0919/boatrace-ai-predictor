@@ -130,7 +130,7 @@ function localDiffText(t, p) {
   if (diff === null) return null;
   return (
     <span className="drt-sub drt-local-diff">
-      {t("dataTable.localVsNational", { diff: `${diff > 0 ? "+" : ""}${diff.toFixed(2)}` })}
+      {t("dataTable.localVsNational", { diff: `${diff > 0 ? "+" : diff === 0 ? "±" : ""}${diff.toFixed(2)}` })}
     </span>
   );
 }
