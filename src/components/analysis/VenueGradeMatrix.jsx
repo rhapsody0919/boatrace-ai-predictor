@@ -190,6 +190,49 @@ function VenueGradeTable({
   );
 }
 
+// 指標の説明と、読み込み中・失敗・空・中身の出し分け。1着率は積み上げ棒、ほかは表（G4 T-09）
+function VenueGradeBody({ t, loading, error, rows, selectedMetric, ...table }) {
+  const isWinRate = selectedMetric === "winRate";
+  let content = null;
+  if (loading) {
+    content = <div className="loading-state">{t("analysis.loading")}</div>;
+  } else if (error) {
+    content = (
+      <div className="error-state">
+        {t("analysis.error", { message: error })}
+      </div>
+    );
+  } else if (rows.length === 0) {
+    content = (
+      <div className="empty-state">{t("analysis.venueGrade.empty")}</div>
+    );
+  } else if (isWinRate) {
+    content = (
+      <VenueGradeWinShare
+        grades={table.gradesPresent}
+        byGradeAndBoat={table.byGradeAndBoat}
+        gradeLabel={(g) =>
+          g === "ippan" ? t("volatilityAccuracy.gradeIppan") : g
+        }
+      />
+    );
+  } else {
+    content = (
+      <VenueGradeTable t={t} selectedMetric={selectedMetric} {...table} />
+    );
+  }
+  return (
+    <>
+      {!isWinRate && (
+        <p className="section-description">
+          {t(`analysis.venueGrade.metricDescription.${selectedMetric}`)}
+        </p>
+      )}
+      {content}
+    </>
+  );
+}
+
 function VenueGradeMatrix() {
   const { t } = useTranslation();
   const [selectedVenue, setSelectedVenue] = useState("14");
@@ -259,48 +302,17 @@ function VenueGradeMatrix() {
         availableVenues={availableVenues}
       />
 
-      {selectedMetric !== "winRate" && (
-        <p className="section-description">
-          {t(`analysis.venueGrade.metricDescription.${selectedMetric}`)}
-        </p>
-      )}
-
-      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && (
-        <div className="error-state">
-          {t("analysis.error", { message: error })}
-        </div>
-      )}
-
-      {!loading && !error && rows.length === 0 && (
-        <div className="empty-state">{t("analysis.venueGrade.empty")}</div>
-      )}
-
-      {!loading &&
-        !error &&
-        rows.length > 0 &&
-        selectedMetric === "winRate" && (
-          <VenueGradeWinShare
-            grades={gradesPresent}
-            byGradeAndBoat={byGradeAndBoat}
-            gradeLabel={(g) =>
-              g === "ippan" ? t("volatilityAccuracy.gradeIppan") : g
-            }
-          />
-        )}
-      {!loading &&
-        !error &&
-        rows.length > 0 &&
-        selectedMetric !== "winRate" && (
-          <VenueGradeTable
-            t={t}
-            metric={metric}
-            selectedMetric={selectedMetric}
-            gradesPresent={gradesPresent}
-            byGradeAndBoat={byGradeAndBoat}
-            boatRows={boatRows}
-          />
-        )}
+      <VenueGradeBody
+        t={t}
+        loading={loading}
+        error={error}
+        rows={rows}
+        metric={metric}
+        selectedMetric={selectedMetric}
+        gradesPresent={gradesPresent}
+        byGradeAndBoat={byGradeAndBoat}
+        boatRows={boatRows}
+      />
     </div>
   );
 }
