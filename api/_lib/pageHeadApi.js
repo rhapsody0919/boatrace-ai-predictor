@@ -30,12 +30,13 @@ export const VENUE_HEAD_HEADERS = Object.freeze({
   "Cache-Control":
     "public, max-age=0, s-maxage=300, stale-while-revalidate=60, stale-if-error=3600",
 });
-// レース詳細は本日（結果・中止で title が変わる）を短く、過去日（変わらない）を長く残す
+// レース詳細は本日（結果・中止で title が変わる）を材料の /api/predictions と同じ 300 秒、過去日（変わらない）を長く残す。
+// 本日を材料より短くしても、材料が CDN に 300 秒残るので新しくならず、MISS が増えるだけ（2026-11-28 の本番のログ）
 const raceHeadHeaders = (isToday) =>
   Object.freeze({
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": isToday
-      ? "public, max-age=0, s-maxage=60, stale-while-revalidate=30, stale-if-error=3600"
+      ? "public, max-age=0, s-maxage=300, stale-while-revalidate=60, stale-if-error=3600"
       : "public, max-age=0, s-maxage=86400, stale-while-revalidate=3600, stale-if-error=3600",
   });
 const NO_STORE = Object.freeze({
