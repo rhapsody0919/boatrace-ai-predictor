@@ -55,15 +55,15 @@ export const ASSIST_COPY = Object.freeze({
   roughB1: "1号艇の1着",
   roughManshu: "万舟",
   roughBase: (pct) => `全国${pct}%`,
+  roughBaseTick: "全国",
   roughFew: "件数少なめ",
   // D-37: 少ないのは同じラウンドの件数。全ラウンドへ広げた後の件数とは分ける（BOA-893）
   roughRoundFallback: (round) =>
-    `${round}だけでは30件未満のため、全ラウンドの値（矢印なし）`,
+    `${round}だけでは30件未満のため、全ラウンドの値`,
   // 優勝戦・準優勝戦に絞った値のときは、数えた範囲が分かるようラウンドを添える（D-37）
   roughCount: (n, round) =>
     `${round ? `${round} ` : ""}${n.toLocaleString("ja-JP")}件 ›`,
   verdict: { high: "↑ 高め", low: "↓ 低め", unclear: "差ははっきりしない" },
-  verdictArrow: { high: "↑", low: "↓", unclear: "→" },
   // BOA-822（FR-4）: 1着と万舟で数えた範囲が違うので、行ごとに範囲の名前と件数を書く
   roughScopeInCaution: (n, round) =>
     `勝率差が同じくらい${round ? `の${round}` : ""} ${n.toLocaleString("ja-JP")}件`,
@@ -73,7 +73,7 @@ export const ASSIST_COPY = Object.freeze({
     `1号艇の1着の1本目は、勝率差（1号艇と、他の艇で一番高い全国勝率の差）が同じくらいの全国の過去レース${round ? `（${round}だけ）` : ""} ${n.toLocaleString("ja-JP")}件。万舟と、下の「集めたレース」の表は、級の並び・類似レースで集めている`,
   // 準優・優勝戦の矢印は全レースの割合との比べ（AI予想タブの inCaution.noteJunyu と同じ趣旨。#1604 ファン評価2周目 P2）
   roughRoundBaseNote: (round) =>
-    `${round}は、勝率差が違っても割合があまり変わらない。点線（全国）は全レースの割合なので、↑は${round}の1号艇がもともと強いことも含む`,
+    `${round}は、勝率差が違っても割合があまり変わらない。点線（全国）は全レースの割合なので、全国との差には${round}の1号艇がもともと強いことも含む`,
   whyToggleCount: "返還のあったレースの含め方",
   whyHeaderInCaution: (n, round) =>
     `上の枠の1号艇の1着は、勝率差が同じくらいの全国のレース${round ? `（${round}だけ）` : ""} ${n.toLocaleString("ja-JP")}件で集めた。ここは級の並びで集めた`,
@@ -694,7 +694,6 @@ export const ASSIST_COPY = Object.freeze({
   termAria: (term) => `${term}とは`,
   theoryAria: (name) => `${name}の過去レースの傾向`,
   trend: "傾向 ›",
-  roughLegend: "↑↓＝全国の全レースより高め・低め　→＝はっきりしない",
   factsPreExhibition: "展示タイムの材料は展示の後に分かる",
 
   // ---- セオリーカード（FR-6、screens S-1b） ----
