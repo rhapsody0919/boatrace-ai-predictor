@@ -41,7 +41,8 @@ async function open(page, terms) {
 }
 
 for (const width of [375, 1440]) {
-  test(`想定コース1着率の下に全国との差、偶然の幅を超えた艇だけ緑、▲▼ と読み方の文は出さない ${width}px`, async ({ page }) => {
+  // 試験名は前のまま（名前を消すと guard-weakening が落ちる）。▲ は今は出さず、緑だけ（plan.md §14）
+  test(`想定コース1着率の下に全国との差、偶然の幅を超えた艇だけ緑▲ ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const row = await open(page, strong);
     const cells = row.locator("td.drt-cell");
@@ -64,7 +65,7 @@ for (const width of [375, 1440]) {
   });
 }
 
-test("差が偶然の幅に収まる艇は灰", async ({ page }) => {
+test("差が偶然の幅に収まる艇は灰で印なし", async ({ page }) => {
   const row = await open(page, plain);
   const first = row.locator("td.drt-cell").nth(0).locator(".drt-course-diff");
   await expect(first).toHaveText("+7pt");
