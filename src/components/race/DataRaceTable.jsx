@@ -150,9 +150,11 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
   const flyingRowByBoat = useRaceEntryFlyingRows(raceId);
   const currentMeetFlyingBoats = useCurrentMeetFlyingBoats(raceId);
 
-  const players = [...(prediction?.allPlayers ?? [])].sort(
-    (a, b) => a.number - b.number,
-  );
+  // 当地勝率の下の「全国との差」（意味づけ）はこの表だけに出す。一覧カードの出走表は同じ行定義を使うので、
+  // 各艇の選手に印を持たせて行へ渡す（行の文脈を増やさない）
+  const players = [...(prediction?.allPlayers ?? [])]
+    .sort((a, b) => a.number - b.number)
+    .map((p) => ({ ...p, showLocalDiff: true }));
   // 想定コース1着率の行は枠別情報タブの6艇の表と同じフック・同じ行から取る（BOA-1296）
   const courseStats = useSixBoatCourseStats({
     raceDate: raceId?.slice(0, 10),
@@ -221,6 +223,9 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       </div>
 
       <p className="drt-note">💡 {t("dataTable.noteExpectedCourse")}</p>
+      <p className="drt-note" data-testid="drt-local-diff-note">
+        {t("dataTable.localDiffNote")}
+      </p>
       <GuideLinks deepLink={deepLink} />
     </div>
   );

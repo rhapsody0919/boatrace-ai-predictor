@@ -3,6 +3,7 @@
  * buildRowDefs が各 build*Rows を順に並べる
  */
 import { Link } from "react-router-dom";
+import { localVsNational } from "../../pure/localVsNational.js";
 import { EMPTY } from "../../pure/dataFormat.js";
 import {
   bestOfIndicator,
@@ -123,6 +124,17 @@ export function rowFromIndicator(t, data, id, key) {
   };
 }
 
+// 当地勝率の下の、本人の全国勝率との差（色なし、意味づけ）。勝率・2連率の「上位N割」は表には出さない（オーナー 2026-11-28）
+function localDiffText(t, p) {
+  const diff = localVsNational(p.localWinRate, p.winRate);
+  if (diff === null) return null;
+  return (
+    <span className="drt-sub drt-local-diff">
+      {t("dataTable.localVsNational", { diff: `${diff > 0 ? "+" : diff === 0 ? "±" : ""}${diff.toFixed(2)}` })}
+    </span>
+  );
+}
+
 export function buildBasicRatioRows(c) {
   const { t, players, gradeBadge } = c;
   const winRate = rowFromIndicator(
@@ -164,7 +176,10 @@ export function buildBasicRatioRows(c) {
         return text === EMPTY ? (
           text
         ) : (
-          <span className="drt-value">{text}</span>
+          <span className="drt-value">
+            {text}
+            {p.showLocalDiff && localDiffText(t, p)}
+          </span>
         );
       },
     },
