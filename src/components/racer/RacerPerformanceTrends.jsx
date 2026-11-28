@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import RecentRunsTable from "../race/RecentRunsTable";
+import TermHintButton from "../race/TermHintButton";
 import RacerRunTrend from "./RacerRunTrend";
 import { ST_TREND_ID } from "../../utils/racerPagePath";
 import { NARROW_CHART_RUNS, raceTick } from "./racerPerformanceView";
@@ -53,11 +54,12 @@ export function ExhibitionChart({ view, vcActive, vcLabel }) {
         展示タイムの推移（{hasVcData ? sinceOf(runs, isNarrow) : "過去90日"}）
         <VcScope vcActive={vcActive} vcLabel={vcLabel} />
       </h3>
-      {/* 図の前は1行だけにし、断りは図の下へ（375px で図が下へ押された。visual-designer 11/27） */}
+      {/* 図の前は凡例の1行だけ。読み方・操作は「?」へ（plan.md §14、オーナー 11/28） */}
       <p className="racer-stat-note">
         {hasVcData
-          ? "1走ごとの展示タイム。上ほど速い。"
-          : "日ごとの展示タイムの平均。下ほど速い。"}
+          ? "点線は条件の全走の平均"
+          : "日ごとの展示タイムの平均。下ほど速い"}
+        {hasVcData && <TermHintButton termKey="racerExhibitionTrend" />}
       </p>
       {hasVcData ? (
         <RacerRunTrend
@@ -75,10 +77,6 @@ export function ExhibitionChart({ view, vcActive, vcLabel }) {
       ) : (
         <DailyExhibitionChart data={exhibitionChartData} view={view} />
       )}
-      <p className="racer-stat-note">
-        点線は条件の全走の平均。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません。
-        {hasVcData && "点を押すとそのレースへ"}
-      </p>
     </div>
   );
 }
@@ -134,7 +132,12 @@ export function StTrendChart({ view, vcActive, vcLabel }) {
         <VcScope vcActive={vcActive} vcLabel={vcLabel} />
       </h3>
       <p className="racer-stat-note">
-        1走ごとの本番ST。上ほど速い（0がスタートライン）。
+        点線は条件の全走の平均
+        {/* 「?」だけが次の行へ落ちないように、最後の語とまとめる（visual-designer 11/28） */}
+        <span style={{ whiteSpace: "nowrap" }}>
+          （Fの走を除く）
+          <TermHintButton termKey="racerStTrend" />
+        </span>
       </p>
       <RacerRunTrend
         rows={chartRuns(runs)}
@@ -142,10 +145,6 @@ export function StTrendChart({ view, vcActive, vcLabel }) {
         label="STの推移"
         avg={avgOf(vcData.avgSt, 3, vcData.stN, vcActive, vcLabel)}
       />
-      <p className="racer-stat-note">
-        点線は条件の全走の平均（フライングを除く）。フライングの走は線に含めず、図の上の帯に
-        F で出します。点を押すとそのレースへ
-      </p>
     </div>
   );
 }
