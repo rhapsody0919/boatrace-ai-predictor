@@ -2576,7 +2576,10 @@
         "failed": "Couldn't load the motors for each meet",
         "tip": "{{range}} {{venue}} motor {{no}} — {{tier}} in the program",
         "tipNoRank": "{{range}} {{venue}} motor {{no}} — no rate yet",
-        "note": "The row under the lines shows the motor number the selected racer drew in each meet and its position (top, middle or bottom third by the program's motor top-2 rate at that venue in that meet; counted differently from the venue rank in Motor condition). Dashed boxes are motors with no rate yet. Top vs bottom differs by about 4 points in expected top-2 finishes (our own check). Tap a meet to see its venue and dates"
+        "note": "The row under the lines shows the motor number the selected racer drew in each meet and its position (top, middle or bottom third by the program's motor top-2 rate at that venue in that meet; counted differently from the venue rank in Motor condition). Dashed boxes are motors with no rate yet. Top vs bottom differs by about 4 points in expected top-2 finishes (our own check). Tap a meet to see its venue and dates",
+        "rate": "Top-2 rate",
+        "labelRate": "Motor number the selected racer drew in each meet, and its official top-2 rate on the meet's first day",
+        "tipRate": "{{range}} {{venue}} Motor {{no}}, top-2 rate {{rate}}%, top {{top}}% of that meet's program at the venue"
       },
       "view": {
         "now": "Current",
@@ -3933,6 +3936,7 @@
     "localWinRate": "The racer's win rate at this venue. A guide to whether this is one of their strong venues",
     "motor": "The share of races this motor finished 1st or 2nd. A higher figure suggests a motor in good condition",
     "motorOfficialRate2Gap": "The figures under the bar are the gap (in points) from the average official top-2 rate of the other boats, and the rank among the boats compared (equal values share a rank). Our past data confirms that win rates differ between motors ranked high and low by top-2 rate. Only boats with an official value are compared. A motor's top-2 rate also reflects the skill of the racers who rode it.",
+    "racerMotorBand": "The band under the line shows the motor number the selected racer drew in each meet and its official top-2 rate on the meet's first day. Tap a meet to see its dates, venue, and how high the motor ranked (top X%) among the motor top-2 rates in that meet's program at that venue (counted differently from the venue motor ranking). Dashed boxes are motors with no top-2 rate yet. Between the top third and bottom third of motors at a venue, the chance of finishing top 2 differs by about 4 points (our own check). The ups and downs of a single meet are not beyond chance.",
     "form": "The difference between the racer's recent win rate and their usual win rate, showing whether they are trending up or down",
     "avgSt": "The average start timing on the official race card (official term record, all venues). \"Racer form (national win rate)\" is the race card value and uses a different calculation period. Smaller means faster starts",
     "avgStOfficialPeriod": "The average start timing on the official race card (record from {{from}} to {{to}}, official term record, all venues). \"Racer form (national win rate)\" is the race card value and uses a different calculation period. Smaller means faster starts",
