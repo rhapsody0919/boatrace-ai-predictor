@@ -12,17 +12,17 @@
  *
  * 検証: scripts/maintenance/verify-actions-fresh.js（時計と取得を固定。判定は verify-actions-fresh-judge.js）
  */
-import { spawnSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  SLACK_WEBHOOK_KEYCHAIN,
+  freshAlerts,
+  postSlack,
+  readKeychain,
+  writeStateAtomic,
+} from "../lib/alertKit.js";
 import { LINES, runsUrl, staleAlerts } from "./actions-fresh-judge.js";
 
 export const ERR_STREAK = 2; // 取得の失敗がこの回数続いたら mid（見えていないことを知らせる）
@@ -109,7 +109,7 @@ async function notify({ prev, found, now, readWebhook, fetchImpl }) {
   const kept = Object.fromEntries(
     Object.entries(prev.notified ?? {}).filter(([k]) => active.has(k)),
   );
-  const fresh = found.filter((a) => !(a.key in kept));
+  const fresh = freshAlerts(found, { notified: kept });
   const done = (ok, line, notified = kept) => ({
     ok,
     state: { ...prev, notified },
@@ -124,12 +124,7 @@ async function notify({ prev, found, now, readWebhook, fetchImpl }) {
       `Keychain に Slack の webhook が無い（${fresh.length} 件を出せない: ${keys}）`,
     );
   const text = `:rotating_light: Actions の鮮度の警報（龍神 actions-fresh）\n${fresh.map((a) => `• [${a.level}] ${a.text}`).join("\n")}`;
-  const res = await fetchImpl(hook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-    signal: AbortSignal.timeout(15000),
-  }).catch((e) => ({ ok: false, status: e?.name ?? "Error" }));
+  const res = await postSlack(hook, text, fetchImpl);
   if (!res.ok)
     return done(
       false,
@@ -148,19 +143,6 @@ async function notify({ prev, found, now, readWebhook, fetchImpl }) {
 
 // ---- ここから I/O（main だけ） ----
 
-/** Keychain の汎用パスワード。無ければ null。値は返すだけで出さない */
-function secret(service, account) {
-  const r = spawnSync(
-    "/usr/bin/security",
-    ["find-generic-password", "-s", service, "-a", account, "-w"],
-    {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    },
-  );
-  return r.status === 0 && r.stdout.trim() ? r.stdout.trim() : null;
-}
-
 async function main() {
   const dir =
     process.env.RYUJIN_ACTIONS_FRESH_DIR ||
@@ -171,13 +153,13 @@ async function main() {
       ? JSON.parse(readFileSync(statePath, "utf8"))
       : null,
     now: new Date(),
-    readWebhook: () => secret("hq-slack-webhook", "hq"),
+    readWebhook: () => readKeychain(
+        SLACK_WEBHOOK_KEYCHAIN.service,
+        SLACK_WEBHOOK_KEYCHAIN.account,
+      ),
     fetchImpl: fetch,
   });
-  mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const tmp = `${statePath}.tmp${process.pid}`;
-  writeFileSync(tmp, JSON.stringify(r.state, null, 1), { mode: 0o600 });
-  renameSync(tmp, statePath);
+  writeStateAtomic(statePath, r.state);
   (r.ok ? console.log : console.error)(r.line);
   return r.ok ? 0 : 1;
 }

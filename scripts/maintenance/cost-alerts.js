@@ -11,16 +11,23 @@
  *
  * 検証: scripts/maintenance/verify-cost-alerts.js
  */
-import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  SLACK_WEBHOOK_KEYCHAIN,
+  freshAlerts,
+  postSlack,
+  readKeychain,
+  writeStateAtomic,
+} from "../lib/alertKit.js";
 import { monthAlerts } from "./cost-alerts-month.js";
 import { monthlyChecks } from "./cost-alerts-monthly.js";
 import { otherAlerts } from "./cost-alerts-other.js";
 
-export const WEBHOOK_KEYCHAIN = { service: "hq-slack-webhook", account: "hq" };
+export const WEBHOOK_KEYCHAIN = SLACK_WEBHOOK_KEYCHAIN;
+export { freshAlerts };
 
 /** 警報の一覧（純関数）。today は JST の日（YYYY-MM-DD） */
 export const costAlerts = (cfg, rows, fetchState, today) => [
@@ -28,10 +35,6 @@ export const costAlerts = (cfg, rows, fetchState, today) => [
   ...otherAlerts(cfg, rows, fetchState, today),
   ...monthlyChecks(today),
 ];
-
-/** まだ出していない警報だけ */
-export const freshAlerts = (alerts, state) =>
-  alerts.filter((a) => !(a.key in (state?.notified ?? {})));
 
 /** JST の日 */
 export const jstDay = (now) =>
@@ -64,12 +67,7 @@ export async function runAlerts({
       line: `cost-alerts: Keychain に Slack の webhook が無い（新しい警報 ${fresh.length} 件を出せない: ${keys}）`,
     };
   const text = `:money_with_wings: 費用の警報（龍神 cost-alerts）\n${fresh.map((a) => `• ${a.text}`).join("\n")}`;
-  const res = await fetchImpl(hook, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
-    signal: AbortSignal.timeout(15000),
-  }).catch((e) => ({ ok: false, status: e?.name ?? "Error" }));
+  const res = await postSlack(hook, text, fetchImpl);
   if (!res.ok)
     return {
       ok: false,
@@ -92,22 +90,6 @@ export async function runAlerts({
 const readJson = (f, fallback) =>
   existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : fallback;
 
-function readKeychain({ service, account }) {
-  try {
-    const v = execFileSync(
-      "/usr/bin/security",
-      ["find-generic-password", "-s", service, "-a", account, "-w"],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-      },
-    ).trim();
-    return v || null;
-  } catch {
-    return null;
-  }
-}
-
 async function main() {
   const dir =
     process.env.RYUJIN_COSTS_DIR ||
@@ -122,14 +104,10 @@ async function main() {
     fetchState: readJson(path.join(dir, "fetch-state.json"), null),
     state: readJson(statePath, { notified: {} }),
     now: new Date(),
-    readWebhook: () => readKeychain(WEBHOOK_KEYCHAIN),
+    readWebhook: () => readKeychain(WEBHOOK_KEYCHAIN.service, WEBHOOK_KEYCHAIN.account),
     fetchImpl: fetch,
   });
-  if (r.state) {
-    const tmp = `${statePath}.tmp${process.pid}`;
-    writeFileSync(tmp, JSON.stringify(r.state, null, 1), { mode: 0o600 });
-    renameSync(tmp, statePath);
-  }
+  if (r.state) writeStateAtomic(statePath, r.state);
   (r.ok ? console.log : console.error)(r.line);
   return r.ok ? 0 : 1;
 }
