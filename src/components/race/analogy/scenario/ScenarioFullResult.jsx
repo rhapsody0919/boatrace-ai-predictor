@@ -2,6 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { MIN_SCENARIO } from "../../../../utils/analogyScenario";
 import { k } from "./consts";
+import TermHintButton from "../../TermHintButton";
 import ScenarioBoatPair from "./ScenarioBoatPair";
 import ScenarioTechPair from "./ScenarioTechPair";
 import ScenarioFlowSplit from "./ScenarioFlowSplit";
@@ -49,11 +50,8 @@ export default function ScenarioFullResult({
             <i className="is-dot" />
             {baseName}
           </span>
-          <span>
-            <i className="is-err" />
-            {t("aiPredictionTab.analogy.similar.keyErrShort")}
-          </span>
           <span>{t(`${k}.keyThin`, { n: MIN_SCENARIO })}</span>
+          <TermHintButton termKey="sonarRateBar" />
         </div>
         {/* PC では1着｜3着以内、決まり手｜万舟を左右に（BOA-813） */}
         <ScenarioBoatPair

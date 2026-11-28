@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import NoteList, { NotesFold } from "./NoteList";
+import TermHintButton from "../TermHintButton";
 import {
   SonarLegend,
   OtherBoats,
@@ -59,7 +60,8 @@ export function SimilarWinBars({ sim, ag, target, boat = null, onSelect }) {
           ? t(`${k}.winHeading`)
           : t(`${k}.hitHeading`, {
               finish: t(`aiPredictionTab.analogy.targets.${target}`),
-            })}
+            })}{" "}
+        <TermHintButton termKey="sonarRateBar" />
       </h4>
       <div className="af-key">
         <span>
@@ -72,10 +74,6 @@ export function SimilarWinBars({ sim, ag, target, boat = null, onSelect }) {
             {t(`${k}.keyCompare`, { name: cmpName, n: fmtCount(cmp.n) })}
           </span>
         )}
-        <span>
-          <i className="is-err" />
-          {t(`${k}.keyErr`)}
-        </span>
       </div>
       <BoatBars
         counts={ag.hit[target]}
@@ -201,7 +199,9 @@ function SimilarResults({ sim, nb, ag, target, ctl, N, allShown }) {
         {tip ?? ""}
       </p>
       <FewNote N={N} allShown={allShown} />
-      <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
+      <h4 className="af-h4">
+        {t(`${k}.techHeading`)} <TermHintButton termKey="sonarRateBar" />
+      </h4>
       <TechniqueBars
         counts={ag.tech}
         n={ag.n}
