@@ -4,7 +4,8 @@
 import { supabase } from "./supabaseClient";
 import { isPlaceHit, isShowHit } from "../pure/hitJudge.js";
 import { buildRacerScopedRaceRows } from "./racerScopedRaceRows.js";
-import { buildRacerRaceHistoryRows } from "./racerRaceHistoryRows.js";
+import { buildRacerHistoryRowsFromFacts } from "./racerRaceHistoryFacts.js";
+import { FACTS_MAIN_ERA_START } from "../constants/factsEra.js";
 import { isUsableRaceResult } from "../utils/raceResultUsable.js";
 import { racerHistoryCutoff } from "../utils/racerVenueBoatStats.js";
 import { fetchAllByIn, withCache } from "./core.js";
@@ -296,68 +297,17 @@ export function getRacerRaceHistory(racerId) {
     // v5: 天候・風速・波高を足した（レース条件別の成績、BOA-336）
     // v6: race_entries を1000行で切らずに取り切るようにした（BOA-1051）
     // v7: 同じレースの他の5艇の展示タイムの平均（othersExhibitionAvg）を足した（選手ページの展示の推移の破線）
-    return withCache(`racer-race-history-v7-${racerId}`, async () => {
+    // v8: facts の RPC（get_racer_runs、ADR-0113）から読む。窓は今と同じ範囲（730日前と本体の期間の始まりの遅い方）
+    return withCache(`racer-race-history-v8-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
       }
-
-      const entries = await fetchRacerEntriesSince(
-        racerId,
-        "race_id, boat_number",
-        racerHistoryCutoff(),
-      );
-
-      if (entries.length === 0) {
-        return [];
-      }
-
-      const raceIds = [...new Set(entries.map((e) => e.race_id))];
-      const [raceRows, resultRows, exhibitionRows, conditionRows, stRows] =
-        await Promise.all([
-          fetchAllByIn(
-            "races",
-            "race_id, venue_code, race_grade",
-            "race_id",
-            raceIds,
-          ),
-          fetchAllByIn(
-            "race_results",
-            "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-            "race_id",
-            raceIds,
-          ),
-          // 展示タイムだけ使う。ここの start_timing は展示ST（本番STではない。BOA-576）
-          fetchAllByIn(
-            "exhibition_data",
-            "race_id, boat_number, exhibition_time",
-            "race_id",
-            raceIds,
-          ),
-          fetchAllByIn(
-            "race_conditions",
-            "race_id, race_stage, race_title, weather, wind_speed, wave_height",
-            "race_id",
-            raceIds,
-          ),
-          // 本番ST・フライング・公式の着欄の記号（落・転・妨・欠など）。今節タブ（getRacerScopedRaceStats）と
-          // 同じ出どころにそろえる（BOA-576: 展示STを本番STとして出し、記号の走を「着外(順位不明)」と出していた）
-          fetchAllByIn(
-            "race_start_timings",
-            "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
-            "race_id",
-            raceIds,
-          ),
-        ]);
-
-      // 整形は src/services/racerRaceHistoryRows.js（2026-10-25、全貌動画の材料と共有するため手を加えずに移した）
-      return buildRacerRaceHistoryRows({
-        entries,
-        raceRows,
-        resultRows,
-        exhibitionRows,
-        conditionRows,
-        stRows,
-      });
+      const cutoff = racerHistoryCutoff();
+      const from = cutoff > FACTS_MAIN_ERA_START ? cutoff : FACTS_MAIN_ERA_START;
+      const { data, error } = await supabase.rpc("get_racer_runs", { p_racer_id: Number(racerId), p_from: from });
+      if (error) throw new Error(`選手の履歴の取得エラー（get_racer_runs）: ${error.message}`);
+      // RPC は走が無ければ [] を返す。null は想定外なので純関数が throw する（「データなし」にしない）
+      return buildRacerHistoryRowsFromFacts(data);
     });
   }
