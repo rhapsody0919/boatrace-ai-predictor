@@ -7,15 +7,22 @@
  * - 優勝戦は isCareerFinalStage（isFinalStage の v2 ＋ オオムラGP・関ヶ原決戦。190 の集計と同じ判定）で決める
  *   （kb_archive_races.stage_kind・is_final_day は使わない。ADR-0104 決定3）
  * - 着は成績コード（finish_raw）から finishMarkFromCode で出す（本体の結果ページの着欄と 8,805艇で一致）
- * - kb に無い列（気温・水温・潮位・複勝の払戻・チルト・オリジナル展示・風の扇形）は NULL。後の段で書き手が同じ関数を通して埋める
+ * - kb に無い列（気温・水温・潮位・複勝の払戻・チルト・オリジナル展示）は NULL。後の段で書き手が同じ関数を通して埋める
+ * - 風の扇形（wind_sector）は K の8方位と風速から src/pure/windSector.js で決める（docs/design/data-gaps/plan.md §3.1）
  * - racer_ids・finish_order（マイグレーション 213）は渡された艇の行から作る。finish_order は着の順で、同着は艇番の順に詰める（dead_heat で知らせる）
  */
 import { isCareerFinalStage } from "../../src/pure/racerCareerStats.js";
 import { finishMarkFromCode } from "./kbGapFill.js";
 import { KB_FIRST_DATE, KB_LAST_DATE } from "./kbArchiveBoundary.js";
+import { windSectorOf } from "../../src/pure/windSector.js";
 
-/** 組み立ての規則を変えたら上げる（facts の行の rule_version） */
-export const RACE_FACTS_RULE_VERSION = 2;
+/**
+ * 組み立ての規則を変えたら上げる（facts の行の rule_version）。表ごとに持つ: upsertChangedRows は変わった行を全列で書くので、
+ * 片方の規則で共通の版を上げると、もう片方の全行（kb の run_facts 約221万艇）も書き直す（data-gaps plan.md §3.1）
+ * - race 3: wind_sector を入れた（2026-11-28）
+ */
+export const RACE_FACTS_RULE_VERSION = 3;
+export const RUN_FACTS_RULE_VERSION = 2;
 
 export const RACE_FACT_COLUMNS = Object.freeze([
   "race_id", "era", "race_date", "venue_code", "race_number", "race_title", "series_day", "is_final_day",
@@ -91,7 +98,7 @@ export function buildKbRaceFact(race, venueDay, { grade, seriesKind, boats = [] 
     weather: orNull(race.weather),
     wind_speed: orNull(race.wind_speed),
     wave_height: orNull(race.wave_height),
-    wind_sector: null,
+    wind_sector: windSectorOf({ era: "kb", venueCode: race.venue_code, direction: race.wind_direction ?? null, speed: race.wind_speed ?? null, hasCondition }),
     condition_source: hasCondition ? "k_file" : null,
     temperature: null,
     water_temperature: null,
@@ -151,7 +158,7 @@ export function buildKbRunFacts(race, boats) {
       oriten_lap: null,
       oriten_turn: null,
       oriten_straight: null,
-      rule_version: RACE_FACTS_RULE_VERSION,
+      rule_version: RUN_FACTS_RULE_VERSION,
     };
   });
 }
