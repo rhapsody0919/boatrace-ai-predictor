@@ -135,7 +135,7 @@ export function motorMeetTip(runs, date, meets, { today = null } = {}) {
 }
 
 /**
- * 節ごとの優出・優勝（時系列の振り分け F-044）。節の中に優勝戦の走があれば優出、その走が1着（公式の記号が無い）なら優勝。
+ * 節ごとの優出・優勝（時系列の振り分け F-044）。節の中に優勝戦の走があれば優出、その走が1着（公式の記号が無いか「1」）なら優勝。
  * 件数が少ないので率の線にせず、節の点の印にする
  * @param {Array<{date:string, isFinal?:boolean, finish?:number|null, finishMark?:string|null}>} runs
  * @returns {Map<string, "win"|"final">} 節の初日 → 印（優勝戦を走っていない節は入らない）
@@ -147,10 +147,14 @@ export function motorMeetFinals(runs) {
   meets.forEach((m, k) => {
     const finals = rows.slice(m.runsBefore, meets[k + 1]?.runsBefore ?? rows.length).filter((r) => r.isFinal);
     if (finals.length === 0) return;
-    out.set(m.start, finals.some((r) => r.finish === 1 && !r.finishMark) ? "win" : "final");
+    out.set(m.start, finals.some(isWin) ? "win" : "final");
   });
   return out;
 }
+
+// 優勝戦の走が1着か。公式の記号（race_start_timings.finish_mark）は普通の着でも "1"〜"6" が入る（本番 11/28 で確かめた）。
+// F・L・欠・転 等の記号の走は着順が入っていても1着に数えない（BOA-576）
+const isWin = (r) => r.finish === 1 && (r.finishMark == null || r.finishMark === "1" || r.finishMark === "１");
 
 // 開催中か。会場の節があれば終わりがこのレースの日以降。無ければ（節の行がまだ取れていない）、その基の最後の走が
 // このレースの日かその前日なら開催中とみなす（走は前日まで続いている。ファン評価の再確認 11/25 の P2）
