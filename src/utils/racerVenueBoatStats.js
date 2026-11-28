@@ -157,6 +157,8 @@ function seriesPoint(row, hasEx, hasSt) {
       finishMark: row.finishMark ?? null,
       startTiming: row.startTiming ?? null,
       isFlying: row.isFlying === true,
+      // 同じレースの6艇の中の ST の順位（F を除く。吹き出しの「6艇中◯番目」）
+      stRank: row.stRank ?? null,
     },
   };
 }
