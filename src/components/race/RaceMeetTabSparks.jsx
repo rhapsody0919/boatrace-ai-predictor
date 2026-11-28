@@ -5,7 +5,6 @@
  * 線は共通の推移の図（basic-info/TrendChart）の1艇版で、横軸は上の6艇の推移（R-43）と同じ日付
  * （オーナー 2026-11-26「既に線がある部品を共通の図へ」）。基準（ST の通常の平均・展示のその日の会場平均）は破線で重ねる。
  */
-import { useId } from "react";
 import {
   meetStVerdictTone,
   MEET_ST_DIFF_THRESHOLD,
@@ -13,6 +12,7 @@ import {
 import { trendScaleOf } from "../../pure/trendMetricScale.js";
 import { dayTicksOf, pointOf } from "./meetTrendPoints";
 import TrendChart from "./basic-info/TrendChart";
+import TrendGainFill from "./basic-info/TrendGainFill";
 import "./basic-info/TrendChart.css";
 
 // 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く。
@@ -75,48 +75,6 @@ function selectedSeries(m, trendKey) {
   );
 }
 
-// 値と基準がどちらもある走の続き（線と破線の間の面を作る単位）
-function gainSegments(sel, x, y, refOf) {
-  const segs = [[]];
-  sel.forEach((p, i) => {
-    const r = refOf(p);
-    if (p.value == null || r == null) segs.push([]);
-    else
-      segs[segs.length - 1].push({
-        x: x(i, sel.length),
-        yv: y(p.value),
-        yr: y(r),
-      });
-  });
-  return segs.filter((g) => g.length > 1);
-}
-
-// 破線より速い側（上）だけを薄く塗る（オーナー 2026-11-27「破線より速い側を薄く塗る」）。線と破線の間の面を、
-// 破線より上の範囲で切り抜く。基準より速い走の量が面で読める。上向き・下向きの判定ではない
-function GainFill({ sel, x, y, refOf }) {
-  const id = useId();
-  const segs = gainSegments(sel, x, y, refOf);
-  const pts = (arr) => arr.map((q) => `${q[0]},${q[1]}`).join(" ");
-  return segs.map((g, k) => {
-    const ref = g.map((q) => [q.x, q.yr]);
-    const clip = `${id}-gain-${k}`;
-    return (
-      <g key={clip}>
-        <clipPath id={clip}>
-          <polygon
-            points={pts([...ref, [g[g.length - 1].x, 0], [g[0].x, 0]])}
-          />
-        </clipPath>
-        <polygon
-          className="rmt-spark-gain"
-          clipPath={`url(#${clip})`}
-          points={pts([...g.map((q) => [q.x, q.yv]), ...ref.reverse()])}
-        />
-      </g>
-    );
-  });
-}
-
 // 基準の破線。refOf(点) が null の所で切る。何の線かの札は右端の札の列に置き（注記を読まずに分かるように）、
 // 前走の札と近いときは上下にずらす
 function RefLine({ sel, x, y, W, pad, refOf, refLabel }) {
@@ -135,7 +93,13 @@ function RefLine({ sel, x, y, W, pad, refOf, refLabel }) {
   const near = Math.abs(ry - ey) < 14;
   return (
     <g className="rmt-spark-refs">
-      <GainFill sel={sel} x={x} y={y} refOf={refOf} />
+      <TrendGainFill
+        sel={sel}
+        x={x}
+        y={y}
+        refOf={refOf}
+        className="rmt-spark-gain"
+      />
       {lines.map((pts) => (
         <polyline
           key={pts[0].join()}
