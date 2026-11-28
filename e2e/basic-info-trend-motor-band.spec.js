@@ -26,8 +26,11 @@ test("推移の線の下に、選んだ艇の節ごとの段と見出しと注�
   const band = wrap.locator(".rmb-svg");
   await expect(band).toBeVisible({ timeout: 30000 });
   await expect(band.locator(".rmb-seg").first()).toBeVisible({ timeout: 30000 });
-  await expect(band.locator(".rmb-head")).toHaveText(["順位", "号機"]);
-  await expect(wrap.locator(".rmb-note")).toContainText("上・中・下");
+  // 見出しは「2連率」（位置の「上・中・下」は出さない）。段の説明は下の「?」の中（plan.md §14、オーナー 2026-11-28）
+  await expect(band.locator(".rmb-head")).toHaveText(["2連率", "号機"]);
+  await wrap.locator(".rmb-note .term-hint__button").click();
+  await expect(page.locator(".term-hint__popover")).toContainText("上から何%");
+  await wrap.locator(".rmb-note .term-hint__button").click();
   // 節を押すと、下の行に期間・会場・号機（2連率の無い節は「まだ無い」）。もう一度押すと消える
   await band.locator(".rmb-hit").last().click();
   await expect(wrap.locator(".rmb-pick")).toContainText("2連率がまだ無い");

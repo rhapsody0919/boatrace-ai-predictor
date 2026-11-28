@@ -1,29 +1,33 @@
 /**
  * 選手の推移の線の下の段（レーン B の after B、オーナー 2026-11-25 承認のモック mock-motor-trend/mock.html の afterB）。
- * 選んだ艇の節ごとに、その選手が乗ったモーターの号機と、その節の会場の出走表の中の位置（上・中・下。src/pure/racerMeetMotors.js）を出す。
+ * 選んだ艇の節ごとに、その選手が乗ったモーターの号機と、その節の初日の公式2連率を出す。節を押すと、その節の会場の出走表の中の
+ * 位置（上から何%。src/pure/racerMeetMotors.js）を出す。位置で色や「上・中・下」の字は付けない（1つの節の上下は偶然の幅を
+ * 超えたと言えない。読み方は「?」の中。plan.md §14、オーナー 2026-11-28）。
  * 推移の図（TrendChart）の renderBelow で描き、図と同じ横の座標 x(i, len) と同じ viewBox の幅で横をそろえる。
  * データは自分で取らず props で受け取る（取りの hook は入口の RaceBasicInfoTab、plan.md §13）。
  * 見た目は RacerMotorBand.css（rmb- のクラス）
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import TermHintButton from "../TermHintButton";
 import "./RacerMotorBand.css";
 
 const ROW = 16;
 const BAND_H = ROW * 2 + 12;
-// 号機・区分の字を出す最小の幅（これより狭い節は枠だけ。1〜2走の節で字が重ならない）
+// 号機・2連率の字を出す最小の幅（これより狭い節は枠だけ。1〜2走の節で字が重ならない）
 const MIN_TEXT_W = 13;
 
+// 2連率が付いているか（0 は初下ろし等でまだ無い。racerMeetMotors の isRate と同じ線）
+const hasRate = (meet) => typeof meet.motor2Rate === "number" && meet.motor2Rate > 0;
 const md = (date) => `${Number(date.slice(5, 7))}/${date.slice(8, 10)}`;
 
 function Segment({ meet, x0, x1, picked, onPick }) {
-  const { t } = useTranslation();
   const w = Math.max(1, x1 - x0 - 1.5);
   const cx = (x0 + x1) / 2;
   const showText = w >= MIN_TEXT_W;
   return (
     <g
-      className={`rmb-seg rmb-seg--${meet.tier ?? "none"}${picked ? " is-picked" : ""}`}
+      className={`rmb-seg${hasRate(meet) ? "" : " rmb-seg--none"}${picked ? " is-picked" : ""}`}
     >
       <rect
         x={x0 + 0.5}
@@ -33,9 +37,9 @@ function Segment({ meet, x0, x1, picked, onPick }) {
         rx={3}
         className="rmb-box"
       />
-      {showText && meet.tier && (
+      {showText && hasRate(meet) && (
         <text x={cx} y={14} textAnchor="middle" className="rmb-tier">
-          {t(`basicInfo.trend.motorBand.tier.${meet.tier}`)}
+          {meet.motor2Rate.toFixed(1)}
         </text>
       )}
       {showText && meet.motorNumber != null && (
@@ -64,13 +68,15 @@ function PickedLine({ meet }) {
     range: `${md(meet.start)}〜${md(meet.end)}`,
     venue: t(`venues.${meet.venue}`),
     no: meet.motorNumber ?? "-",
-    tier: meet.tier ? t(`basicInfo.trend.motorBand.tier.${meet.tier}`) : "",
+    rate: hasRate(meet) ? meet.motor2Rate.toFixed(1) : "",
+    // 上から何%（pct は下からのパーセンタイル。いちばん上でも 0% と出さず 1% にする）
+    top: meet.pct == null ? "" : Math.max(1, Math.round((1 - meet.pct) * 100)),
   };
   return (
     <p className="rmb-pick">
       {t(
-        meet.tier
-          ? "basicInfo.trend.motorBand.tip"
+        hasRate(meet) && meet.pct != null
+          ? "basicInfo.trend.motorBand.tipRate"
           : "basicInfo.trend.motorBand.tipNoRank",
         args,
       )}
@@ -99,10 +105,10 @@ export function RacerMotorBandView({ x, W, pad, sel, band, failed }) {
         className="rmb-svg"
         viewBox={`0 0 ${W} ${BAND_H}`}
         role="img"
-        aria-label={t("basicInfo.trend.motorBand.label")}
+        aria-label={t("basicInfo.trend.motorBand.labelRate")}
       >
         <text x={pad.l - 4} y={14} textAnchor="end" className="rmb-head">
-          {t("basicInfo.trend.motorBand.rank")}
+          {t("basicInfo.trend.motorBand.rate")}
         </text>
         <text x={pad.l - 4} y={ROW + 16} textAnchor="end" className="rmb-head">
           {t("basicInfo.trend.motorBand.motor")}
@@ -119,7 +125,9 @@ export function RacerMotorBandView({ x, W, pad, sel, band, failed }) {
         ))}
       </svg>
       {picked && <PickedLine meet={picked} />}
-      <p className="rmb-note">{t("basicInfo.trend.motorBand.note")}</p>
+      <p className="rmb-note">
+        <TermHintButton termKey="racerMotorBand" />
+      </p>
     </>
   );
 }

@@ -28,7 +28,7 @@ const { outputFiles, metafile } = await bundle({
         b.onResolve({ filter: /\.css$/ }, () => ({ path: "css", namespace: "stub" }));
         b.onLoad({ filter: /.*/, namespace: "stub" }, (a) => ({
           loader: "js",
-          contents: a.path === "i18n" ? "export const useTranslation = () => ({ t: (k) => k, i18n: { language: 'ja' } });" : "",
+          contents: a.path === "i18n" ? "export const useTranslation = () => ({ t: (k) => k, i18n: { language: 'ja', exists: () => true } });" : "",
         }));
       },
     },
@@ -72,7 +72,8 @@ const html = (motorBand) =>
   );
 
 const same = html({ raceIds: selIds, band, failed: false });
-check("選んだ艇の点と同じ走なら段を描く", same.includes('class="rmb-svg"') && same.includes(">41<") && same.includes("motorBand.tier.high"), same.slice(-600));
+// 枠の字は位置（上・中・下）でなく節の初日の公式2連率（plan.md §14、オーナー 2026-11-28）
+check("選んだ艇の点と同じ走なら段を描く", same.includes('class="rmb-svg"') && same.includes(">41<") && same.includes(">45.0<") && !same.includes("motorBand.tier."), same.slice(-600));
 check("走が違えば段を描かない（艇を替えた直後）", !html({ raceIds: selIds.slice(1), band, failed: false }).includes("rmb-svg"));
 check("値が無ければ段を描かない", !html(null).includes("rmb-svg") && !html(undefined).includes("rmb-"));
 const failed = html({ raceIds: selIds, band: null, failed: true });
