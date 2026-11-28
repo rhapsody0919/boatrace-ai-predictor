@@ -3978,7 +3978,9 @@
     "flyingCount": "Class is the value on this race's program. F is the number of flying starts this term (gold = 1, red = 2) and resets to 0 on May 1 and November 1. A \"this meet\" tag means the racer had a flying start between the first day of this meet and yesterday: they still run the rest of the meet but cannot enter this meet's semifinal or final (excluded from prizes; today's F is not counted). L is the number of late starts, which is different from \"Slow\" below. Consistent and Slow exclude races with a flying start",
     "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction",
     "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card. Avg ST is the official term record, all venues from {{from}} to {{to}}. \"Racer form (national win rate)\" is the race card value and uses a different calculation period. It cannot be filtered by grade, so choosing a grade switches to \"Current term\"",
-    "expectedCourseWinRate": "This racer's 1st-place rate when entering the expected course (boat-number order) over the last 3 terms. It is the same value as in the 6-boat table in the Lane Stats tab"
+    "expectedCourseWinRate": "This racer's 1st-place rate when entering the expected course (boat-number order) over the last 3 terms. It is the same value as in the 6-boat table in the Lane Stats tab",
+    "racerExhibitionTrend": "Exhibition time for each race. Higher is faster. Times differ by venue, so ups and downs across venues are not necessarily a change in form. Tap a point to see that race's value and a link to the race details",
+    "racerStTrend": "Actual start timing for each race (0 is the start line). Higher is faster. Flying starts are left out of the line and shown as F in the band above the chart. Tap a point to see that race's value and a link to the race details"
   },
   "weatherInEscape": {
     "loading": "Loading…",
