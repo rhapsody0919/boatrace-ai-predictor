@@ -109,6 +109,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/venueModel.js` | — | makeVenue |
 | `src/pure/visitDays.js` | — | VISIT_DAYS_KEY, VISIT_WINDOW_DAYS, nextVisitDays, favHolder |
 | `src/pure/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonInterval, wilsonLowerBoundFromRate, isSmallSample |
+| `src/pure/windSector.js` | 風の扇形×風速の5区分（weather-in-escape の事前登録 3.1、docs/design/data-gaps/plan.md §3.1）。 | windSectorOf, WIND_SECTORS, VENUE_ARROW_OFFSET |
 | `src/pure/winningTechniqueSummary.js` | 決まり手タブの結論の一言と枠ごとの1着率（#3258 の #5）。 | winningTechniqueSummary, SMALL_WIN_COUNT |
 | `src/pure/winningTechniques.js` | — | COURSE_DEFAULT_DISTRIBUTION, COURSE_DEFAULT_DEFENSE |
 
@@ -710,4 +711,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 668 ファイル / export 3567 件。
+対象 669 ファイル / export 3570 件。
