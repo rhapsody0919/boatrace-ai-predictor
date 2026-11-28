@@ -2,7 +2,8 @@
  * イン崩れ注意度の段ごとの実績（BOA-822 task 24、screens S-5、承認モック mock/3-accuracy-375.png）。
  * /accuracy と /winning-technique?tab=volatility で使う（機能フラグ isInCautionEnabled() の側）。
  * 夜の in_caution_bands.py が書く accuracy_cache.in_caution_accuracy を読むだけ。「公開後」と「公開前の検証」を切り替える
- * （承認）。段ごとに1号艇が1着を逃した割合・件数・ぶれ幅の棒（段の範囲の帯・全レースの点線）。30件未満の段は件数だけ。
+ * （承認）。段ごとに1号艇が1着を逃した割合・件数の棒（段の範囲の帯・全レースの点線）。30件未満の段は件数だけ。
+ * ぶれ幅（偶然の幅）は行に出さず、見出しの横の「?」に段ごとの幅と読み方をまとめる（plan.md §14、G4 T-31、2026-11-28 オーナー承認）。
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,6 +14,7 @@ import { errorMessageOf } from "../../utils/errorMessage.js";
 import { trackEvent } from "../../utils/analytics";
 import { useVisibleOnce } from "../../hooks/useVisibleOnce";
 import { cautionVisibleEvent } from "../../utils/cautionEvents";
+import TermHintButton from "../race/TermHintButton";
 import "./InCautionAccuracyChart.css";
 
 const [LOW, HIGH] = IN_CAUTION_CONFIG.thresholds;
@@ -66,12 +68,10 @@ function LevelRow({ row, baseRate, t }) {
           ? t("accuracy.inCaution.countFew", {
               n: row.n.toLocaleString(),
             })
-          : t("accuracy.inCaution.count", {
+          : t("accuracy.inCaution.countRate", {
               n: row.n.toLocaleString(),
               rate: pct1(row.rate),
               share: Math.round(row.share * 100),
-              lo: pct1(row.lo),
-              hi: pct1(row.hi),
             })}
       </p>
     </li>
@@ -126,10 +126,26 @@ function TabSwitch({ tab, post, pre, setChosen, t }) {
   );
 }
 
+/** 「?」の中の段ごとのぶれ幅（割合を出した段だけ。例「崩れやすい 65.1〜66.3%」） */
+const marginsText = (rows, t) =>
+  rows
+    .filter((row) => row.rate !== null)
+    .map(
+      (row) =>
+        `${t(`inCaution.level.${row.level}`)} ${pct1(row.lo)}〜${pct1(row.hi)}%`,
+    )
+    .join(t("listSeparator"));
+
 function BarsCard({ view, section, tab, t }) {
   return (
     <div className="ica-card">
-      <h3 className="ica-card-title">{t("accuracy.inCaution.barsTitle")}</h3>
+      <div className="ica-card-head">
+        <h3 className="ica-card-title">{t("accuracy.inCaution.barsTitle")}</h3>
+        <TermHintButton
+          termKey="inCautionMargin"
+          values={{ margins: marginsText(view.rows, t) }}
+        />
+      </div>
       {view.base.rate !== null && (
         <div className="ica-base-label-row">
           <span
@@ -170,7 +186,6 @@ function AboutCard({ t }) {
     <div className="ica-card ica-about">
       <h3 className="ica-card-title">{t("accuracy.inCaution.aboutTitle")}</h3>
       <p>{t("accuracy.inCaution.about1")}</p>
-      <p>{t("accuracy.inCaution.about2")}</p>
       {/* 注意度が画面のどこに出るか（#1606 ファン評価1周目 P2） */}
       <p>{t("accuracy.inCaution.where")}</p>
       <p className="ica-note">{t("inCaution.disclaimer")}</p>
