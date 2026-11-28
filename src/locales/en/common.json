@@ -3285,6 +3285,7 @@
     "raceCard": {
       "title": "📋 Race Card Data",
       "description": "Select a race being held today to view the six racers' win rates, motor stats, average ST, exhibition data, and lane win rates in lane order. Colored values indicate the top 3 in the race.",
+      "descriptionRows": "Choose a race running today to line up the six racers' race card data (win rates, motor, average ST, exhibition, lane win rate) by indicator. The bar under each value shows where it sits among the six boats in this race; longer is higher (for average ST and exhibition time, faster is longer).",
       "note": "💡 Lane win rate is wins/starts from that lane (boat number) (racerStats aggregate). Exhibition time and exhibition ST appear after the day's exhibition run."
     },
     "venueRanking": {

@@ -11,7 +11,6 @@ import {
 } from "./helpers.js";
 
 test.describe("レースページ再設計（BOA-168）", () => {
-
   test("オッズ一覧タブで券種切替・全通り常時表示・推移ドリルダウン・免責文言が表示される（BOA-311）", async ({
     page,
   }) => {
@@ -162,7 +161,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
         // 一覧取得後も表を維持する。初回のID取得だけでは旧実装も成功し得る。
         await expect(page.locator(selector)).toBeVisible({ timeout: 20000 });
         if (tab === "racecard")
-          await expect(page.locator(".rcd-table tbody tr")).toHaveCount(6);
+          await expect(
+            page.locator(".rcd-table thead .rcd-boat-head"),
+          ).toHaveCount(6);
         expect(
           dataRequests.some((url) => url.includes(ANALYSIS_FIXED_RACE_ID)),
         ).toBeTruthy();
@@ -194,6 +195,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 固定の過去レースは出走表データが確定しているため実テーブルが必ず出る
     // （空状態を許容しない。BOA-664）
     await expect(page.locator(".rcd-table")).toBeVisible({ timeout: 20000 });
-    await expect(page.locator(".rcd-table tbody tr")).toHaveCount(6);
+    await expect(page.locator(".rcd-table thead .rcd-boat-head")).toHaveCount(
+      6,
+    );
   });
 });

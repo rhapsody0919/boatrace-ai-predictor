@@ -4,6 +4,9 @@
  * データ項目をデータ分析ツールへ外出ししたもの。
  * AI由来の項目（総合力スコア・AI予想順ソート）は含めず、枠番順の純粋な
  * 出走表データ（race_entries + racerStats + 展示データ）を表示する。
+ * 行＝指標・列＝艇番の表にし、値の下に6艇の中の位置の灰の棒（長いほど上位、平均ST・展示タイムは速いほど長い）を出す。
+ * 13列の横長の表はスマホで5列しか見えず、上位3位の色は CSS の詳細度で効いていなかった
+ * （部品化 G4 T-29、2026-11-28 オーナーが before/after で承認。plan.md §14: 上位の印を色にしない）。
  */
 import { useState, useEffect } from "react";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
@@ -16,6 +19,7 @@ import { getRaceEntriesDetail } from "../../services/raceQueries3.js";
 import { getRaceSt30 } from "../../services/analogyService";
 import InlineFetchError from "../InlineFetchError";
 import { formatExhibitionSt } from "../../utils/formatters";
+import BoatBadge from "../race/BoatBadge";
 import "./MotorConditionChart.css";
 import "./RaceCardDataTable.css";
 
@@ -51,25 +55,25 @@ const toNumber = (value) => {
   return Number.isFinite(n) ? n : null;
 };
 
-// 列ごとにレース内順位を計算し、上位3位までのクラス名を返す。
-// 全艇同値の列（例: モーター交換直後で全艇2連率0%）は順位の意味が無いため色付けしない
-function rankClass(rows, accessor, value, dir = "max") {
-  if (value === null) return "";
-  const values = rows
-    .map((r) => accessor(r))
-    .filter((v) => v !== null && v !== undefined);
-  if (values.length === 0 || Math.min(...values) === Math.max(...values))
-    return "";
-  const better = values.filter((v) =>
-    dir === "min" ? v < value : v > value,
-  ).length;
-  const rank = better + 1;
-  return rank <= 3 ? `rcd-rank-${rank}` : "";
-}
+// 6艇の中の位置（0〜1、1 が上位）。dir は max（大きいほど上位）か min（小さいほど上位）。
+// 値の無い艇は null。全艇同値（例: モーター交換直後で全艇2連率0%）は位置の意味が無いので null（棒を出さない）
+const positionsOf = (values, dir) => {
+  const ok = values.filter((v) => v !== null);
+  const lo = Math.min(...ok);
+  const hi = Math.max(...ok);
+  return values.map((v) =>
+    v === null || ok.length === 0 || lo === hi
+      ? null
+      : dir === "max"
+        ? (v - lo) / (hi - lo)
+        : (hi - v) / (hi - lo),
+  );
+};
 
-const fmt = (value, digits = 2, suffix = "") => {
+// 全国勝率・当地勝率の 0.00 は「走っていない」（6着でも点が付くので、走れば 0 にならない）。値も棒も出さない
+const rateOrNone = (value) => {
   const n = toNumber(value);
-  return n !== null ? `${n.toFixed(digits)}${suffix}` : "—";
+  return n === 0 ? null : n;
 };
 
 function RaceCardVenueRaceControls({
@@ -128,134 +132,150 @@ function RaceCardVenueRaceControls({
   );
 }
 
-function RaceCardTableHead({ t }) {
+// 行 = 指標。dir があれば値の下に6艇の中の位置の棒（長いほど上位）。行の名前は既存の表と同じ訳
+const METRICS = [
+  { key: "table.class", value: (r) => r.grade ?? "—" },
+  { key: "table.age", value: (r) => r.age ?? "—" },
+  {
+    key: "table.nationalWinRate",
+    num: (r) => rateOrNone(r.win_rate),
+    digits: 2,
+    dir: "max",
+  },
+  {
+    key: "table.nationalTop2Rate",
+    num: (r) => toNumber(r.global_2rate),
+    digits: 1,
+    pct: true,
+    dir: "max",
+  },
+  {
+    key: "table.localWinRate",
+    num: (r) => rateOrNone(r.local_win_rate),
+    digits: 2,
+    dir: "max",
+  },
+  {
+    key: "table.motorTop2Rate",
+    num: (r) => toNumber(r.motor_2rate),
+    digits: 1,
+    pct: true,
+    dir: "max",
+  },
+  {
+    key: "dataTable.rowAvgStOfficial",
+    num: (r, ctx) => toNumber(ctx.avgSt.official.get(r.boat_number)),
+    digits: 2,
+    dir: "min",
+  },
+  {
+    key: "dataTable.rowAvgSt30",
+    num: (r, ctx) => toNumber(ctx.avgSt.st30.get(r.boat_number)),
+    digits: 3,
+    dir: "min",
+  },
+  {
+    key: "table.exhibitionTime",
+    num: (r) => toNumber(r.exhibition_time),
+    digits: 2,
+    dir: "min",
+  },
+  // 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759）
+  {
+    key: "table.exhibitionST",
+    value: (r) =>
+      formatExhibitionSt(r.exhibition_st, r.exhibition_start_flag) ?? "—",
+  },
+  { key: "table.wakuWinRate", waku: true },
+];
+
+// 名前はスマホでは姓だけ（列が約40px。公式の名は「姓 名」の空白区切り）、PC は全部
+function NameCell({ name }) {
+  const full = name?.replace(/\s+/g, "") ?? "";
+  const family = name?.trim().split(/\s+/)[0] ?? "";
   return (
-    <thead>
-      <tr>
-        <th>{t("table.boatNumber")}</th>
-        <th>{t("table.playerName")}</th>
-        <th>{t("table.class")}</th>
-        <th>{t("table.age")}</th>
-        <th>{t("table.nationalWinRate")}</th>
-        <th>{t("table.nationalTop2Rate")}</th>
-        <th>{t("table.localWinRate")}</th>
-        <th>{t("table.motorTop2Rate")}</th>
-        <th>{t("dataTable.rowAvgStOfficial")}</th>
-        <th>{t("dataTable.rowAvgSt30")}</th>
-        <th>{t("table.exhibitionTime")}</th>
-        <th>{t("table.exhibitionST")}</th>
-        <th>{t("table.wakuWinRate")}</th>
-      </tr>
-    </thead>
+    <span className="rcd-col-name" translate="no">
+      <span className="rcd-name-full">{full}</span>
+      <span className="rcd-name-short">{family}</span>
+    </span>
   );
 }
 
-function RaceCardRow({ row, entries, avgSt, counts }) {
+function MetricCell({ metric, row, pos, ctx }) {
+  if (metric.waku) {
+    const counts = ctx.statsByBoat.get(row.boat_number)?.wakuRaceCounts?.[
+      String(row.boat_number)
+    ];
+    if (!counts || counts.total <= 0) return <td>—</td>;
+    const wins = counts.wins ?? 0;
+    return (
+      <td>
+        {((wins / counts.total) * 100).toFixed(0)}%
+        <span className="rcd-sub">
+          {wins}/{counts.total}
+        </span>
+      </td>
+    );
+  }
+  if (!metric.num) return <td>{metric.value(row)}</td>;
+  const n = metric.num(row, ctx);
   return (
-    <tr>
-      <td className="rcd-boat">{row.boat_number}</td>
-      <td className="rcd-name" translate="no">
-        {row.player_name?.replace(/\s+/g, "")}
-      </td>
-      <td>{row.grade ?? "—"}</td>
-      <td>{row.age ?? "—"}</td>
-      <td
-        className={rankClass(
-          entries,
-          (r) => toNumber(r.win_rate),
-          toNumber(row.win_rate),
-        )}
-      >
-        {fmt(row.win_rate)}
-      </td>
-      <td
-        className={rankClass(
-          entries,
-          (r) => toNumber(r.global_2rate),
-          toNumber(row.global_2rate),
-        )}
-      >
-        {fmt(row.global_2rate, 1, "%")}
-      </td>
-      <td
-        className={rankClass(
-          entries,
-          (r) => toNumber(r.local_win_rate),
-          toNumber(row.local_win_rate),
-        )}
-      >
-        {fmt(row.local_win_rate)}
-      </td>
-      <td
-        className={rankClass(
-          entries,
-          (r) => toNumber(r.motor_2rate),
-          toNumber(row.motor_2rate),
-        )}
-      >
-        {fmt(row.motor_2rate, 1, "%")}
-      </td>
-      <td
-        className={rankClass(
-          entries,
-          (r) => toNumber(avgSt.official.get(r.boat_number)),
-          toNumber(avgSt.official.get(row.boat_number)),
-          "min",
-        )}
-      >
-        {fmt(avgSt.official.get(row.boat_number))}
-      </td>
-      <td
-        className={rankClass(
-          entries,
-          (r) => toNumber(avgSt.st30.get(r.boat_number)),
-          toNumber(avgSt.st30.get(row.boat_number)),
-          "min",
-        )}
-      >
-        {fmt(avgSt.st30.get(row.boat_number), 3)}
-      </td>
-      <td
-        className={rankClass(
-          entries,
-          (r) => toNumber(r.exhibition_time),
-          toNumber(row.exhibition_time),
-          "min",
-        )}
-      >
-        {fmt(row.exhibition_time)}
-      </td>
-      {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
-      <td>
-        {formatExhibitionSt(row.exhibition_st, row.exhibition_start_flag) ??
-          "—"}
-      </td>
-      <td>
-        {counts && counts.total > 0
-          ? `${counts.wins ?? 0}/${counts.total}（${(((counts.wins ?? 0) / counts.total) * 100).toFixed(0)}%）`
-          : "—"}
-      </td>
-    </tr>
+    <td>
+      {n === null ? "—" : n.toFixed(metric.digits)}
+      {n !== null && metric.pct && <span className="rcd-pct">%</span>}
+      {pos !== null && (
+        <span className="rcd-pos" aria-hidden="true">
+          <span
+            className="rcd-pos-fill"
+            style={{ width: `${12 + pos * 88}%` }}
+          />
+        </span>
+      )}
+    </td>
   );
 }
 
 function RaceCardTable({ entries, statsByBoat, avgSt, t }) {
+  const ctx = { avgSt, statsByBoat };
   return (
     <div className="rcd-table-wrapper">
       <table className="rcd-table">
-        <RaceCardTableHead t={t} />
+        <thead>
+          <tr>
+            <th scope="col" className="rcd-corner">
+              {t("table.boatNumber")}
+            </th>
+            {entries.map((row) => (
+              <th key={row.boat_number} scope="col" className="rcd-boat-head">
+                <BoatBadge n={row.boat_number} size="sm" />
+                <NameCell name={row.player_name} />
+              </th>
+            ))}
+          </tr>
+        </thead>
         <tbody>
-          {entries.map((row) => {
-            const stats = statsByBoat.get(row.boat_number);
-            const counts = stats?.wakuRaceCounts?.[String(row.boat_number)];
+          {METRICS.map((metric) => {
+            const pos = metric.dir
+              ? positionsOf(
+                  entries.map((r) => metric.num(r, ctx)),
+                  metric.dir,
+                )
+              : entries.map(() => null);
             return (
-              <RaceCardRow
-                key={row.boat_number}
-                row={row}
-                entries={entries}
-                avgSt={avgSt}
-                counts={counts}
-              />
+              <tr key={metric.key}>
+                <th scope="row" className="rcd-metric">
+                  {t(metric.key)}
+                </th>
+                {entries.map((row, i) => (
+                  <MetricCell
+                    key={row.boat_number}
+                    metric={metric}
+                    row={row}
+                    pos={pos[i]}
+                    ctx={ctx}
+                  />
+                ))}
+              </tr>
             );
           })}
         </tbody>
@@ -324,7 +344,7 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
     <div className="motor-condition-container">
       <h2>{t("analysis.raceCard.title")}</h2>
       <p className="section-description">
-        {t("analysis.raceCard.description")}
+        {t("analysis.raceCard.descriptionRows")}
       </p>
 
       <RaceCardVenueRaceControls
