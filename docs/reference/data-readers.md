@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3087 |
+| 読んだファイル | 3088 |
 | 読み書きのあるファイル | 335 |
 | 表の読み手（箇所） | 982 |
 | 表の書き手（箇所） | 202 |
@@ -1288,7 +1288,7 @@
   - `api/_lib/botRace.js:212` rest(rest)
   - `scripts/lib/eveDeadlinesJob.js:66` select [end_date, start_date, venue_code]
   - `scripts/lib/motorPretestJob.js:197` select [end_date, start_date, venue_code]
-  - `scripts/lib/raceFactsMainJob.js:128` select(helper:all)
+  - `scripts/lib/raceFactsMainJob.js:124` select(helper:all)
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
   - `scripts/lib/snsTodayDigestV3.js:96` rest(rest) [end_date, grade, kind, start_date, title, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
