@@ -91,7 +91,9 @@ export default function VenueGradeWinShare({
         <span className="vgs-legend-label">{t("analysis.laneHeader")} →</span>
         <span className="vgs-nums">
           {BOATS.map((b) => (
-            <BoatBadge key={b} n={b} size="sm" />
+            <span key={b}>
+              <BoatBadge n={b} size="sm" />
+            </span>
           ))}
         </span>
       </div>

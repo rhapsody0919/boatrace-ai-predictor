@@ -74,13 +74,18 @@
   border-right: 0;
 }
 
+/* 6艇の数字・札を均等に並べる（列の位置は全グレードで同じ） */
 .vgs-nums {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  justify-items: center;
+  display: flex;
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
+}
+
+.vgs-nums > * {
+  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
 }
 
 .vgs-row .vgs-nums {
