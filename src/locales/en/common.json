@@ -2509,8 +2509,8 @@
     "sparkLast": "Last {{value}}",
     "sparkTip": "{{date}} R{{no}} · {{metric}} {{value}} · {{finish}}",
     "sparkTipFinish": "Finish {{finish}}",
-    "sparkNote": "For ST the dashed line is the racer's usual average; for the trial it is the venue-wide average trial time for that day (how heavy the water was; it can move by nearly 0.1s). Higher is faster, and above the dashed line means fast for that day's water. The horizontal axis uses the same dates as the six-boat chart above (finishes are shown in the dots there). Tap a dot to see that race's value and a link to the race. We do not label it as improving or declining. The ST label is colored (pushing harder in green, holding back in red) only with 3 or more runs this series and a gap of 0.02 or more.",
     "sparkStMeta": "Avg {{avg}} ({{n}} runs) / usual {{base}}",
+    "sparkStDiff": "diff {{diff}}",
     "sparkExMetaRank": "Pre-test {{value}} (#{{rank}})",
     "compareTrendTitle": "How the six have moved this series",
     "trendChartRange": "The horizontal axis is the date ({{from}}–{{to}}). Two races on the same day are shifted left and right, and the line breaks on days the racer did not race. The numbers at the right edge are each boat's value in its previous race.",
@@ -2677,9 +2677,6 @@
     "meetScoreForecastItem": "{{rank}}st {{rate}}",
     "meetScoreNote": "The official score-rate list holds the values as of the end of qualifying, so during qualifying we calculate it ourselves. It uses the qualifying scale (10 for a win down to 1 for sixth; dream and selection races score differently) and excludes the semi-finals and the final",
     "meetTrendSt": "Average ST this series {{meet}} ({{n}} races) / usual {{base}}",
-    "meetTrendStPush": "−{{diff}}, pushing harder",
-    "meetTrendStCareful": "+{{diff}}, holding back",
-    "meetTrendStFlat": "same as usual",
     "meetEmpty": "No races yet in this series (this is the racer's first one)",
     "conditionsNote": "{{metric}} by condition (our own tally, all available data). It will not match the official figures in the bars above, which are calculated differently.",
     "conditionsNoteFiltered": "{{metric}} by condition (our own tally, all available data). The bars above use your grade/period filter, while this table always covers all periods and grades, so the numbers may differ.",
@@ -3986,7 +3983,8 @@
     "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card. Avg ST is the official term record, all venues from {{from}} to {{to}}. \"Racer form (national win rate)\" is the race card value and uses a different calculation period. It cannot be filtered by grade, so choosing a grade switches to \"Current term\"",
     "expectedCourseWinRate": "This racer's 1st-place rate when entering the expected course (boat-number order) over the last 3 terms. It is the same value as in the 6-boat table in the Lane Stats tab. The number below is the gap (points) from the national 1st-place rate for the same course. Green or red only marks gaps that are hard to explain by chance, given the number of starts.",
     "racerExhibitionTrend": "Exhibition time for each race. Higher is faster. Times differ by venue, so ups and downs across venues are not necessarily a change in form. Tap a point to see that race's value and a link to the race details",
-    "racerStTrend": "Actual start timing for each race (0 is the start line). Higher is faster. Flying starts are left out of the line and shown as F in the band above the chart. Tap a point to see that race's value and a link to the race details"
+    "racerStTrend": "Actual start timing for each race (0 is the start line). Higher is faster. Flying starts are left out of the line and shown as F in the band above the chart. Tap a point to see that race's value and a link to the race details",
+    "meetSparks": "Both ST and trial show each run this series; higher is faster. For ST the dashed line is the racer's usual average; for the trial it is the venue-wide average trial time for that day (how heavy the water was; it can move by nearly 0.1s). The horizontal axis uses the same dates as the six-boat chart above (finishes are shown in the dots there). The number at the top right of ST is this series' average minus the usual average (− means faster than usual); − is shown in green and + in red only with 3 or more runs this series and a gap of 0.02 or more. Tap a dot to see that race's value and a link to the race."
   },
   "weatherInEscape": {
     "loading": "Loading…",

@@ -1,26 +1,32 @@
 /**
  * RaceMeetTab 詳細の、今節の走順に並べた小さな線（ST・展示）。数字の羅列だと8走ぶんの上下を
  * 頭の中で組み立てることになる（2026-09-27、ファン視点の議論）。
- * 判定文は出さず、形と基準線を見せて読み手に委ねる。
+ * 判定文は出さず、形と基準線と差の数字を見せて読み手に委ねる。
  * 線は共通の推移の図（basic-info/TrendChart）の1艇版で、横軸は上の6艇の推移（R-43）と同じ日付
  * （オーナー 2026-11-26「既に線がある部品を共通の図へ」）。基準（ST の通常の平均・展示のその日の会場平均）は破線で重ねる。
  */
-import {
-  meetStVerdictTone,
-  MEET_ST_DIFF_THRESHOLD,
-} from "../../pure/basicInfoStats.js";
+import { meetStVerdictTone } from "../../pure/basicInfoStats.js";
 import { trendScaleOf } from "../../pure/trendMetricScale.js";
 import { dayTicksOf, pointOf } from "./meetTrendPoints";
 import TrendChart from "./basic-info/TrendChart";
 import TrendGainFill from "./basic-info/TrendGainFill";
+import TermHintButton from "./TermHintButton";
 import "./basic-info/TrendChart.css";
 
 // 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く。
-// 小さな差・走数の少ないときは色を付けない（meetStVerdictTone）
+// 小さな差・走数の少ないときは色を付けない（meetStVerdictTone）。「踏んでいる」等の文字は出さない（plan.md §14、オーナー 2026-11-28）
+const signedDiff = (d) => {
+  const r = Math.round(d * 100) / 100;
+  return r < 0
+    ? `\u2212${Math.abs(r).toFixed(2)}`
+    : `${r > 0 ? "+" : ""}${r.toFixed(2)}`;
+};
+// 「差」の札を付ける（札が無いと直前の「通常 0.14」の幅や式に読める）。札ごと改行で割らない（visual-designer 11/28）
 function StVerdict({ m }) {
   const { t, st } = m;
   return (
     <span
+      style={{ whiteSpace: "nowrap" }}
       className={`rmt-verdict${
         {
           good: " ind-good",
@@ -28,15 +34,7 @@ function StVerdict({ m }) {
         }[meetStVerdictTone(st.diff, st.meetN)] ?? ""
       }`}
     >
-      {st.diff <= -MEET_ST_DIFF_THRESHOLD
-        ? t("basicInfo.meetTrendStPush", {
-            diff: Math.abs(st.diff).toFixed(2),
-          })
-        : st.diff >= MEET_ST_DIFF_THRESHOLD
-          ? t("basicInfo.meetTrendStCareful", {
-              diff: st.diff.toFixed(2),
-            })
-          : t("basicInfo.meetTrendStFlat")}
+      {t("meetTab.sparkStDiff", { diff: signedDiff(st.diff) })}
     </span>
   );
 }
@@ -45,7 +43,11 @@ function StHead({ m }) {
   const { t, st } = m;
   return (
     <div className="rmt-spark-head">
-      <span className="rmt-spark-title">{t("meetTab.sparkStTitle")}</span>
+      <span className="rmt-spark-title">
+        {t("meetTab.sparkStTitle")}
+        {/* 読み方（破線・横軸・色の条件・点を押すと）は「?」の中（plan.md §14） */}
+        <TermHintButton termKey="meetSparks" />
+      </span>
       {st.diff !== null && (
         <span className="rmt-spark-base">
           {t("meetTab.sparkStMeta", {
@@ -172,7 +174,11 @@ function ExHead({ m }) {
   const { t, pre } = m;
   return (
     <div className="rmt-spark-head">
-      <span className="rmt-spark-title">{t("meetTab.sparkExTitle")}</span>
+      <span className="rmt-spark-title">
+        {t("meetTab.sparkExTitle")}
+        {/* 説明は ST と共通。375px で縦に積むと ST の「?」に気づかないので展示の見出しにも置く */}
+        <TermHintButton termKey="meetSparks" />
+      </span>
       {pre?.pretest_time !== null && pre?.pretest_time !== undefined && (
         <span className="rmt-spark-base">
           {pre.pretest_rank
@@ -209,12 +215,10 @@ function ExSpark({ m }) {
 }
 
 export default function RaceMeetTabSparks({ m }) {
-  const { t } = m;
   return (
     <div className="rmt-sparks">
       <StSpark m={m} />
       <ExSpark m={m} />
-      <p className="rmt-spark-note">{t("meetTab.sparkNote")}</p>
     </div>
   );
 }
