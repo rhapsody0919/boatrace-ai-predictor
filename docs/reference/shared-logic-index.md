@@ -43,6 +43,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/indicatorStart.js` | 指標の定義: 大分類「スタート」（ADR-0108、設計 docs/design/indicator-parts/plan.md §3、族は catalog.m… | START_INDICATORS |
 | `src/pure/jointMeetSeries.js` | 同じ節に格の違う2つの開催が同居する「併催」を、選手の組に分ける（純関数、G3 の点検 V-61、2026-11-26）。 | jointMeetSeriesOf, JOINT_FINAL_SLOTS |
 | `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST, splitJstDate, formatDate |
+| `src/pure/localVsNational.js` | 出走表の当地勝率の下に出す、本人の全国勝率との差（意味づけ）。 | localVsNational |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetCompareSideRows.js` | RaceMeetTab 比較表の注記（RaceMeetTabCompareSide.jsx）の人数の行の文言を作る純関数（副作用なし）。 | countLineText |
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
@@ -707,4 +708,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 665 ファイル / export 3556 件。
+対象 666 ファイル / export 3557 件。
