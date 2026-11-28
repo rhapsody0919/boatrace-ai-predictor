@@ -1,66 +1,118 @@
 /* RaceCardDataTable - 出走表データ分析タブ（BOA-168） */
 
 .rcd-table-wrapper {
+  max-width: 880px;
   overflow-x: auto;
   background: var(--surface-card);
   border-radius: var(--radius-md);
   border: var(--border-width-1) solid var(--border-hairline);
 }
 
+/* 行＝指標・列＝艇番（G4 T-29）。375px でも6艇が一画面に入る。値の下の棒は6艇の中の位置（灰の1色、§14） */
 .rcd-table {
   width: 100%;
-  min-width: 900px;
   border-collapse: collapse;
-  font-size: var(--font-size-sm);
+  table-layout: fixed;
+  font-size: var(--font-size-md);
+  font-variant-numeric: tabular-nums;
 }
 
 .rcd-table th,
 .rcd-table td {
-  padding: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-1);
   text-align: center;
   border-bottom: var(--border-width-1) solid var(--border-hairline);
-  white-space: nowrap;
   color: var(--text-primary);
 }
 
 .rcd-table thead th {
   background: var(--surface-page);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-primary);
+  vertical-align: bottom;
+}
+
+.rcd-table .rcd-corner {
+  width: 8.5rem;
+  padding-left: var(--spacing-2);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+  text-align: left;
 }
 
-.rcd-boat {
-  font-weight: var(--font-weight-bold);
-}
-
-.rcd-name {
-  font-weight: var(--font-weight-medium);
-}
-
-.rcd-rank-1 {
-  color: var(--color-error-text);
-  font-weight: var(--font-weight-bold);
-}
-
-.rcd-rank-2 {
-  color: var(--color-warning-dark-text);
+.rcd-boat-head {
   font-weight: var(--font-weight-semibold);
 }
 
-.rcd-rank-3 {
-  color: var(--brand-accent-primary);
+.rcd-col-name {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
+}
+
+.rcd-name-short {
+  display: none;
+}
+
+.rcd-table .rcd-metric {
+  padding-left: var(--spacing-2);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rcd-pct {
+  font-size: var(--font-size-2xs);
+}
+
+.rcd-sub {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rcd-pos {
+  display: block;
+  height: 5px;
+  margin: var(--spacing-1) var(--spacing-1) 0;
+  border-radius: 3px;
+  background: var(--border-hairline);
+  overflow: hidden;
+}
+
+.rcd-pos-fill {
+  display: block;
+  height: 100%;
+  background: var(--text-secondary);
 }
 
 @media (max-width: 768px) {
   .rcd-table {
-    min-width: 780px;
     font-size: var(--font-size-xs);
+  }
+
+  .rcd-table .rcd-corner {
+    width: 4.75rem;
+  }
+
+  /* 「平均ST(30走)」等は 76px に収まらないので折る */
+  .rcd-table .rcd-metric {
+    white-space: normal;
+    line-height: 1.25;
   }
 
   .rcd-table th,
   .rcd-table td {
-    padding: var(--spacing-1);
+    padding: var(--spacing-1) 2px;
+  }
+
+  .rcd-name-full {
+    display: none;
+  }
+
+  .rcd-name-short {
+    display: inline;
   }
 }
