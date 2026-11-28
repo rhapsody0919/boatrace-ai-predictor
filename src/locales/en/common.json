@@ -2807,8 +2807,7 @@
     "motorBadgeUp": "Motor ↑",
     "motorBadgeDown": "Motor ↓",
     "rowExpectedCourseWinRate": "Expected-course 1st-place rate",
-    "expectedCourseWinRateNote": "The expected-course 1st-place rate is aggregated by actual starting course over the last 3 terms",
-    "expectedCourseWinRateNoteDiff": "Below: gap from the national rate for the same course (▲▼ = hard to explain by chance alone)",
+    "expectedCourseWinRateNote": "Last 3 terms, by actual course",
     "noteExpectedCourse": "Win rate, local win rate, and top-2 rate are from the official race card. Avg. ST and motor top-2 rate cover the periods in their row labels. The expected-course 1st-place rate covers actual starting courses over the last 3 terms. Other analysis data is aggregated over the past 90 days (180 days for return rate). Highlights mark the best value in this race. For reference only; results are not guaranteed",
     "localVsNational": "{{diff}}",
     "localDiffNote": "The figure under local win rate is the gap from the racer’s own national win rate (+ means higher here; not shown for racers with no local starts)."
@@ -3982,7 +3981,7 @@
     "flyingCount": "Class is the value on this race's program. F is the number of flying starts this term (gold = 1, red = 2) and resets to 0 on May 1 and November 1. A \"this meet\" tag means the racer had a flying start between the first day of this meet and yesterday: they still run the rest of the meet but cannot enter this meet's semifinal or final (excluded from prizes; today's F is not counted). L is the number of late starts, which is different from \"Slow\" below. Consistent and Slow exclude races with a flying start",
     "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction",
     "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card. Avg ST is the official term record, all venues from {{from}} to {{to}}. \"Racer form (national win rate)\" is the race card value and uses a different calculation period. It cannot be filtered by grade, so choosing a grade switches to \"Current term\"",
-    "expectedCourseWinRate": "This racer's 1st-place rate when entering the expected course (boat-number order) over the last 3 terms. It is the same value as in the 6-boat table in the Lane Stats tab"
+    "expectedCourseWinRate": "This racer's 1st-place rate when entering the expected course (boat-number order) over the last 3 terms. It is the same value as in the 6-boat table in the Lane Stats tab. The number below is the gap (points) from the national 1st-place rate for the same course. Green or red only marks gaps that are hard to explain by chance, given the number of starts."
   },
   "weatherInEscape": {
     "loading": "Loading…",
