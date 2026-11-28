@@ -169,9 +169,10 @@ test.describe("選手個別ページ（racer-news-feature）", () => {
     await page.goto("/winning-technique");
     await page.click('button:has-text("好調・不調選手ランキング")');
     // Supabaseからのデータ取得に数秒かかるため、テーブル見出しの表示を先に待つ
-    await expect(page.getByRole("heading", { name: /急上昇選手/ })).toBeVisible(
-      { timeout: 15000 },
-    );
+    // 小見出しは「全国勝率が上がった10人」（G4 T-21 で「急上昇選手 TOP10」から改めた）
+    await expect(
+      page.getByRole("heading", { name: /全国勝率が上がった10人/ }),
+    ).toBeVisible({ timeout: 15000 });
     const firstRacerLink = page.locator('a[href^="/racer/"]').first();
     await expect(firstRacerLink).toBeVisible();
     await firstRacerLink.click();
