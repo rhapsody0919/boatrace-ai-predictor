@@ -3,6 +3,7 @@ import {
   RACER,
   VENUE,
   expectVenueCards,
+  HISTORY_ROUTE,
   isHistoryRequest,
   raceIdOf,
   routePredictions,
@@ -270,7 +271,7 @@ test("出走履歴の取得に失敗したら、その行に「成績を読め�
   await page.setViewportSize({ width: 375, height: 812 });
   await setFavorites(page, [RACER]);
   await routePredictions(page);
-  await page.route(/\/rest\/v1\/race_entries/, (route) =>
+  await page.route(HISTORY_ROUTE, (route) =>
     isHistoryRequest(route.request().url()) ? route.abort() : route.fallback(),
   );
   await page.goto("/");
