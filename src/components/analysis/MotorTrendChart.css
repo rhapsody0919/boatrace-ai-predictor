@@ -134,3 +134,17 @@
 p.mtc-tip-wrap {
   white-space: normal;
 }
+
+/* 優出・優勝の字（F-044）に地の色の縁。ほかの基の線と重なっても読める（オーナー 2026-11-28 承認の after） */
+.mtc-final {
+  paint-order: stroke;
+  stroke: var(--surface-card);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* 推移の見出しの「?」は見出しのすぐ右に寄せる（右の「今の値｜推移」との間を空けない） */
+.trc-head > .trc-title + .term-hint {
+  margin-right: auto;
+  align-self: center;
+}

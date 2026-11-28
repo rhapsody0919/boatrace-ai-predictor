@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import BoatBadge from "../race/BoatBadge";
 import InlineFetchError from "../InlineFetchError";
 import MotorTrendChart from "./MotorTrendChart";
+import TermHintButton from "../race/TermHintButton";
 import MotorMeetTooltip from "./MotorMeetTooltip";
 import { getMotorGenerationRuns } from "../../services/motorQueries8.js";
 import {
@@ -37,6 +38,13 @@ export function MotorViewHead({ view, setView, metric }) {
   return (
     <div className="trc-head">
       <p className="trc-title">{t(view === "now" ? "analysis.motor.genTrend.nowTitle" : `analysis.motor.genTrend.title.${metric}`)}</p>
+      {/* 推移の読み方（点の意味・描かない区間・偶然の幅）は見出しの横の「?」の中（plan.md §14、オーナー 2026-11-28） */}
+      {view === "trend" && (
+        <TermHintButton
+          termKey={isExDiff(metric) ? "motorGenTrendExhibitionDiff" : "motorGenTrendRate"}
+          values={{ n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) }}
+        />
+      )}
       <span className="trc-tabs" role="group" aria-label={t("analysis.motor.genTrend.viewLabel")}>
         {["now", "trend"].map((v) => (
           <button key={v} type="button" className="trc-tab mtc-tab" aria-pressed={view === v} onClick={() => setView(v)}>
@@ -164,7 +172,7 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
   return (
     <div className="race-split trc-split">
       <div className="race-split__main">
-        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} renderTip={isExDiff(metric) ? null : renderTip} finalLabels={finalLabels} />
+        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} renderTip={isExDiff(metric) ? null : renderTip} finalLabels={finalLabels} />
       </div>
       <div className="race-split__side">
         <BoatMotorPicker rows={rows} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={onSelect} metric={metric} />
@@ -173,7 +181,6 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
             {t("analysis.motor.genTrend.selected", { boat: selected, n: selRow.motor_number, date: formatGenerationDate(data.generationStart), runs })}
           </p>
         )}
-        <p className="trc-note">{t(isExDiff(metric) ? "analysis.motor.genTrend.noteExhibitionDiff" : "analysis.motor.genTrend.noteRate", { n: MOTOR_RATE_MIN_RUNS, metric: t(`analysis.motor.genTrend.metric.${metric}`) })}</p>
       </div>
     </div>
   );
