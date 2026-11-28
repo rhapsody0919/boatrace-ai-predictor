@@ -40,6 +40,7 @@ for (const width of [375, 1440]) {
     }
     // 読み方は見出しの「?」の中。表の下の ▲▼ の注記は出さない
     await expect(page.getByTestId("motor-tier-note")).toHaveCount(0);
+    await expect(table.locator("thead .term-hint__button")).toHaveCount(1);
     await table.locator("thead .term-hint__button").first().click();
     await expect(page.locator(".term-hint__popover")).toContainText("当社の過去データで確かめています");
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
