@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { stubRacerRuns } from "./racer-runs-fixture.js";
 
 /**
  * 選手ページ「レース条件別の成績」の矢印の線（UI/UX 改善 #8、承認 docs/design/racer-wt-uiux-2026-11/mock/approved.md）。
@@ -76,6 +77,20 @@ async function stubHistory(page, runs) {
   }));
   for (const table of ["exhibition_data", "race_start_timings"])
     await answer(table, () => null);
+  // facts の RPC（#3689 の後の読み）にも同じ走を答える
+  await stubRacerRuns(
+    page,
+    runs.map((r) => ({
+      raceId: r.raceId,
+      boat: 1,
+      order: r.win ? [1, 2, 3, 4, 5, 6] : [2, 3, 4, 1, 5, 6],
+      raceGrade: "一般",
+      weather: r.weather,
+      windSpeed: r.wind,
+      technique: "逃げ",
+      payoutWin: 200,
+    })),
+  );
 }
 
 test("条件別の成績: 30走未満の行は件数だけ、矢印は差が大きい30走以上の率だけ", async ({

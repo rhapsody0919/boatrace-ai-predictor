@@ -1,6 +1,7 @@
 import { test, expect, e2eTodayJST } from "./fixtures.js";
 import { buildRacerTodayRuns, finishLabelOf, splitTodayRaceId, todayRunsMeetLabel } from "../src/pure/racerTodayRuns.js";
 import { courseCell, meetFinishes, pickContextRun, venueCell } from "../src/pure/racerTodayContext.js";
+import { stubRacerRuns } from "./racer-runs-fixture.js";
 
 /**
  * 選手ページの「今日の出走」（BOA-1691 R2）の固定。取得はスタブ（録画の当日の走は日で変わる）。
@@ -160,6 +161,15 @@ async function stubRaceHistory(page, runs) {
       hit(route.request().url()) ? route.fulfill({ json: runs.map(row) }) : route.fallback(),
     );
   }
+  // facts の RPC（#3689 の後の読み）にも同じ走を答える
+  await stubRacerRuns(
+    page,
+    runs.map((r) => ({
+      raceId: r.id, boat: r.boat, order: r.order, raceGrade: "一般", raceTitle: "一般", weather: "晴", windSpeed: 1,
+      waveHeight: 1, technique: "逃げ", payoutWin: 200, payoutPlace1: 110, payoutPlace2: 150, exhibitionTime: 6.8,
+      startTiming: 0.15, course: r.boat,
+    })),
+  );
 }
 
 // 今日の出走の直下の1段（#3258 の #3）: 今日の枠のコース成績（公式3期）・その場の当地・今節の着順。30走未満は件数で

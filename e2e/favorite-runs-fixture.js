@@ -7,14 +7,21 @@ import { expect, e2eTodayJST } from "./fixtures.js";
  * テストの中で組み立てて返す。
  */
 
-/** 選手の出走履歴（getRacerRaceHistory の最初の要求。select は race_id,boat_number だけ） */
+/**
+ * 選手の出走履歴（getRacerRaceHistory の最初の要求）。古い読みは race_entries の select が race_id,boat_number だけ、
+ * facts に移した後（#3689）は RPC get_racer_runs の1回。どちらの版でも1選手に1回
+ */
 export const isHistoryRequest = (url) => {
   const u = new URL(url);
+  if (u.pathname.endsWith("/rest/v1/rpc/get_racer_runs")) return true;
   return (
     u.pathname.endsWith("/rest/v1/race_entries") &&
     u.searchParams.get("select")?.replace(/\s/g, "") === "race_id,boat_number"
   );
 };
+
+/** 履歴の要求を待ち受ける route の型（古い読みと facts の RPC の両方） */
+export const HISTORY_ROUTE = /\/rest\/v1\/(race_entries|rpc\/get_racer_runs)/;
 
 export const PREDICTIONS =
   /\/api\/predictions\/|\/rest\/v1\/rpc\/get_predictions_by_date/;
