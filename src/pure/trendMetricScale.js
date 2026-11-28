@@ -146,6 +146,8 @@ export const TREND_SCALES = Object.freeze({
     bandIfAny: true,
     dropZero: true,
     labelEvery: 2,
+    // 吹き出しに6艇の中の ST の順位（同じレースのほかの5艇と比べる。オーナー 2026-11-27）
+    tipStRank: true,
   }),
   meetSparkExhibition: Object.freeze({
     ...MEET_SPARK,
