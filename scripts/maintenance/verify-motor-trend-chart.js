@@ -6,7 +6,7 @@
  * 守ること（オーナー 2026-11-25 承認のモック改訂2）:
  *   - 横は入れ替えの日から今日まで。左端に「M/D 入れ替え」、右端に「今日」。6基とも同じ横
  *   - 線は艇ごとに1本。選んだ艇だけ太線（3）。率なら選んだ艇だけ節の点を打ち、延ばした右端には打たない
- *   - 描き始める前の区間を塗り、「N走たまるまで描かない」と書く
+ *   - 描き始める前の区間を塗る。「N走たまるまで描かない」の札は図に書かない（説明は見出しの「?」の中。plan.md §14、オーナー 2026-11-28）
  *   - 1号艇・2号艇・5号艇の線に縁
  *   - 右端の値は率なら小数1桁、展示タイムは小数2桁。展示タイムは小さいほど上で「↑速い」
  *   - 右端の札は図の上下からはみ出さない
@@ -82,7 +82,7 @@ check("率は選んだ艇だけ節の点（延ばした右端は打たない）"
 check("左端に入れ替えの日", rate.includes("8/06 入れ替え"));
 check("右端に今日", rate.includes(">今日<"));
 check("描き始める前の区間を塗る", /class="mtc-before"/.test(rate));
-check("描かない区間の札", rate.includes("20走たまるまで描かない"));
+check("描かない区間の札は図に書かない（説明は「?」へ）", !rate.includes("たまるまで描かない"));
 check("率の右端は小数1桁", /class="trc-end"[^>]*>\d+\.\d</.test(rate));
 const labelYs = [...rate.matchAll(/<text x="[\d.]+" y="([\d.]+)" class="trc-end"/g)].map((m) => Number(m[1]));
 check("右端の札は図に収まる", labelYs.length === 6 && labelYs.every((v) => v >= 24 && v <= 250 - 36 + 4), JSON.stringify(labelYs));
@@ -91,7 +91,7 @@ check("右端の札は重ならない", sorted.every((v, i) => i === 0 || v - so
 
 const ex = svgOf(exSeries(), "exhibition", 24);
 check("展示の右端は小数2桁", /class="trc-end"[^>]*>6\.\d\d</.test(ex));
-check("展示は「↑速い」", ex.includes("↑速い") && ex.includes("24走たまるまで描かない"));
+check("展示は「↑速い」（描かない区間の札は書かない）", ex.includes("↑速い") && !ex.includes("たまるまで描かない"));
 check("展示は点を打たない", !ex.includes('r="2.6"'));
 // 艇ごとの右端の点の y（艇 b の展示は 6.7+b/100 なので、艇番が小さいほど速く上）
 const endY = (b) => Number(ex.match(new RegExp(`trc-line-${b}"[\\s\\S]*?<circle cx="[\\d.]+" cy="([\\d.]+)" r="(?:3|4\\.5)"`))?.[1]);
