@@ -4,7 +4,7 @@
 import { supabase } from "./supabaseClient";
 import { isPlaceHit, isShowHit } from "../pure/hitJudge.js";
 import { buildRacerScopedRaceRows } from "./racerScopedRaceRows.js";
-import { buildRacerHistoryRowsFromFacts } from "./racerRaceHistoryFacts.js";
+import { buildRacerHistoryRowsFromFacts } from "./racerRaceHistoryRows.js";
 import { FACTS_MAIN_ERA_START } from "../constants/factsEra.js";
 import { isUsableRaceResult } from "../utils/raceResultUsable.js";
 import { racerHistoryCutoff } from "../utils/racerVenueBoatStats.js";

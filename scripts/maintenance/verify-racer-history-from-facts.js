@@ -1,4 +1,4 @@
-// 選手ページの履歴を facts の RPC（get_racer_runs）から作る純関数（src/services/racerRaceHistoryFacts.js）が、今の本体の表からの整形
+// 選手ページの履歴を facts の RPC（get_racer_runs）から作る純関数（src/services/racerRaceHistoryRows.js の buildRacerHistoryRowsFromFacts）が、今の本体の表からの整形
 // （racerRaceHistoryRows.js の buildRacerRaceHistoryRows）と同じ字を返すことを守る（ADR-0113、移す前後の照らし）
 // - 同じ本体の行から、(a) 今の整形、(b) facts の組み立て（raceFactsMain.js）→ 212・213 を流した PGlite → anon の RPC → 新しい整形、を作って全列を比べる
 // - 許す差分は名指しの3つだけ（facts は 190 と同じ規則で広く埋める）: グレード（race_series・class_code）・題（race_series.title）・着欄（成績コード）
@@ -7,8 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
-import { buildRacerRaceHistoryRows } from "../../src/services/racerRaceHistoryRows.js";
-import { buildRacerHistoryRowsFromFacts } from "../../src/services/racerRaceHistoryFacts.js";
+import { buildRacerRaceHistoryRows, buildRacerHistoryRowsFromFacts } from "../../src/services/racerRaceHistoryRows.js";
 import { FACTS_MAIN_ERA_START } from "../../src/constants/factsEra.js";
 import { MAIN_TABLES_START } from "../lib/kbArchiveBoundary.js";
 import { RACE_FACT_COLUMNS, RUN_FACT_COLUMNS } from "../lib/raceFactsKb.js";
