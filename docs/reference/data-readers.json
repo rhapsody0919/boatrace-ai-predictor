@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 3084,
+    "sourceFiles": 3085,
     "filesWithAccess": 335,
     "tableReaders": 982,
     "tableWriters": 202,
@@ -29744,7 +29744,7 @@
     {
       "job": "race_facts_main",
       "entry": "api/cron/race-facts-main.js",
-      "reachableFiles": 35,
+      "reachableFiles": 36,
       "writes": {
         "race_facts": [
           "scripts/lib/raceFactsWrite.js:33"

@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 3084 |
+| 読んだファイル | 3085 |
 | 読み書きのあるファイル | 335 |
 | 表の読み手（箇所） | 982 |
 | 表の書き手（箇所） | 202 |
@@ -246,7 +246,7 @@
 | pit_reports | api/cron/pit-reports.js | 30 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
 | point_rank | api/cron/point-rank.js | 31 | racer_series_points, scrape_job_state, scrape_slots |
 | pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
-| race_facts_main | api/cron/race-facts-main.js | 35 | race_facts, racer_career_meta, run_facts, scrape_job_state, scrape_slots |
+| race_facts_main | api/cron/race-facts-main.js | 36 | race_facts, racer_career_meta, run_facts, scrape_job_state, scrape_slots |
 | race_info | api/cron/race-info.js | 63 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | race_notices | api/cron/race-notices.js | 32 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 28 | scrape_job_state, scrape_slots |
