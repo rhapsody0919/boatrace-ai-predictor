@@ -25,6 +25,8 @@ import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
 import { racerStatsClassName } from "./racerStatsLayout";
 import { winRateStepsData } from "./RacerOfficialStatsLogic";
 import RacerBoatReturns from "./RacerBoatReturns";
+import { useStCourseBaseline } from "../../hooks/useStCourseBaseline";
+import { stCourseGradeAvg } from "../../pure/racerStBaseline.js";
 import {
   BothFixedNoRuns,
   CourseBreakdown,
@@ -204,7 +206,11 @@ function overviewBlocks(t, vc, view, venueStats, technique) {
   if (vc.vcGrade !== "all" || vc.vcStage !== "all") {
     if (!view.hasVenueStats && !view.hasCourseStats) return [];
     return [
-      <p key="overviewHidden" className="racer-stat-note" data-testid="racer-overview-hidden">
+      <p
+        key="overviewHidden"
+        className="racer-stat-note"
+        data-testid="racer-overview-hidden"
+      >
         全会場の会場別・枠番別の表はグレード・レース種別では絞れないため、選んでいる間は出しません。会場か枠番を選ぶと、絞った表が出ます
       </p>,
     ];
@@ -233,9 +239,18 @@ function overviewBlocks(t, vc, view, venueStats, technique) {
 
 /** 決まり手と枠番別回収率の節。絞らずに会場別・枠番別がそろうときは overviewBlocks の包みへ入れ、下で二重に出さない */
 function techniqueBlocks(vc, view) {
-  const section = <TechniqueSection view={view} vcActive={vc.vcActive} vcLabel={view.vcLabel} />;
+  const section = (
+    <TechniqueSection
+      view={view}
+      vcActive={vc.vcActive}
+      vcLabel={view.vcLabel}
+    />
+  );
   const technique = (
-    <>{view.showTechniqueSection && section}<RacerBoatReturns vc={vc} vcLabel={view.vcLabel} /></>
+    <>
+      {view.showTechniqueSection && section}
+      <RacerBoatReturns vc={vc} vcLabel={view.vcLabel} />
+    </>
   );
   const paired =
     !vc.vcVenueFixed &&
@@ -252,7 +267,9 @@ function breakdownBlocks(t, vc, view, venueStats, technique) {
   const { vcVenueFixed, vcBoatFixed, vcHistoryLoading, vcHistoryError } = vc;
   const settled = !vcHistoryLoading && !vcHistoryError;
   return [
-    ...(!vcVenueFixed && !vcBoatFixed ? overviewBlocks(t, vc, view, venueStats, technique) : []),
+    ...(!vcVenueFixed && !vcBoatFixed
+      ? overviewBlocks(t, vc, view, venueStats, technique)
+      : []),
     vcVenueFixed && !vcBoatFixed && settled && (
       <CrossBoatBreakdown key="crossBoat" vc={vc} vcLabel={view.vcLabel} />
     ),
@@ -265,6 +282,27 @@ function breakdownBlocks(t, vc, view, venueStats, technique) {
       />
     ),
   ];
+}
+
+// ST の推移の比べる線（今の級×同じ進入コースの全国平均）。このページの節の入口（成績・調子の欄）で取る（plan.md §13）。
+// 平均は絞り込みの範囲の走（カードの平均ST と同じ母数）で取るので、描くときに vcData を渡す
+function useStCompare(grade) {
+  const rows = useStCourseBaseline();
+  return (vcData) => ({
+    grade,
+    stBase: stCourseGradeAvg(vcData?.matchedRaces ?? [], rows, grade),
+  });
+}
+
+// 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
+function headingOf(racerName) {
+  return racerName ? (
+    <>
+      <span translate="no">{racerName}</span>の成績・調子
+    </>
+  ) : (
+    "成績・調子"
+  );
 }
 
 /**
@@ -309,9 +347,11 @@ export default function RacerPerformanceStats({
   todayVenueCode,
   onHistoryStateChange,
   periodRows,
+  grade,
 }) {
   const { t } = useTranslation();
   const winSteps = winRateStepsData(periodRows);
+  const stCompare = useStCompare(grade);
   const vc = useRacerVcState(racerId, onHistoryStateChange);
   // 進入コースのラベルは呼ぶ側で足す（useRacerPerformanceView は大きさの基準に凍結された単位なので触らない）
   const view = {
@@ -322,14 +362,7 @@ export default function RacerPerformanceStats({
   const { snapshotHistoryState, vcActive } = vc;
   const { formSummary, aggregatedStats, venueStats } = stats ?? {};
 
-  // 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
-  const heading = racerName ? (
-    <>
-      <span translate="no">{racerName}</span>の成績・調子
-    </>
-  ) : (
-    "成績・調子"
-  );
+  const heading = headingOf(racerName);
 
   const { technique, pairedTechnique } = techniqueBlocks(vc, view);
 
@@ -388,7 +421,10 @@ export default function RacerPerformanceStats({
           </p>
         )}
         <ExhibitionChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
-        <StTrendChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
+        <StTrendChart
+          {...{ view, vcActive, vcLabel }}
+          base={stCompare(vcData)}
+        />
         <div id="racer-race-list">
           <RaceList vc={vc} view={view} vcLabel={vcLabel} />
         </div>
