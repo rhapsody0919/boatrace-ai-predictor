@@ -3,12 +3,9 @@
  * racer_sex（214）の書き手（scripts/lib/racerSexRows.js・fanPeriodJob.js の1段・racer-sex-backfill.js）: 1・2 だけを書く、sex だけを比べる、男女が逆なら書かずに警告、updated_at を入れる、racer_period_stats より先に書き失敗なら stats を書かない、shadow・dry-run は書かない
  *
  * 設計: docs/design/data-gaps/db-draft.md §1.5（M5）。DB は偽のクライアント（scripts/lib/fakeSupabaseClient.js）、
- * fan は scripts/lib/__fixtures__/fan/fan-sample.json（fan2604 の実レコード12人分）。ネットワーク・実DBに繋がない。
+ * fan は scripts/lib/__fixtures__/fan/fanSampleBytes.js（fan2604 の実レコード12人分）。ネットワーク・実DBに繋がない。
  */
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   buildRacerSexRows,
   planRacerSexWrites,
@@ -17,9 +14,9 @@ import {
 import { runFanPeriodJob } from "../lib/fanPeriodJob.js";
 import { parseFanFile } from "../lib/fanPeriodParser.js";
 import { fakeClient } from "../lib/fakeSupabaseClient.js";
+import { fanSampleBytes } from "../lib/__fixtures__/fan/fanSampleBytes.js";
 import { parseArgs, readFans, run } from "./racer-sex-backfill.js";
 
-const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const NOW = new Date("2026-11-29T00:00:00Z");
 const STAMP = NOW.toISOString();
 let passed = 0;
@@ -29,20 +26,7 @@ async function check(label, fn) {
   console.log(`✅ ${label}`);
 }
 
-const FIXTURE = JSON.parse(
-  fs.readFileSync(
-    path.join(ROOT, "scripts/lib/__fixtures__/fan/fan-sample.json"),
-    "utf8",
-  ),
-);
-const FAN_BYTES = new Uint8Array(
-  Buffer.concat(
-    FIXTURE.files.fan2604.records.flatMap((r) => [
-      Buffer.from(r.b64, "base64"),
-      Buffer.from([0x0d, 0x0a]),
-    ]),
-  ),
-);
+const FAN_BYTES = fanSampleBytes("fan2604");
 const FAN = parseFanFile(FAN_BYTES, { id: "fan2604" });
 const SEXES = FAN.records.map((r) => [r.racer_id, r.sex]);
 

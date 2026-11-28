@@ -265,6 +265,45 @@ async function writeStatsBatches(
   return { written };
 }
 
+/** racer_period_stats の行と、既存行との差分（変更のある行だけ書く） */
+async function planStatsWrites(ctx, fan) {
+  const { rows, warnings } = buildStatsRows(fan);
+  const existing = await readExistingRows(
+    ctx.client,
+    fan.period,
+    Object.keys(rows[0]),
+  );
+  const { toWrite, stats } = diffRows(existing, rows, {
+    keyColumns: FAN_TABLES.stats.keyColumns,
+    scales: NUMERIC_SCALES[FAN_TABLES.stats.table],
+  });
+  const diff = {
+    rows: rows.length,
+    toWrite: toWrite.length,
+    unchanged: stats.unchanged,
+    existing: existing.length,
+  };
+  return { rows, warnings, toWrite, stats, diff };
+}
+
+/** racer_sex の1段（stats より先）。shadow は数えるだけ。読み・書きの失敗は例外（共通ラッパが error にする） */
+async function racerSexStep(ctx, fan) {
+  const sex = await syncRacerSex(ctx.client, fan, {
+    dryRun: ctx.mode !== "live",
+  });
+  const { rows, skipped, written, unchanged } = sex;
+  return {
+    racerSex: {
+      rows,
+      skipped,
+      written,
+      unchanged,
+      conflicts: sex.conflicts.length,
+    },
+    sexWarnings: sex.warnings,
+  };
+}
+
 /**
  * @param {Object} ctx 共通ラッパの文脈（targetDate・mode・politeFetch・client・query・worker）
  * @param {{sleepMs?: number, decode?: Function, minRecords?: number}} [options] テスト用の差し替え
@@ -302,33 +341,12 @@ export async function runFanPeriodJob(
       report: { ...report, status: "invalid", summary },
     };
 
-  const { rows, warnings } = buildStatsRows(fan);
-  const existing = await readExistingRows(
-    ctx.client,
-    fan.period,
-    Object.keys(rows[0]),
+  const { rows, warnings, toWrite, stats, diff } = await planStatsWrites(
+    ctx,
+    fan,
   );
-  const { toWrite, stats } = diffRows(existing, rows, {
-    keyColumns: FAN_TABLES.stats.keyColumns,
-    scales: NUMERIC_SCALES[FAN_TABLES.stats.table],
-  });
-  const diff = {
-    rows: rows.length,
-    toWrite: toWrite.length,
-    unchanged: stats.unchanged,
-    existing: existing.length,
-  };
-  // stats より先。shadow は数えるだけ。読み・書きの失敗は例外（共通ラッパが error にする）
-  const sex = await syncRacerSex(ctx.client, fan, {
-    dryRun: ctx.mode !== "live",
-  });
-  const racerSex = {
-    rows: sex.rows,
-    skipped: sex.skipped,
-    written: sex.written,
-    unchanged: sex.unchanged,
-    conflicts: sex.conflicts.length,
-  };
+  const { racerSex, sexWarnings } = await racerSexStep(ctx, fan);
+  const allWarnings = [...warnings, ...sexWarnings];
 
   if (ctx.mode !== "live") {
     return {
@@ -341,7 +359,7 @@ export async function runFanPeriodJob(
         summary,
         diff,
         racerSex,
-        warnings: [...warnings, ...sex.warnings],
+        warnings: allWarnings,
       },
       body: { fanId: id, status: "parsed", diff },
     };
@@ -368,11 +386,7 @@ export async function runFanPeriodJob(
     diff: { ...diff, written },
     racerSex,
     rawPath: archived.path,
-    warnings: [
-      ...warnings,
-      ...sex.warnings,
-      ...(archived.warning ? [archived.warning] : []),
-    ],
+    warnings: [...allWarnings, ...(archived.warning ? [archived.warning] : [])],
   };
   return {
     rowsWritten: written,
