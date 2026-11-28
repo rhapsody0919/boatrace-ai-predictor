@@ -11,12 +11,14 @@
  *   raceResultPersist.js は発走の時刻を入れる）、それより前か NULL なら 'before_race'（K で埋めた行と古い行は NULL で
  *   区別できないので、条件の軸から外す側に倒す）
  * - 3連単は race_results.payout_trio、3連複は payout_trifecta（列名と中身が逆、data-columns.md 6行目）
- * - 本体に無い列（潮位・風の扇形・オリジナル展示）は NULL。後の段で同じ関数を通して埋める
+ * - 本体に無い列（潮位・オリジナル展示）は NULL。後の段で同じ関数を通して埋める
+ * - 風の扇形（wind_sector）は race_conditions.wind_direction（画面の矢印の番号）と風速から src/pure/windSector.js で決める
  */
 import { isCareerFinalStage } from "../../src/pure/racerCareerStats.js";
 import { finishMarkFromCode } from "./kbGapFill.js";
 import { MAIN_TABLES_START } from "./kbArchiveBoundary.js";
-import { RACE_FACTS_RULE_VERSION, racerIdsOf } from "./raceFactsKb.js";
+import { RACE_FACTS_RULE_VERSION, RUN_FACTS_RULE_VERSION, racerIdsOf } from "./raceFactsKb.js";
+import { windSectorOf } from "../../src/pure/windSector.js";
 
 const CLASS_GRADE = Object.freeze({ Lady: "G3", Takumi: "G3", Rookie: "ippan", Venus: "ippan" });
 const RACE_ID = /^(\d{4}-\d{2}-\d{2})-(\d{2})-(\d{2})$/;
@@ -62,14 +64,15 @@ function seriesColumns(conditions, series) {
   };
 }
 
-/** 気象の列。出所が無ければ（値が無ければ）風・波・天候は NULL */
-function weatherColumns(conditions, source) {
+/** 気象の列。出所が無ければ（値が無ければ）風・波・天候・風の扇形は NULL */
+function weatherColumns(conditions, source, venueCode) {
   const c = conditions ?? {};
   const keep = (v) => (source ? orNull(v) : null);
   return {
     weather: keep(c.weather),
     wind_speed: keep(c.wind_speed),
     wave_height: keep(c.wave_height),
+    wind_sector: windSectorOf({ era: "main", venueCode, direction: c.wind_direction ?? null, speed: c.wind_speed ?? null, hasCondition: source != null }),
     condition_source: source,
     temperature: orNull(c.temperature),
     water_temperature: orNull(c.water_temperature),
@@ -101,7 +104,7 @@ function resultColumns(result) {
 export function buildMainRaceFact({ race, result = null, conditions = null, series = null, override = null, entries = [] }) {
   const date = assertMainRace(race);
   const s = seriesColumns(conditions, series);
-  const w = weatherColumns(conditions, conditionSourceOf(conditions, race, date));
+  const w = weatherColumns(conditions, conditionSourceOf(conditions, race, date), race.venue_code);
   const r = resultColumns(result);
   return {
     race_id: race.race_id,
@@ -120,7 +123,7 @@ export function buildMainRaceFact({ race, result = null, conditions = null, seri
     weather: w.weather,
     wind_speed: w.wind_speed,
     wave_height: w.wave_height,
-    wind_sector: null,
+    wind_sector: w.wind_sector,
     condition_source: w.condition_source,
     temperature: w.temperature,
     water_temperature: w.water_temperature,
@@ -198,6 +201,6 @@ function runRowOf(race, date, e, { t, x, course }) {
     oriten_lap: null,
     oriten_turn: null,
     oriten_straight: null,
-    rule_version: RACE_FACTS_RULE_VERSION,
+    rule_version: RUN_FACTS_RULE_VERSION,
   };
 }

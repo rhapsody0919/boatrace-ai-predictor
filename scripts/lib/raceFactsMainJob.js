@@ -112,7 +112,7 @@ const MAIN_PARTS = [
   ["race_results", "*", ["race_id"]],
   ["race_start_timings", "race_id,boat_number,entry_course,start_timing,is_flying,is_late_start,finish_mark,finish_rank,official_finish_code", ["race_id", "boat_number"]],
   ["exhibition_data", "race_id,boat_number,exhibition_time,today_weight,tilt,parts_changed", ["race_id", "boat_number"]],
-  ["race_conditions", "race_id,weather,wind_speed,wave_height,temperature,water_temperature,race_title,series_day,is_final_day,race_stage,weather_observed_at", ["race_id"]],
+  ["race_conditions", "race_id,weather,wind_direction,wind_speed,wave_height,temperature,water_temperature,race_title,series_day,is_final_day,race_stage,weather_observed_at", ["race_id"]],
 ];
 
 /** 本番の読み書き（api/cron/race-facts-main.js が渡す）。dryRun（shadow）は書かず、書く予定の数だけを返す */

@@ -66,7 +66,7 @@ test("レースの行: 列・値・kb に無い列は NULL", () => {
     combo_3tan: "1-2-3", payout_3fuku: 420, has_result: true, race_status: null,
     racer_ids: [4000, 4001, 4002, 4003, 4004, 4005], finish_order: [1, 2, 6, null, null, null], rule_version: RACE_FACTS_RULE_VERSION,
   }, "全列");
-  assert.equal(RACE_FACTS_RULE_VERSION, 2);
+  assert.equal(RACE_FACTS_RULE_VERSION, 3);
   assert.deepEqual(buildKbRaceFact(RACE, DAY, { grade: null, seriesKind: null, boats: [{ ...BOATS[1], boat_number: 0 }, { ...BOATS[1], boat_number: 7 }] }).racer_ids,
     [null, null, null, null, null, null], "艇番の外は入れない");
   assert.deepEqual(withBoats.finish_order, [1, 2, 6, null, null, null], "着の順（F・欠・失格は着なし）");
