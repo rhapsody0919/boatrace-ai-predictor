@@ -256,18 +256,18 @@ export function buildBasicIndicatorRows(args) {
 }
 
 // 全国の同じコースの1着率との差（意味づけ 2026-11-26、型1を狭いセル向けに文字で）。
-// 枠別情報の6艇の表（#3534）と同じ行・同じ判定。▲緑・▼赤は偶然のぶれを超えたときだけ、ほかは灰。
+// 枠別情報の6艇の表（#3534）と同じ行・同じ判定。緑・赤は偶然のぶれを超えたときだけ、ほかは灰。
+// ▲▼・読み方の文は画面に出さず、読み方は行の「?」（termHints.expectedCourseWinRate）に置く（plan.md §14、オーナー 2026-11-28）
 // 率を出さない艇（10走未満）と全国の値が無い艇は出さない
 function courseDiffOf(row) {
   if (!row || row.reliability === "none" || row.winRate == null || row.avg == null) return null;
   const diff = Math.round(row.winRate) - Math.round(row.avg);
   const dir = courseRowDir(row);
-  // 色は共通の ind-good・ind-bad（src/styles/indicators.css。▲▼ を必ず添える決まり）、ほかは drt-sub の灰
+  // 色は共通の ind-good・ind-bad（src/styles/indicators.css）、ほかは drt-sub の灰。向きは符号（+・−）が言う
   const tone = { good: " ind-good", bad: " ind-bad" }[toneOf(dir, "high")] ?? "";
-  const mark = dir === "high" ? "▲" : dir === "low" ? "▼" : "";
   return (
     <span className={`drt-sub drt-course-diff${tone}`} data-tone={toneOf(dir, "high") ?? "plain"}>
-      {`${mark}${diff > 0 ? "+" : ""}${diff}pt`}
+      {`${diff > 0 ? "+" : ""}${diff}pt`}
     </span>
   );
 }
@@ -286,7 +286,6 @@ function buildExpectedCourseWinRateRow(t, { status, rows }) {
     label: t("dataTable.rowExpectedCourseWinRate"),
     shortLabel: t("review.cols.expectedCourseWinRate"),
     note: t("dataTable.expectedCourseWinRateNote"),
-    noteDiff: t("dataTable.expectedCourseWinRateNoteDiff"),
     wrapNote: true,
     // 旧い行の「超展開データ」（枠番で数える会場の集計）へは送らない。値の元は枠別情報タブの6艇の表
     tab: null,
