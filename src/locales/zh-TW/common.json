@@ -3302,6 +3302,10 @@
       "title": "📊 賽場×等級分析",
       "description": "選擇賽場後，可比較各比賽等級（一般戰/G3/G2/G1/SG）的艇號別成績。可發現僅靠全國平均無法看出的賽場特有傾向。",
       "metricSelectLabel": "指標",
+      "metricFirstRate": "第1名率",
+      "raceCount": "{{n}}場",
+      "winShareTitle": "各等級的第1名比例（依艇號）",
+      "winShareNote": "長條下方的數字為各艇的第1名率（%）。統計：本場地自{{since}}起的全部比賽（每天23點更新）。",
       "metric": {
         "winRate": "勝率",
         "top2Rate": "連對率",

@@ -1,0 +1,115 @@
+/* 会場×グレードの1着の取り分の積み上げ棒（VenueGradeWinShare.jsx、G4 T-09）。PC は 880px まで */
+.vgs {
+  max-width: 880px;
+  margin-top: var(--spacing-2);
+}
+
+.vgs-title {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.vgs-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  column-gap: var(--spacing-2);
+  align-items: center;
+  margin: var(--spacing-2) 0;
+}
+
+.vgs-legend {
+  margin-bottom: 0;
+}
+
+.vgs-legend-label {
+  align-self: end;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.vgs-grade {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.vgs-grade-name {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.vgs-grade-count {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.vgs-bar {
+  display: flex;
+  height: 34px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--border-hairline);
+}
+
+/* 区切りの境目は面の色の1px（2号艇の黒がダークの背景に沈まないように） */
+.vgs-seg {
+  flex-grow: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--surface-card);
+}
+
+.vgs-seg:last-child {
+  border-right: 0;
+}
+
+/* 6艇の数字・札を均等に並べる（列の位置は全グレードで同じ） */
+.vgs-nums {
+  display: flex;
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.vgs-nums > * {
+  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
+}
+
+.vgs-row .vgs-nums {
+  margin-top: 2px;
+}
+
+.vgs-legend .vgs-nums {
+  margin-top: 0;
+}
+
+.vgs-note {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+@media (min-width: 769px) {
+  .vgs-row {
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .vgs-seg-label--narrow {
+    display: none;
+  }
+}

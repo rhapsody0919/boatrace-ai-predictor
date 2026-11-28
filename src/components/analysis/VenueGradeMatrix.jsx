@@ -10,6 +10,8 @@
  * 決まり手はセルが単一数値ではなく分布になり表示設計を別途詰める必要があるため
  * （BOA-263チケット参照、データ自体はvenue_grade_boat_stats.technique_breakdown
  * に集計済みなので将来追加しやすい）
+ * 1着率は表でなく、グレードごとの1着の取り分の積み上げ棒で出す（VenueGradeWinShare、G4 T-09、2026-11-28 オーナー承認）。
+ * 連対率・3連対率・万舟率・平均配当は今までの表のまま。
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,6 +19,7 @@ import {
   getVenueGradeBoatStats,
   getVenuesWithGradeStats,
 } from "../../services/venueQueries3.js";
+import VenueGradeWinShare from "./VenueGradeWinShare";
 import "./MotorConditionChart.css";
 
 const VENUES = [
@@ -120,7 +123,10 @@ function VenueGradeControls({
       >
         {METRICS.map((m) => (
           <option key={m.key} value={m.key}>
-            {t(`analysis.venueGrade.metric.${m.key}`)}
+            {/* 中身は1着の割合なので「勝率」（着順点の平均）と呼ばない（用語集の 1着率） */}
+            {m.key === "winRate"
+              ? t("analysis.venueGrade.metricFirstRate")
+              : t(`analysis.venueGrade.metric.${m.key}`)}
           </option>
         ))}
       </select>
@@ -180,6 +186,49 @@ function VenueGradeTable({
       <p className="table-note">
         {t("analysis.venueGrade.note", { minRaceCount: MIN_RACE_COUNT })}
       </p>
+    </>
+  );
+}
+
+// 指標の説明と、読み込み中・失敗・空・中身の出し分け。1着率は積み上げ棒、ほかは表（G4 T-09）
+function VenueGradeBody({ t, loading, error, rows, selectedMetric, ...table }) {
+  const isWinRate = selectedMetric === "winRate";
+  let content = null;
+  if (loading) {
+    content = <div className="loading-state">{t("analysis.loading")}</div>;
+  } else if (error) {
+    content = (
+      <div className="error-state">
+        {t("analysis.error", { message: error })}
+      </div>
+    );
+  } else if (rows.length === 0) {
+    content = (
+      <div className="empty-state">{t("analysis.venueGrade.empty")}</div>
+    );
+  } else if (isWinRate) {
+    content = (
+      <VenueGradeWinShare
+        grades={table.gradesPresent}
+        byGradeAndBoat={table.byGradeAndBoat}
+        gradeLabel={(g) =>
+          g === "ippan" ? t("volatilityAccuracy.gradeIppan") : g
+        }
+      />
+    );
+  } else {
+    content = (
+      <VenueGradeTable t={t} selectedMetric={selectedMetric} {...table} />
+    );
+  }
+  return (
+    <>
+      {!isWinRate && (
+        <p className="section-description">
+          {t(`analysis.venueGrade.metricDescription.${selectedMetric}`)}
+        </p>
+      )}
+      {content}
     </>
   );
 }
@@ -253,31 +302,17 @@ function VenueGradeMatrix() {
         availableVenues={availableVenues}
       />
 
-      <p className="section-description">
-        {t(`analysis.venueGrade.metricDescription.${selectedMetric}`)}
-      </p>
-
-      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && (
-        <div className="error-state">
-          {t("analysis.error", { message: error })}
-        </div>
-      )}
-
-      {!loading && !error && rows.length === 0 && (
-        <div className="empty-state">{t("analysis.venueGrade.empty")}</div>
-      )}
-
-      {!loading && !error && rows.length > 0 && (
-        <VenueGradeTable
-          t={t}
-          metric={metric}
-          selectedMetric={selectedMetric}
-          gradesPresent={gradesPresent}
-          byGradeAndBoat={byGradeAndBoat}
-          boatRows={boatRows}
-        />
-      )}
+      <VenueGradeBody
+        t={t}
+        loading={loading}
+        error={error}
+        rows={rows}
+        metric={metric}
+        selectedMetric={selectedMetric}
+        gradesPresent={gradesPresent}
+        byGradeAndBoat={byGradeAndBoat}
+        boatRows={boatRows}
+      />
     </div>
   );
 }

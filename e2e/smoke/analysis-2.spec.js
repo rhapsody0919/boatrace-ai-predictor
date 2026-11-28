@@ -18,7 +18,6 @@ async function openVenueCount(page) {
 }
 
 test.describe("データ分析ツール（BOA-150/151/152）", () => {
-
   // BOA-744: 録画fixtureの時計を使わず、実時刻＋合成応答で一覧外リンクを再現する。
   for (const tab of ["techprofile", "returnrate"]) {
     test(`${tab} のディープリンクは当日一覧にない会場・レースも保持する（BOA-744）`, async ({
@@ -185,9 +184,9 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     // venue_grade_boat_stats未集計（マイグレーション未適用）の環境では
     // エラー状態になる（getVenueGradeBoatStatsはエラーを握りつぶさずthrowする
     // 設計のため）。マイグレーション適用後は空状態またはデータ表示になるため、
-    // いずれの環境でも通るよう3状態を許容する
+    // いずれの環境でも通るよう3状態を許容する。既定の1着率は表でなく積み上げ棒（.vgs、G4 T-09）
     await expect(
-      page.locator(".empty-state, .motor-ranking-table, .error-state").first(),
+      page.locator(".empty-state, .vgs, .error-state").first(),
     ).toBeVisible({ timeout: 15000 });
     // 指標を切り替えてもクラッシュしない
     await page.selectOption("#venue-grade-metric-select", "manshuRate");
