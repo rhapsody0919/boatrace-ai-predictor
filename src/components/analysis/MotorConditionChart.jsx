@@ -8,10 +8,12 @@
 // 区画のファイルへ移す前と CSS の重なりの順を同じにする（元はこの2つの部品を先に import していた）
 import "../common/HorizontalScrollHint.css";
 import "../racer/RacerGradeBadge.css";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
+import { generationMotorsOf, useMotorGenerationRuns } from "../../hooks/useMotorGenerationRuns";
 import {
   useBreakdownLoad,
   useDrillLoad,
@@ -125,7 +127,15 @@ function MotorConditionChart({
   const { t } = useTranslation();
   const selector = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
   const states = useMotorStates(initialMotorNumber);
-  const m = { ...selector, ...states, t, embedded, focusedBoat, onFocusBoat };
+  // 「今の値｜推移」（レース詳細のタブだけ）。推移の取得はここで行い、推移を開いたときだけ問い合わせる（plan.md §13）
+  const [genView, setGenView] = useState("now");
+  const gen = useMotorGenerationRuns(
+    selector.selectedVenue,
+    generationMotorsOf(states.breakdown),
+    selector.selectedRace,
+    embedded && genView === "trend",
+  );
+  const m = { ...selector, ...states, t, embedded, focusedBoat, onFocusBoat, genView, setGenView, gen };
   useBreakdownLoad(m);
   useDrillLoad(m);
   usePeriodAndWakuReset(m);

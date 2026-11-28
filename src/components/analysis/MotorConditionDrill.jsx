@@ -249,8 +249,9 @@ function DrillView({ m, v }) {
 }
 
 // 一覧と「今の値｜推移」。切り替えはレース詳細のタブだけ（オーナー 2026-11-25 承認のモック改訂2）。開いた最初は今の値
+// 「今の値｜推移」の状態と推移の取得は入口（MotorConditionChart）が持つ（plan.md §13）
 function MotorListArea({ m, v, scroll, scrollRef }) {
-  const [view, setView] = useState("now");
+  const { genView: view, setGenView: setView } = m;
   const [metric, setMetric] = useState("top2Rate");
   const list = <MotorListView m={m} v={v} scroll={scroll} scrollRef={scrollRef} />;
   if (!m.embedded) return list;
@@ -260,7 +261,7 @@ function MotorListArea({ m, v, scroll, scrollRef }) {
       {trend && <MotorMetricChips metric={metric} setMetric={setMetric} />}
       <MotorViewHead view={view} setView={setView} metric={metric} />
       {trend ? (
-        <MotorGenerationTrend venueCode={m.selectedVenue} raceId={m.selectedRace} rows={m.breakdown} metric={metric}
+        <MotorGenerationTrend gen={m.gen} venueCode={m.selectedVenue} raceId={m.selectedRace} rows={m.breakdown} metric={metric}
           onShowNow={() => setView("now")} focusedBoat={m.focusedBoat} onFocusBoat={m.onFocusBoat} />
       ) : (
         list
