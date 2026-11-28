@@ -33,7 +33,8 @@ export default function TermHintButton({ termKey, values = undefined }) {
 
   // 説明文は locales の termHints.* に4言語で置く（BOA-592）。キーが無い用語は ? を出さない
   const hintKey = `termHints.${termKey}`;
-  if (!i18n.exists(hintKey)) return null;
+  // i18n の初期化の外（検査の静的な描画で react-i18next の既定を使うとき）は exists が無いので、出さない
+  if (typeof i18n?.exists !== "function" || !i18n.exists(hintKey)) return null;
   const explanation = t(hintKey, values);
 
   const handleToggle = (event) => {
