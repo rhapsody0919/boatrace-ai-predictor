@@ -7,6 +7,8 @@
  * （verifyData/motorChartSource.js）。画面の側に残すのは motorRateView の map（breakdown.map(motorRateView)）だけ。
  */
 
+import { rankTiers } from "./compareBaseline.js";
+
 // 展示タイムの推移グラフの元データ（展示の無い日は描かない）
 export function exhibitionChartDataOf(trendData) {
   return (trendData?.trend ?? [])
@@ -46,14 +48,14 @@ export function computeRateView(
   // 行全体の .best-motor（期間の2連率の最大）は外した。棒の札と別の列を指すと、どちらが最良か
   // 分からないため（BOA-428、UI統一レーンと合意）。
   // 自前の値（数走の 100% 等）は公式と並べて最良にしない（BOA-830）
-  const officialRateBestBoats = bestOf(
-    breakdown.map((r, i) => ({
-      boat: r.boat_number,
-      value: rateViews[i].kind === "official" ? officialRates[i] : null,
-    })),
-    "max",
-    { digits: 1 },
-  );
+  const officialCandidates = breakdown.map((r, i) => ({
+    boat: r.boat_number,
+    value: rateViews[i].kind === "official" ? officialRates[i] : null,
+  }));
+  const officialRateBestBoats = bestOf(officialCandidates, "max", { digits: 1 });
+  // 6艇の上位2・下位2（意味づけ 2026-11-26、型2）。モーター2連率の順位の上位・下位で1着に差が出ることは
+  // docs/knowledge/stat-findings.md 7行で確かめ済み。最良の印と同じく公式の値だけで比べる
+  const officialRateTiers = rankTiers(officialCandidates, "max", { digits: 1 });
   const rateLabel = (view, i) => rateLabelOf(t, officialRates, view, i);
   // 新しいモーターの最初の節（その日の公式2連率が全行 0）。優出・優勝はまだ機会が無いので「-」
   const firstMeet = freshness?.firstMeet === true;
@@ -63,7 +65,7 @@ export function computeRateView(
       : null;
   const explainView = explainRow ? motorRateView(explainRow) : null;
   return {
-    rateViews, officialRates, officialRateMax, officialRateBestBoats, rateLabel,
+    rateViews, officialRates, officialRateMax, officialRateBestBoats, officialRateTiers, rateLabel,
     firstMeet, explainRow, explainView,
   };
 }
