@@ -25,10 +25,11 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
+import { memoryIndexLines, memoryIndexPath } from "./memory-index-check.js";
 
 const DEFAULT_BRANCH = "master";
 const FETCH_TIMEOUT_MS = 10000;
@@ -189,7 +190,11 @@ export function mainHeadLines({ mainPath, branch, headBehind }) {
 // メインの作業ツリーの HEAD の枝と、origin/master より何コミット古いか
 function readMainHead(mainPath) {
   const mainGit = (args) => git(["-C", mainPath, ...args]);
-  const count = mainGit(["rev-list", "--count", `HEAD..origin/${DEFAULT_BRANCH}`]);
+  const count = mainGit([
+    "rev-list",
+    "--count",
+    `HEAD..origin/${DEFAULT_BRANCH}`,
+  ]);
   return {
     mainPath,
     branch: mainGit(["branch", "--show-current"]) ?? "",
@@ -247,6 +252,10 @@ function main() {
   lines.push(...behindLines(behind));
   if (mainPath) lines.push(...mainHeadLines(readMainHead(mainPath)));
   if (porcelain) lines.push(...worktreeLines(porcelain));
+  // 記憶の索引の大きさ（memory-index-check.js）。鍵はメインの作業ツリーの場所から作る
+  const memFile = memoryIndexPath(mainPath ?? repoRoot);
+  const memText = existsSync(memFile) ? readFileSync(memFile, "utf8") : null;
+  lines.push(...memoryIndexLines({ file: memFile, text: memText }));
 
   if (lines.length === 0) return;
   console.log("");
