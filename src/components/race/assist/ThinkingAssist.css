@@ -184,11 +184,6 @@
   }
 }
 
-/* 括弧の全国の値は1かたまりで折る（2026-11-28） */
-.ta-rough-base {
-  white-space: nowrap;
-}
-
 .ta-rough-lineup {
   display: grid;
   gap: 2px;

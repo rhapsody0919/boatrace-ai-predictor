@@ -42,6 +42,11 @@
   padding-bottom: 12px;
 }
 
+/* 値と括弧の比べる値は1かたまりで折らない */
+.baseline-bar--labeled .baseline-bar-num {
+  white-space: nowrap;
+}
+
 .baseline-bar-base-label {
   position: absolute;
   top: 12px;

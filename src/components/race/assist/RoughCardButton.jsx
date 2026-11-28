@@ -16,10 +16,7 @@ function MiniBar({ label, row }) {
       base={row.base}
       baseLabel={ASSIST_COPY.roughBaseTick}
     >
-      <b>{pct}%</b>{" "}
-      <span className="ta-rough-base">
-        （{ASSIST_COPY.roughBase(Math.round(row.base * 100))}）
-      </span>
+      <b>{pct}%</b>（{ASSIST_COPY.roughBase(Math.round(row.base * 100))}）
     </BaselineBar>
   );
 }
