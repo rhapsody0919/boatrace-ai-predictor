@@ -7,13 +7,14 @@
  * - 正常: 200 の JSON {v, kind, title, description, canonical, jsonLd}。CDN にキャッシュする（kind ごとの s-maxage）
  * - 材料が取れない・形が違う: 503・no-store・Retry-After（「該当なし」や古い値を CDN に残さない。middleware は素通り）
  * - パスの形の外: 404・no-store。GET・HEAD の外: 405。クエリ文字列は見ない
- * - 鍵は anon キーだけ（節の行は botPage.js の createSeriesSource）
+ * - 会場の head は節の行（race_series）を読まない。title・description・パンくずは本日のレースだけから組み、
+ *   節の行は開催の帯（head の外）にしか効かない。読むと /api/races/today の後に Supabase の取得が直列に足され、
+ *   CDN の MISS で 1000ms の上限を越えていた（2026-11-28 の本番のログ）
  */
 import { readFileSync } from "node:fs";
 import { getJSTNow } from "../../src/pure/jstDate.js";
 import { PAGE_HEAD_VERSION } from "../../src/pure/pageHead.js";
 import {
-  createSeriesSource,
   createTodayRacesSource,
   originOf,
   tFromResources,
@@ -76,12 +77,15 @@ const pathnameOf = (url) => {
 const methodNotAllowed = () => plain(405, { ...NO_STORE, Allow: "GET, HEAD" }, "405 Method Not Allowed\n");
 const notFound = () => plain(404, NO_STORE, "404 Not Found\n");
 
+// 会場の head は節の行を使わない（上の注釈）。venueModelOf に渡す「節の行なし」
+const NO_SERIES_ROWS = async () => [];
+
 /**
  * @param {{method?: string, url?: string, headers?: Record<string, string>}} req
- * @param {{getTodayJson: (origin: string) => Promise<unknown>, getSeriesRows: Function, getT: () => Promise<Function>, now: () => number}} deps
+ * @param {{getTodayJson: (origin: string) => Promise<unknown>, getT: () => Promise<Function>, now: () => number}} deps
  * @returns {Promise<{status: number, headers: Record<string, string>, body: string}>}
  */
-export async function respondVenueHead({ method, url, headers }, { getTodayJson, getSeriesRows, getT, now }) {
+export async function respondVenueHead({ method, url, headers }, { getTodayJson, getT, now }) {
   if (method !== "GET" && method !== "HEAD") return methodNotAllowed();
   const m = VENUE_PATH.exec(pathnameOf(url) ?? "");
   if (!m) return notFound();
@@ -91,7 +95,7 @@ export async function respondVenueHead({ method, url, headers }, { getTodayJson,
   try {
     const [json, t] = await Promise.all([getTodayJson(origin), getT()]);
     const today = getJSTNow(new Date(now())).toISOString().slice(0, 10);
-    const model = await venueModelOf(json, venueCode, { t, lang: "ja", today }, getSeriesRows);
+    const model = await venueModelOf(json, venueCode, { t, lang: "ja", today }, NO_SERIES_ROWS);
     const body = JSON.stringify({ v: PAGE_HEAD_VERSION, kind: "venue", ...pageHeadOf(model) });
     return plain(200, VENUE_HEAD_HEADERS, body);
   } catch (e) {
@@ -127,7 +131,6 @@ export async function respondRaceHead({ method, url, headers }, { getRaces, getT
 }
 
 const defaultTodaySource = createTodayRacesSource();
-const defaultSeriesSource = createSeriesSource();
 
 const defaultRaceSource = createPredictionsSource();
 
@@ -151,9 +154,8 @@ export function createRaceHeadHandler({ getRaces = defaultRaceSource, getT = get
 /** Vercel の Node 関数のハンドラ（req, res）。deps は verify で差し替える */
 export function createVenueHeadHandler({
   getTodayJson = defaultTodaySource,
-  getSeriesRows = defaultSeriesSource,
   getT = getBundledJaT,
   now = Date.now,
 } = {}) {
-  return toHandler(respondVenueHead, { getTodayJson, getSeriesRows, getT, now });
+  return toHandler(respondVenueHead, { getTodayJson, getT, now });
 }
