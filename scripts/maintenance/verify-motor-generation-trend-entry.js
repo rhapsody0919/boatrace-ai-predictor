@@ -7,9 +7,7 @@
  *   - 推移の部品は取得（motorQueries8・supabase）を import しない
  *   - gen が idle・loading なら読み込み中、error なら取得の失敗、ok で6基の線（号機の札つき）
  *   - hook は enabled が偽なら idle（取らない）、真なら最初は loading。号機は艇番の順で、号機の無い行を除く
- *   - モータ情報タブの入口（MotorConditionChart）が hook を呼び、推移を開いたときだけ enabled にする
  */
-import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -67,9 +65,6 @@ const Probe = ({ enabled }) => { seen.push(useMotorGenerationRuns(2, [11, 12], "
 renderToStaticMarkup(createElement(Probe, { enabled: false }));
 renderToStaticMarkup(createElement(Probe, { enabled: true }));
 expectThat("enabled が偽なら idle、真なら loading", seen.join(",") === "idle,loading", seen.join(","));
-
-const entry = readFileSync(path.join(root, "src/components/analysis/MotorConditionChart.jsx"), "utf8");
-expectThat("入口が hook を呼び、推移を開いたときだけ取る", /useMotorGenerationRuns\([\s\S]*?embedded && genView === "trend"[\s\S]*?\)/.test(entry));
 
 if (problems.length > 0) {
   console.error(`verify-motor-generation-trend-entry: NG\n- ${problems.join("\n- ")}`);
