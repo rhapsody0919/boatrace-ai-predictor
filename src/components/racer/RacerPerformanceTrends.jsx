@@ -26,14 +26,26 @@ const sinceOf = (rows, isNarrow) => {
     : "";
 };
 
-// 平均の横線の札。カードと同じ桁（ST は3桁・展示は2桁）と母数（全N走）。絞り込みのときはその名前も
+// 期間の平均の横線（点線）の札。カードと同じ桁（ST は3桁・展示は2桁）と母数（全N走）。絞り込みのときはその名前も
 const avgOf = (value, digits, n, vcActive, vcLabel) =>
   value == null
     ? null
     : {
+        cls: "avg",
         value,
         text: `平均 ${value.toFixed(digits)}`,
         sub: `${vcActive ? `${vcLabel}・` : ""}全${n}走`,
+      };
+
+// 今の級×同じ進入コースの全国平均（破線）の札（オーナー 2026-11-27、ファン4人の議論の推奨）
+const baseOf = (base, grade) =>
+  base == null
+    ? null
+    : {
+        cls: "base",
+        value: base.value,
+        text: `${grade} ${base.value.toFixed(3)}`,
+        sub: "同コース",
       };
 
 function VcScope({ vcActive, vcLabel }) {
@@ -66,13 +78,9 @@ export function ExhibitionChart({ view, vcActive, vcLabel }) {
           rows={chartRuns(runs)}
           metric="exhibition"
           label="展示タイムの推移"
-          avg={avgOf(
-            vcData.avgExhibitionTime,
-            2,
-            vcData.exN,
-            vcActive,
-            vcLabel,
-          )}
+          lines={[
+            avgOf(vcData.avgExhibitionTime, 2, vcData.exN, vcActive, vcLabel),
+          ]}
         />
       ) : (
         <DailyExhibitionChart data={exhibitionChartData} view={view} />
@@ -118,7 +126,8 @@ function DailyExhibitionChart({ data, view }) {
 }
 
 /** STの推移（本番ST、履歴が2走以上のときだけ。共通の推移の図） */
-export function StTrendChart({ view, vcActive, vcLabel }) {
+export function StTrendChart({ view, vcActive, vcLabel, base }) {
+  const { stBase, grade } = base ?? {};
   const { vcData, isNarrow, chartRuns } = view;
   if (!view.showStTrend) return null;
   const runs = vcData.series.filter(
@@ -133,17 +142,25 @@ export function StTrendChart({ view, vcActive, vcLabel }) {
       </h3>
       <p className="racer-stat-note">
         点線は条件の全走の平均
-        {/* 「?」だけが次の行へ落ちないように、最後の語とまとめる（visual-designer 11/28） */}
         <span style={{ whiteSpace: "nowrap" }}>
           （Fの走を除く）
           <TermHintButton termKey="racerStTrend" />
         </span>
       </p>
+      {/* 破線の凡例は別の行に（1行目の「（Fの走を除く）」が破線にも掛かって読めないように。visual-designer 11/28） */}
+      {stBase != null && (
+        <p className="racer-stat-note-base">
+          破線は{grade}の同コースの全国平均
+        </p>
+      )}
       <RacerRunTrend
         rows={chartRuns(runs)}
         metric="st"
         label="STの推移"
-        avg={avgOf(vcData.avgSt, 3, vcData.stN, vcActive, vcLabel)}
+        lines={[
+          avgOf(vcData.avgSt, 3, vcData.stN, vcActive, vcLabel),
+          baseOf(stBase, grade),
+        ]}
       />
     </div>
   );

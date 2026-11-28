@@ -189,6 +189,12 @@ tr.racer-vc-row-highlight td:first-child {
   color: var(--text-secondary);
 }
 
+.racer-stat-note-base {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
 /* 走ごとの推移（P-31・P-32、共通の推移の図の1本の線）。選手1人なので艇の色の縁は付けず文字の色の1本。
    ダークの2号艇の色の規則より強く当てる（R-45 と同じ） */
 .racer-run-trend .trc-line.racer-run-series .trc-stroke {
@@ -198,13 +204,20 @@ tr.racer-vc-row-highlight td:first-child {
   display: none;
 }
 
-/* 期間の平均の横線（点線）と札。本線と太さ・形で分ける */
-.racer-run-avg-line {
+/* 比べる横線（P-31・P-32、オーナー 2026-11-27）: 期間の平均は点線、今の級×同じコースの全国平均は破線。本線と太さ・形で分ける */
+/* 375px で 2 3 と 6 3 は見分けられなかった（visual-designer 11/28）。点線は丸い点、破線は長めに */
+.racer-run-line-avg {
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+  stroke-dasharray: 0 4;
+  stroke-linecap: round;
+}
+.racer-run-line-base {
   stroke: var(--text-secondary);
   stroke-width: 1.5;
-  stroke-dasharray: 2 3;
+  stroke-dasharray: 8 4;
 }
-.racer-run-avg-label {
+.racer-run-label {
   font-size: var(--font-size-2xs);
   fill: var(--text-secondary);
 }
