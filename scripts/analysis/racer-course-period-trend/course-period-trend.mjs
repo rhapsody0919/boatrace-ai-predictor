@@ -76,6 +76,12 @@ function valueAndNoise(x, metric, pbar) {
   if (x.n <= 0) return null;
   return { v: x[metric] / x.n, nv: (pbar * (1 - pbar)) / x.n, n: x.n };
 }
+// 比べる2つの点（同じ選手のコースで lag 個離れた期・束）が、どちらも値と下限の走数を持つか
+const usablePair = (a, b, minN, lag, block) =>
+  a.v !== undefined && b.v !== undefined && a.n >= minN && b.n >= minN && b.k - a.k === lag * block;
+// 率は pt（×100・小数2桁）、平均ST は秒（小数4桁）
+const fmtChange = (v, metric) => +(v * (metric === "st" ? 1 : 100)).toFixed(metric === "st" ? 4 : 2);
+
 function changeStats(c, metric, block, minN, lag) {
   let sumD2 = 0, sumNoise = 0, cnt = 0; const absD = []; const hw = [];
   for (const m of byRacer.values()) {
@@ -85,8 +91,7 @@ function changeStats(c, metric, block, minN, lag) {
     const vs = s.map((x) => ({ k: x.k, ...(valueAndNoise(x, metric, pbar) ?? {}) }));
     for (let i = lag; i < vs.length; i++) {
       const a = vs[i - lag], b = vs[i];
-      if (a.v === undefined || b.v === undefined || a.n < minN || b.n < minN) continue;
-      if (b.k - a.k !== lag * block) continue;
+      if (!usablePair(a, b, minN, lag, block)) continue;
       const d = b.v - a.v;
       sumD2 += d * d; sumNoise += a.nv + b.nv; cnt++; absD.push(Math.abs(d)); hw.push(1.96 * Math.sqrt(b.nv));
     }
@@ -94,8 +99,8 @@ function changeStats(c, metric, block, minN, lag) {
   if (!cnt) return null;
   const obsSd = Math.sqrt(sumD2 / cnt), noiseSd = Math.sqrt(sumNoise / cnt);
   const trueVar = Math.max(0, sumD2 / cnt - sumNoise / cnt);
-  const scale = metric === "st" ? 1 : 100;
-  return { pairs: cnt, obsChangeSd: +(obsSd * scale).toFixed(metric === "st" ? 4 : 2), noiseChangeSd: +(noiseSd * scale).toFixed(metric === "st" ? 4 : 2), trueChangeSd: +(Math.sqrt(trueVar) * scale).toFixed(metric === "st" ? 4 : 2), shareNotNoise: +(trueVar / (sumD2 / cnt)).toFixed(3), medianHalfWidth95: +(q(hw, 0.5) * scale).toFixed(metric === "st" ? 4 : 2), medianAbsChange: +(q(absD, 0.5) * scale).toFixed(metric === "st" ? 4 : 2) };
+  const f = (v) => fmtChange(v, metric);
+  return { pairs: cnt, obsChangeSd: f(obsSd), noiseChangeSd: f(noiseSd), trueChangeSd: f(Math.sqrt(trueVar)), shareNotNoise: +(trueVar / (sumD2 / cnt)).toFixed(3), medianHalfWidth95: f(q(hw, 0.5)), medianAbsChange: f(q(absD, 0.5)) };
 }
 const metrics = ["win", "top2", "top3", "st"];
 const change = {};
