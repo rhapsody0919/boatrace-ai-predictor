@@ -26,7 +26,6 @@
  * 部品は basic-info/ に分けてある（BOA-1401）。ここは状態と取得を束ねるだけ
  */
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { parseRaceId } from "../../utils/raceId";
 import {
@@ -52,7 +51,7 @@ import FilterControls from "./basic-info/FilterControls";
 import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
 import BasicInfoTrend, { ViewHead } from "./basic-info/BasicInfoTrend";
-import BasicInfoLegends from "./basic-info/BasicInfoLegends";
+import BasicInfoLegends, { BarScaleNotes } from "./basic-info/BasicInfoNotes";
 import { useDatePredictions } from "../../hooks/useDatePredictions";
 import {
   collectDayEntrantValues,
@@ -314,25 +313,9 @@ function BasicInfoBarBlock({ row, shared }) {
 
 // 今の値の棒（6艇）と凡例
 function NowBars({ values, shared, scale, src }) {
-  const { t } = useTranslation();
   return (
     <>
-      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
-          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
-          読ませないよう書き添える（#1064 ファン評価2周目） */}
-      {scale.isRelativeScaleMetric && (
-        <p className="rbit-metric-caveat rbit-relative-note">
-          {t("basicInfo.relativeBarNote")}
-        </p>
-      )}
-      {scale.day && (
-        <p className="rbit-metric-caveat" data-testid="rbit-day-median-note">
-          {t("basicInfo.dayMedianNote", {
-            n: scale.day.n,
-            median: scale.day.median.toFixed(2),
-          })}
-        </p>
-      )}
+      <BarScaleNotes scale={scale} />
       {/* PC（1200px 以上）は棒を左、凡例を右の2段（BOA-881）。1199px 以下は囲みが無いのと同じ */}
       <div className="race-split">
         <div className="race-split__main">
@@ -439,12 +422,10 @@ function RaceBasicInfoTab({
     recordsOf: src.recordsOf,
     periodAnchor: src.periodAnchor,
   });
-  // 勝率（公式・全国）だけ、棒を今日の出走者の最小〜最大で描き真ん中の線を引く（意味づけ 2026-11-28）
-  const dayScaled =
-    metric === "winRate" && !needsOwnAggregation && scope === "national";
   const scale = withDayScale(
     buildBarScale(values, metric, needsOwnAggregation),
-    dayScaled ? src.dayWinRate : null,
+    src.dayWinRate,
+    { metric, scope, needsOwnAggregation },
   );
 
   const shared = {

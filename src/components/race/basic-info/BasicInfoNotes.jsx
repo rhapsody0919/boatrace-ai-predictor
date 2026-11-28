@@ -19,3 +19,29 @@ export default function BasicInfoLegends({ officialRates, accidentByRacer }) {
     </>
   );
 }
+
+// 棒の長さの決め方の注記（6艇の中の最小〜最大か、今日出走する選手の最小〜最大か）
+export function BarScaleNotes({ scale }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
+          平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
+          読ませないよう書き添える（#1064 ファン評価2周目） */}
+      {scale.isRelativeScaleMetric && (
+        <p className="rbit-metric-caveat rbit-relative-note">
+          {t("basicInfo.relativeBarNote")}
+        </p>
+      )}
+      {/* 勝率（公式・全国）は今日出走する選手の最小〜最大と真ん中の線（意味づけ 2026-11-28） */}
+      {scale.day && (
+        <p className="rbit-metric-caveat" data-testid="rbit-day-median-note">
+          {t("basicInfo.dayMedianNote", {
+            n: scale.day.n,
+            median: scale.day.median.toFixed(2),
+          })}
+        </p>
+      )}
+    </>
+  );
+}

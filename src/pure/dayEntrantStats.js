@@ -53,12 +53,20 @@ export function dayDistribution(values) {
 /**
  * 棒の尺度（basic-info/barValues.js の buildBarScale の戻り）を、今日の出走者の最小〜最大に置き換える。
  * day が null なら scale をそのまま返す（6艇の中の最小〜最大のまま）。棒の長さは 5〜100%（最小の選手でも見える）、
- * 真ん中（中央値）の線の位置を refLinePercent で返す。6艇の中の比べでなくなるので isRelativeScaleMetric は false
+ * 真ん中（中央値）の線の位置を refLinePercent で返す。6艇の中の比べでなくなるので isRelativeScaleMetric は false。
+ * 置き換えるのは勝率の公式の値（自前の集計でない）を全国で見るときだけ（当地・今期・グレードは物差しが違う）
  * @param {{barWidthPercent: (v: number|null|undefined) => number}} scale
  * @param {{n: number, min: number, max: number, median: number} | null} day
+ * @param {{metric: string, scope: string, needsOwnAggregation: boolean}} view
  */
-export function withDayScale(scale, day) {
-  if (!day) return { ...scale, day: null, refLinePercent: null };
+export function withDayScale(
+  scale,
+  day,
+  { metric, scope, needsOwnAggregation },
+) {
+  const applies =
+    metric === "winRate" && scope === "national" && !needsOwnAggregation;
+  if (!day || !applies) return { ...scale, day: null, refLinePercent: null };
   const span = day.max - day.min || 1;
   const percentOf = (v) =>
     5 + Math.max(0, Math.min(1, (v - day.min) / span)) * 95;
