@@ -1,5 +1,6 @@
 // 出走表（基本情報）の想定コース1着率の下に、全国の同じコースとの差を出す（見せ方の型1を狭いセル向けに文字で、意味づけ 2026-11-26 オーナー承認）。
-// ▲緑は差が偶然の幅を超えたときだけ。走数が差を出す線未満・偶然の幅に収まる差は灰で印なし（枠別情報の6艇の表と同じ判定）。
+// 緑は差が偶然の幅を超えたときだけ。走数が差を出す線未満・偶然の幅に収まる差は灰（枠別情報の6艇の表と同じ判定）。
+// ▲▼ と読み方の文は画面に出さず、読み方は行の「?」に置く（plan.md §14、オーナー 2026-11-28）。
 import { test, expect } from "./fixtures.js";
 
 // 1コース: 3期で120走・1着90（75.0%）。全国 55.2% との差は偶然の幅を超える
@@ -40,26 +41,30 @@ async function open(page, terms) {
 }
 
 for (const width of [375, 1440]) {
-  test(`想定コース1着率の下に全国との差、偶然の幅を超えた艇だけ緑▲ ${width}px`, async ({ page }) => {
+  test(`想定コース1着率の下に全国との差、偶然の幅を超えた艇だけ緑、▲▼ と読み方の文は出さない ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     const row = await open(page, strong);
     const cells = row.locator("td.drt-cell");
-    // 1号艇（1コース）: 75% − 55% = +20pt、緑▲
+    // 1号艇（1コース）: 75% − 55% = +20pt、緑（向きは符号が言う）
     const first = cells.nth(0).locator(".drt-course-diff");
-    await expect(first).toHaveText("▲+20pt");
+    await expect(first).toHaveText("+20pt");
     await expect(first).toHaveAttribute("data-tone", "good");
-    // 2号艇（2コース、15走）: 差は出すが灰で印なし
+    // 2号艇（2コース、15走）: 差は出すが灰
     const second = cells.nth(1).locator(".drt-course-diff");
     await expect(second).toHaveAttribute("data-tone", "plain");
     await expect(second).not.toContainText(/[▲▼]/);
     const colors = await Promise.all([first, second].map((l) => l.evaluate((el) => getComputedStyle(el).color)));
     expect(colors[0]).not.toBe(colors[1]);
-    await expect(row).toContainText("全国の同じコースとの差");
+    // 差の読み方は画面の注記に出さず、行の「?」で開く
+    await expect(row.locator(".drt-label-note")).toHaveText("直近3期・進入コース");
+    await expect(row).not.toContainText(/[▲▼]/);
+    await row.locator(".term-hint button").first().click();
+    await expect(page.getByText(/全国の同じコースの1着率との差/)).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
 
-test("差が偶然の幅に収まる艇は灰で印なし", async ({ page }) => {
+test("差が偶然の幅に収まる艇は灰", async ({ page }) => {
   const row = await open(page, plain);
   const first = row.locator("td.drt-cell").nth(0).locator(".drt-course-diff");
   await expect(first).toHaveText("+7pt");
