@@ -101,7 +101,7 @@ function EndLabels({ seriesByBoat, selected, y, metric, W }) {
   ));
 }
 
-function Axis({ generationStart, today, firstDate, minRuns, metric, x, W }) {
+function Axis({ generationStart, today, firstDate, metric, x, W }) {
   const { t } = useTranslation();
   const mid = new Date(((dayOf(generationStart) + dayOf(today)) / 2) * 86400000).toISOString().slice(0, 10);
   return (
@@ -109,9 +109,6 @@ function Axis({ generationStart, today, firstDate, minRuns, metric, x, W }) {
       {firstDate > generationStart && (
         <rect x={PAD.l + 1} y={PAD.t} width={Math.max(0, x(firstDate) - PAD.l - 1)} height={H - PAD.b - PAD.t} className="mtc-before" />
       )}
-      <text x={PAD.l + 18} y={PAD.t - 8} className="trc-tick">
-        {t("analysis.motor.genTrend.notYet", { n: minRuns })}
-      </text>
       {isEx(metric) && (
         <text x={W - PAD.r} y={PAD.t - 8} className="trc-tick" textAnchor="end">
           {t("analysis.motor.genTrend.faster")}
@@ -135,7 +132,7 @@ function Axis({ generationStart, today, firstDate, minRuns, metric, x, W }) {
 
 /**
  * @param {{seriesByBoat: Map<number, Array<{date:string,value:number,extended?:boolean}>>,
- *   metric: "top2Rate"|"top3Rate"|"exhibition", selected: number, generationStart: string, today: string, minRuns: number}} props
+ *   metric: "top2Rate"|"top3Rate"|"exhibition", selected: number, generationStart: string, today: string}} props
  *   seriesByBoat は点のある艇だけ（空の系列を入れない）。1艇も無いときは使う側が空の状態を出す
  *   renderTip を渡すと、選んだ艇の節の点（今日まで延ばした右端は除く）を拾い、吹き出しを描く（選手の推移と同じ useChartPick）
  *   finalLabels（節の初日 → 字の Map）を渡すと、選んだ艇の節の点の上に優出・優勝の印を描く（F-044）
@@ -156,7 +153,7 @@ function PickLayer({ px, py, selected, W, pointer }) {
   );
 }
 
-export default function MotorTrendChart({ seriesByBoat, metric, selected, generationStart, today, minRuns, renderTip = null, finalLabels = null }) {
+export default function MotorTrendChart({ seriesByBoat, metric, selected, generationStart, today, renderTip = null, finalLabels = null }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
   const { x, y, ticks } = scaleOf(seriesByBoat, metric, generationStart, today, W);
@@ -174,7 +171,7 @@ export default function MotorTrendChart({ seriesByBoat, metric, selected, genera
       <text x={PAD.l - 4} y={PAD.t - 8} className="trc-tick" textAnchor="end">
         {metric === "exhibitionDiff" ? t("analysis.motor.genTrend.unitSecDiff") : isEx(metric) ? t("analysis.motor.genTrend.unitSec") : "%"}
       </text>
-      <Axis generationStart={generationStart} today={today} firstDate={firstDate} minRuns={minRuns} metric={metric} x={x} W={W} />
+      <Axis generationStart={generationStart} today={today} firstDate={firstDate} metric={metric} x={x} W={W} />
       {order.map((boat) => (
         <Line key={boat} points={seriesByBoat.get(boat)} boat={boat} selected={boat === selected} showDots={metric !== "exhibition" && boat === selected} x={x} y={y} />
       ))}
