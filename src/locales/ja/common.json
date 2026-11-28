@@ -1433,6 +1433,7 @@
         "entryColType": "進入",
         "entryColShare": "割合",
         "entryColB1": "1号艇の1着率",
+        "entryColB1Short": "1号艇1着率",
         "hintTagPast": "過去の記録（予想ではない）",
         "hintTagWaku": "枠なりの場合",
         "hintSrcAria": "このコースと全体の違い",

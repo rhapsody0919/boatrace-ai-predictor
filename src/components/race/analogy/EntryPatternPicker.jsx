@@ -69,7 +69,8 @@ export default function EntryPatternPicker({
       <div className="af-ent-head" aria-hidden="true">
         <span>{t(`${k}.entryColType`)}</span>
         <span>{t(`${k}.entryColShare`)}</span>
-        <span>{t(`${k}.entryColB1`)}</span>
+        {/* 見出しは短い形で1行に（1440 で「率」だけ落ちた。読み上げの行は entryColB1 のまま） */}
+        <span>{t(`${k}.entryColB1Short`)}</span>
       </div>
       {/* 枠なりを先頭に（承認モック mock-scenario-v1。多くのレースが枠なり） */}
       {ENTRY_ORDER.flatMap((e) =>
