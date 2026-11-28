@@ -3302,6 +3302,10 @@
       "title": "📊 会場×グレード分析",
       "description": "会場を選ぶと、レースのグレード（一般戦/G3/G2/G1/SG）ごとの艇番別成績を比較できます。全国平均だけでは見えない、会場固有の傾向を発見できます。",
       "metricSelectLabel": "指標",
+      "metricFirstRate": "1着率",
+      "raceCount": "{{n}}レース",
+      "winShareTitle": "グレードごとの1着の割合（艇番別）",
+      "winShareNote": "棒の下の数字は各艇の1着率（%）。集計: {{since}}からのこの会場の全レース（毎日23時に更新）。",
       "metric": {
         "winRate": "勝率",
         "top2Rate": "連対率",

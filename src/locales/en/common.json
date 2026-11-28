@@ -3311,6 +3311,10 @@
       "title": "📊 Venue × Grade Analysis",
       "description": "Pick a venue to compare per-lane performance across race grades (ippan/G3/G2/G1/SG). Reveals venue-specific tendencies that the national average alone can't show.",
       "metricSelectLabel": "Metric",
+      "metricFirstRate": "1st-place rate",
+      "raceCount": "{{n}} races",
+      "winShareTitle": "Share of 1st places by grade (by boat number)",
+      "winShareNote": "Numbers under each bar are each boat's 1st-place rate (%). Data: all races at this venue since {{since}} (updated daily at 23:00 JST).",
       "metric": {
         "winRate": "Win rate",
         "top2Rate": "Top-2 rate",
