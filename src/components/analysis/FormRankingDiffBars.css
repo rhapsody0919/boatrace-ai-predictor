@@ -1,0 +1,149 @@
+/* 全国勝率の変化ランキングの差の棒（FormRankingDiffBars.jsx、G4 T-21）。
+   1行1人の棒は PC でも 720px まで（棒の先と右の数字を離さない）。棒は灰の1色（増減を色で言わない、§14） */
+.frd {
+  max-width: 720px;
+  margin: var(--spacing-4) 0;
+}
+
+.frd-title {
+  margin: 0 0 var(--spacing-1);
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+}
+
+.frd-title-note {
+  margin-left: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
+.frd-head,
+.frd-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 6.75rem;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.frd-head {
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.frd--down .frd-head-bar {
+  text-align: right;
+}
+
+.frd-head-values,
+.frd-values {
+  text-align: right;
+}
+
+.frd-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+.frd-row {
+  min-height: 44px;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.frd-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.frd-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--brand-accent-primary);
+  text-decoration: underline;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frd-sub {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.frd-sub .racer-page-link-inline {
+  display: inline-block;
+  padding: 2px 0;
+  color: var(--text-secondary);
+  text-decoration: underline;
+}
+
+.frd-track {
+  position: relative;
+  height: 28px;
+}
+
+.frd-axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-left: 1.5px solid var(--text-secondary);
+}
+
+.frd-bar {
+  position: absolute;
+  top: 6px;
+  height: 16px;
+  left: 0;
+  background: var(--text-secondary);
+  border-radius: 0 3px 3px 0;
+}
+
+.frd-diff {
+  position: absolute;
+  top: 5px;
+  left: calc(var(--frd-at) + 4px);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* 下がった人は右端から左へ */
+.frd--down .frd-axis {
+  left: auto;
+  right: 0;
+}
+
+.frd--down .frd-bar {
+  left: auto;
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+.frd--down .frd-diff {
+  left: auto;
+  right: calc(var(--frd-at) + 4px);
+}
+
+.frd-values {
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.frd-values b {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}

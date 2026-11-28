@@ -3,11 +3,12 @@
  * 本日出走する全選手を対象に、現在の全国勝率と約90日前時点の全国勝率のdeltaで
  * 急上昇/急下降ランキングを表示する。既存の「選手調子」（会場・レース選択→6選手比較）
  * とは異なり、レース選択前の発見導線として本日カード全体を横断する。
+ * 差は表でなく差の棒で出す（FormRankingDiffBars、G4 T-21、2026-11-28 オーナー承認）。
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import { getTodaysRacerFormRanking } from "../../services/racerQueries3.js";
+import FormRankingDiffBars from "./FormRankingDiffBars";
 import "./MotorConditionChart.css";
 
 const VENUE_NAMES = {
@@ -37,64 +38,6 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
-function RankingTable({ title, rows, emptyMessage }) {
-  const { t } = useTranslation();
-  return (
-    <div className="table-wrapper">
-      <h3 className="selected-motor-heading">{title}</h3>
-      {rows.length === 0 ? (
-        <div className="empty-state">{emptyMessage}</div>
-      ) : (
-        <table className="motor-ranking-table">
-          <thead>
-            <tr>
-              <th>{t("table.playerName")}</th>
-              <th>{t("analysis.venueHeader")}</th>
-              <th>{t("analysis.racerForm.currentWinRateHeader")}</th>
-              <th>{t("analysis.racerForm.past90Header")}</th>
-              <th>{t("analysis.racerForm.deltaHeader")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.racer_id} className="motor-ranking-row">
-                <td>
-                  <Link
-                    to={`/winning-technique?venue_code=${row.venue_code}&race_id=${row.race_id}&tab=racer`}
-                    translate="no"
-                  >
-                    {row.player_name?.replace(/\s+/g, "")}
-                  </Link>{" "}
-                  <Link
-                    to={`/racer/${row.racer_id}`}
-                    className="racer-page-link-inline"
-                  >
-                    {t("analysis.racerPageShort")}
-                  </Link>
-                </td>
-                <td>
-                  {t(
-                    `venues.${row.venue_code}`,
-                    VENUE_NAMES[row.venue_code] || "",
-                  )}{" "}
-                  {row.race_number}R
-                </td>
-                <td className="rate">{row.win_rate?.toFixed(2)}</td>
-                <td className="rate">{row.past_win_rate?.toFixed(2)}</td>
-                <td className="rate">
-                  <span className={row.delta > 0 ? "delta-up" : "delta-down"}>
-                    {row.delta > 0 ? "↑" : "↓"} {Math.abs(row.delta).toFixed(2)}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-}
-
 function RacerFormRankingChart() {
   const { t } = useTranslation();
   const [ranking, setRanking] = useState({ rising: [], falling: [] });
@@ -119,6 +62,8 @@ function RacerFormRankingChart() {
   }, []);
 
   const isEmpty = ranking.rising.length === 0 && ranking.falling.length === 0;
+  const venueLabel = (row) =>
+    t(`venues.${row.venue_code}`, VENUE_NAMES[row.venue_code] || "");
 
   return (
     <div className="motor-condition-container">
@@ -140,14 +85,18 @@ function RacerFormRankingChart() {
 
       {!loading && !error && !isEmpty && (
         <>
-          <RankingTable
-            title={t("analysis.formRanking.risingTitle")}
+          <FormRankingDiffBars
+            title={t("analysis.formRanking.risenTitle")}
             rows={ranking.rising}
+            direction="up"
+            venueLabel={venueLabel}
             emptyMessage={t("analysis.formRanking.empty")}
           />
-          <RankingTable
-            title={t("analysis.formRanking.fallingTitle")}
+          <FormRankingDiffBars
+            title={t("analysis.formRanking.fallenTitle")}
             rows={ranking.falling}
+            direction="down"
+            venueLabel={venueLabel}
             emptyMessage={t("analysis.formRanking.empty")}
           />
         </>
