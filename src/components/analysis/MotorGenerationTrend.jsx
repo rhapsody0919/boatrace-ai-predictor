@@ -3,14 +3,14 @@
  * このレースの6基を今の世代（そのレースの日以前で最新の入れ替えの後）の中だけで重ねる。
  * 率は公式の累積を節ごとの点（20走から）、展示タイムは直近30走の平均（24走から）。
  * 根拠は docs/design/indicator-parts/analysis/motor-trend-window.md
+ * 取得は入口（モータ情報タブは MotorConditionChart）が useMotorGenerationRuns で行い、結果を gen で受け取る（plan.md §13）
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import BoatBadge from "../race/BoatBadge";
 import InlineFetchError from "../InlineFetchError";
 import MotorTrendChart from "./MotorTrendChart";
 import MotorMeetTooltip from "./MotorMeetTooltip";
-import { getMotorGenerationRuns } from "../../services/motorQueries8.js";
 import {
   MOTOR_EXHIBITION_MIN_RUNS,
   MOTOR_RATE_MIN_RUNS,
@@ -60,26 +60,6 @@ export function MotorMetricChips({ metric, setMetric }) {
       ))}
     </div>
   );
-}
-
-// 取得の結果は、頼んだ鍵と一緒に持つ。鍵が今と違えば読み込み中（effect の中で同期に state を戻さない）
-function useGenerationRuns(venueCode, motors, raceId) {
-  const key = `${venueCode}-${motors.join("_")}-${raceId}`;
-  const [got, setGot] = useState({ key: null, status: "loading", data: null });
-  useEffect(() => {
-    let cancelled = false;
-    getMotorGenerationRuns(venueCode, key.split("-")[1].split("_").map(Number), raceId).then(
-      (data) => !cancelled && setGot({ key, status: "ok", data }),
-      (err) => {
-        console.error("モーターの推移の取得エラー:", err);
-        if (!cancelled) setGot({ key, status: "error", data: null });
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [venueCode, key, raceId]);
-  return got.key === key ? got : { status: "loading", data: null };
 }
 
 function seriesOf(rows, runsByMotor, metric, today) {
@@ -179,11 +159,14 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
   );
 }
 
-export default function MotorGenerationTrend({ venueCode, raceId, rows, metric, onShowNow, focusedBoat, onFocusBoat }) {
+/**
+ * @param {{gen: {status: "idle"|"loading"|"ok"|"error", data: object|null}}} props gen は入口の useMotorGenerationRuns の結果
+ */
+export default function MotorGenerationTrend({ gen, venueCode, raceId, rows, metric, onShowNow, focusedBoat, onFocusBoat }) {
   const { t } = useTranslation();
   const [localBoat, setLocalBoat] = useState(null);
   const sorted = [...rows].filter((r) => Number.isInteger(r.motor_number)).sort((a, b) => a.boat_number - b.boat_number);
-  const { status, data } = useGenerationRuns(venueCode, sorted.map((r) => r.motor_number), raceId);
+  const { status, data } = gen;
   const today = raceId.slice(0, 10);
   const series = status === "ok" ? seriesOf(sorted, data.runsByMotor, metric, today) : new Map();
   const want = focusedBoat ?? localBoat ?? 1;
@@ -191,7 +174,7 @@ export default function MotorGenerationTrend({ venueCode, raceId, rows, metric, 
   const pick = (boat) => (onFocusBoat ? onFocusBoat(boat) : setLocalBoat(boat));
   return (
     <div className="trc-wrap trc-wrap--wide mtc-wrap">
-      {status === "loading" && <p className="trc-note">{t("analysis.loading")}</p>}
+      {(status === "loading" || status === "idle") && <p className="trc-note">{t("analysis.loading")}</p>}
       {status === "error" && <InlineFetchError />}
       {status === "ok" && series.size === 0 && <TrendEmpty rows={sorted} data={data} metric={metric} today={today} onShowNow={onShowNow} />}
       {series.size > 0 && <TrendBody rows={sorted} data={data} series={series} metric={metric} today={today} selected={selected} onSelect={pick} venueCode={venueCode} />}
