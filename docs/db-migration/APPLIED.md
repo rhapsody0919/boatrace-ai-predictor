@@ -252,4 +252,5 @@
 | 211 | 211_data_health_site_feedback.sql | 適用済み（2026-11-27、db-apply ワークフローで適用。run: https://github.com/rhapsody0919/boatrace-ai-predictor/actions/runs/45909238169、sha256: `b4842dd73ec186b4…`） | 台帳に行が無かったため db-apply が追加した。変更内容はファイル冒頭のコメントを参照 |
 | 212 | 212_race_facts.sql | 適用済み（2026-11-27、db-apply ワークフローで適用。run: https://github.com/rhapsody0919/boatrace-ai-predictor/actions/runs/45950226807、sha256: `64e657b30bf9325a…`） | 台帳に行が無かったため db-apply が追加した。変更内容はファイル冒頭のコメントを参照 |
 | 213 | 213_race_facts_same_race_boats.sql | 適用済み（2026-11-27、db-apply ワークフローで適用。run: https://github.com/rhapsody0919/boatrace-ai-predictor/actions/runs/45998104022、sha256: `ac706cda71dbcfec…`） | 台帳に行が無かったため db-apply が追加した。変更内容はファイル冒頭のコメントを参照 |
+| 214 | 214_racer_sex.sql | 適用済み（2026-11-29、db-apply ワークフローで適用。run: https://github.com/rhapsody0919/boatrace-ai-predictor/actions/runs/46160827735、sha256: `5e9f2427175eae74…`） | 台帳に行が無かったため db-apply が追加した。変更内容はファイル冒頭のコメントを参照 |
 | （番号なし） | add-defense-distribution.sql | 適用済み | 列 racer_aggregated_stats.defense_distribution・course_race_counts が存在 |
