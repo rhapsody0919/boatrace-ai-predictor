@@ -4,8 +4,6 @@ import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import DrillDownHeader from "./DrillDownHeader";
 import InlineFetchError from "../InlineFetchError";
-import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
-import { powerIndexTone } from "../../utils/smallSampleRate";
 import { translatePartName } from "../race/raceIndicators";
 import { MotorListHead, MotorListRow } from "./MotorConditionListRow";
 
@@ -90,7 +88,7 @@ function VenueRankNote({ breakdown, venueRanks, selectedVenue }) {
   );
 }
 
-function OfficialSourceNote({ breakdown, officialMode, listPowerIndex, venueColsLabel }) {
+function OfficialSourceNote({ breakdown, officialMode, venueColsLabel }) {
   const { t } = useTranslation();
   return (
     <>
@@ -105,19 +103,6 @@ function OfficialSourceNote({ breakdown, officialMode, listPowerIndex, venueCols
       {/* 会場公式サイト由来の列（1着率・優出数・優勝数）は、表に出ているものだけを
           挙げる。1つも無い会場（戸田など）では文ごと出さない（BOA-513。列名が空の
           まま「…の値、はそのレース日以前…」と文が崩れるのを防ぐ） */}
-      {/* 一覧のオレンジ色の機力指数の意味（6走未満の参考値）。該当する行が
-          あるときだけ書く（2026-09-29 ファン評価） */}
-      {breakdown.some(
-        (r) =>
-          powerIndexTone(
-            listPowerIndex(r).value,
-            listPowerIndex(r).n,
-            SMALL_SAMPLE_THRESHOLD,
-          ) === "small",
-      ) &&
-        t("analysis.motor.powerIndexSmallSampleNote", {
-          n: SMALL_SAMPLE_THRESHOLD,
-        })}
       {venueColsLabel &&
         `${t(
           officialMode
@@ -199,7 +184,7 @@ export function MotorListView({ m, v, scroll, scrollRef }) {
         </p>
       )}
       <p className="table-note motor-official-source-note">
-        <OfficialSourceNote breakdown={breakdown} officialMode={v.officialMode} listPowerIndex={v.listPowerIndex} venueColsLabel={v.venueColsLabel} />
+        <OfficialSourceNote breakdown={breakdown} officialMode={v.officialMode} venueColsLabel={v.venueColsLabel} />
       </p>
     </>
   );

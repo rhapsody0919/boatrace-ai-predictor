@@ -1,11 +1,9 @@
 /** MotorConditionChart の一覧表の見出しと行（MotorConditionChart.jsx から本文を字のまま移した） */
 import { useTranslation } from "react-i18next";
-import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
-import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
+import { formatPowerIndex } from "../../utils/smallSampleRate";
 import { motorRate3View } from "../../utils/motorFreshRate";
 import RateBar from "../common/RateBar";
 import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
-import { POWER_INDEX_TONE_CLASS } from "./motorConditionView";
 import TermHintButton from "../race/TermHintButton";
 
 // 差の字（小数1桁、負はマイナス記号）。丸めて 0 は ±0.0
@@ -262,16 +260,9 @@ function MotorVenueStatCells({ row, i, view }) {
             : "-"}
         </td>
       )}
+      {/* 機力指数は値だけ。良し悪し・小標本の色は付けない（plan.md §14） */}
       <td
-        className={`rate power-index ${
-          POWER_INDEX_TONE_CLASS[
-            powerIndexTone(
-              listPowerIndex(row).value,
-              listPowerIndex(row).n,
-              SMALL_SAMPLE_THRESHOLD,
-            )
-          ] ?? ""
-        }`}
+        className="rate power-index"
       >
         {listPowerIndex(row).value !== null
           ? formatPowerIndex(listPowerIndex(row).value)
