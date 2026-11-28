@@ -67,7 +67,9 @@ for (const width of [375, 1440]) {
         expect(v).toBeLessThanOrEqual(Math.max(...values) + 1e-9);
       });
     }
-    await expect(page.getByTestId("rbi-tier-legend")).toContainText("「1位だけ」の行");
+    // 上位2・下位2の印の凡例（「1位だけ」の行の説明を含む）は印とともに外した（plan.md §14、オーナー 2026-11-28 案A）。
+    // 札の説明は札を「?」へ移す次の PR（#3590 の部品）で「?」の中に書く
+    await expect(page.getByTestId("rbi-tier-legend")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
