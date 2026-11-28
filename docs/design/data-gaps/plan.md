@@ -17,7 +17,7 @@
 |---|---|---|---|---|---|
 | グレード | main: `races.race_grade`（約77%）・`race_series.grade`。kb: `kb_archive_venue_days.race_grade`（phase-m は全件 NULL、kb-longterm-backfill は投入済みと書き食い違う。Q1） | main は 補正→races→race_series→class_code（raceFactsMain.js:41）。**kb は補正→venue_days だけ**（raceFactsKbJob.js:32）で race_series を見ない | 月間スケジュール（race_series、2019-04〜 取得済み・毎月の Cron あり） | kb も main と同じ順。月間スケジュールは QC と QC シリーズ・CC とレディース CC を1つの節にまとめるので、特別な節の補正（`SPECIAL_SERIES_RULES`、scripts/lib/racerCareerSeries.js:29）を先に当てる（kb の CLI は loadJudgeInputs で既に渡している） | J1a |
 | 種別（節） | `race_series.kind`（sg・g1・g2・g3・ippan・lady・venus・rookie・masters）。2019-04〜 | main は埋まる（raceFactsMain.js:59）。**kb は常に NULL**（raceFactsKbJob.js:34 `seriesKind: null`）。特別な節の補正はグレードだけを直し、QC シリーズ・レディース CC の種別は 'g1'・'sg' のまま（両 era、既存の問題） | 同上（取得済み） | kb も `race_series.kind` を節で照合。補正に種別も持たせ両 era に効かせる | J1a |
-| 種別（レース単位の女子戦） | 列なし。男女W優勝戦等の節の中の女子だけのレースは、種別の文字にも K/B にも印が無い時期がある（§5） | なし | `racer_profiles.sex`（fan 由来、今の選手だけ） | 新しい列 `field_gender`（db-draft §2）。6艇の性別から書き手が決める | J1b（DB の変更・Q8・オーナーの答えの後） |
+| 種別（レース単位の女子戦） | 列なし。男女W優勝戦等の節の中の女子だけのレースは、種別の文字にも K/B にも印が無い時期がある（§5） | なし | 新しい表 `racer_sex`（fan 由来、全ての期の全選手。db-draft §1.5）。本番の `racer_profiles.sex` は全行 NULL（Q8） | 新しい列 `field_gender`（db-draft §1）。6艇の性別から書き手が決める | J1b（DB の変更・Q8・オーナーの答えの後） |
 | 風向 | main: `race_conditions.wind_direction`（16、**中身は画面の矢印の番号**、preregistration 1.1）。kb: `kb_archive_races.wind_direction`（K の8方位） | **両方の era で NULL**（raceFactsMain.js:123・raceFactsKb.js:94） | 取得済み | 検証済みの扇形 × 風速の5区分（`tail_strong`・`tail`・`calm_cross`・`head`・`head_strong`、weather-in-escape preregistration 3.1） | J1a |
 | 風速・波・天候 | main: `race_conditions`。kb: `kb_archive_races`（K、発走時点） | 埋まる。main の条件の出所は `condition_source`（race_result／before_race） | 取得済み | 今のまま。2025-12-03〜2026-09-18 の before_race は J3 で結果のページの値を足す | J3 |
 | 気温・水温 | main: `race_conditions.temperature`・`water_temperature`。kb: **列なし**（K に無い） | main は埋まる（時点は condition_source と同じ混ざり）。kb は NULL（raceFactsKb.js:96） | 公式の結果のページ（raceresult）の水面気象。過去は 2019-04-15 まで確かめ済み（past-data-backfill §4） | 新しい表 `race_result_weather`（両 era、db-draft §3）→ 書き手が読む | J3（V0・V1 の後） |
@@ -34,7 +34,7 @@ flowchart LR
     RS[(race_series<br/>2019-04〜)]
     KA[(kb_archive_*<br/>風向8・風速・波・天候)]
     RC[(race_conditions<br/>風向16・水温・気温)]
-    RP[(racer_profiles.sex)]
+    RP[(fan の性別<br/>→ racer_sex 案)]
   end
   subgraph 新しく取る
     JMA[気象庁 潮位表 推算<br/>地点×年 1ファイル] -->|J2 毎日の Cron、無ければ0回| VT[(tide_station_daily 案)]
@@ -71,10 +71,14 @@ flowchart LR
 
 ### 3.2 段 J1b: 女子戦（列の追加の後）
 
-- `field_gender`: 出走した艇（欠場を除く）の `racer_profiles.sex` が全員2なら `female`、全員1なら `male`、混ざれば `mixed`、1艇でも分からなければ NULL
+- `field_gender`: 出走した艇（欠場を除く）の `racer_sex.sex` が全員2なら `female`、全員1なら `male`、混ざれば `mixed`、1艇でも分からなければ NULL
 - 種別の軸の「女子戦」は `series_kind IN ('lady','venus')` か `field_gender='female'` を画面の登録簿が決める
-- 性別の出所が kb の期間に足りない見込み: `racer_profiles.sex` は fan の最新の期で既にある行だけを更新し（fanPeriodRows.js:202-208・racerProfileSync.js:265）、行を作らない。racer_period_stats に sex は無い。kb の期間に引退した選手は NULL のまま。Q8 でレースの単位の欠けを測り、大きければ fan の過去の期から性別だけを持つ小さな出所を別に設計する（その時に DB の変更が要るかを決める）
-- 書き手が racer_profiles を読むときは `fetchAll` に `order(racer_id)` を付け（1000行を超える）、読みに失敗したら throw する（NULL で続けない）。sex を後から埋めても kb の facts は CLI を回すまで直らないので、kb-backfill と同じく案内を出す
+- 性別の出所は新しい表 `racer_sex`（db-draft §1.5 の M5）。Q8（2026-11-28）で `racer_profiles.sex` が全行 NULL と分かり、kb・main とも6艇の性別が分かるレースが0だった
+  - 原因: sex を書くのは手動の `fan-backfill.js sync-profiles --apply`（fan-backfill-load.js:321-366）だけ。fan_period の Cron は racer_period_stats だけを書き、そこに sex は無い。racer-profiles の Cron（saveNewProfile）も書かない。もともと今の選手の行だけで、引退した選手は入らない
+  - 出所: fan_period の Cron が、fan ごとに全選手の性別を racer_period_stats より先に書く。過去分は fan1904〜を CLI で1回
+  - 採らない案: racer_period_stats に列を足すと、期ごとに重ねて持つうえ verify-fan-period.js:150 を変えるので H5。sync-profiles を回すと racer-profiles の Cron と同じ列を二重に書く（system-architect、2026-11-28）
+  - 埋まらない所: 新人は次の期の fan に載るまで NULL の見込み（未検証）。女子戦は上の `series_kind` との OR で補う
+- 書き手が racer_sex を読むときは `fetchAll` に `order(racer_id)` を付け（1000行を超える）、読みに失敗したら throw する（NULL で続けない）。sex を後から埋めても kb の facts は CLI を回すまで直らないので、kb-backfill と同じく案内を出す
 - 順序: マイグレーションを当て、それが定時の配備より先に入ってから書き手の PR（列を足すだけの変更）。`RACE_FACT_COLUMNS` は kb と main で共有なので両方の書き手が同時に変わる
 
 ### 3.3 段 J2: 潮位（検証の後に作る）
@@ -165,6 +169,7 @@ SELECT relname, pg_size_pretty(pg_total_relation_size(oid)) FROM pg_class
  ORDER BY pg_total_relation_size(oid) DESC;
 
 -- Q8a 女子戦の判定に要る性別の欠け（kb、レースの単位。1艇でも欠ければ NULL になるレースの割合）
+-- 2026-11-28 に racer_profiles で回して全て0。M5 と過去分の取り込みの後は racer_profiles を racer_sex に替えて回し直す
 SELECT left(race_id, 4) AS y, count(*) AS races,
        count(*) FILTER (WHERE n_known = n) AS all_known,
        count(*) FILTER (WHERE n_female = n) AS all_female
@@ -218,7 +223,7 @@ SELECT job, mode, cursor, last_success_at FROM scrape_job_state WHERE job = 'rac
 
 1. **潮位を作るか**（J2）: 推奨は「検証（手元の台本、DB に入れない）を先に回し、通った会場だけ表を作る」。気象庁への取得は99回で、boatrace.jp の予算（ADR-0101）の外。利用の条件は出典の表示と加工の明記。公開する画面に「出典：気象庁ホームページ」と加工の旨を書いてよいか（公開方針）
 2. **代用の地点の3会場**（鳴門・若松・大村）: 推奨は「検証で他と分けて見て、通らなければ潮位を出さない」
-3. **女子戦の判定に選手の性別を使うか**（J1b、列の追加）: 推奨は「使う」（公式の印が無い時期がある）。性別が欠けた選手のいるレースは判定しない（NULL）。欠けが大きければ fan の過去の期で足す設計を別に出す（Q8 の後）
+3. **女子戦の判定に選手の性別を使うか**（J1b、表 racer_sex と列の追加）: 推奨は「使う」（公式の印が無い時期がある）。性別が欠けた選手のいるレースは判定しない（NULL）。出所は fan の全ての期から作る新しい表（Q8 で racer_profiles.sex が全行 NULL と分かったため）
 4. **main の前半（2025-12-03〜2026-09-18）と kb の条件を raceresult で取り直すか**（J3、main 約4万・kb は V1 の後に1〜2年分、JST 01〜06）: 推奨は「V0 が通り、ADR-0101 に止め方を追記してから取る」。条件の軸の母数が9か月分増える。ADR-0067 の取得の増加の承認が要る
 
 聞かずに進めてよい物: J1a（書き手の直し。DB の変更も取得も無い。承認済みの facts の設計の範囲）
@@ -229,6 +234,7 @@ SELECT job, mode, cursor, last_success_at FROM scrape_job_state WHERE job = 'rac
   - P1: 版が race と run で同じで run_facts の全行を書き直す → 版を表ごとに（§3.1）／unit_id が 212 の CHECK に落ちる → `YYYY-MM-DD|地点`（§3.3）／J3 の時間帯が本番の結果の取得と重なる → JST 01〜06（§3.4）／boatrace.jp の段2 の止め方が ADR-0101 で未決 → J3 の前に追記（§3.4）／race_conditions の上書きで学習に発走の後の値が入る → 新しい表 race_result_weather（§3.4・db-draft §3）
   - P2: 節の当て方が kb と main で違う → seriesFinder を1つに（§3.1）／補正が種別を直さない → 補正に種別（§3.1）／CHECK を列の追加の文に書くと全行を読む・NOT VALID と VALIDATE を同じトランザクションに置く意味が無い → db-draft §2・§4／field_gender を「DB の変更なし」に入れていた → J1a・J1b に分けた／性別の出所が kb に足りない → §3.2・Q8 をレースの単位に／wind_sector の era の違いを ADR に → §3.1／既存の verify は guard-weakening だけが道 → §3.1／潮位の送信元の書き方の食い違いと年1回の Cron の欄が無い → fan_period の形（§3.3）／SQL Editor で包むと何も出ない → §4
   - P3: hourly_cm の次元・下限、time[] の返り値の形、戻しの順、claude_ro の読み、ER 図、kb のレース数、K の方位の番号の式 → db-draft・§3.1・§3.4
+- system-architect（2026-11-28、Q8 の後の性別の出所）: 新しい表 racer_sex を推す（racer_period_stats に列は H5、sync-profiles は二重の書き手）。直し3点（NOT NULL と CHECK で分かった値だけ、source_fan を比べない、Cron の中で racer_period_stats より先に書く）を db-draft §1.5 に反映した
 - 残る未確定: data-scientist（学習と推論のずれ、潮位の検証の設計）、Q1〜Q9 の結果、気象庁の robots.txt と利用規約の本文
 
 ## 8. 食い違い（この設計では直さない）
@@ -238,3 +244,4 @@ SELECT job, mode, cursor, last_success_at FROM scrape_job_state WHERE job = 'rac
 - kb_archive_extra（212）の source='raceresult' のレースの行の気象の列は、J3 では使わない（race_result_weather に移す）。past-data-backfill db-draft §3 と食い違う
 - 2026-09-19 以降の race_conditions は結果のページの値で上書きされ（raceResultPersist.js:230）、学習のデータに発走の後の値が入っている（既存。scripts/ml/export-training-data.js:202）
 - 特別な節の補正が種別を直さないのは main の書き手でも既に起きている
+- racer_profiles.sex（083、2026-09-21 適用）は、書く経路が手動の sync-profiles だけで、本番では一度も埋まっていない（Q8）。読み手も居ない
