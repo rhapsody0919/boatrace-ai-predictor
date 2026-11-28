@@ -17,6 +17,7 @@ import {
   motorExhibitionMeetTrend,
   motorMeetTip,
   motorRateTrend,
+  motorMeetFinals,
 } from "../../pure/motorGenerationTrend.js";
 import { formatGenerationDate } from "../../utils/motorGeneration";
 import "../race/basic-info/TrendChart.css";
@@ -151,6 +152,10 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
   const selRuns = data.runsByMotor[selRow?.motor_number] ?? [];
   const runs = selRuns.length;
   // 節の点の吹き出し（オーナー 11/25 承認のモック）。率だけ（展示タイムは今は出さない）
+  // 優出・優勝の印は率の図だけ（節の点が節の初日に打たれる図。F-044）
+  const finalLabels = isExDiff(metric)
+    ? null
+    : new Map([...motorMeetFinals(selRuns)].map(([d, k]) => [d, t(`analysis.motor.genTrend.${k === "win" ? "finalWin" : "finalIn"}`)]));
   const renderTip = (p) => {
     const tip = motorMeetTip(selRuns, p.point.date, data.meets ?? [], { today });
     return tip && <MotorMeetTooltip tip={tip} venueCode={venueCode} metric={metric} {...p} />;
@@ -159,7 +164,7 @@ function TrendBody({ rows, data, series, metric, today, selected, onSelect, venu
   return (
     <div className="race-split trc-split">
       <div className="race-split__main">
-        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} renderTip={isExDiff(metric) ? null : renderTip} />
+        <MotorTrendChart seriesByBoat={series} metric={metric} selected={selected} generationStart={data.generationStart} today={today} minRuns={minRunsOf(metric)} renderTip={isExDiff(metric) ? null : renderTip} finalLabels={finalLabels} />
       </div>
       <div className="race-split__side">
         <BoatMotorPicker rows={rows} series={series} runsByMotor={data.runsByMotor} selected={selected} onSelect={onSelect} metric={metric} />

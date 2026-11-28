@@ -44,6 +44,17 @@ function scaleOf(seriesByBoat, metric, generationStart, today, W) {
   return { x, y, ticks };
 }
 
+// 選んだ艇の節の点の上に優出・優勝の印（F-044）。labelOf は節の初日 → 字（無ければ印なし）
+function FinalMarks({ points, labelOf, x, y }) {
+  return points
+    .filter((p) => !p.extended && labelOf.has(p.date))
+    .map((p) => (
+      <text key={p.date} x={x(p.date)} y={y(p.value) - 9} textAnchor="middle" className="trc-axisnote mtc-final" fontWeight={700}>
+        {labelOf.get(p.date)}
+      </text>
+    ));
+}
+
 function Line({ points, boat, selected, showDots, x, y }) {
   const d = points.map((p) => `${x(p.date)},${y(p.value)}`).join(" ");
   const w = selected ? 3 : 1.4;
@@ -127,6 +138,7 @@ function Axis({ generationStart, today, firstDate, minRuns, metric, x, W }) {
  *   metric: "top2Rate"|"top3Rate"|"exhibition", selected: number, generationStart: string, today: string, minRuns: number}} props
  *   seriesByBoat は点のある艇だけ（空の系列を入れない）。1艇も無いときは使う側が空の状態を出す
  *   renderTip を渡すと、選んだ艇の節の点（今日まで延ばした右端は除く）を拾い、吹き出しを描く（選手の推移と同じ useChartPick）
+ *   finalLabels（節の初日 → 字の Map）を渡すと、選んだ艇の節の点の上に優出・優勝の印を描く（F-044）
  */
 // 選んだ点の縦の点線と印、点を拾う当たりの面（図の中の全面、透明）。縦のスクロールは指に任せる
 function PickLayer({ px, py, selected, W, pointer }) {
@@ -144,7 +156,7 @@ function PickLayer({ px, py, selected, W, pointer }) {
   );
 }
 
-export default function MotorTrendChart({ seriesByBoat, metric, selected, generationStart, today, minRuns, renderTip = null }) {
+export default function MotorTrendChart({ seriesByBoat, metric, selected, generationStart, today, minRuns, renderTip = null, finalLabels = null }) {
   const { t } = useTranslation();
   const [ref, W] = useChartWidth();
   const { x, y, ticks } = scaleOf(seriesByBoat, metric, generationStart, today, W);
@@ -166,6 +178,7 @@ export default function MotorTrendChart({ seriesByBoat, metric, selected, genera
       {order.map((boat) => (
         <Line key={boat} points={seriesByBoat.get(boat)} boat={boat} selected={boat === selected} showDots={metric !== "exhibition" && boat === selected} x={x} y={y} />
       ))}
+      {finalLabels && seriesByBoat.has(selected) && <FinalMarks points={seriesByBoat.get(selected)} labelOf={finalLabels} x={x} y={y} />}
       <EndLabels seriesByBoat={seriesByBoat} selected={selected} y={y} metric={metric} W={W} />
       {renderTip && <PickLayer px={picked ? x(picked.date) : null} py={picked ? y(picked.value) : 0} selected={selected} W={W} pointer={handlers} />}
     </svg>

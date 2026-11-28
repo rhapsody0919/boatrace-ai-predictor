@@ -134,6 +134,24 @@ export function motorMeetTip(runs, date, meets, { today = null } = {}) {
   };
 }
 
+/**
+ * 節ごとの優出・優勝（時系列の振り分け F-044）。節の中に優勝戦の走があれば優出、その走が1着（公式の記号が無い）なら優勝。
+ * 件数が少ないので率の線にせず、節の点の印にする
+ * @param {Array<{date:string, isFinal?:boolean, finish?:number|null, finishMark?:string|null}>} runs
+ * @returns {Map<string, "win"|"final">} 節の初日 → 印（優勝戦を走っていない節は入らない）
+ */
+export function motorMeetFinals(runs) {
+  const rows = sortRuns(runs);
+  const meets = motorMeets(rows);
+  const out = new Map();
+  meets.forEach((m, k) => {
+    const finals = rows.slice(m.runsBefore, meets[k + 1]?.runsBefore ?? rows.length).filter((r) => r.isFinal);
+    if (finals.length === 0) return;
+    out.set(m.start, finals.some((r) => r.finish === 1 && !r.finishMark) ? "win" : "final");
+  });
+  return out;
+}
+
 // 開催中か。会場の節があれば終わりがこのレースの日以降。無ければ（節の行がまだ取れていない）、その基の最後の走が
 // このレースの日かその前日なら開催中とみなす（走は前日まで続いている。ファン評価の再確認 11/25 の P2）
 function isOngoing(series, head, today) {
