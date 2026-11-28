@@ -53,7 +53,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/meetRows.js` | 今節タブ（RaceMeetTab）の表の行の組み立て（純関数、副作用なし）。 | buildRankingModel, buildForecastRows, buildForecastModel |
 | `src/pure/meetTrendRows.js` | RaceMeetTab の推移（6艇）の行と、選んだ1艇の走りの値を作る純関数（副作用なし）。 | buildTrendRowsRaw, buildTrendStats, buildSelectedModel, mdOf |
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
-| `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses, computePeriodClip ほか4件 |
+| `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | officialRateGapsOf, exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses ほか5件 |
 | `src/pure/motorGenerationTrend.js` | モーターの推移の線（今の世代＝会場の入れ替えの後だけ。オーナー 2026-11-25 承認のモック改訂2）。 | motorMeets, motorRateTrend, motorExhibitionTrend, motorExhibitionMeetTrend, motorMeetTip ほか4件 |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/nigashiStats.js` | 逃し率（オーナー 2026-11-25）: 2〜6コースに入った走のうち、1コースの艇に逃げで1着を取られた走の割合。 | buildNigashiBreakdown, nationalNigashiBaseline, nigashiByCourse |
@@ -711,4 +711,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 669 ファイル / export 3570 件。
+対象 669 ファイル / export 3571 件。
