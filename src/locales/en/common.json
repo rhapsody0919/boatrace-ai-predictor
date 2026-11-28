@@ -3239,6 +3239,12 @@
       "description": "Compares the current national win rate of every racer running today with their rate about 90 days ago, and ranks the biggest movers. Unlike other tabs, you can discover notable racers across today's entire card without picking a venue or race.",
       "risingTitle": "🔥 Top 10 Rising Racers",
       "fallingTitle": "📉 Top 10 Falling Racers",
+      "risenTitle": "Top 10 whose national win rate rose",
+      "fallenTitle": "Top 10 whose national win rate fell",
+      "vs90": "(vs. ~90 days ago)",
+      "barRise": "Rise →",
+      "barFall": "← Fall",
+      "pastNow": "~90 days ago → now",
       "empty": "No data available",
       "note": "💡 Click a racer's name to see details in the Racer Form tab for their race today. \"~90 days ago\" only includes racers with data from that period. Note that recently debuted rookies rise from a 0% win rate and easily appear in the rising ranking."
     },
