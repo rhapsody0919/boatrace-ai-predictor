@@ -215,7 +215,7 @@
 | 10 | 平均ST: 選手ページの L・窓、直近30走の窓の数え方 | `racerVenueBoatStats.js`・`racerQueries2.js`・`scripts/lib/racerStStats.js`・`racerTrendSeries.js` | 変わる | Q3、L の行の確かめ（人） |
 | 11 | モーター: 自社の分母の数え方をそろえる | `motorPowerIndex.js`・`motorQueries2.js`・`motorQueries5.js` | 変わる | Q1・公式の数え方 |
 
-各 PR は ADR-0108 の登録簿の定義（id・名前・窓・出所）を同時に足し、登録簿の verify が見る。値が変わる PR は本文に前後の値を書く（plan.md §11）。
+各 PR は ADR-0108 の登録簿の定義（id・名前・窓・出所）を同時に足し、登録簿の verify が見る。値が変わる PR は本文に前後の値を書く（plan.md §12）。
 
 ## 8. オーナーに聞くこと（画面の数字が変わる族）
 
