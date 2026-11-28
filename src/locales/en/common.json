@@ -3930,6 +3930,8 @@
     "winRate": "The racer's national win rate, the figure used for class ratings. Higher means a stronger racer",
     "localWinRate": "The racer's win rate at this venue. A guide to whether this is one of their strong venues",
     "motor": "The share of races this motor finished 1st or 2nd. A higher figure suggests a motor in good condition",
+    "motorPowerIndex": "The power index averages, over every race, \"whether this motor actually finished in the top 2\" minus \"the national top-2 rate of the racer riding it at the time\". The larger the plus, the more the motor has run beyond its riders' own ability (it includes other racers who used this motor before). With few races the value swings widely.",
+    "racerMotorMeetChart": "The vertical axis is the gap from the average exhibition time of the 6 boats in that race (higher is faster). \"Parts\" and \"Prop\" mark a replacement before that race. Tap a point to see the seconds and what was replaced.",
     "form": "The difference between the racer's recent win rate and their usual win rate, showing whether they are trending up or down",
     "avgSt": "The average start timing on the official race card (official term record, all venues). \"Racer form (national win rate)\" is the race card value and uses a different calculation period. Smaller means faster starts",
     "avgStOfficialPeriod": "The average start timing on the official race card (record from {{from}} to {{to}}, official term record, all venues). \"Racer form (national win rate)\" is the race card value and uses a different calculation period. Smaller means faster starts",

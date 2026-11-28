@@ -26,14 +26,6 @@
   margin: 0 0 var(--spacing-3);
 }
 
-.racer-motor-status-index.power-index-good {
-  color: var(--color-success-text);
-}
-
-.racer-motor-status-index.power-index-bad {
-  color: var(--color-error-text);
-}
-
 .racer-motor-status-note {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
@@ -42,6 +34,13 @@
   background: var(--surface-page);
   border-left: 3px solid var(--brand-accent-primary);
   border-radius: var(--radius-sm);
+}
+
+/* 図の説明の行と「?」（説明の文は「?」の中。plan.md §14） */
+.racer-motor-status-chart-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-1);
 }
 
 .racer-motor-status-chart-caption {
@@ -79,11 +78,6 @@
     padding: var(--spacing-2);
     margin: var(--spacing-2) 0;
   }
-}
-
-/* 走数が少ない機力指数は参考値の色（BOA-549） */
-.racer-motor-status-index.is-small-sample {
-  color: var(--color-warning-text);
 }
 
 /* 走ごとの展示タイムの図（RacerMotorMeetChart、P-16・F-051）。目盛り・吹き出しは TrendChart.css の trc- */
