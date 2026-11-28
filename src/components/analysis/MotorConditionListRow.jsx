@@ -116,7 +116,7 @@ function MotorNumCell({ row, currentParts, partsBoat, setPartsBoat }) {
 
 function RateBarCell({ row, i, view, explainBoat, setExplainBoat }) {
   const { t } = useTranslation();
-  const { officialRates, officialRateMax, officialRateBestBoats, officialRateGaps, rateViews, rateLabel } = view;
+  const { officialRates, officialRateMax, officialRateGaps, rateViews, rateLabel } = view;
   const gap = officialRateGaps?.get(row.boat_number);
   return (
     <>
@@ -140,7 +140,7 @@ function RateBarCell({ row, i, view, explainBoat, setExplainBoat }) {
           // 線用の艇色（1号艇・2号艇はテーマで反転するトークン）。ダークモードで
           // 2号艇の黒い棒が紺の背景に溶けていた（ファン評価）
           fill={BOAT_LINE_COLORS[row.boat_number]}
-          best={officialRateBestBoats.has(row.boat_number)}
+          // 最大の値の金枠は付けない（6艇の最大は偶然の幅を超えたと言えない。差と順位は棒の下の字。plan.md §14、オーナー 2026-11-28）
           label={
             rateViews[i].kind === "own" ? (
               <>
