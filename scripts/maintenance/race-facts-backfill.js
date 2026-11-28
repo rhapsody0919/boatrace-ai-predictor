@@ -47,7 +47,7 @@ async function main() {
   const { supabase, isSupabaseEnabled, fetchAll } = await import("../lib/supabaseClient.js");
   if (!isSupabaseEnabled()) throw new Error("Supabase の環境変数が未設定（SUPABASE_URL / SUPABASE_SERVICE_KEY）");
   const { loadJudgeInputs } = await import("../lib/racerCareerDb.js");
-  const { halfMonthRanges, kbYearRanges } = await import("../lib/racerCareerSeries.js");
+  const { halfMonthRanges, kbYearRanges, addDays } = await import("../lib/racerCareerSeries.js");
   const { writeFactsWindow } = await import("../lib/raceFactsWrite.js");
   const { runKbFacts } = await import("../lib/raceFactsKbJob.js");
   const dryRun = !opts.apply;
@@ -66,6 +66,9 @@ async function main() {
       races: await fetchAll("kb_archive_races", "*", (q) => byRange(q, range).order("race_id"), { client }),
       boats: await fetchAll("kb_archive_boats", "*", (q) => byRange(q, range).order("race_id").order("boat_number"), { client }),
       venueDays: await fetchAll("kb_archive_venue_days", "*", (q) => byRange(q, range, "venue_day_id").order("venue_day_id"), { client }),
+      // 種別（series_kind）の節。窓に期間が重なる節を読む（race-facts-main の Cron と同じ）
+      series: await fetchAll("race_series", "venue_code,start_date,end_date,kind", (q) =>
+        q.lte("start_date", addDays(range.to, -1)).gte("end_date", range.from).order("venue_code").order("start_date"), { client }),
     }),
     fetchExistingKeys: async (range) => ({
       race: (await fetchAll("race_facts", "race_id", (q) => byRange(q, range).eq("era", "kb").order("race_id"), { client }))
