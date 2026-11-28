@@ -6,7 +6,7 @@
     "scripts/lib/scrapeJobs/registry.js": 449,
     "scripts/maintenance/verify-pure-imports.js": 718,
     "src/config/venueRules.js": 456,
-    "src/data/thinkingAssistCopy.js": 836,
+    "src/data/thinkingAssistCopy.js": 835,
     "src/data/venueGuidesEn.js": 1970,
     "src/data/venueGuidesKo.js": 1949,
     "src/data/venueGuidesZhTw.js": 1889,
