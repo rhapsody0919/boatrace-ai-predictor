@@ -8,6 +8,7 @@
 |---|---|---|---|
 | J1a 種別（節）・グレード・風向の区分 | **なし** | — | race_facts の列（series_kind・race_grade・wind_sector）は 212 にある。書き手が race_series・風向を読むだけ |
 | J1b 女子戦（レース単位） | race_facts に列 `field_gender` | M1（列と NOT VALID の CHECK）→ M2（VALIDATE） | 節の種別では拾えないレースがある（plan.md §5） |
+| J1b の性別の出所 | 新しい表 `racer_sex` | M5（M1 より先） | 本番の racer_profiles.sex は全行 NULL（2026-11-28 の Q8）。書くのは手動の `fan-backfill.js sync-profiles --apply` だけで Cron は書かず、引退した選手の行も無い |
 | J1a の語彙の守り（任意） | race_facts に CHECK（wind_sector・tide_phase） | M1・M2 に同梱 | 書き手の語彙を DB でも守る。足さなくても動く |
 | J2 潮位 | 新しい表 `tide_station_daily` | M3（検証の後） | どこにも無い |
 | J3 結果のページの気象 | 新しい表 `race_result_weather` | M4（V0・V1・ADR-0101 の追記の後） | race_conditions を上書きすると学習に発走の後の値が入る。kb_archive_extra は main の期間に使えない（CHECK `race_date <= '2025-12-02'`） |
@@ -33,7 +34,7 @@ ALTER TABLE public.race_facts DROP CONSTRAINT IF EXISTS race_facts_tide_phase_ch
 ALTER TABLE public.race_facts ADD CONSTRAINT race_facts_tide_phase_check
   CHECK (tide_phase IS NULL OR tide_phase IN ('rising', 'falling', 'high', 'low', 'none')) NOT VALID;
 COMMENT ON COLUMN public.race_facts.field_gender IS
-  '出走した艇（欠場を除く）の選手の性別（racer_profiles.sex）から書き手が決める区分。全員女子=female・全員男子=male・混ざる=mixed、1艇でも性別が分からなければ NULL（docs/design/data-gaps）';
+  '出走した艇（欠場を除く）の選手の性別（racer_sex.sex）から書き手が決める区分。全員女子=female・全員男子=male・混ざる=mixed、1艇でも性別が分からなければ NULL（docs/design/data-gaps）';
 ```
 
 ```sql
@@ -50,6 +51,35 @@ ALTER TABLE public.race_facts VALIDATE CONSTRAINT race_facts_tide_phase_check;
 - 本番の postgres が superuser でないことは問題にならない（表の持ち主は postgres、SET 句・GUC・DEFINER を使わない）
 - 書き手の payload は全行が同じ列を持つ（db-operations.md:21）。**M1 の適用 → 定時の配備 → 書き手の PR** の順。逆にすると kb・main の書き込みが止まる
 - 戻し（書き手を戻した後）: `BEGIN; SET LOCAL lock_timeout='10s'; ALTER TABLE public.race_facts DROP CONSTRAINT IF EXISTS race_facts_field_gender_check; ALTER TABLE public.race_facts DROP CONSTRAINT IF EXISTS race_facts_wind_sector_check; ALTER TABLE public.race_facts DROP CONSTRAINT IF EXISTS race_facts_tide_phase_check; ALTER TABLE public.race_facts DROP COLUMN IF EXISTS field_gender; COMMIT;`
+
+## 1.5 M5 `racer_sex`（J1b の性別の出所、M1 より先）
+
+fan（fan{YYMM}.lzh、2001年10月〜）は期ごとに全ての選手の性別を持つ（fanPeriodParser.js の HEAD_FIELDS、1=男・2=女）。選手1人に1行で、分かった値だけを書く。racer_period_stats に列を足す案は採らない。理由は、期ごとに約14回重ねて持つことになるのと、verify-fan-period.js:150 が 083 の列と STATS_COLUMNS の完全な一致を見ているので H5 になること（system-architect、2026-11-28）。
+
+```sql
+-- M5（未審査の案。適用の根拠にしない）
+SET LOCAL lock_timeout = '10s';
+CREATE TABLE IF NOT EXISTS public.racer_sex (
+  racer_id   integer PRIMARY KEY,            -- racer_period_stats（083）と同じ型。FK は張らない（racer_profiles に無い選手も入れる）
+  sex        smallint NOT NULL CHECK (sex IN (1, 2)),
+  source_fan text NOT NULL,                  -- 最後に値を確かめた fan（例 fan2604）。差分の比較には使わない
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz
+);
+ALTER TABLE public.racer_sex ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.racer_sex FROM anon, authenticated;
+COMMENT ON TABLE public.racer_sex IS '選手の性別（fan 由来、1=男・2=女）。facts の field_gender の出所（docs/design/data-gaps）';
+```
+
+- 書き手（コードの PR、適用を確かめてからマージ）:
+  - **fan_period の Cron（fanPeriodJob.js）**: 解析と検査の後、racer_period_stats より先に upsertChangedRows で書き、失敗したら throw する。後に置くと、stats を書いた後に落ちた期が翌日 already_imported で終わり、性別が二度と書かれない
+  - 書くのは 1・2 の行だけ（NULL で既知の値を消さない）。比べる列は sex だけにする（source_fan まで比べると期ごとに全行を書き直す）。既にある値と 1↔2 で食い違えば、書かずに警告する
+  - 過去分の CLI: fan1904〜fan2604 を古い順に1回（オーナーの --apply）。kb の始まりより前の期に余裕を持たせるなら fan1810 から（目安、根拠なし）
+  - facts の書き手は racer_sex を `fetchAll`＋`order(racer_id)` で読み、失敗は throw
+- 埋まらない所: 新人は次の期の fan に載るまで性別が分からない見込み（fan に何時点の登録者が載るかは未検証）。main の新人の居るレースは最大で半年余り field_gender が NULL。画面の女子戦は plan.md §3.2 の `series_kind` との OR で当面を補う
+- 古い版との両立: 表を足すだけなので、古いコードは影響を受けない。コードが先に出ると取り込みと facts の書き手が例外で止まる（黙って壊れはしない）
+- 戻し（書き手を戻した後）: `BEGIN; SET LOCAL lock_timeout='10s'; DROP TABLE IF EXISTS public.racer_sex; COMMIT;`
+- racer_profiles.sex を埋める `sync-profiles --apply` は回さない。読み手が居ないうえ、racer-profiles の Cron と同じ列（ability_index 等の SEASON_COLUMNS）を二重に書く
 
 ## 2. M3 `tide_station_daily`（J2、検証の後）
 
@@ -125,11 +155,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.race_result_weather TO service_ro
 
 ## 4. 試験（マイグレーションの PR で、PGlite）
 
-- 212 → 213 → M1 → M2 → M3 → M4 を流し、新しい verify（`scripts/maintenance/verify-data-gaps-migrations.js`）で
+- 212 → 213 → M5 → M1 → M2 → M3 → M4 を流し、新しい verify（`scripts/maintenance/verify-data-gaps-migrations.js`）で
   - M1: 語彙の外の field_gender・wind_sector・tide_phase が拒まれる。M1 を2回流しても落ちない。get_racer_runs の jsonb に field_gender が出る
   - M2: 語彙の外の行が既にあると VALIDATE が落ちる（落ちる場合を作って確かめる）
   - M3: 24でない配列・2次元・下限が0・NULL を含む配列・満潮の時刻と値の数の違い・5回目の満潮が拒まれる。主キーの重なりで upsert が1行のまま
   - M4: 気象が全部 NULL の行・race_id と race_date の食い違いが拒まれる
+  - M5: sex が NULL・0・3 の行が拒まれる。M5 を2回流しても落ちない
   - 全部: `SET ROLE anon` の後の SELECT が permission denied
   - backfill_progress に `unit_id='2019-01-01|TK'`・`target_date='2019-01-01'` の行が入る（source='jma_tide'）。`'TK-2019'` が拒まれる
 - 書き手の純関数（潮位の補い・位相・風向の区分・女子戦の判定）は DB に依らない verify で
@@ -140,6 +171,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.race_result_weather TO service_ro
 | ジョブ | 起動 | 1起動の量 | 書く先 | 止め方 |
 |---|---|---|---|---|
 | `tide_table`（J2） | 毎日（fan_period と同じ形、registry.js:323）。cron は UTC で書き JST を注釈。取っていない「地点×年」（2019〜翌年）が無ければ0リクエスト | 最大11ファイル（目安） | tide_station_daily（変わらない行は書かない `unchangedRows.js`） | 書式の違い（桁・地点記号）は構造の変更とみなし何も書かない（error）。365・366行でなければ error |
+| fan_period に1段（J1b） | 今の fan_period（毎日、取り込み済みの期は0リクエスト） | 1つの fan の全選手（約1650行。変わらない行は書かない） | racer_sex（racer_period_stats より先） | 書けなければ throw（その期の stats も書かない） |
 | raceresult の過去分（J3） | JST 01:00〜06:00。past-data-backfill §4 の段2 のジョブ | 20レース前後（目安） | race_result_weather | ADR-0101 に J3 の前に追記する（ブレーカーのキーを分けるか・1晩の上限）。それまで live にしない |
 
 - どれも進みは `backfill_progress`（source='jma_tide'・'raceresult'）。0件の書き込みを成功にしない
@@ -149,6 +181,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.race_result_weather TO service_ro
 ## 6. 適用の前後
 
 - 事前（読み取り）: plan.md §4 の Q6・Q7・Q9。J2 は検証、J3 は V0・V1 が通ったこと
+- 適用（J1b）: M5 → racer_sex の書き手の PR → 過去分の CLI（オーナー）→ M1・M2 → field_gender の書き手の PR → facts の作り直し
 - 適用: マイグレーション（窓口）→ db-apply（オーナー）→ 定時の配備 → 書き手・Cron の PR → vercel.json の crons の行（人）→ mode を live（オーナー）→ facts の作り直し（kb は CLI、main は毎晩の起動）
 - 事後:
   - `relrowsecurity` が true、anon の SELECT が false、claude_ro が新しい表を SELECT できる（166 の既定の権限）
