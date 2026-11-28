@@ -3930,6 +3930,7 @@
   "listSeparator": ", ",
   "termHintLabel": "Show what this term means",
   "termHints": {
+    "sonarRateBar": "The bar is the share among the past races collected; the dotted line is the share for the comparison group. The fewer the races, the more the share can swing, so check the count to the right of the bar.",
     "winRate": "The racer's national win rate, the figure used for class ratings. Higher means a stronger racer",
     "localWinRate": "The racer's win rate at this venue. A guide to whether this is one of their strong venues",
     "motor": "The share of races this motor finished 1st or 2nd. A higher figure suggests a motor in good condition",
