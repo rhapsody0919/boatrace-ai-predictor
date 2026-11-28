@@ -7,7 +7,25 @@
  * （verifyData/motorChartSource.js）。画面の側に残すのは motorRateView の map（breakdown.map(motorRateView)）だけ。
  */
 
-import { rankTiers } from "./compareBaseline.js";
+/**
+ * 公式2連率の、他の艇の平均との差と、比べた艇の中の順位（plan.md §14、オーナー 2026-11-28。旧: 上位2・下位2の ▲▼）。
+ * 表示と同じ1桁に丸めてから比べる。値の無い艇（null）は比べる相手にも入れない。比べる艇が2つ未満なら空
+ * @param {Array<{boat:number, value:number|null}>} candidates
+ * @returns {Map<number, {diff:number, rank:number}>} 艇番 → 差（ポイント）と順位（同じ値は同じ順位）
+ */
+export function officialRateGapsOf(candidates) {
+  const rows = candidates
+    .filter((c) => typeof c.value === "number")
+    .map((c) => ({ boat: c.boat, value: Number(c.value.toFixed(1)) }));
+  const out = new Map();
+  if (rows.length < 2) return out;
+  rows.forEach((r) => {
+    const others = rows.filter((o) => o.boat !== r.boat);
+    const mean = others.reduce((a, o) => a + o.value, 0) / others.length;
+    out.set(r.boat, { diff: r.value - mean, rank: 1 + rows.filter((o) => o.value > r.value).length });
+  });
+  return out;
+}
 
 // 展示タイムの推移グラフの元データ（展示の無い日は描かない）
 export function exhibitionChartDataOf(trendData) {
@@ -53,9 +71,9 @@ export function computeRateView(
     value: rateViews[i].kind === "official" ? officialRates[i] : null,
   }));
   const officialRateBestBoats = bestOf(officialCandidates, "max", { digits: 1 });
-  // 6艇の上位2・下位2（意味づけ 2026-11-26、型2）。モーター2連率の順位の上位・下位で1着に差が出ることは
-  // docs/knowledge/stat-findings.md 7行で確かめ済み。最良の印と同じく公式の値だけで比べる
-  const officialRateTiers = rankTiers(officialCandidates, "max", { digits: 1 });
+  // 他の艇の平均との差と順位（plan.md §14。旧: 上位2・下位2の ▲▼、意味づけ 2026-11-26）。モーター2連率の順位の
+  // 上位・下位で1着に差が出ることは docs/knowledge/stat-findings.md 7行で確かめ済み。最良の印と同じく公式の値だけで比べる
+  const officialRateGaps = officialRateGapsOf(officialCandidates);
   const rateLabel = (view, i) => rateLabelOf(t, officialRates, view, i);
   // 新しいモーターの最初の節（その日の公式2連率が全行 0）。優出・優勝はまだ機会が無いので「-」
   const firstMeet = freshness?.firstMeet === true;
@@ -65,7 +83,7 @@ export function computeRateView(
       : null;
   const explainView = explainRow ? motorRateView(explainRow) : null;
   return {
-    rateViews, officialRates, officialRateMax, officialRateBestBoats, officialRateTiers, rateLabel,
+    rateViews, officialRates, officialRateMax, officialRateBestBoats, officialRateGaps, rateLabel,
     firstMeet, explainRow, explainView,
   };
 }

@@ -191,11 +191,6 @@ export function MotorListView({ m, v, scroll, scrollRef }) {
       {embedded && (
         <MotorPartsNotes expandedParts={v.expandedParts} currentParts={v.currentParts} />
       )}
-      {v.officialRateTiers?.size > 0 && (
-        <p className="table-note motor-tier-note" data-testid="motor-tier-note">
-          {t("analysis.motor.tierNote")}
-        </p>
-      )}
       <OwnRateNote rateViews={v.rateViews} explainView={v.explainView} explainRow={v.explainRow} />
       <VenueRankNote breakdown={breakdown} venueRanks={venueRanks} selectedVenue={selectedVenue} />
       {v.venueStatsFailed && (
