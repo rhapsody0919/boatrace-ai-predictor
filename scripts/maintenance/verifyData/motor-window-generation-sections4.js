@@ -25,7 +25,7 @@ export async function section17(ctx) {
     "画面: 入れ替え前のレースは一覧の時点で伝え、「行を押すと推移」の案内を出さない",
     chart.includes("setRacePreGeneration(preGeneration)") &&
       chart.includes("analysis.motor.racePreGenerationNote") &&
-      /racePreGeneration \? \(\s*<p className="table-note">\{t\("analysis\.motor\.highlightNote"\)\}/.test(
+      /drillDownMotor === null && !racePreGeneration && \(\s*<p className="table-note">\{t\("analysis\.motor\.rowClickNote"\)\}/.test(
         chart,
       ),
   );
@@ -54,9 +54,10 @@ export async function section17(ctx) {
         chart,
       ),
   );
+  // 最大の値の金枠は外した（plan.md §14、オーナー 2026-11-28）。金枠の説明（highlightNote・note の後半）は出さない
   check(
-    "画面: 入れ替え前のレースでもハイライト行の説明は残す",
-    chart.includes("analysis.motor.highlightNote"),
+    "画面: 金枠の説明は出さない（入れ替え前のレースでも）",
+    !chart.includes("analysis.motor.highlightNote") && !chart.includes('t("analysis.motor.note")'),
   );
 }
 
@@ -181,7 +182,7 @@ export async function section19(ctx) {
         "periodSinceGeneration",
         "racePreGenerationNote",
         "drillAsOfRaceNote",
-        "highlightNote",
+        "rowClickNote",
       ].every((k) => typeof motor[k] === "string" && motor[k].length > 0),
     );
   }

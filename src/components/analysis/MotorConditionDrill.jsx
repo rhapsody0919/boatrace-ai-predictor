@@ -303,13 +303,11 @@ export function MotorFooterNotes({ m, v }) {
   return (
     <>
       {/* 「行を押すと推移」は一覧でだけ、入れ替え前のレースでは出さない
-          （押しても推移が出ないため） */}
-      {drillDownMotor === null &&
-        (racePreGeneration ? (
-          <p className="table-note">{t("analysis.motor.highlightNote")}</p>
-        ) : (
-          <p className="table-note">{t("analysis.motor.note")}</p>
-        ))}
+          （押しても推移が出ないため）。最大の値の金枠は外した（plan.md §14、オーナー 2026-11-28）ので、
+          金枠の説明は出さない */}
+      {drillDownMotor === null && !racePreGeneration && (
+        <p className="table-note">{t("analysis.motor.rowClickNote")}</p>
+      )}
       {drillDownMotor === null && v.hasHighlightedCell && (
         <p className="table-note">{t("analysis.motor.bestCellNote")}</p>
       )}
